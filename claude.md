@@ -1,6 +1,8 @@
 # Singapore Property Analyzer - System Rules
 
-## Skills & Docs
+## Quick Reference
+
+### Skills
 | Skill | Trigger |
 |-------|---------|
 | `/sql-guardrails` | SQL queries |
@@ -9,666 +11,147 @@
 | `/dashboard-guardrails` | Chart modifications |
 | `/data-standards` | Classifications/labels |
 | `/api-endpoint-guardrails` | New endpoints |
-| `/api-contract-guardrails` | API contract changes |
 | `/frontend-design` | Building UI components/pages |
-| `/lazy-import-guardrails` | React.lazy() / dynamic imports |
 | `/backend-impact-guardrails` | **Backend changes (MANDATORY)** |
 | `/git-context-guardrails` | **ANY implementation (MANDATORY)** |
 
-## Agents
+### Agents
 | Agent | Trigger |
 |-------|---------|
-| `regression-snapshot-guard` | "verify no regressions", "before deploy", "numbers shifted" |
-| `ui-layout-validator` | "check layout", "verify responsive", "overflow issues" |
-| `designer-validator` | "check typography", "verify colors", "design consistency", "font issues" |
-| `data-integrity-validator` | "validate data", "check filters", "wrong counts" |
-| `ingestion-orchestrator` | "scrape", "ingest", "upload CSV", "data sources", "tier A/B/C" |
-| `etl-pipeline` | "upload CSV", "weekly update", "import transactions" |
-| `fullstack-consistency-reviewer` | **MANDATORY before merge**, "review", "consistency check", "PR review" |
+| `regression-snapshot-guard` | "verify no regressions", "before deploy" |
+| `fullstack-consistency-reviewer` | **MANDATORY before merge** |
+| `ingestion-orchestrator` | "scrape", "ingest", "upload CSV" |
+| `etl-pipeline` | "upload CSV", "weekly update" |
 
-Docs: `docs/backend.md`, `docs/frontend.md`, `docs/architecture.md`, `INGESTION_ARCHITECTURE.md`, `docs/BACKEND_CHART_DEPENDENCIES.md`
+### Page Routes
+| Route | Page |
+|-------|------|
+| `/market-overview` | Market Overview (Resale ONLY) |
+| `/district-overview` | District Overview |
+| `/new-launch-market` | New Launch Market (New Sale + Resale) |
+| `/supply-inventory` | Supply & Inventory Outlook |
+| `/explore` | Explore |
+| `/value-check` | Value Check |
+| `/exit-risk` | Exit Risk Analysis |
+| `/methodology` | Methodology |
 
-## Page Routes
-
-| Nav Label | Page Title | Route |
-|-----------|------------|-------|
-| Market Overview | Market Overview | `/market-overview` |
-| District Overview | District Overview | `/district-overview` |
-| New Launch Market | New Launch Market | `/new-launch-market` |
-| Supply & Inventory | Supply & Inventory Outlook | `/supply-inventory` |
-| Explore | Explore | `/explore` |
-| Value Check | Value Check | `/value-check` |
-| Exit Risk | Exit Risk Analysis | `/exit-risk` |
-| Methodology | Methodology | `/methodology` |
-
-**Legacy redirects:** Old routes (`/market-core`, `/primary-market`, `/district-deep-dive`, `/project-deep-dive`, `/value-parity`, `/supply-insights`) redirect to new routes for backwards compatibility.
+**Docs:** `docs/architecture.md`, `docs/frontend.md`, `docs/backend.md`, `docs/BACKEND_CHART_DEPENDENCIES.md`
 
 ---
 
-# 0. ARCHITECTURAL INVARIANTS (NON-NEGOTIABLE)
+# 1. CORE INVARIANTS (NON-NEGOTIABLE)
 
 These rules MUST be followed at all times. Violating them is a bug, even if the code "works."
 
-## Core Philosophy — Page Owns Business Logic
+Before implementing ANY task, Claude MUST understand the codebase context first. Read target files, check git history, find reference implementations. The architecture is SETTLED — work WITHIN it, don't redesign it.
 
-| Layer | Responsibility |
-|-------|----------------|
-| **Pages** | Decide business logic (data scope, sale type, market mode) |
-| **Components** | Receive props, render data, never enforce meaning |
-| **Utils** | Transform inputs, never set defaults or infer intent |
-| **Backend** | Enforce rules, validate inputs |
+## 1.1 Layer Responsibilities
 
-**Mental Model (memorize this):**
-```
-Pages decide meaning → Components visualize → Utils transform → Backend enforces → Nothing guesses
-```
+| Layer | Owns | NEVER Does |
+|-------|------|------------|
+| **Pages** | Business logic, data scope, sale type | - |
+| **Components** | Rendering props | Logic, defaults, state, hardcoded values |
+| **Utils** | Pure transforms | Defaults, side effects, business decisions |
+| **Routes** | Parsing, validation | SQL, business logic |
+| **Services** | SQL, computation | Parsing strings |
+| **Backend** | Rule enforcement | - |
 
-## Component Design Rules
+**Mental model:** `Pages decide → Components render → Utils transform → Backend enforces`
 
-Components MUST:
-- Be stateless and reusable
-- Accept configuration via props
-- Never assume market context
-
-Components must NOT:
-- Hardcode sale type or business rules
-- Infer business intent
-- Override page-level decisions
+**UI/Layout changes = presentation only.** If behavior changes, the refactor is invalid.
 
 ```jsx
-// ❌ FORBIDDEN - component decides business logic
+// FORBIDDEN - component decides logic
 params.sale_type = 'resale';
 
-// ✅ REQUIRED - page passes intent via prop
-<Component saleType={SaleType.RESALE} />
+// REQUIRED - page passes intent
+<Chart saleType={SaleType.RESALE} />
 ```
 
-## Single Source of Truth (Enums)
+## 1.2 Single Source of Truth
 
-All sale types MUST come from canonical enums. No string literals for business logic.
+| What | Source | FORBIDDEN |
+|------|--------|-----------|
+| Sale types | `SaleType` enum | String literals (`'Resale'`, `'new-sale'`) |
+| Districts/Regions | `constants.py` | Hardcoded mappings |
+| Bedroom thresholds | `classifier.py` | Magic numbers (`if area < 580`) |
+| API params | `contract_schema.py` | Undocumented fields |
 
-```jsx
-// ✅ Correct
-import { SaleType } from '../schemas/apiContract';
-const SALE_TYPE = SaleType.RESALE;
+**Rule:** JOIN/GROUP on stable IDs, never display names.
 
-// ❌ Incorrect - string literals
-'Resale'
-'resale'
-'NEW'
-'new-sale'
-```
+**Param Precedence (highest → lowest):**
+1. Page-level prop (`saleType={SaleType.RESALE}`) — always wins
+2. Filter-derived value (`activeFilters.saleType`)
+3. Default (none)
 
-## Param Merge Precedence
+## 1.3 Reuse-First Principle
 
-When building API params, precedence order is:
-1. **Page-level prop** (highest) - always wins
-2. **Filter-derived value** - only if page didn't set it
-3. **Default** (lowest) - none
+**NEVER introduce new patterns. Match existing exactly.**
 
-```js
-// utils.js - page prop takes precedence
-if (!params.sale_type && activeFilters.saleType) {
-  params.sale_type = activeFilters.saleType;  // Only if not already set
-}
-```
+1. Find reference implementation → copy pattern exactly
+2. Extend existing code → don't recreate
+3. All similar code follows same structure
+4. Deviation requires explicit approval
 
-## Market Overview vs New Launch Market
+**Reference files:**
+- Charts: `frontend/src/components/powerbi/TimeTrendChart.jsx`
+- Routes: `backend/routes/analytics.py`
+- Services: `backend/services/dashboard_service.py`
 
-These are SEPARATE data universes. They MUST NEVER be mixed.
+**Before implementing:** `git log -20 -- <target_files>` to understand patterns.
 
-| Page | Route | Data Scope | Purpose |
-|------|-------|------------|---------|
-| Market Overview | `/market-overview` | Resale ONLY | Secondary market analysis |
-| New Launch Market | `/new-launch-market` | New Sale + Resale | Developer pricing, launches, absorption |
+## 1.4 Production-Grade Standard
 
-## Chart Rules
+Every solution MUST be:
+- **Long-term**: Works in 2 years, at 10x scale
+- **Consistent**: Matches how similar problems are solved
+- **Maintainable**: Another developer can understand it
 
-Charts:
-- Accept `saleType` as prop
-- Never decide saleType internally
-- Never override page intent
-- Must be reusable across pages
+**FORBIDDEN (Band-Aids):**
+| Band-Aid | Production-Grade |
+|----------|------------------|
+| `if (specificEdgeCase)` hack | Fix root cause |
+| Hardcoded values | Use constants/config |
+| Duplicating code "to be safe" | Reuse existing |
+| `// TODO: fix later` | Fix now or don't merge |
 
-```jsx
-// ✅ Allowed - conditional based on prop
-if (saleType) params.sale_type = saleType;
+## 1.5 Data Correctness Invariants
 
-// ❌ Forbidden - chart decides
-params.sale_type = SaleType.RESALE;
-```
+**Two-Phase Computation:**
+- Phase A: Compute invariants globally (before filtering)
+- Phase B: Apply filters as membership, not redefinition
 
-## Utility Function Rules
+**Deterministic Transformations:**
+- Explicit `ORDER BY date, id` (never rely on implicit order)
+- No `MODE()` or unordered `array_agg()`
+- Join on IDs, not display strings
 
-Utils must be PURE. They:
-- Transform inputs
-- Never enforce logic
-- Never set defaults
-- Never infer intent
-
-```js
-// ❌ Not allowed in utils
-if (!saleType) saleType = 'resale';  // Setting default = business logic
-
-// ✅ Allowed - pure transformation
-return saleType?.toLowerCase();
-```
-
-## Pre-Merge Safety Checklist
-
-Before merging ANY analytics-related change:
-- [ ] Page decides sale type
-- [ ] Components are reusable (no hardcoded business logic)
-- [ ] No string literals for enums
-- [ ] Page prop overrides filter params
-- [ ] Market Overview ≠ New Launch Market clearly separated
-- [ ] Charts accept saleType as prop
-- [ ] Utils are pure (no defaults, no inference)
-
-**If unsure — STOP and ask.**
+**DB vs Python:**
+| DB | Python |
+|----|--------|
+| Filtering, joining, aggregation | Param validation, orchestration |
+| Set operations | Formatting response |
+| **Single bulk query** | **Never N+1 loops** |
 
 ---
 
-# 0.5 DATA CORRECTNESS INVARIANTS
+# 2. HARD CONSTRAINTS
 
-These principles prevent silent correctness bugs in data processing and analytics.
-
-## Single Source of Truth for Meaning
-
-**Rule:** Define "what parameters mean" and "what response means" ONCE, enforce it everywhere.
-
-| Layer | Defines | Enforces |
-|-------|---------|----------|
-| Contract schema | Parameter types, response shapes | Validation |
-| Constants | Enum values, display labels | Lookup |
-| Service | Business logic | Computation |
-
-**Smell:** Param schema says "comma-separated string" but service expects `list[int]`. That's drift-by-design.
-
-## Stable Identity > Display Strings
-
-**Rule:** Always join/group on stable keys (IDs), not display names.
-
-| ❌ Wrong | ✅ Correct |
-|----------|-----------|
-| `JOIN ON project_name` | `JOIN ON project_id` |
-| `GROUP BY project_name` | `GROUP BY project_id` |
-| `UPPER(TRIM(project_name))` everywhere | Canonicalize once → `canonical_key` column |
-
-**Why:** Display names change (typos, duplicates, normalization). IDs don't.
-
-## Two-Phase Computation
-
-**Rule:** Compute invariant truth FIRST (Phase A), then filter as membership (Phase B).
-
-```
-Phase A: Compute globally (before any filtering)
-  - launch_date = MIN(transaction_date) for ALL transactions
-  - cohorts = defined by global launch_date
-  - outlier_flags = computed before filtering
-
-Phase B: Apply filters as membership, not redefinition
-  - Filter selects which rows to SHOW
-  - Filter does NOT change how metrics are COMPUTED
-  - launch_date does NOT shift when you filter by district
-```
-
-**Smell:** `MIN(transaction_date)` inside filtered subquery → "launch date shifts when I filter".
-
-## Deterministic Transformations
-
-**Rule:** Every transformation must produce same output for same input.
-
-| ❌ Non-deterministic | ✅ Deterministic |
-|---------------------|-----------------|
-| `MODE()` (arbitrary tie-break) | Explicit rule: "earliest row wins" |
-| `array_agg(x)` (unordered) | `array_agg(x ORDER BY id)` |
-| `MIN(project_name)` as canonical | `project_id` lookup |
-| Relying on implicit row order | `ORDER BY date, id` always |
-
-## DB Does Set Work; Python Does Orchestration
-
-| Layer | Responsibility |
-|-------|----------------|
-| **DB** | Filtering, joining, aggregation, set operations |
-| **Python** | Param validation, calling DB once, formatting response |
-
-**Forbidden:**
-```python
-# ❌ WRONG: O(n²) pattern
-names = db.execute("SELECT DISTINCT project_name FROM txn").fetchall()
-for name in names:
-    units = get_units_for_project(name)  # N queries!
-```
-
-**Required:**
-```python
-# ✅ CORRECT: Single bulk query
-result = db.execute("""
-    SELECT p.project_name, u.unit_count
-    FROM projects p
-    JOIN units u ON p.project_id = u.project_id
-""")
-```
-
-## Static SQL + Param Guards
-
-**Rule:** Prefer static queries with NULL guards over dynamic string building.
-
-```python
-# ❌ FORBIDDEN: Dynamic SQL string building
-query = "SELECT * FROM txn WHERE 1=1"
-if bedroom:
-    query += f" AND bedroom = {bedroom}"  # Injection risk + messy
-
-# ✅ CORRECT: Static SQL with NULL guards
-query = """
-    SELECT * FROM txn
-    WHERE (:bedroom IS NULL OR bedroom = :bedroom)
-      AND (:district IS NULL OR district = :district)
-"""
-```
-
-## Contract is a Boundary, Not Decoration
-
-**Rule:** Contract schemas must match exact runtime behavior.
-
-| ❌ Contract Drift | ✅ Contract Truth |
-|------------------|------------------|
-| Schema says `List[str]`, service expects `str` | Types match exactly |
-| Schema documents `filtersApplied`, backend doesn't produce it | Only document what's produced |
-| Schema says camelCase, adapter outputs snake_case | End-to-end consistency |
-
-**Smell:** Contract file exists but tests pass even when schema is wrong.
-
-## Canonical Shapes End-to-End
-
-**Rule:** Pick ONE canonical shape and make it consistent across all layers.
-
-```
-Request params  → Normalized params (g.normalized_params) → Response keys
-   snake_case   →      snake_case                        →   camelCase (v2)
-```
-
-- Adapters do minimal reshaping, not meaning conversion
-- Backend emits consistent field names
-- Frontend adapters handle v1/v2 normalization
-
----
-
-# 0.6 PRE-PLANNING CONTEXT INVARIANTS (NON-NEGOTIABLE)
-
-Before implementing ANY task, Claude MUST understand the codebase context first.
-
-## System Architecture Understanding (MANDATORY FIRST STEP)
-
-**Before proposing ANY solution, understand the system-level architecture:**
-
-1. **Read Core Architecture Docs**
-   - `docs/architecture.md` - Overall system design
-   - `docs/frontend.md` - Frontend patterns
-   - `docs/backend.md` - Backend patterns
-   - `CLAUDE.md` - All rules and standards
-
-2. **Understand the Existing Design**
-   - How does data flow through the system?
-   - What are the established layers (pages → components → utils → API)?
-   - What patterns are already in place?
-
-3. **Identify the Canonical Approach**
-   - How is this type of problem ALREADY solved in the codebase?
-   - What is the established pattern for this feature type?
-   - What utilities/hooks/components already exist for this?
-
-**You MUST understand the system before proposing changes to it.**
-
-## No New System Design (NON-NEGOTIABLE)
-
-**NEVER introduce new architectural patterns, system designs, or logic paradigms.**
-
-| If You're Tempted To... | Instead... |
-|-------------------------|------------|
-| Create a new state management approach | Use existing context/hooks pattern |
-| Introduce a new data fetching pattern | Use `useAbortableQuery` + adapters |
-| Design a new component architecture | Follow existing page → component → util flow |
-| Add a new utility pattern | Extend existing utils or follow their pattern exactly |
-| Create a new API calling convention | Use `buildApiParams` + `apiClient` |
-
-**The architecture is SETTLED. Your job is to work WITHIN it, not redesign it.**
-
-## Production-Grade Solutions Only (NON-NEGOTIABLE)
-
-**Every solution MUST be:**
-- **Long-term**: Will this work in 2 years? At 10x scale?
-- **Scalable**: Does this handle edge cases and growth?
-- **Consistent**: Does this match how similar problems are solved?
-- **Maintainable**: Can another developer understand and modify this?
-
-**FORBIDDEN: Band-Aid Fixes**
-
-| Band-Aid (FORBIDDEN) | Production-Grade (REQUIRED) |
-|----------------------|----------------------------|
-| `if (specificEdgeCase)` hack | Fix the root cause |
-| Hardcoded values for "just this case" | Use constants/config |
-| Duplicating code "to be safe" | Reuse existing solution |
-| Quick workaround that "works for now" | Proper architectural solution |
-| Special-casing instead of generalizing | Extend existing patterns |
-| `// TODO: fix later` | Fix it now or don't merge |
-
-**Ask yourself:**
-- Would I be embarrassed if a senior engineer reviewed this?
-- Does this solve the CLASS of problem or just THIS instance?
-- Will this create tech debt?
-
-**If any answer is concerning → redesign the solution.**
-
-## Standardization Rule (NON-NEGOTIABLE)
-
-**All code, logic, architectural patterns, and process flows MUST follow the same standardized patterns across the ENTIRE codebase (frontend AND backend).**
-
-### Core Principle: Unified System Architecture
-
-**The system architecture design MUST be aligned, standardized, and consistent across the entire codebase.**
-
-This means:
-- **ONE architectural pattern** for each type of operation (not multiple approaches)
-- **ONE data flow pattern** that all features follow
-- **ONE way** to structure routes, services, components, and utilities
-- **Consistency** between how frontend and backend interact
-- **No architectural drift** - new code follows the same design as existing code
-
-**Every piece of code must feel like it was written by the same person following the same design.**
-
-### The Uniformity Principle
-
-**Frontend Standardization:**
-
-| Element | Must Be Standardized To |
-|---------|------------------------|
-| **Charts** | Same structure, same hooks, same state handling, same error/loading patterns |
-| **Data fetching** | `useAbortableQuery` + `buildApiParams` + adapters |
-| **State management** | Context patterns (e.g., `PowerBIFilterContext`) |
-| **API calls** | `apiClient` with standard error handling |
-| **Component structure** | Page → Container → Pure Component pattern |
-| **Props interface** | Consistent prop naming across similar components |
-| **Error handling** | Same try/catch patterns, same error boundaries |
-| **Loading states** | Same skeleton/spinner patterns |
-
-**Backend Standardization:**
-
-| Element | Must Be Standardized To |
-|---------|------------------------|
-| **Route handlers** | Same structure: parse → validate → call service → return response |
-| **Service functions** | Same pattern: receive params → build query → execute → transform → return |
-| **SQL queries** | Same style: `:param` bindings, COALESCE for nulls, same JOIN patterns |
-| **Input validation** | `to_int()`, `to_date()`, `to_list()` from `utils/normalize.py` |
-| **Error responses** | Same error envelope structure, same HTTP status codes |
-| **Database access** | Same connection patterns, same transaction handling |
-| **Date handling** | Python `date` objects, never strings in service layer |
-
-**Architectural Standardization:**
-
-| Element | Must Be Standardized To |
-|---------|------------------------|
-| **Data flow** | Frontend → API → Route → Service → DB → Response → Adapter → UI |
-| **Layer responsibilities** | Routes parse, Services compute, Utils transform |
-| **Business logic location** | Pages decide, Components render, Backend enforces |
-| **Parameter passing** | Same param naming, same normalization flow |
-| **Response shapes** | Same JSON structure for similar endpoints |
-
-**Process Flow Standardization:**
-
-| Process | Must Follow |
-|---------|-------------|
-| **Adding a chart** | Copy existing chart → modify data source → adjust rendering |
-| **Adding an endpoint** | Extend `/api/aggregate` OR copy existing route pattern exactly |
-| **Adding a filter** | Use PowerBIFilterContext → buildApiParams flow |
-| **Adding validation** | Use existing normalize.py functions |
-| **Error handling** | Same patterns for 400s vs 500s |
-
-### No Deviation Without Explicit Approval
-
-**FORBIDDEN:**
-- Chart A uses one pattern, Chart B uses a different pattern
-- Component X fetches data one way, Component Y fetches differently
-- Route A parses params one way, Route B parses differently
-- Service A structures queries differently than Service B
-- Logic implemented differently across similar features
-- "Creative" solutions that differ from established patterns
-- One-off implementations that don't match siblings
-- Different error handling approaches in different places
-- Different data flow patterns for similar operations
-
-**REQUIRED:**
-- All similar code (frontend OR backend) follows the same pattern
-- New implementations copy the exact pattern of existing ones
-- Logic follows the same flow as sibling implementations
-- Same architectural decisions across the entire codebase
-- When in doubt, find an existing example and match it exactly
-
-### Before Implementing, Find the Reference
-
-```bash
-# FRONTEND: Find how similar charts/components are implemented
-ls frontend/src/components/powerbi/
-cat frontend/src/components/powerbi/TimeTrendChart.jsx
-
-# BACKEND: Find how similar routes are implemented
-ls backend/routes/
-cat backend/routes/analytics.py
-
-# BACKEND: Find how similar services are implemented
-ls backend/services/
-cat backend/services/dashboard_service.py
-
-# Your implementation MUST match the reference pattern exactly
-```
-
-### Deviation Requires Explicit Justification
-
-If you believe a deviation is necessary:
-1. **Document WHY** the standard pattern doesn't work
-2. **Get explicit approval** before implementing differently
-3. **Consider updating the standard** instead of deviating
-
-**Default behavior: Match existing patterns exactly. No creativity. No variation. Frontend AND backend.**
-
-## The Pre-Planning Checklist (MANDATORY)
-
-Before writing OR planning ANY code change:
-
-1. **Identify Related Files**
-   - Which files will be modified?
-   - Which files are in the same module/directory?
-   - Which files import/depend on the target files?
-
-2. **Review Git History for Related Files**
-   ```bash
-   git log --oneline -20 -- <file1> <file2> ...
-   git log -p -5 -- <file1> <file2> ...  # With diffs
-   ```
-
-3. **Understand Recent Patterns**
-   - What naming conventions are used?
-   - What architectural patterns were recently applied?
-   - Are there any ongoing refactors or migrations?
-
-4. **Check for Related Issues/PRs**
-   - Are there open issues related to this area?
-   - Were there recent PRs that touched this code?
-   - Is there context in commit messages about WHY changes were made?
-
-## Required Context Before Planning
-
-| Context Type | What to Look For |
-|--------------|------------------|
-| **Commit Messages** | Intent behind changes, linked issues, migration notes |
-| **Diffs** | Actual code patterns, recent refactors, naming conventions |
-| **Dependencies** | What imports this file, what does this file import |
-| **Standards** | Were recent commits following CLAUDE.md rules? |
-
-## Mandatory Findings Report (FLAG BEFORE IMPLEMENTING)
-
-Before ANY implementation, Claude MUST explicitly report:
-
-```
-## Current Standards & Patterns Identified
-
-### System Architecture Understanding
-- Data flow: [How data flows for this feature type]
-- Layer responsibilities: [Which layer owns what logic]
-- Established pattern: [How similar features are implemented]
-
-### Existing Code to Reuse
-- [List existing hooks, utilities, components that solve this problem]
-- [List shared logic that should NOT be recreated]
-- [List patterns that MUST be followed]
-
-### Design System / Approach
-- [Current architectural pattern for this type of feature]
-- [Naming conventions from recent commits]
-- [File organization pattern]
-
-### Standards from CLAUDE.md
-- [Relevant rules that apply to this task]
-- [Required patterns (e.g., SaleType enum, buildApiParams)]
-
-### Recent Changes That Inform This Task
-- [Commit abc123: "refactor X" - must follow this pattern]
-- [Ongoing migration: Y - must align with this]
-
-### Production-Grade Validation
-- [ ] Solution works long-term (2+ years, 10x scale)
-- [ ] No band-aid fixes or special-casing
-- [ ] Solves the CLASS of problem, not just this instance
-- [ ] Another developer can understand and maintain this
-
-### Standardization Validation
-- Reference implementation: [e.g., "TimeTrendChart.jsx"]
-- [ ] Matches the reference pattern exactly
-- [ ] No deviation from sibling implementations
-- [ ] Same hooks, same state handling, same structure
-- [ ] If deviation needed: documented justification and explicit approval obtained
-```
-
-**This report is NOT optional.** Implementation proposals without this report are invalid.
-
-## Reuse-First Rule (NON-NEGOTIABLE)
-
-**NEVER introduce new code when existing solutions exist.**
-
-| Scenario | Required Action |
-|----------|-----------------|
-| Similar hook exists | Reuse or extend it, don't create new |
-| Shared utility does this | Import and use it, don't rewrite |
-| Pattern exists elsewhere | Follow that pattern exactly |
-| Component can be composed | Compose existing, don't create new |
-
-**Before writing ANY new code, answer:**
-1. Does this logic already exist somewhere?
-2. Can an existing solution be extended?
-3. Is there a shared utility for this?
-4. What's the established pattern for this type of code?
-
-**If the answer to any is YES → reuse, don't recreate.**
-
-## Forbidden Behaviors
-
-- Starting implementation without the Mandatory Findings Report
-- Starting implementation without reviewing related file history
-- Proposing changes that contradict recent commit patterns
-- Ignoring ongoing migrations or refactors visible in git log
-- Duplicating logic that was recently consolidated
-- Undoing intentional changes from recent commits
-- Creating new hooks/utils/components when reusable ones exist
-- Introducing new patterns when established patterns exist
-- Writing logic that a shared utility already handles
-
-## Required Git Commands Before Planning
-
-```bash
-# 1. Identify what files are involved
-git status
-git diff HEAD~5 --name-only
-
-# 2. Review history of files that will be modified
-git log --oneline -20 -- <target_files>
-
-# 3. See actual changes in recent commits
-git log -p -5 -- <target_files>
-
-# 4. Check for related work in progress
-git branch -a | grep -i <feature_keyword>
-
-# 5. Look for linked issues in commit messages
-git log --grep="<issue_keyword>" --oneline -10
-```
-
-## When This Rule Applies
-
-This is MANDATORY for ALL implementation tasks:
-- Bug fixes
-- New features
-- Refactors
-- Performance improvements
-- UI/layout changes
-- API changes
-- Database changes
-
-Only exceptions:
-- Pure documentation changes (no code)
-- Pure exploration/research (no implementation planned)
-
----
-
-# 1. HARD CONSTRAINTS
+These are absolute limits. Violation = data loss or system failure.
 
 ## Data File Immutability (ABSOLUTE)
 
-**NEVER delete, modify, or overwrite any CSV file in `backend/data/` or `scripts/data/`.**
+**NEVER delete, modify, or overwrite any CSV in `backend/data/` or `scripts/data/`.**
 
-This is not a guideline - it's a hard constraint. Violation = data loss = catastrophic failure.
-
-### Forbidden Actions
-- `os.remove()`, `Path.unlink()`, `shutil.rmtree()` on data files
-- `open(csv_path, 'w')` - overwriting tracked CSVs
-- `pd.to_csv()` to tracked file paths
-- Any "cleanup" that touches tracked data files
-- Moving, renaming, or "organizing" data files
-
-### Before ANY File Operation
-1. Is this file under `backend/data/` or `scripts/data/`?
-2. Is this file tracked in git (`git ls-files <path>`)?
-3. If YES to both → **STOP. Do not proceed.**
-
-### Allowed Actions
-- READ data files (always safe)
-- Write to `backend/data/generated/` (gitignored)
-- Write to `.data/` (gitignored)
-- Write to `/tmp/` or system temp directories
-
-### Output File Pattern
-```python
-# ❌ FORBIDDEN
-df.to_csv("backend/data/projects.csv")
-
-# ✅ REQUIRED
-df.to_csv("backend/data/generated/projects_cleaned.csv")
-```
-
-### Runtime Protection
-All file mutations go through `backend/utils/fs_guard.py`:
-```python
-from utils.fs_guard import safe_write_text, safe_unlink
-
-# These will CRASH if targeting protected files
-safe_write_text("backend/data/generated/output.csv", data)  # OK
-safe_write_text("backend/data/projects.csv", data)  # RuntimeError!
-```
+| FORBIDDEN | ALLOWED |
+|-----------|---------|
+| `os.remove()`, `Path.unlink()` on data files | Read data files |
+| `open(csv_path, 'w')` | Write to `backend/data/generated/` |
+| `pd.to_csv()` to tracked paths | Write to `/tmp/` |
 
 ## Memory (512MB)
-- SQL aggregation only (no pandas)
-- Paginated queries (never load 100K+ records)
+- SQL aggregation only (no pandas on large data)
+- Paginated queries (never 100K+ records)
 - Use `precomputed_stats` table
 
 ## Outlier Exclusion
@@ -678,248 +161,83 @@ WHERE COALESCE(is_outlier, false) = false  -- EVERY transaction query
 
 ---
 
-# 2. RULES BY DOMAIN
+# 3. DOMAIN RULES
 
-## SQL
-- `:param` only (no `%(param)s`, no f-strings)
+Technical patterns specific to this codebase. Follow these exactly.
+
+## 3.1 SQL & Dates
+
+**SQL:**
+- `:param` bindings only (no f-strings, no `%(param)s`)
 - Python `date` objects (not strings)
-- Enums via `contract_schema.py`
 - SQL in `services/`, not `routes/`
-- Deterministic ORDER BY: `ORDER BY date, id` (not just date)
-  - Required for: window functions, cumulative sums, first/last row
-  - Safe to skip: GROUP BY aggregations
+- Static SQL with NULL guards: `(:param IS NULL OR col = :param)`
 
-## Date Bounds Convention
-**Rule:** Always use exclusive upper bound. Never have both `:max_date` and `:max_date_exclusive`.
-
+**Date Bounds (exclusive upper):**
 ```sql
--- CORRECT: Exclusive upper bound
-WHERE transaction_date >= :min_date
-  AND transaction_date < :max_date_exclusive
-
--- For "last 12 months":
-WHERE transaction_date >= :max_date_exclusive - INTERVAL '12 months'
-  AND transaction_date < :max_date_exclusive
-
--- WRONG: Creates param confusion
-AND transaction_date <= :max_date  -- ❌ Don't use alongside _exclusive
+WHERE transaction_date >= :min_date AND transaction_date < :max_date_exclusive
 ```
 
-**Why:** Mixing `max_date` and `max_date_exclusive` in same query → easy to forget one in params dict → silent query failure.
+**URA Data = Month-Level:**
+All transactions dated to 1st of month. Use "last 3 months" not "last 90 days".
 
-## Input Boundary
-**Rule:** Normalize ONCE at boundary → trust internally
+```python
+# KPI date bounds
+current_min = date(max_date.year, max_date.month - 2, 1)  # 3 months back
+```
 
-| Layer | Responsibility |
-|-------|----------------|
-| Routes | Parse with `to_int()`, `to_date()`, `to_bool()` from `utils/normalize.py` |
-| Services | Validate business logic, use `coerce_to_date()` for legacy compat |
+## 3.2 Frontend Async
 
-- Invalid input → 400 (never 500)
-- `strptime()` in service → WRONG (use `coerce_to_date()`)
-- Canonical types: `date` (not datetime/str), `int` (cents), `float` (0-1 percent)
-
-## Frontend Async
 - Use `useAbortableQuery` or `useStaleRequestGuard`
 - Pass `signal` to ALL API calls
 - Check `isStale(requestId)` before setState
-- Silently ignore `AbortError`/`CanceledError`
-- Response through adapter (never access `response.data` directly)
+- Response through adapter (never `response.data` directly)
 
-## Visibility-Gated Fetching (useDeferredFetch)
-**Rule:** `containerRef` must be mounted unconditionally.
+**Query Keys:** Include ALL data-affecting state.
+```js
+filterKey: `${debouncedFilterKey}:${timeGrouping}`  // Not just debouncedFilterKey
+```
 
+**Visibility-Gated Fetching:** `containerRef` must be outside QueryState.
 ```jsx
-// BUG: ref inside QueryState (not rendered during loading)
-<QueryState loading={loading}>
-  <div ref={containerRef}>...</div>
-</QueryState>
-
-// FIX: ref OUTSIDE QueryState
 <div ref={containerRef}>
   <QueryState loading={loading}>...</QueryState>
 </div>
 ```
 
-Symptom: Chart loads initially but ignores filter changes (no error, just stale).
+## 3.3 Filters & Params
 
-## Query Keys
-**Rule:** If value changes API response → must be in query key
-
-```js
-// BUG: filterKey missing timeGrouping
-filterKey: debouncedFilterKey  // ❌
-
-// FIX: include ALL data-affecting state
-filterKey: `${debouncedFilterKey}:${timeGrouping}`  // ✅
-```
-
-Data state: `timeGrouping`, `dateRange`, `segment`, `bedroom`, `drillLevel`
-UI state: `isExpanded`, `tooltipPosition` (exclude from key)
-
-## Enums & Constants
-**Sources of truth:**
-- Backend: `constants.py`, `services/classifier.py`
-- Frontend: `constants/index.js`, `schemas/apiContract.js`
-
-```js
-// FORBIDDEN
-if (row.sale_type === 'New Sale')
-if (area < 580)
-
-// REQUIRED
-if (isSaleType.newSale(row.saleType))
-classifyBedroomThreeTier(area, saleType, date)
-```
-
-## Filters
 | Scope | Applies To |
 |-------|------------|
 | Sidebar slicers | ALL charts |
 | Cross-filters | ALL charts |
 | Fact filters | Transaction table ONLY |
 
-- `usePowerBIFilters()` → Market Overview page ONLY
-- Other pages → receive filters as props
-- Each chart has LOCAL drill state
 - `buildApiParams()` for ALL API calls
 - Time X-axis → `excludeHighlight: true`
+- `usePowerBIFilters()` → Market Overview page ONLY
 
-## Business Logic Enforcement
-**Rule:** Enforce business constraints at the page/chart layer, NOT in shared utils.
-
-```
-Layer         │ Responsibility
-──────────────┼───────────────────────────────────────
-UI            │ Displays data
-Page/Chart    │ Declares data intent (e.g., resale-only)
-API           │ Enforces rules (safest for analytics)
-Utils         │ Pure helpers (no business logic)
-```
-
-**✅ CORRECT: Page-level enforcement with canonical enum**
-```jsx
-import { SaleType } from '../schemas/apiContract';
-
-// Page-level data scope - all charts inherit this
-const SALE_TYPE = SaleType.RESALE;  // Use canonical enum ('resale')
-
-<TimeTrendChart saleType={SALE_TYPE} />
-```
-
-**✅ BETTER: API-level enforcement (for critical analytics)**
-```python
-# backend/routes/analytics.py
-# For Market Overview endpoints, enforce resale-only server-side
-if sale_type is None:
-    sale_type = "Resale"  # Default to resale for Market Overview
-```
-
-**❌ WRONG: Hardcoded in utils**
-```js
-// utils.js - DON'T DO THIS
-export function buildApiParams(...) {
-  params.sale_type = 'Resale';  // Hidden, affects ALL pages
-}
-```
-
-**Why page-level is best:**
-- Explicit and self-documenting
-- Easy to override for different pages
-- Keeps utils reusable
-- Matches mental model ("this page is resale-only")
-- No hidden side effects
-
-## Sale Type Normalization
-**Rule:** Always use canonical enum values. Page props take precedence over filters.
-
-**Sources of truth:**
-```
-Frontend: SaleType.RESALE = 'resale' (schemas/apiContract/enums.js)
-Backend:  SALE_TYPE_RESALE = 'Resale' (constants.py)
-```
-
-**Precedence order (highest to lowest):**
-1. Page-level prop (`saleType={SaleType.RESALE}`)
-2. Filter-derived value (`activeFilters.saleType`)
-3. Default (none - all sale types)
-
-**Implementation in buildApiParams:**
-```js
-// utils.js - page prop wins
-if (!params.sale_type && activeFilters.saleType) {
-  params.sale_type = activeFilters.saleType;  // Only if not already set
-}
-```
-
-**Checklist for sale type safety:**
-- [ ] Use `SaleType.RESALE` enum, not string literals
-- [ ] Page prop passed to all charts: `saleType={SALE_TYPE}`
-- [ ] Utils don't override if sale_type already in params
-- [ ] Backend validates/normalizes sale_type values
-
-## Dates
-- UI date ranges must NEVER exceed today (clamp future dates)
-- Date presets anchor from `dateRange.max`
-- If control dependency not ready → disable OR fallback (never silent no-op)
-
-## URA Data Granularity
-**Critical:** URA transaction data is **month-level only**. All transactions within a month are dated to the **1st of that month**.
-
-```sql
--- BUG: "Last 90 days" from Dec 27 creates Oct 2 boundary
-WHERE transaction_date >= '2025-10-02'  -- Excludes ALL October (dated Oct 1)
-
--- FIX: Use month boundaries
-WHERE transaction_date >= '2025-10-01'  -- Includes October
-```
-
-**Rules:**
-1. **Rolling windows = months, not days** — Use "last 3 months" not "last 90 days"
-2. **Boundaries on 1st of month** — `current_min = date(year, month, 1)`
-3. **Labels must match logic** — Don't say "90 days" if using month buckets
-
-**KPI Pattern:**
-```python
-# Current: Oct, Nov, Dec | Previous: Jul, Aug, Sep
-if max_date.month == 12:
-    max_exclusive = date(max_date.year + 1, 1, 1)
-else:
-    max_exclusive = date(max_date.year, max_date.month + 1, 1)
-
-# Go back 3 months
-current_min = date(max_exclusive.year, max_exclusive.month - 3, 1)  # Handle year wrap
-```
-
-## Date Filter Contract
-**API contract:** All date filters use half-open intervals.
-
-| Parameter | Meaning | SQL |
-|-----------|---------|-----|
-| `date_from` | Inclusive start | `>= :date_from` |
-| `date_to` | **Exclusive** end | `< :date_to` |
+## 3.4 API Contracts
 
 ```python
-# Route layer: normalize to exclusive
-to_dt = to_date(request.args.get("date_to"))
-if to_dt:
-    filter_conditions.append(Transaction.transaction_date < to_dt + timedelta(days=1))
+@analytics_bp.route("/aggregate", methods=["GET"])
+@api_contract("aggregate")  # Validates params + injects meta
+def aggregate():
+    params = g.normalized_params
+    result = dashboard_service.get_aggregated_data(**params)
+    return jsonify({"data": result})
 ```
 
-**Common bugs:**
-- `<= date_to` with midnight → excludes entire end date
-- Timezone shift → `2025-12-01` becomes `2025-11-30` in UTC
-- String comparison instead of DATE type
+**Endpoints:**
+- `/api/aggregate` — Flexible GROUP BY (prefer this)
+- `/api/transactions` — Paginated list
+- `/api/filter-options` — Dropdown values
 
-**Smoke tests (must pass):**
-| Test | Expected |
-|------|----------|
-| `from=2025-12-01, to=2025-12-02` | Dec 1 only |
-| `from=2025-11-15, to=2025-12-15` | Both Nov and Dec |
-| `from=2025-11-01, to=2025-12-01` | November only |
+**Rule:** Need data? Extend `/api/aggregate`. Don't create new endpoints.
 
-## UI States
-Every async hook returns `{ data, loading, error }`. UI must handle ALL THREE:
+## 3.5 UI States
+
+Every async hook returns `{ data, loading, error }`. Handle ALL THREE:
 ```jsx
 if (loading) return <Skeleton />;
 if (error) return <ErrorState />;
@@ -927,282 +245,68 @@ if (!data?.length) return <EmptyState />;
 return <Chart data={data} />;
 ```
 
-## API Contracts
-**Rule:** Routes with `@api_contract` decorator enforce param/response schemas automatically.
-
-```python
-from api.contracts import api_contract
-
-@analytics_bp.route("/aggregate", methods=["GET"])
-@api_contract("aggregate")  # Validates params + injects meta fields
-def aggregate():
-    params = g.normalized_params  # Access validated, normalized params
-    ...
-```
-
-**What the decorator does:**
-1. Validates public params against `ParamSchema`
-2. Normalizes params (district→districts[], date_to→date_to_exclusive)
-3. Validates normalized params against `ServiceBoundarySchema`
-4. After handler, validates response against `ResponseSchema`
-5. Injects meta fields: `requestId`, `elapsedMs`, `apiVersion`
-6. Adds headers: `X-Request-ID`, `X-API-Contract-Version`
-
-**Contract modes:**
-- `WARN` (default): Log violations, don't fail
-- `STRICT`: Fail on violations (use in dev/staging)
-
-**Standardized error envelope:**
-```json
-{
-  "error": {
-    "code": "INVALID_PARAMS",
-    "message": "bedroom must be integer",
-    "field": "bedroom",
-    "requestId": "req_abc123"
-  }
-}
-```
-
-**Adding new contract:**
-1. Create schema in `api/contracts/schemas/`
-2. Define `ParamSchema`, `ServiceBoundarySchema`, `ResponseSchema`
-3. Call `register_contract()` at module import
-4. Add `@api_contract("endpoint_name")` to route
-5. Add snapshot test in `tests/contracts/snapshots/`
-
 ---
 
-# 3. CODE PATTERNS
+# 4. CODE PATTERNS
+
+Copy these patterns exactly. All new code must match these structures.
 
 ## Frontend Chart
 ```jsx
-import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
-import { useAbortableQuery } from '../../hooks';
-import { REGIONS } from '../../constants';
-import { isSaleType } from '../../schemas/apiContract';
-
-export function MyChart() {
-  const { buildApiParams, debouncedFilterKey, timeGrouping } = usePowerBIFilters();
-
-  const { data, loading, error } = useAbortableQuery(
-    (signal) => apiClient.get('/api/aggregate', {
-      params: buildApiParams({ group_by: 'month' }, { excludeHighlight: true }),
-      signal
-    }).then(r => transformData(r.data)),
-    [debouncedFilterKey, timeGrouping]
-  );
-
-  if (loading) return <Skeleton />;
-  if (error) return <Error />;
-  return <Chart data={data} />;
-}
+const { data, loading, error } = useAbortableQuery(
+  (signal) => apiClient.get('/api/aggregate', {
+    params: buildApiParams({ group_by: 'month' }, { excludeHighlight: true }),
+    signal
+  }).then(r => adapter(r.data)),
+  [debouncedFilterKey, timeGrouping]
+);
+if (loading) return <Skeleton />; if (error) return <Error />; return <Chart data={data} />;
 ```
 
 ## Backend Service
 ```python
-from datetime import date
-from sqlalchemy import text
-
 def get_data(district: str = None, date_from: date = None):
     return db.session.execute(text("""
-        SELECT district, COUNT(*) as count
-        FROM transactions
+        SELECT district, COUNT(*) FROM transactions
         WHERE COALESCE(is_outlier, false) = false
           AND (:district IS NULL OR district = :district)
-          AND (:date_from IS NULL OR transaction_date >= :date_from)
         GROUP BY district
     """), {"district": district, "date_from": date_from}).fetchall()
 ```
 
 ## Route Handler
 ```python
-from utils.normalize import to_int, to_date, to_list, ValidationError, validation_error_response
-
 @app.route("/data")
 def get_data():
     try:
         limit = to_int(request.args.get("limit"), default=100, field="limit")
         date_from = to_date(request.args.get("date_from"), field="date_from")
-        bedrooms = to_list(request.args.get("bedroom"), item_type=int, field="bedroom")
     except ValidationError as e:
         return validation_error_response(e)
-    return service.get_data(limit=limit, date_from=date_from, bedrooms=bedrooms)
-```
-
-## Contract-Enabled Route Handler
-```python
-from api.contracts import api_contract
-from flask import g, jsonify
-
-@analytics_bp.route("/aggregate", methods=["GET"])
-@api_contract("aggregate")
-def aggregate():
-    # Params already validated + normalized by decorator
-    params = g.normalized_params
-
-    # Call service with clean params
-    result = dashboard_service.get_aggregated_data(
-        districts=params.get('districts'),
-        bedrooms=params.get('bedrooms'),
-        date_from=params.get('date_from'),
-    )
-
-    # Return data - decorator injects meta fields automatically
-    return jsonify({"data": result})
+    return service.get_data(limit=limit, date_from=date_from)
 ```
 
 ---
 
-# 4. KPI PATTERN
+# 5. BACKEND CHANGE PROTOCOL
 
-**Mental Model:** KPI code should be ADDITIVE (new file), not EDITING (shared SQL).
+Before ANY backend change, trace the dependency chain and verify no charts break. This is MANDATORY.
 
-```
-KPI Spec → Param Builder → SQL → Mapper → Card UI
-```
+> **Ref:** `docs/BACKEND_CHART_DEPENDENCIES.md` | **Skill:** `/backend-impact-guardrails`
 
-## Rules
+## The 4 Questions (Before Every Backend Change)
 
-1. **Each KPI owns its SQL** — Don't share SQL between KPIs
-2. **Shared logic → functions** — `build_date_bounds(filters)`, not copy-paste
-3. **One param dict per query** — No mixing `:max_date` and `:max_date_exclusive`
-4. **Validate placeholders** — Compare SQL `:placeholders` to `params.keys()` before execute
+1. **API CONTRACT** — Response shape, field names, params unchanged?
+2. **FRONTEND RENDERING** — All pages load without React errors?
+3. **VISUAL CHARTS** — Charts display with data, no empty states?
+4. **CHART LOGIC** — Adapters, transformations, calculations correct?
 
-## Adding New KPI
+**If YES to breaking any → STOP. Fix before proceeding.**
 
-```
-1. Copy KPI template file
-2. Define: spec, SQL, mapper
-3. Run: placeholder validation + smoke test
-4. Wire to UI
-```
-
-**Never:** Edit existing KPI's SQL when adding new one.
-
----
-
-# 5. FILE STRUCTURE
-
-```
-backend/
-├── api/
-│   ├── contracts/
-│   │   ├── registry.py    # Contract registry + dataclasses
-│   │   ├── validate.py    # Schema validation logic
-│   │   ├── normalize.py   # Param normalization adapters
-│   │   ├── wrapper.py     # @api_contract decorator
-│   │   └── schemas/       # Per-endpoint contracts
-│   │       ├── aggregate.py
-│   │       └── kpi_summary.py
-│   └── middleware/
-│       ├── request_id.py  # X-Request-ID injection
-│       └── error_envelope.py
-├── constants.py           # District/region mappings
-├── api/contracts/contract_schema.py # Enums, field names
-├── services/*_service.py  # Business logic + SQL
-├── routes/                # Thin handlers (parse only)
-└── utils/normalize.py     # to_int, to_date, coerce_to_date
-
-frontend/src/
-├── constants/index.js     # REGIONS, BEDROOM_ORDER
-├── schemas/apiContract.js # Enums, isSaleType helpers
-├── adapters/              # API response transformers
-├── hooks/useAbortableQuery.js
-├── context/PowerBIFilterContext/
-└── components/powerbi/    # Chart components
-```
-
----
-
-# 5. ENGINEERING PRINCIPLES
-
-1. **One Chart = One Question** — If answering 2-3 questions → split or add toggle
-2. **Pure Chart + Container** — Chart renders props, Container wires data
-3. **UI Components Don't Fetch** — Hooks fetch, components render
-4. **Write for Deletion** — Removing feature folder should delete feature cleanly
-5. **DRY at 3 Uses** — 1 use: local, 2 uses: consider, 3 uses: extract
-6. **Composition > Abstraction** — Small parts, not mega-components
-7. **No Import-Time Side Effects** — No fetch/DB/I/O at module top-level
-8. **Never Leak Premium Data** — Backend masks for free users (CSS blur = bypass)
-9. **ESLint Disables Explained** — Scoped + justification comment required
-10. **Simplest Rule Wins** — When fixing bugs:
-    - Prefer business intent over technical correctness
-    - Avoid regex unless explicitly required
-    - Do not parse display strings to infer logic
-    - Ask: "What is the simplest rule that satisfies the product requirement?"
-
----
-
-# 6. API RULES
-
-## Endpoints
-```
-/api/aggregate      - Flexible GROUP BY (prefer this)
-/api/transactions   - Paginated list
-/api/filter-options - Dropdown values
-```
-
-**Rule:** Need data? Use `/api/aggregate`. Missing metric? Extend it. Don't create new endpoints.
-
-## URL Routing
-- Single source: `frontend/src/api/client.js` → `getApiBase()`
-- Never raw `fetch()` with hardcoded URLs
-- Prod: `/api/*` (Vercel rewrites to Render)
-- Dev: `http://localhost:5000/api`
-
-## Error Handling
-- 400s: intentional, explainable, include allowed values
-- 500s: never caused by user input
-- Dashboard mode: prefer empty results over crashes
-
-```python
-{"error": "Invalid date format", "field": "date_from", "expected": "YYYY-MM-DD", "received": "01-01-2024"}
-```
-
----
-
-# 6.5 BACKEND CHANGE RULES (NON-NEGOTIABLE)
-
-> **Reference:** `docs/BACKEND_CHART_DEPENDENCIES.md`
-> **Skill:** `/backend-impact-guardrails` (MANDATORY)
-> **Agent:** `fullstack-consistency-reviewer` (MANDATORY before merge)
-
-## The 4 Questions (Ask Before Every Backend Change)
-
-```
-1. Does this break the API CONTRACT?
-   → Response shape, field names, required params
-
-2. Does this break FRONTEND RENDERING?
-   → Will pages load? Will components mount?
-
-3. Does this break VISUAL CHARTS?
-   → Will charts display? Data present? No empty states?
-
-4. Does this break CHART LOGIC/CALCULATIONS?
-   → Adapters, transformations, aggregations, metrics
-
-If YES to ANY → STOP. Fix before proceeding.
-```
-
-## Data-to-Chart Dependency Chain
-
+## Dependency Chain
 ```
 Data Sources → Services → Routes → Endpoints → Adapters → Charts → Pages
 ```
-
-**Before ANY backend change, trace this chain.**
-
-## Mandatory Pre-Change Workflow
-
-1. **IDENTIFY** what you're changing (data/service/route/model)
-2. **CONSULT** `docs/BACKEND_CHART_DEPENDENCIES.md`
-3. **MAP** dependencies: data → endpoints → charts → pages
-4. **CATEGORIZE** impact: BREAKING / VALIDATION / SAFE
-5. **IF BREAKING: STOP** — create migration plan first
-6. **RUN** tests + manual page verification
-7. **DOCUMENT** impact assessment
 
 ## Impact Categories
 
@@ -1212,99 +316,25 @@ Data Sources → Services → Routes → Endpoints → Adapters → Charts → P
 | **VALIDATION** | Manual verification required. | Changing aggregation logic |
 | **SAFE** | Document and proceed. | Adding new optional fields |
 
-## The Resale Data Rule
-
-The MacroOverview page depends entirely on resale transaction data.
-
-```
-Resale CSV data (removed)
-    ↓
-transactions table (sale_type = 'Resale')
-    ↓
-dashboard_service.py aggregations
-    ↓
-/api/aggregate, /api/kpi-summary-v2
-    ↓
-TimeTrendChart, KPI Cards
-    ↓
-MacroOverview page = BROKEN
-```
-
-**This dependency chain MUST be checked before any data removal.**
-
 ## Critical Endpoints
 
-| Endpoint | Risk Level | Charts Affected |
-|----------|------------|-----------------|
+| Endpoint | Risk | Charts Affected |
+|----------|------|-----------------|
 | `/api/aggregate` | CRITICAL | 10+ charts |
 | `/api/kpi-summary-v2` | HIGH | All KPI cards |
-| `/insights/district-psf` | HIGH | MarketStrategyMap (v1, no validation) |
-| `/insights/district-liquidity` | HIGH | DistrictLiquidityMap (v1, no validation) |
 
-## Required Tests Before Merge
-
+## Required Tests
 ```bash
-# All must pass
 pytest tests/test_regression_snapshots.py -v
 pytest tests/test_chart_dependencies.py -v
-pytest tests/test_api_invariants.py -v
 ```
 
-## Manual Page Verification
-
-ALL pages must be checked after backend changes:
-- [ ] /market-overview
-- [ ] /district-overview
-- [ ] /new-launch-market
-- [ ] /supply-inventory
-- [ ] /explore
-- [ ] /value-check
-- [ ] /exit-risk
+## Manual Page Verification (ALL pages)
+`/market-overview`, `/district-overview`, `/new-launch-market`, `/supply-inventory`, `/explore`, `/value-check`, `/exit-risk`
 
 ---
 
-# 7. CHART.JS
-
-```jsx
-// Register ALL required: Controller + Elements + Scales
-ChartJS.register(LineController, CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend);
-```
-
-Checklist:
-- [ ] Register controller (LineController, BarController, BubbleController)
-- [ ] Register elements (PointElement, BarElement, LineElement)
-- [ ] Register scales (CategoryScale, LinearScale)
-- [ ] Spread `baseChartJsOptions`
-- [ ] Handle 4 states: loading, error, empty, success
-- [ ] Use `ChartSlot` wrapper
-
----
-
-# 8. DEBUGGING 500s
-
-1. Check server logs for exception + traceback
-2. Note endpoint, query params, selected filters
-3. Look for `TypeError` in `strptime`/`int`/`float` → type mismatch
-
-**Log pattern:**
-```python
-except Exception as e:
-    logger.error(f"GET /api/dashboard: {e}")
-    logger.error(f"Params: {[(k, repr(v), type(v).__name__) for k,v in filters.items()]}")
-```
-
-**Date param test matrix:**
-| Input | Expected |
-|-------|----------|
-| `None` | No filter |
-| `"2024-01-01"` | Parsed |
-| `date(2024,1,1)` | Passthrough |
-| `datetime(...)` | Extract `.date()` |
-| `"invalid"` | 400 (not 500) |
-
----
-
-# 9. REFERENCE DATA
+# 6. REFERENCE DATA
 
 ## Bedroom Classification
 ```
@@ -1320,57 +350,37 @@ RCR: D03, D04, D05, D08, D12, D13, D14, D15, D20
 OCR: D16-D19, D21-D28
 ```
 
-## Styling
+## Colors
 ```
-Colors: #213448 (navy), #547792 (blue), #94B4C1 (sky), #EAE0CF (sand)
+Primary: #213448 (navy), #547792 (blue), #94B4C1 (sky), #EAE0CF (sand)
 Regions: CCR=#213448, RCR=#547792, OCR=#94B4C1
 ```
 
 ---
 
-# 10. CHECKLISTS
+# 7. ENGINEERING PRINCIPLES
 
-## Pre-Planning (MANDATORY - before any implementation)
+Design philosophy for this codebase. Apply these when making architectural decisions.
 
-**System Architecture Understanding (FIRST):**
-- [ ] Read relevant docs (architecture.md, frontend.md, backend.md)
-- [ ] Understand data flow for this feature type
-- [ ] Identified how similar features are already implemented
-- [ ] Confirmed NO new system design or architectural patterns needed
+1. **One Chart = One Question** — Multiple questions → split or add toggle
+2. **Pure Chart + Container** — Chart renders props, Container wires data
+3. **UI Components Don't Fetch** — Hooks fetch, components render
+4. **Write for Deletion** — Removing feature folder deletes feature cleanly
+5. **DRY at 3 Uses** — 1: local, 2: consider, 3: extract
+6. **Composition > Abstraction** — Small parts, not mega-components
+7. **No Import-Time Side Effects** — No fetch/DB/I/O at module top-level
+8. **Never Leak Premium Data** — Backend masks for free users
+9. **Simplest Rule Wins** — Business intent over technical correctness
 
-**Context Gathering:**
-- [ ] Identified target files and their dependencies
-- [ ] Ran `git log -20 -- <target_files>`
-- [ ] Reviewed diffs of last 5 related commits
-- [ ] Searched for existing hooks/utils/components to reuse
+---
 
-**Mandatory Findings Report (must output before implementing):**
-- [ ] Documented system architecture understanding
-- [ ] Listed existing code to reuse
-- [ ] Documented design system/approach from codebase
-- [ ] Listed relevant CLAUDE.md standards
-- [ ] Referenced recent commits that inform this task
+# 8. CHECKLISTS
 
-**Reuse-First Validation:**
-- [ ] Confirmed NO new code where existing solutions work
-- [ ] Confirmed plan follows established patterns
-- [ ] No contradictions with ongoing migrations/refactors
-
-**Production-Grade Validation:**
-- [ ] Solution works long-term (2+ years, 10x scale)
-- [ ] No band-aid fixes or special-casing
-- [ ] Solves the CLASS of problem, not just this instance
-- [ ] Another developer can understand and maintain this
-
-**Standardization Validation:**
-- [ ] Identified reference implementation (existing similar chart/component)
-- [ ] Matches the reference pattern exactly
-- [ ] No deviation from sibling implementations
-- [ ] Same hooks, same state handling, same structure as siblings
+Run these before committing. If any box fails, stop and fix.
 
 ## Pre-Commit
 - [ ] Can explain file in one sentence
-- [ ] Used existing sources of truth
+- [ ] Used existing sources of truth (enums, constants)
 - [ ] No duplicated logic
 - [ ] Chart handles loading/empty/error/success
 - [ ] Deletable without breaking unrelated features
@@ -1380,23 +390,21 @@ Regions: CCR=#213448, RCR=#547792, OCR=#94B4C1
 ## New Chart
 - [ ] Answers ONE question
 - [ ] Pure chart + container split
-- [ ] Uses adapters
-- [ ] Uses `useAbortableQuery`
-- [ ] Uses constants (REGIONS, BEDROOM_ORDER)
+- [ ] Uses `useAbortableQuery` + adapters
 - [ ] Query key includes ALL data-affecting state
+- [ ] Accepts `saleType` as prop (never hardcodes)
+- [ ] Lazy import syntax matches export style
 
-## Lazy Import (React.lazy)
-**CRITICAL: Import syntax must match export style. Mismatch = runtime crash.**
-
-| Export Style | Lazy Syntax |
-|--------------|-------------|
-| `export default X` | `lazy(() => import('./X'))` |
-| `export function X` | `lazy(() => import('./X').then(m => ({ default: m.X })))` |
-
-- [ ] Checked target file's export style first
-- [ ] Syntax matches export style
-- [ ] Tested component loads in browser
-- [ ] Suspense fallback provided
+## Data Correctness
+- [ ] Invariants computed globally before filters (Two-Phase)
+- [ ] Joins use stable keys (IDs), not display names
+- [ ] Aggregations deterministic (`ORDER BY date, id`)
+- [ ] No `MODE()` or unordered `array_agg()`
+- [ ] One canonical param + response shape
+- [ ] Contracts reflect runtime exactly
+- [ ] Static SQL with param guards
+- [ ] DB does set work; Python does orchestration
+- [ ] No repeated implementations of business rules
 
 ## Problem-Solving
 1. Fix the class of problem (check parallel code paths)
@@ -1405,271 +413,64 @@ Regions: CCR=#213448, RCR=#547792, OCR=#94B4C1
 4. Assume messier data in future
 5. If unsure → ask
 
-## Data Correctness
-
-Before any data/analytics change:
-
-**Correctness:**
-- [ ] Invariants computed globally before filters (Two-Phase)
-- [ ] Joins use stable keys (IDs), not display names
-- [ ] Aggregations are deterministic (explicit ORDER BY or tie-break rule)
-- [ ] No `MODE()` or unordered `array_agg()`
-
-**Consistency:**
-- [ ] One canonical param + response shape
-- [ ] Contracts reflect runtime exactly (no drift)
-- [ ] Centralized canonicalization (no scattered UPPER/TRIM)
-
-**Maintainability:**
-- [ ] Static SQL with param guards (no string concatenation)
-- [ ] DB does set work; Python does orchestration (no N+1 queries)
-- [ ] No repeated implementations of business rules
-
-## Backend Change Impact (MANDATORY)
-
-Before ANY backend change affecting data or APIs:
-
-**The 4 Questions:**
-- [ ] 1. API CONTRACT — Response shape, field names, params unchanged (or updated)
-- [ ] 2. FRONTEND RENDERING — All 7 pages load without React errors
-- [ ] 3. VISUAL CHARTS — Charts display with data, no unexpected empty states
-- [ ] 4. CHART LOGIC — Adapters, transformations, calculations still correct
-
-**Dependency Analysis:**
-- [ ] Consulted `docs/BACKEND_CHART_DEPENDENCIES.md`
-- [ ] Mapped data → endpoints → charts → pages
-- [ ] Categorized impact: BREAKING / VALIDATION / SAFE
-
-**If BREAKING:**
-- [ ] STOPPED — Created migration plan
-- [ ] Documented which charts will break
-- [ ] Got explicit approval for breaking change
-
-**Automated Tests:**
-- [ ] `pytest tests/test_regression_snapshots.py -v`
-- [ ] `pytest tests/test_chart_dependencies.py -v`
-- [ ] `pytest tests/test_api_invariants.py -v`
-
-**Manual Page Verification (ALL pages):**
-- [ ] /market-overview
-- [ ] /district-overview
-- [ ] /new-launch-market
-- [ ] /supply-inventory
-- [ ] /explore
-- [ ] /value-check
-- [ ] /exit-risk
-
-**Sign-off:**
-- [ ] No console errors on any page
-- [ ] Updated `BACKEND_CHART_DEPENDENCIES.md` (if applicable)
-
 ---
 
-# 11. TESTING & CI
+# 9. DEBUGGING & TESTING
 
-## Regression Snapshot Tests
-**Mission:** Catch silent correctness drift after refactors—when code "works" but numbers subtly change.
+## Debugging 500s
+1. Check server logs for exception + traceback
+2. Note endpoint, query params, filters
+3. Look for `TypeError` in `strptime`/`int`/`float` → type mismatch
 
-**Slices monitored:**
-- Segment metrics: CCR/RCR/OCR × last 3 complete months
-- District metrics: 7 districts × last quarter
-  - CCR: D01 (CBD), D09 (Orchard), D10 (Tanglin)
-  - RCR: D03 (Queenstown), D15 (East Coast)
-  - OCR: D19 (Serangoon), D23 (Hillview)
+**Date param test matrix:**
+| Input | Expected |
+|-------|----------|
+| `None` | No filter |
+| `"2024-01-01"` | Parsed |
+| `date(2024,1,1)` | Passthrough |
+| `"invalid"` | 400 (not 500) |
+
+## Regression Snapshots
+
+Catch silent correctness drift when code "works" but numbers change.
 
 **Tolerances:**
 | Metric | Tolerance |
 |--------|-----------|
 | `count` | ±0 (exact) |
 | `median_psf` | ±0.5% or ±$15 |
-| `avg_psf` | ±0.5% or ±$15 |
 | `total_value` | ±0.5% |
 
-**Run tests:**
 ```bash
-cd backend && pytest tests/test_regression_snapshots.py -v
+pytest tests/test_regression_snapshots.py -v
+pytest tests/test_regression_snapshots.py --update-snapshots  # After intentional changes
 ```
 
-**Update snapshots** (after intentional changes only):
-```bash
-pytest tests/test_regression_snapshots.py --update-snapshots
+## Chart.js Registration
+```jsx
+ChartJS.register(LineController, CategoryScale, LinearScale, PointElement, LineElement, Tooltip);
 ```
-
-**Root cause categories for failures:**
-- `BOUNDARY_CHANGE`: Date filter inclusive/exclusive flip
-- `FILTER_DRIFT`: Segment/district mapping changed
-- `METRIC_DRIFT`: Calculation method changed (median→avg)
-- `OUTLIER_CHANGE`: Outlier exclusion rule modified
-
-## CI Workflow
-**File:** `.github/workflows/backend-tests.yml`
-
-Triggers on push/PR to `main` when `backend/**` changes:
-1. Runs unit tests (no DB required)
-2. Runs regression snapshot tests (requires `DATABASE_URL` secret)
-
-**GitHub Secrets required:**
-- `DATABASE_URL`: PostgreSQL connection string for regression tests
-
-## Files
-```
-backend/tests/
-├── conftest.py                      # --update-snapshots flag
-├── test_regression_snapshots.py     # Regression tests
-└── snapshots/regression/
-    ├── segment_metrics.json         # CCR/RCR/OCR golden data
-    ├── district_metrics.json        # D09/D10/D15 golden data
-    └── README.md
-
-.claude/agents/
-└── regression-snapshot-guard.md     # Agent definition
-```
+- Register: Controller + Elements + Scales
+- Spread `baseChartJsOptions`
+- Use `ChartSlot` wrapper
 
 ---
 
-# 12. UI/LAYOUT REFACTORING (NON-NEGOTIABLE)
-
-Your primary responsibility is to preserve architectural integrity while making UI or layout changes.
-
-## Core Rule (Mandatory)
-
-**UI changes must NEVER introduce new logic.**
-
-If behavior already exists, it must be:
-- Reused
-- Wrapped
-- Reorganized
-
-**Never recreated. Never duplicated.**
-
-## Single Source of Truth (SSOT)
-
-There must be exactly ONE owner of:
-- Business logic
-- State
-- Filtering behavior
-- Data transformations
-
-**You must NOT:**
-- Reimplement logic in a new component
-- Duplicate state
-- Recreate hooks that already exist
-
-**You must:**
-- Reuse existing hooks and context
-- Pass logic down via props
-- Wrap logic with layout components only
-
-## Layout ≠ Logic
-
-UI changes are presentation-only.
-
-| Allowed | Forbidden |
-|---------|-----------|
-| Changing layout (vertical → horizontal) | Adding state |
-| Changing spacing or grouping | Rewriting logic |
-| Changing component structure | Altering behavior |
-| Changing visual hierarchy | Changing data flow |
-
-**If behavior changes → the refactor is invalid.**
-
-## Composition Over Duplication
-
-```jsx
-// ❌ Never do this
-Sidebar (logic + UI)
-ControlBarFilters (logic + UI)
-
-// ✅ Always do this
-FilterLogic (hooks, rules)
- ├── SidebarLayout
- └── HorizontalLayout
-```
-
-If two components behave the same → they must share logic.
-
-## UI Is Not a Feature
-
-| Features | UI |
-|----------|-----|
-| Own logic | Displays state |
-| Define behavior | Triggers events |
-| Enforce rules | Never owns logic |
-
-## Invariant Preservation
-
-The following must NEVER change during UI refactors:
-- Filter semantics
-- Date normalization
-- Selection logic
-- Reset behavior
-- Default values
-- Data mappings
-
-**If any invariant changes → the change is invalid.**
-
-## Layout-Only Changes Must Be Diff-Light
-
-If a change is truly layout-only:
-- No new hooks
-- No new logic files
-- No duplicated state
-- Minimal diffs
-
-**Large diffs = architecture violation.**
-
-## No Parallel Implementations
-
-**Forbidden:**
-- `DesktopFilters` + `MobileFilters` with separate logic
-- `Sidebar` + `ControlBar` with duplicated behavior
-- "Temporary" rewritten logic
-
-All layouts must share the same logic layer.
-
-## Mobile/Responsive UI
-
-Mobile UI:
-- Uses same context
-- Uses same state
-- Uses same handlers
-- Only presentation changes
-
-## Pre-Change Checklist
-
-Before submitting UI/layout changes:
-- [ ] No new logic added
-- [ ] No duplicated state
-- [ ] Existing hooks reused
-- [ ] Behavior unchanged
-- [ ] Layout-only modification
-- [ ] Single source of truth preserved
-
-**If any box fails → stop.**
-
-## Absolute Rule
-
-> This is a layout-only refactor. Do not create new logic, state, or behavior. Reuse existing logic exactly as-is.
-
-**If this rule is violated, the change must be reverted.**
-
-## Before Making Any Change
-
-**Check all claude.md rules and existing UI templates before making changes.**
-
-Do not duplicate or reimplement logic or layouts.
-
-- Every page must use the same shared template/component
-- If a change does not appear on a page, the issue is a **broken reference** — not a missing implementation
-- **Your task is to fix the wiring, not rewrite the UI**
-
-## Engineering Philosophy
+# 10. FILE STRUCTURE
 
 ```
-Logic is permanent
-UI is disposable
-Duplication is a bug
-Reuse is mandatory
-Behavior must be stable
-Layout must be flexible
+backend/
+├── api/contracts/       # @api_contract decorator + schemas
+├── constants.py         # District/region mappings
+├── services/            # Business logic + SQL
+├── routes/              # Thin handlers (parse only)
+└── utils/normalize.py   # to_int, to_date, to_list
+
+frontend/src/
+├── constants/           # REGIONS, BEDROOM_ORDER
+├── schemas/apiContract/ # Enums, isSaleType helpers
+├── adapters/            # API response transformers
+├── hooks/               # useAbortableQuery
+├── context/             # PowerBIFilterContext
+└── components/powerbi/  # Chart components
 ```
