@@ -83,6 +83,7 @@ export function countActiveFilters(filters) {
  */
 export function generateFilterKey(activeFilters, factFilter) {
   return JSON.stringify({
+    datePreset: activeFilters.datePreset,
     dateRange: activeFilters.dateRange,
     districts: activeFilters.districts,
     bedroomTypes: activeFilters.bedroomTypes,
