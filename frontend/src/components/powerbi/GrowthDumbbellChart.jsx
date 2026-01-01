@@ -102,7 +102,13 @@ export const GrowthDumbbellChart = React.memo(function GrowthDumbbellChart({ bed
   );
 
   // Extract transformed data and add display metadata
-  const { chartData: baseChartData, startQuarter, endQuarter, excludedDistricts = [] } = data;
+  // Guard against null data during in-flight state (when keepPreviousData is false)
+  const { chartData: baseChartData, startQuarter, endQuarter, excludedDistricts = [] } = data || {
+    chartData: [],
+    startQuarter: '',
+    endQuarter: '',
+    excludedDistricts: [],
+  };
 
   // Add region and areaNames (display-only metadata) to chart data
   const chartData = useMemo(() => {

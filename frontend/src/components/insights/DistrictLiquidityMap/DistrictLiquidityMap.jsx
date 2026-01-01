@@ -150,6 +150,12 @@ const DistrictLiquidityMap = React.memo(function DistrictLiquidityMap({
       }
     });
 
+    // If no conditions were added, return literal color (not malformed case expression)
+    // MapLibre 'case' requires at least 3 arguments: ['case', condition, result, fallback]
+    if (expr.length === 1) {
+      return LIQUIDITY_FILLS.noData;
+    }
+
     // Default for districts with no data
     expr.push(LIQUIDITY_FILLS.noData);
     return expr;
