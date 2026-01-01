@@ -43,6 +43,14 @@ export default [
     },
   },
 
+  // Guardrail: prevent undefined hooks/variables (e.g., useEffect without import)
+  {
+    files: ['src/**/*.{js,jsx}'],
+    rules: {
+      'no-undef': 'error',
+    },
+  },
+
   // React configuration
   {
     files: ['src/**/*.{js,jsx}'],
@@ -71,9 +79,6 @@ export default [
       },
     },
     rules: {
-      // CRITICAL: Catches undefined variables like 'updating' leftover from refactors
-      'no-undef': 'error',
-
       // React-specific
       'react/react-in-jsx-scope': 'off', // Not needed in React 17+
       'react/prop-types': 'off', // Using TypeScript checkJs instead

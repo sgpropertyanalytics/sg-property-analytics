@@ -208,6 +208,10 @@ export function SubscriptionProvider({ children }) {
     }
   }, [status]);
 
+  // Safety fuse: prevent repeated sequential fetches within short window (per user)
+  const lastFetchAttemptRef = useRef({ email: null, ts: 0 });
+  const MIN_FETCH_INTERVAL_MS = 2000;
+
   // Deterministic guard: Set true when bootstrapSubscription is called (from firebase-sync),
   // cleared after first fetchSubscription skip. Prevents duplicate fetch after sign-in
   // without relying on timing assumptions.
@@ -302,7 +306,7 @@ export function SubscriptionProvider({ children }) {
     }
 
     // Avoid repeated fetch calls for the same user while a request is in flight
-    if (loading && activeRequestRef.current.type === 'fetch'
+    if (activeRequestRef.current.type === 'fetch'
       && activeRequestRef.current.email === (normalizedEmail || email)) {
       console.log('[Subscription] Fetch already in progress for:', normalizedEmail || email);
       return;
@@ -312,6 +316,11 @@ export function SubscriptionProvider({ children }) {
     if (cooldownUntilRef.current > now) {
       const waitMs = cooldownUntilRef.current - now;
       console.warn('[Subscription] Fetch blocked by cooldown:', { waitMs });
+      return;
+    }
+    if (lastFetchAttemptRef.current.email === normalizedEmail
+      && now - lastFetchAttemptRef.current.ts < MIN_FETCH_INTERVAL_MS) {
+      console.warn('[Subscription] Fetch skipped due to recent request');
       return;
     }
 
@@ -325,6 +334,7 @@ export function SubscriptionProvider({ children }) {
     }
 
     const requestId = startRequest();
+    lastFetchAttemptRef.current = { email: normalizedEmail, ts: now };
     activeRequestRef.current = { requestId, email: normalizedEmail || email, type: 'fetch' };
     console.log('[Subscription] Fetching /auth/subscription for:', normalizedEmail || email);
     setLoading(true);
@@ -394,7 +404,7 @@ export function SubscriptionProvider({ children }) {
         activeRequestRef.current = { requestId: null, email: null, type: null };
       }
     }
-  }, [startRequest, isStale, getSignal, loading]);
+  }, [startRequest, isStale, getSignal]);
 
   /**
    * Clear subscription (called on logout or 401)
@@ -420,6 +430,10 @@ export function SubscriptionProvider({ children }) {
    */
   const refreshSubscription = useCallback(async () => {
     const email = currentUserEmailRef.current;
+    if (activeRequestRef.current.type === 'refresh' && activeRequestRef.current.email === email) {
+      console.log('[Subscription] Refresh already in progress for:', email);
+      return;
+    }
     const now = Date.now();
     if (cooldownUntilRef.current > now) {
       const waitMs = cooldownUntilRef.current - now;
