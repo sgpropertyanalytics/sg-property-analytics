@@ -1,9 +1,20 @@
-import { lazy } from 'react';
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClientProvider } from '@tanstack/react-query';
+
+// DEV-ONLY: Lazy load React Query DevTools to avoid bundling in production
+const ReactQueryDevtools = import.meta.env.DEV
+  ? lazy(() =>
+      import('@tanstack/react-query-devtools').then((m) => ({
+        default: m.ReactQueryDevtools,
+      }))
+    )
+  : () => null;
 
 // Register Chart.js components globally (MUST be before any chart imports)
 import './chartSetup';
 
+import { queryClient } from './lib/queryClient';
 import { DataProvider } from './context/DataContext';
 import { AuthProvider } from './context/AuthContext';
 import { SubscriptionProvider } from './context/SubscriptionContext';
@@ -122,6 +133,7 @@ const PerformanceDashboard = lazyWithRetry(() =>
  */
 function App() {
   return (
+    <QueryClientProvider client={queryClient}>
     <SubscriptionProvider>
       <AuthProvider>
         <DataProvider>
@@ -223,6 +235,13 @@ function App() {
         </DataProvider>
       </AuthProvider>
     </SubscriptionProvider>
+    {/* TanStack Query DevTools - lazy loaded, only in development */}
+    {import.meta.env.DEV && (
+      <Suspense fallback={null}>
+        <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-left" />
+      </Suspense>
+    )}
+    </QueryClientProvider>
   );
 }
 

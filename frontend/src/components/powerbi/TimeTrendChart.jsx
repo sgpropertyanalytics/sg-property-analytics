@@ -1,5 +1,6 @@
 import React, { useRef, useMemo } from 'react';
-import { useGatedAbortableQuery, useDebugOverlay } from '../../hooks';
+// Phase 2: Using TanStack Query via useAppQuery wrapper
+import { useAppQuery, useDebugOverlay } from '../../hooks';
 import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
 import { Chart } from 'react-chartjs-2';
@@ -39,9 +40,9 @@ function TimeTrendChartBase({ height = 300, saleType = null, onDrillThrough: _on
   const { captureRequest, captureResponse, captureError, DebugOverlay } = useDebugOverlay('TimeTrendChart');
 
   // Fetch and transform data using adapter pattern
-  // useGatedAbortableQuery handles: abort controller, stale request protection, status states
-  // PLUS: gates fetching on appReady (auth + subscription + filters ready)
-  const { data, status, error, refetch } = useGatedAbortableQuery(
+  // useAppQuery (Phase 2): TanStack Query wrapper with boot gating
+  // Provides: automatic caching, request deduplication, stale-while-revalidate
+  const { data, status, error, refetch } = useAppQuery(
     async (signal) => {
       // saleType is passed from page level - see CLAUDE.md "Business Logic Enforcement"
       const params = buildApiParams({
