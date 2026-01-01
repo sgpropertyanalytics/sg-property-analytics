@@ -3,12 +3,12 @@ import { unwrapSubscriptionResponse } from './SubscriptionContext';
 
 describe('unwrapSubscriptionResponse', () => {
   describe('enveloped response (v3 contract)', () => {
-    it('extracts enterprise tier from enveloped response', () => {
-      // Backend returns: {data: {tier: "enterprise", ...}, meta: {...}}
+    it('extracts premium tier from enveloped response', () => {
+      // Backend returns: {data: {tier: "premium", ...}, meta: {...}}
       // Axios wraps this in response.data
       const axiosResponseData = {
         data: {
-          tier: 'enterprise',
+          tier: 'premium',
           subscribed: true,
           ends_at: '2025-12-31T00:00:00Z',
           _debug_user_id: 123,
@@ -24,13 +24,13 @@ describe('unwrapSubscriptionResponse', () => {
       const result = unwrapSubscriptionResponse(axiosResponseData);
 
       expect(result).toEqual({
-        tier: 'enterprise',
+        tier: 'premium',
         subscribed: true,
         ends_at: '2025-12-31T00:00:00Z',
         _debug_user_id: 123,
         _debug_email: 'user@example.com',
       });
-      expect(result.tier).toBe('enterprise');
+      expect(result.tier).toBe('premium');
       expect(result.subscribed).toBe(true);
     });
 
@@ -78,16 +78,16 @@ describe('unwrapSubscriptionResponse', () => {
 
   describe('flat response (legacy)', () => {
     it('handles flat response without envelope', () => {
-      // Legacy format: {tier: "enterprise", subscribed: true, ...}
+      // Legacy format: {tier: "premium", subscribed: true, ...}
       const flatResponseData = {
-        tier: 'enterprise',
+        tier: 'premium',
         subscribed: true,
         ends_at: '2025-12-31T00:00:00Z',
       };
 
       const result = unwrapSubscriptionResponse(flatResponseData);
 
-      expect(result.tier).toBe('enterprise');
+      expect(result.tier).toBe('premium');
       expect(result.subscribed).toBe(true);
     });
   });
@@ -123,11 +123,11 @@ describe('unwrapSubscriptionResponse', () => {
   });
 
   describe('real-world bug scenario', () => {
-    it('enterprise user is NOT downgraded to free by misreading envelope', () => {
+    it('premium user is NOT downgraded to free by misreading envelope', () => {
       // This is the bug we fixed: reading response.data.tier when tier is in response.data.data
       const axiosResponseData = {
         data: {
-          tier: 'enterprise',
+          tier: 'premium',
           subscribed: true,
           ends_at: null,
         },
@@ -141,9 +141,9 @@ describe('unwrapSubscriptionResponse', () => {
       const result = unwrapSubscriptionResponse(axiosResponseData);
 
       // Before the fix, this would have been undefined (defaulting to 'free')
-      // After the fix, this correctly reads 'enterprise'
+      // After the fix, this correctly reads 'premium'
       expect(result.tier).not.toBe('free');
-      expect(result.tier).toBe('enterprise');
+      expect(result.tier).toBe('premium');
     });
   });
 });

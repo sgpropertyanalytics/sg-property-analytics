@@ -95,7 +95,7 @@ def register():
             return jsonify({"error": "Password must be at least 8 characters"}), 400
         
         # Create new user
-        user = User(email=email, tier='free')
+        user = User(email=email, plan_tier='free')
         user.set_password(password)
         
         db.session.add(user)
@@ -229,7 +229,7 @@ def firebase_sync():
                 email=email,
                 firebase_uid=firebase_uid,
                 password_hash='firebase_auth',  # Placeholder - not used for Firebase auth
-                tier='free',
+                plan_tier='free',
                 display_name=display_name,
                 avatar_url=avatar_url
             )
@@ -254,14 +254,20 @@ def firebase_sync():
         # Generate JWT for API calls
         token = generate_token(user.id, user.email)
 
+        entitlement = user.entitlement_info()
+        access_expires_at = entitlement.get("access_expires_at")
+
         return jsonify({
             "message": "Sync successful",
             "token": token,
             "user": user.to_dict(),
             "subscription": {
-                "tier": user.tier,
-                "subscribed": user.is_subscribed(),
-                "ends_at": user.subscription_ends_at.isoformat() if user.subscription_ends_at else None
+                "tier": user.normalized_tier(),
+                "has_access": entitlement.get("has_access", False),
+                "subscribed": entitlement.get("has_access", False),
+                "entitlement_source": entitlement.get("entitlement_source"),
+                "access_expires_at": access_expires_at.isoformat() if access_expires_at else None,
+                "ends_at": access_expires_at.isoformat() if access_expires_at else None,
             }
         }), 200
 
@@ -297,12 +303,18 @@ def get_subscription():
             return jsonify({"error": "User not found"}), 404
 
         # Debug logging
-        print(f"[Auth] /subscription - user_id: {user.id}, email: {user.email}, tier: {user.tier}, is_subscribed: {user.is_subscribed()}")
+        print(f"[Auth] /subscription - user_id: {user.id}, email: {user.email}, tier: {user.normalized_tier()}, has_access: {user.is_subscribed()}")
+
+        entitlement = user.entitlement_info()
+        access_expires_at = entitlement.get("access_expires_at")
 
         return jsonify({
-            "tier": user.tier,
-            "subscribed": user.is_subscribed(),
-            "ends_at": user.subscription_ends_at.isoformat() if user.subscription_ends_at else None,
+            "tier": user.normalized_tier(),
+            "has_access": entitlement.get("has_access", False),
+            "subscribed": entitlement.get("has_access", False),
+            "entitlement_source": entitlement.get("entitlement_source"),
+            "access_expires_at": access_expires_at.isoformat() if access_expires_at else None,
+            "ends_at": access_expires_at.isoformat() if access_expires_at else None,
             # Debug fields - remove after fixing
             "_debug_user_id": user.id,
             "_debug_email": user.email,
@@ -367,4 +379,3 @@ def delete_account():
         db.session.rollback()
         print(f"Account deletion error: {e}")
         return jsonify({"error": str(e)}), 500
-
