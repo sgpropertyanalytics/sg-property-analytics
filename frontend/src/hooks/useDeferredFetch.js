@@ -43,13 +43,13 @@ const PRIORITY_DELAYS = {
  * - low: 150ms
  *
  * @param {Object} options
- * @param {string} options.filterKey - The filter key that triggers refetch
- * @param {'high'|'medium'|'low'} options.priority - Chart priority level
- * @param {boolean} options.fetchOnMount - Whether to fetch on first mount
+ * @param {string} [options.filterKey] - The filter key that triggers refetch
+ * @param {'high'|'medium'|'low'} [options.priority] - Chart priority level
+ * @param {boolean} [options.fetchOnMount] - Whether to fetch on first mount
  * @returns {Object} { shouldFetch, containerRef, isVisible }
  */
 export function useDeferredFetch({
-  filterKey,
+  filterKey = '',
   priority = 'medium',
   fetchOnMount = true,
 } = {}) {

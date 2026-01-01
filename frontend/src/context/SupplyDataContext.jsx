@@ -54,11 +54,10 @@ export function SupplyDataProvider({
   // isBootPending = true while waiting for app boot (auth/subscription/filters)
   const { data, loading, error, isBootPending, isFetching, refetch } = useGatedAbortableQuery(
     async (signal) => {
-      const response = await getSupplySummary(
+      return getSupplySummary(
         { includeGls, launchYear },
         { signal }
       );
-      return response.data;
     },
     [filterKey],
     { initialData: null, keepPreviousData: true }

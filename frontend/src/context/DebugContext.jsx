@@ -19,8 +19,8 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 const DebugContext = createContext({
   debugMode: false,
   toggleDebugMode: () => {},
-  registerDebugInfo: () => {},
-  getDebugInfo: () => null,
+  registerDebugInfo: (_componentId, _info) => {},
+  getDebugInfo: (_componentId) => null,
 });
 
 export function DebugProvider({ children }) {

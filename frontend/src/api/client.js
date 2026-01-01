@@ -949,7 +949,12 @@ export const getProjectPriceGrowth = (projectName, options = {}) =>
  *   meta: {launchYear, includeGls, computedAs, asOfDate, warnings}
  * }>}
  */
-export const getSupplySummary = (params = {}, options = {}) =>
-  apiClient.get(`/supply/summary?${buildQueryString(params)}`, { signal: options.signal });
+export const getSupplySummary = async (params = {}, options = {}) => {
+  const response = await apiClient.get(
+    `/supply/summary?${buildQueryString(params)}`,
+    { signal: options.signal }
+  );
+  return response.data;
+};
 
 export default apiClient;
