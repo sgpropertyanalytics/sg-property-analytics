@@ -28,12 +28,23 @@ import {
  *
  * This chart answers ONE question: "Where do most transactions happen?"
  */
-export const PriceDistributionChart = React.memo(function PriceDistributionChart({
+/**
+ * @param {{
+ *  height?: number,
+ *  numBins?: number,
+ *  saleType?: string | null,
+ *  sharedData?: Record<string, any> | null,
+ *  sharedStatus?: string,
+ *  onDrillThrough?: (value: string) => void,
+ * }} props
+ */
+function PriceDistributionChartBase({
   height = 300,
   numBins = 20,
   saleType = null,
   sharedData = null,
   sharedStatus = 'idle',
+  onDrillThrough: _onDrillThrough,
 }) {
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
   // filterKey updates immediately on filter change - used for instant overlay feedback
@@ -320,6 +331,8 @@ export const PriceDistributionChart = React.memo(function PriceDistributionChart
       </div>
     </ChartFrame>
   );
-});
+}
+
+export const PriceDistributionChart = React.memo(PriceDistributionChartBase);
 
 export default PriceDistributionChart;

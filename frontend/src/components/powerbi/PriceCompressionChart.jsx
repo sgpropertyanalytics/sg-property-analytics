@@ -38,13 +38,14 @@ const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
  *
  * RESPECTS GLOBAL SIDEBAR FILTERS (district, bedroom, segment, date range).
  *
- * @param {Object} props
- * @param {number} [props.height=380] - Chart height in pixels
- * @param {string} [props.saleType=null] - Sale type filter from page level
- * @param {Array} [props.sharedData=null] - Pre-fetched data from parent (skips internal fetch if provided)
- * @param {string} [props.sharedStatus='idle'] - Query status from parent when using sharedData
+ * @param {{
+ *  height?: number,
+ *  saleType?: string | null,
+ *  sharedData?: Array<Record<string, any>> | null,
+ *  sharedStatus?: string,
+ * }} props
  */
-export const PriceCompressionChart = React.memo(function PriceCompressionChart({ height = 380, saleType = null, sharedData = null, sharedStatus = 'idle' }) {
+function PriceCompressionChartBase({ height = 380, saleType = null, sharedData = null, sharedStatus = 'idle' }) {
   // Get GLOBAL filters and timeGrouping from context
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
   // filterKey updates immediately on filter change - used for instant overlay feedback
@@ -333,7 +334,9 @@ export const PriceCompressionChart = React.memo(function PriceCompressionChart({
     </ChartFrame>
     </div>
   );
-});
+}
+
+export const PriceCompressionChart = React.memo(PriceCompressionChartBase);
 
 // ============================================
 // SUB-COMPONENTS

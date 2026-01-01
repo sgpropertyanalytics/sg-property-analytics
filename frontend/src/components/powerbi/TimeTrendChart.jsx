@@ -21,7 +21,14 @@ import { niceMax } from '../../utils/niceAxisMax';
 // Time level labels for display
 const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
 
-export const TimeTrendChart = React.memo(function TimeTrendChart({ height = 300, saleType = null }) {
+/**
+ * @param {{
+ *  height?: number,
+ *  saleType?: string | null,
+ *  onDrillThrough?: (value: string) => void,
+ * }} props
+ */
+function TimeTrendChartBase({ height = 300, saleType = null, onDrillThrough: _onDrillThrough }) {
   // Use global timeGrouping from context (controlled by toolbar toggle)
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
   // filterKey updates immediately on filter change - used for instant overlay feedback
@@ -272,6 +279,8 @@ export const TimeTrendChart = React.memo(function TimeTrendChart({ height = 300,
       </div>
     </ChartFrame>
   );
-});
+}
+
+export const TimeTrendChart = React.memo(TimeTrendChartBase);
 
 export default TimeTrendChart;

@@ -26,10 +26,12 @@ import {
  * It receives filters as props from the parent component (ProjectDeepDive).
  * This is intentional - PowerBIFilterContext only affects Market Pulse page.
  *
- * @param {string} bedroom - Bedroom filter (optional)
- * @param {string} segment - Market segment filter (CCR/RCR/OCR) (optional)
- * @param {string} district - District filter (optional)
- * @param {string} highlightProject - Project to highlight (optional)
+ * @param {{
+ *  bedroom?: string,
+ *  segment?: string,
+ *  district?: string,
+ *  highlightProject?: string,
+ * }} props
  */
 export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightProject: _highlightProject }) {
   // Create a stable filter key for dependency tracking (no PowerBIFilterContext)

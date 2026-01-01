@@ -39,6 +39,13 @@ const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
  * SHARED DATA OPTIMIZATION (P0 performance fix):
  * - Accepts sharedRawData from parent (MacroOverview) to eliminate duplicate aggregate request
  * - The same region/time aggregate data is used by compression charts and this oscillator
+ *
+ * @param {{
+ *  height?: number,
+ *  saleType?: string | null,
+ *  sharedRawData?: Array<Record<string, any>> | null,
+ *  sharedStatus?: string,
+ * }} props
  */
 export function MarketValueOscillator({ height = 420, saleType = null, sharedRawData = null, sharedStatus = 'idle' }) {
   // Get GLOBAL filters and timeGrouping from context

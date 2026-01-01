@@ -505,7 +505,9 @@ export const getNewVsResale = (params = {}, options = {}) =>
  * @param {string} params.location_grain - region, district, project (default: region)
  * @param {number} params.histogram_bins - Number of bins for price histogram (default: 20, max: 50)
  * @param {Object} options - Request options
- * @param {boolean} options.skipCache - Skip cache and fetch fresh data
+ * @param {boolean} [options.skipCache] - Skip cache and fetch fresh data
+ * @param {AbortSignal} [options.signal] - AbortController signal for cancellation
+ * @param {'high'|'normal'|'low'} [options.priority] - Request priority for queue bypass
  *
  * @returns {Promise<{
  *   data: {
@@ -563,8 +565,9 @@ export const getDashboard = (params = {}, options = {}) => {
  * @param {number} params.size_max - Maximum sqft
  * @param {string} params.tenure - Freehold, 99-year, 999-year
  * @param {Object} options - Cache and request options
- * @param {boolean} options.skipCache - Skip cache and fetch fresh
- * @param {AbortSignal} options.signal - AbortController signal for cancellation
+ * @param {boolean} [options.skipCache] - Skip cache and fetch fresh
+ * @param {AbortSignal} [options.signal] - AbortController signal for cancellation
+ * @param {'high'|'normal'|'low'} [options.priority] - Request priority for queue bypass
  */
 export const getAggregate = (params = {}, options = {}) => {
   const queryString = buildQueryString(params);

@@ -34,13 +34,14 @@ const REGION_COLORS = {
  *
  * RESPECTS GLOBAL SIDEBAR FILTERS (district, bedroom, segment, date range).
  *
- * @param {Object} props
- * @param {number} [props.height=300] - Chart height in pixels
- * @param {string} [props.saleType=null] - Sale type filter from page level
- * @param {Array} [props.sharedData=null] - Pre-fetched data from parent (skips internal fetch if provided)
- * @param {string} [props.sharedStatus='idle'] - Query status from parent when using sharedData
+ * @param {{
+ *  height?: number,
+ *  saleType?: string | null,
+ *  sharedData?: Array<Record<string, any>> | null,
+ *  sharedStatus?: string,
+ * }} props
  */
-export const AbsolutePsfChart = React.memo(function AbsolutePsfChart({ height = 300, saleType = null, sharedData = null, sharedStatus = 'idle' }) {
+function AbsolutePsfChartBase({ height = 300, saleType = null, sharedData = null, sharedStatus = 'idle' }) {
   const { buildApiParams, debouncedFilterKey, filterKey, timeGrouping } = usePowerBIFilters();
   const { isPremium, isFreeResolved } = useSubscription();
   const chartRef = useRef(null);
@@ -320,6 +321,8 @@ export const AbsolutePsfChart = React.memo(function AbsolutePsfChart({ height = 
     </ChartFrame>
     </div>
   );
-});
+}
+
+export const AbsolutePsfChart = React.memo(AbsolutePsfChartBase);
 
 export default AbsolutePsfChart;
