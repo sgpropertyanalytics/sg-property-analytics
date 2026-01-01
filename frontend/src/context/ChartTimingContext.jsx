@@ -107,11 +107,6 @@ function calculateDurations(entry) {
 }
 
 export function ChartTimingProvider({ children }) {
-  // Skip entirely in production
-  if (!isDev) {
-    return children;
-  }
-
   // Store timings in refs to avoid render cascades
   const timingsRef = useRef(new Map());
   const historyRef = useRef([]);
@@ -293,6 +288,9 @@ export function ChartTimingProvider({ children }) {
 
   // Expose on window for console access
   useEffect(() => {
+    if (!isDev) {
+      return;
+    }
     if (typeof window !== 'undefined') {
       window.__CHART_TIMINGS__ = {
         getTimings,
@@ -301,6 +299,11 @@ export function ChartTimingProvider({ children }) {
       };
     }
   }, [getTimings, getSummary, clearTimings]);
+
+  // Skip provider in production
+  if (!isDev) {
+    return children;
+  }
 
   return (
     <ChartTimingContext.Provider
