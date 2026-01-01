@@ -113,10 +113,10 @@ class User(db.Model):
         now = now or datetime.utcnow()
 
         if self._has_active_override(now=now):
-            source = self.entitlement_source or "admin_override"
-            if source == "admin_override":
-                print(f"[Entitlements] admin_override access for user {self.id}")
-            if source not in {"stripe", "admin_override", "promo", "beta"}:
+            source = self.entitlement_source or "admin"
+            if source in {"admin", "admin_override"}:
+                print(f"[Entitlements] admin override access for user {self.id}")
+            if source not in {"stripe", "admin", "admin_override", "promo", "beta"}:
                 print(f"[Entitlements] Unknown entitlement_source '{source}' for user {self.id}")
             return {
                 "has_access": True,

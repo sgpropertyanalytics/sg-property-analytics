@@ -282,6 +282,26 @@ def firebase_sync():
 def get_subscription():
     """Get current user's subscription status"""
     try:
+        from services.schema_guard import check_user_entitlement_columns
+
+        guard_result = check_user_entitlement_columns()
+        missing_columns = guard_result.get("missing") or []
+        if missing_columns:
+            missing_str = "/".join(missing_columns)
+            print(
+                "DB migration 015_add_user_entitlements not applied; "
+                f"missing users.{missing_str}"
+            )
+            return jsonify({
+                "error": "Database schema out of date. Run migration 015_add_user_entitlements.",
+                "missing": missing_columns,
+                "meta": {
+                    "migration": "015_add_user_entitlements",
+                    "table": "users",
+                    "error": guard_result.get("error"),
+                },
+            }), 503
+
         # Get token from Authorization header
         auth_header = request.headers.get('Authorization')
         if not auth_header or not auth_header.startswith('Bearer '):
@@ -322,7 +342,7 @@ def get_subscription():
 
     except Exception as e:
         print(f"[Auth] /subscription - error: {e}")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Internal server error"}), 500
 
 
 @auth_bp.route("/delete-account", methods=["DELETE"])
