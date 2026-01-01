@@ -45,7 +45,7 @@ export default [
 
   // Guardrail: prevent undefined hooks/variables (e.g., useEffect without import)
   {
-    files: ['src/**/*.{js,jsx}'],
+    files: ['src/**/*.{js,jsx,ts,tsx}'],
     rules: {
       'no-undef': 'error',
     },
@@ -53,7 +53,7 @@ export default [
 
   // React configuration
   {
-    files: ['src/**/*.{js,jsx}'],
+    files: ['src/**/*.{js,jsx,ts,tsx}'],
     plugins: {
       react,
       'react-hooks': reactHooks,
@@ -102,7 +102,7 @@ export default [
   // Design system enforcement
   // Validates typography, colors, and numeric formatting in UI components
   {
-    files: ['src/components/**/*.{js,jsx}', 'src/pages/**/*.{js,jsx}'],
+    files: ['src/components/**/*.{js,jsx,ts,tsx}', 'src/pages/**/*.{js,jsx,ts,tsx}'],
     plugins: {
       design: designPlugin,
     },

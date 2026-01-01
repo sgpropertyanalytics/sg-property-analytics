@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { usePowerBIFilters } from '../../context/PowerBIFilter';
 import {
   REGIONS,

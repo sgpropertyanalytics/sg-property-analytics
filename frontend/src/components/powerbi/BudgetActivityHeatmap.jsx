@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useGatedAbortableQuery } from '../../hooks';
 import { getBudgetHeatmap } from '../../api/client';
 import { getBedroomLabelShort } from '../../constants';
@@ -127,7 +127,7 @@ export function BudgetActivityHeatmap({
 
   // Track if filters are changing (for blur effect)
   const [debouncedFilterKey, setDebouncedFilterKey] = useState(filterKey);
-  React.useEffect(() => {
+  useEffect(() => {
     const timer = setTimeout(() => setDebouncedFilterKey(filterKey), 300);
     return () => clearTimeout(timer);
   }, [filterKey]);
