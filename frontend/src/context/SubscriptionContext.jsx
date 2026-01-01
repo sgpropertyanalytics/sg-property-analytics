@@ -588,7 +588,7 @@ export function SubscriptionProvider({ children }) {
   const daysUntilExpiry = useMemo(() => {
     if (!isPremiumActive || !subscription.ends_at) return null;
     const endsAt = new Date(subscription.ends_at);
-    const diff = endsAt - new Date();
+    const diff = endsAt.getTime() - Date.now();
     return Math.ceil(diff / (1000 * 60 * 60 * 24));
   }, [isPremiumActive, subscription.ends_at]);
 

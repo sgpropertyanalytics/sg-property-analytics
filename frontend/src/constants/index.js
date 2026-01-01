@@ -82,6 +82,17 @@ export const REGION_BADGE_CLASSES = {
 };
 
 /**
+ * Core theme colors for data visuals and component styling.
+ * Use these in components to avoid raw hex values inline.
+ */
+export const THEME_COLORS = {
+  navy: '#213448',
+  blue: '#547792',
+  sky: '#94B4C1',
+  sand: '#EAE0CF',
+};
+
+/**
  * Get Tailwind classes for a region badge
  * @param {string} region - Region code (CCR, RCR, OCR) - case insensitive
  * @returns {string} Tailwind CSS classes for the badge

@@ -347,6 +347,7 @@ export function ExitRiskContent() {
     if (!normalizedExitQueue?.gatingFlags) return null;
 
     const flags = normalizedExitQueue.gatingFlags;
+    /** @type {Array<{variant: 'default' | 'warning' | 'info' | 'positive', title: string, content: string}>} */
     const warnings = [];
 
     if (flags.isThinData) {

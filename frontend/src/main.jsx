@@ -45,6 +45,7 @@ class RootErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       // Inline styles - works even if CSS bundle fails to load
+      /** @type {import('react').CSSProperties} */
       const containerStyle = {
         minHeight: '100vh',
         display: 'flex',
@@ -55,6 +56,7 @@ class RootErrorBoundary extends React.Component {
         padding: '20px',
       };
 
+      /** @type {import('react').CSSProperties} */
       const cardStyle = {
         maxWidth: '450px',
         width: '100%',
@@ -65,6 +67,7 @@ class RootErrorBoundary extends React.Component {
         textAlign: 'center',
       };
 
+      /** @type {import('react').CSSProperties} */
       const iconStyle = {
         width: '64px',
         height: '64px',
@@ -76,6 +79,7 @@ class RootErrorBoundary extends React.Component {
         justifyContent: 'center',
       };
 
+      /** @type {import('react').CSSProperties} */
       const titleStyle = {
         fontSize: '20px',
         fontWeight: '600',
@@ -83,6 +87,7 @@ class RootErrorBoundary extends React.Component {
         marginBottom: '8px',
       };
 
+      /** @type {import('react').CSSProperties} */
       const messageStyle = {
         fontSize: '14px',
         color: '#6b7280',
@@ -90,6 +95,7 @@ class RootErrorBoundary extends React.Component {
         lineHeight: '1.5',
       };
 
+      /** @type {import('react').CSSProperties} */
       const buttonContainerStyle = {
         display: 'flex',
         gap: '12px',
@@ -97,6 +103,7 @@ class RootErrorBoundary extends React.Component {
         flexWrap: 'wrap',
       };
 
+      /** @type {import('react').CSSProperties} */
       const primaryButtonStyle = {
         padding: '10px 20px',
         fontSize: '14px',
@@ -108,6 +115,7 @@ class RootErrorBoundary extends React.Component {
         cursor: 'pointer',
       };
 
+      /** @type {import('react').CSSProperties} */
       const secondaryButtonStyle = {
         padding: '10px 20px',
         fontSize: '14px',
@@ -119,6 +127,7 @@ class RootErrorBoundary extends React.Component {
         cursor: 'pointer',
       };
 
+      /** @type {import('react').CSSProperties} */
       const errorDetailsStyle = {
         marginTop: '20px',
         padding: '12px',
@@ -175,4 +184,3 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     </RootErrorBoundary>
   </React.StrictMode>,
 )
-

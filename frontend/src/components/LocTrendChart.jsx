@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 // Chart.js components registered globally in chartSetup.js
 import { Bar } from 'react-chartjs-2';
 import { BASE_CHART_OPTIONS, CHART_AXIS_DEFAULTS } from '../constants/chartOptions';
-import { REGION_BADGE_CLASSES } from '../constants';
+import { REGION_BADGE_CLASSES, THEME_COLORS } from '../constants';
 
 /**
  * Lines of Code Trend Chart
@@ -51,8 +51,8 @@ export function LocTrendChart({ height = 280 }) {
         ),
         borderColor: LOC_DATA.map((_, i) =>
           i === LOC_DATA.length - 1
-            ? '#213448'
-            : '#547792'
+            ? THEME_COLORS.navy
+            : THEME_COLORS.blue
         ),
         borderWidth: 1,
         borderRadius: 4,
@@ -68,8 +68,8 @@ export function LocTrendChart({ height = 280 }) {
       },
       tooltip: {
         backgroundColor: 'rgba(33, 52, 72, 0.95)',
-        titleColor: '#EAE0CF',
-        bodyColor: '#94B4C1',
+        titleColor: THEME_COLORS.sand,
+        bodyColor: THEME_COLORS.sky,
         borderColor: 'rgba(148, 180, 193, 0.3)',
         borderWidth: 1,
         cornerRadius: 8,
