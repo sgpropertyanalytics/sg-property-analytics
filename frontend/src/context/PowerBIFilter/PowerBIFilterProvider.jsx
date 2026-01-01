@@ -43,6 +43,7 @@ import {
   INITIAL_BREADCRUMBS,
   TIME_LEVELS,
   LOCATION_LEVELS,
+  DEFAULT_TIME_FILTER,
 } from './constants';
 
 // Derived state and API params (consolidated)
@@ -168,8 +169,42 @@ export function PowerBIFilterProvider({ children, pageId: explicitPageId }) {
   });
 
   // ===== Filter Setters =====
+
+  // Unified time filter setter - single source of truth
+  const setTimeFilter = useCallback((timeFilter) => {
+    setFilters((prev) => ({ ...prev, timeFilter }));
+  }, []);
+
+  // Convenience setter for preset mode
+  const setTimePreset = useCallback((presetValue) => {
+    setFilters((prev) => ({
+      ...prev,
+      timeFilter: { type: 'preset', value: presetValue },
+    }));
+  }, []);
+
+  // Convenience setter for custom date range mode
+  const setTimeRange = useCallback((start, end) => {
+    setFilters((prev) => ({
+      ...prev,
+      timeFilter: { type: 'custom', start, end },
+    }));
+  }, []);
+
+  // BACKWARD COMPATIBILITY: Legacy setters that map to new unified structure
+  // These will be removed in a future cleanup phase
   const setDateRange = useCallback((start, end) => {
-    setFilters((prev) => ({ ...prev, dateRange: { start, end } }));
+    setFilters((prev) => ({
+      ...prev,
+      timeFilter: { type: 'custom', start, end },
+    }));
+  }, []);
+
+  const setDatePreset = useCallback((preset) => {
+    setFilters((prev) => ({
+      ...prev,
+      timeFilter: { type: 'preset', value: preset },
+    }));
   }, []);
 
   const setDistricts = useCallback((districts) => {
@@ -258,18 +293,6 @@ export function PowerBIFilterProvider({ children, pageId: explicitPageId }) {
 
   const setProject = useCallback((project) => {
     setFilters((prev) => ({ ...prev, project }));
-  }, []);
-
-  // INVARIANT: When switching to a preset (not 'custom'), clear dateRange
-  // This ensures clean semantics - preset mode uses timeframe ID, custom mode uses dates
-  const setDatePreset = useCallback((preset) => {
-    setFilters((prev) => ({
-      ...prev,
-      datePreset: preset,
-      // Clear dateRange when switching to preset mode (not custom)
-      // This prevents stale dates from being sent alongside timeframe
-      dateRange: preset !== 'custom' ? { start: null, end: null } : prev.dateRange,
-    }));
   }, []);
 
   const resetFilters = useCallback(() => {
@@ -434,7 +457,14 @@ export function PowerBIFilterProvider({ children, pageId: explicitPageId }) {
   // Actions context - stable callbacks, never triggers re-renders
   const actionsValue = useMemo(
     () => ({
+      // New unified time filter setters
+      setTimeFilter,
+      setTimePreset,
+      setTimeRange,
+      // Legacy aliases (for backward compatibility)
       setDateRange,
+      setDatePreset,
+      // Other filter setters
       setDistricts,
       toggleDistrict,
       setBedroomTypes,
@@ -448,7 +478,6 @@ export function PowerBIFilterProvider({ children, pageId: explicitPageId }) {
       setPropertyAge,
       setPropertyAgeBucket,
       setProject,
-      setDatePreset,
       resetFilters,
       drillDown,
       drillUp,
@@ -486,9 +515,15 @@ export function PowerBIFilterProvider({ children, pageId: explicitPageId }) {
       selectedProject,
       timeGrouping,
 
-      // Actions
+      // Actions - new unified time filter setters
+      setTimeFilter,
+      setTimePreset,
+      setTimeRange,
+      // Actions - legacy aliases
       setTimeGrouping,
       setDateRange,
+      setDatePreset,
+      // Actions - other setters
       setDistricts,
       toggleDistrict,
       setBedroomTypes,
@@ -502,7 +537,6 @@ export function PowerBIFilterProvider({ children, pageId: explicitPageId }) {
       setPropertyAge,
       setPropertyAgeBucket,
       setProject,
-      setDatePreset,
       resetFilters,
       drillDown,
       drillUp,

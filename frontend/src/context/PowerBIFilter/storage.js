@@ -40,12 +40,12 @@ export const FALLBACK_PAGE_ID = 'default';
  * Storage keys used by the filter system.
  * Centralized here to avoid magic strings.
  *
- * NOTE: datePreset is now stored INSIDE the filters object,
+ * NOTE: timeFilter is now stored INSIDE the filters object,
  * not as a separate key. This simplifies persistence.
  */
 export const STORAGE_KEYS = {
   VERSION: '_version',
-  FILTERS: 'filters',        // Includes datePreset as a field
+  FILTERS: 'filters',        // Includes timeFilter as a field
   TIME_GROUPING: 'timeGrouping',
   HYDRATED: '_hydrated',
 };

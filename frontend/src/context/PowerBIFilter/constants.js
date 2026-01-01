@@ -20,8 +20,10 @@ export const TIME_GROUP_BY = {
  * These are user-applied filters from the filter sidebar.
  */
 export const INITIAL_FILTERS = {
-  dateRange: { start: null, end: null },  // null = all (only used for 'custom' mode)
-  datePreset: 'Y1',                        // 'M3' | 'M6' | 'Y1' | 'Y3' | 'Y5' | 'all' | 'custom'
+  // Unified time filter - single source of truth for time selection
+  // Type 'preset': value is timeframe ID ('M3' | 'M6' | 'Y1' | 'Y3' | 'Y5' | 'all')
+  // Type 'custom': start/end are ISO date strings ('2024-01-01')
+  timeFilter: { type: 'preset', value: 'Y1' },
   districts: [],                           // empty = all
   bedroomTypes: [],                        // empty = all (supports 1,2,3,4,5)
   segments: [],                            // empty = all, can contain 'CCR', 'RCR', 'OCR'
@@ -33,6 +35,12 @@ export const INITIAL_FILTERS = {
   propertyAgeBucket: null,                 // null = all, PropertyAgeBucket enum value
   project: null,                           // null = all, project name filter
 };
+
+/**
+ * Default time filter value (preset mode with 1 year).
+ * Used for reset operations.
+ */
+export const DEFAULT_TIME_FILTER = { type: 'preset', value: 'Y1' };
 
 /**
  * Default fact filter state.
