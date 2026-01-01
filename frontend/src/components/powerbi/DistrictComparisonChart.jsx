@@ -37,12 +37,14 @@ const ROW_HEIGHT = 28;
  * It receives filters as props from the parent component (ProjectDeepDive).
  * This is intentional - PowerBIFilterContext only affects Market Pulse page.
  *
- * @param {string} district - District to fetch projects for (required)
- * @param {string} selectedProject - Project name to highlight (required)
- * @param {number} height - Chart height in pixels (default 400, dynamic based on project count)
- * @param {number} minUnits - Minimum units threshold (default 100)
+ * @param {{
+ *  district?: string,
+ *  selectedProject?: string,
+ *  height?: number,
+ *  minUnits?: number,
+ * }} props
  */
-export const DistrictComparisonChart = React.memo(function DistrictComparisonChart({
+function DistrictComparisonChartBase({
   district,
   selectedProject,
   height: propHeight,
@@ -332,6 +334,8 @@ export const DistrictComparisonChart = React.memo(function DistrictComparisonCha
       </div>
     </div>
   );
-});
+}
+
+export const DistrictComparisonChart = React.memo(DistrictComparisonChartBase);
 
 export default DistrictComparisonChart;

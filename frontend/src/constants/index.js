@@ -63,7 +63,7 @@ export const getDistrictsForRegion = (region) => {
 /**
  * Check if a district belongs to a specific region
  * @param {string} district - District code
- * @param {'CCR' | 'RCR' | 'OCR'} region - Market segment to check
+ * @param {string} region - Market segment to check
  * @returns {boolean}
  */
 export const isDistrictInRegion = (district, region) => {

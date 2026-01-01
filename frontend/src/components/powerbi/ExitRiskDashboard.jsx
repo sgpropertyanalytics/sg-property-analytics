@@ -170,6 +170,17 @@ function ExitRiskDashboardSkeleton() {
   );
 }
 
+/**
+ * @param {{
+ *  marketTurnoverPct?: number | null,
+ *  recentTurnoverPct?: number | null,
+ *  marketTurnoverZone?: string,
+ *  recentTurnoverZone?: string,
+ *  overallRisk?: string,
+ *  interpretation?: string,
+ *  loading?: boolean,
+ * }} props
+ */
 export default function ExitRiskDashboard({
   marketTurnoverPct,
   recentTurnoverPct,

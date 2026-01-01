@@ -36,7 +36,15 @@ const REGION_COLORS = {
  * This chart answers ONE question:
  * "How much are 1BR, 2BR, 3BR, 4BR, 5BR selling for in CCR, RCR, and OCR?"
  */
-export const BeadsChart = React.memo(function BeadsChart({
+/**
+ * @param {{
+ *  height?: number,
+ *  saleType?: string | null,
+ *  sharedData?: Record<string, any> | null,
+ *  sharedStatus?: string,
+ * }} props
+ */
+function BeadsChartBase({
   height = 300,
   saleType = null,
   sharedData = null,
@@ -356,6 +364,8 @@ export const BeadsChart = React.memo(function BeadsChart({
       </div>
     </ChartFrame>
   );
-});
+}
+
+export const BeadsChart = React.memo(BeadsChartBase);
 
 export default BeadsChart;

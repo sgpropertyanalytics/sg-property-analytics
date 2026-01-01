@@ -385,9 +385,9 @@ const evictOldestCacheEntry = () => {
  * @param {string} cacheKey - Unique key for this request
  * @param {Function} fetchFn - Function that returns a promise for the API call
  * @param {Object} options - Cache options
- * @param {boolean} options.forceRefresh - Skip cache and fetch fresh
- * @param {AbortSignal} options.signal - AbortController signal for cancellation
- * @param {string} options.priority - 'high' bypasses queue, 'normal' queues when busy
+ * @param {boolean} [options.forceRefresh] - Skip cache and fetch fresh
+ * @param {AbortSignal} [options.signal] - AbortController signal for cancellation
+ * @param {'high'|'normal'|'low'|'medium'} [options.priority] - Queue priority
  * @returns {Promise} - Cached or fresh response
  */
 const cachedFetch = async (cacheKey, fetchFn, options = {}) => {
@@ -505,7 +505,9 @@ export const getNewVsResale = (params = {}, options = {}) =>
  * @param {string} params.location_grain - region, district, project (default: region)
  * @param {number} params.histogram_bins - Number of bins for price histogram (default: 20, max: 50)
  * @param {Object} options - Request options
- * @param {boolean} options.skipCache - Skip cache and fetch fresh data
+ * @param {boolean} [options.skipCache] - Skip cache and fetch fresh data
+ * @param {AbortSignal} [options.signal] - AbortController signal for cancellation
+ * @param {'high'|'normal'|'low'|'medium'} [options.priority] - Request priority for queue bypass
  *
  * @returns {Promise<{
  *   data: {
@@ -563,8 +565,9 @@ export const getDashboard = (params = {}, options = {}) => {
  * @param {number} params.size_max - Maximum sqft
  * @param {string} params.tenure - Freehold, 99-year, 999-year
  * @param {Object} options - Cache and request options
- * @param {boolean} options.skipCache - Skip cache and fetch fresh
- * @param {AbortSignal} options.signal - AbortController signal for cancellation
+ * @param {boolean} [options.skipCache] - Skip cache and fetch fresh
+ * @param {AbortSignal} [options.signal] - AbortController signal for cancellation
+ * @param {'high'|'normal'|'low'} [options.priority] - Request priority for queue bypass
  */
 export const getAggregate = (params = {}, options = {}) => {
   const queryString = buildQueryString(params);
@@ -585,8 +588,8 @@ export const getAggregate = (params = {}, options = {}) => {
  * @param {string} params.bedroom - Comma-separated bedroom counts
  * @param {string} params.segment - CCR, RCR, OCR
  * @param {Object} options - Request options
- * @param {AbortSignal} options.signal - Abort signal for cancellation
- * @param {string} options.priority - 'high' bypasses queue, 'normal' queues when busy
+ * @param {AbortSignal} [options.signal] - Abort signal for cancellation
+ * @param {'high'|'normal'|'low'|'medium'} [options.priority] - Queue priority
  */
 export const getKpiSummaryV2 = (params = {}, options = {}) => {
   const queryString = buildQueryString(params);
@@ -793,7 +796,7 @@ export const getProjectInventory = (projectName, options = {}) =>
  * Get project names for dropdown selection
  * Only returns geocoded projects
  * Retry handled automatically by API client interceptor for GET requests
- * @returns {Promise<{projects: Array<{name, district, market_segment}>, count: number}>}
+ * @returns {Promise<{data: {projects: Array<{name, district, market_segment}>, count: number}}>}
  */
 export const getProjectNames = (options = {}) => {
   return apiClient.get('/projects/names', options);
@@ -872,14 +875,14 @@ export const __test__ = {
  * - Elevated Turnover (>15): possible volatility
  *
  * @param {string} projectName - The project name
- * @returns {Promise<{
+ * @returns {Promise<{data: {
  *   project_name: string,
  *   data_quality: {has_top_year, has_total_units, completeness, sample_window_months, warnings, unit_source, unit_confidence, unit_note},
  *   fundamentals: {total_units, top_year, property_age_years, age_source, tenure, district, developer, first_resale_date},
  *   resale_metrics: {total_resale_transactions, resales_12m, market_turnover_pct, recent_turnover_pct},
  *   risk_assessment: {market_turnover_zone, recent_turnover_zone, overall_risk, interpretation},
  *   gating_flags: {is_boutique, is_brand_new, is_ultra_luxury, is_thin_data, unit_type_mixed}
- * }>}
+ * }}>}
  */
 export const getProjectExitQueue = (projectName, options = {}) =>
   apiClient.get(`/projects/${encodeURIComponent(projectName)}/exit-queue`, options);
@@ -889,9 +892,9 @@ export const getProjectExitQueue = (projectName, options = {}) =>
  * Returns percentile bands, floor trend, and verdict assessment
  * @param {string} projectName - The project name
  * @param {Object} params - Query parameters
- * @param {number} params.window_months - Analysis window (default 24, max 60)
- * @param {number} params.unit_psf - Optional user's unit PSF for verdict calculation
- * @returns {Promise<{
+ * @param {number} [params.window_months] - Analysis window (default 24, max 60)
+ * @param {number} [params.unit_psf] - Optional user's unit PSF for verdict calculation
+ * @returns {Promise<{data: {
  *   project_name: string,
  *   data_source: 'project' | 'district_proxy' | 'segment_proxy',
  *   proxy_label: string | null,
@@ -900,7 +903,7 @@ export const getProjectExitQueue = (projectName, options = {}) =>
  *   trend: {floor_direction, floor_slope_pct, observation_months},
  *   verdict: {unit_psf, position, position_label, vs_floor_pct, badge, badge_label, explanation} | null,
  *   data_quality: {total_trades, months_with_data, is_valid, fallback_reason, window_months, smoothing}
- * }>}
+ * }}>}
  */
 export const getProjectPriceBands = (projectName, params = {}, options = {}) =>
   apiClient.get(`/projects/${encodeURIComponent(projectName)}/price-bands?${buildQueryString(params)}`, options);
@@ -915,7 +918,7 @@ export const getProjectPriceBands = (projectName, params = {}, options = {}) =>
  * @param {Object} params - Query parameters
  * @param {number} params.per_page - Records per page (default 500, max 500)
  * @param {number} params.bedroom - Filter by bedroom count
- * @returns {Promise<{data: Array, pagination: Object, filters_applied: Object}>}
+ * @returns {Promise<{data: {data: Array, pagination: Object, filters_applied: Object}}>}
  */
 export const getProjectPriceGrowth = (projectName, options = {}) =>
   apiClient.get(`/transactions/price-growth?project=${encodeURIComponent(projectName)}&per_page=500`, options);

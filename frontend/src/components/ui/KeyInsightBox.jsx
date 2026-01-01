@@ -19,8 +19,15 @@ import {
  * Used to display key takeaways in a prominent, scannable format
  * that helps users understand what the data means.
  *
- * @param {boolean} compact - Use smaller text/padding for chart explanations
- * @param {string} tooltip - Optional tooltip content shown when hovering the icon
+ * @param {{
+ *  icon?: import('react').ReactNode,
+ *  title?: string,
+ *  children?: import('react').ReactNode,
+ *  variant?: 'default' | 'positive' | 'warning' | 'info',
+ *  compact?: boolean,
+ *  className?: string,
+ *  tooltip?: string | null,
+ * }} props
  */
 export function KeyInsightBox({
   icon = null,

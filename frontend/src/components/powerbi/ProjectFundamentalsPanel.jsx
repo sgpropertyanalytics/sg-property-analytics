@@ -44,6 +44,17 @@ function ProjectFundamentalsSkeleton({ compact = false }) {
   );
 }
 
+/**
+ * @param {{
+ *  totalUnits?: number | null,
+ *  topYear?: number | null,
+ *  propertyAgeYears?: number | null,
+ *  ageSource?: string | null,
+ *  firstResaleDate?: string | null,
+ *  loading?: boolean,
+ *  compact?: boolean,
+ * }} props
+ */
 export default function ProjectFundamentalsPanel({
   totalUnits,
   topYear,
@@ -127,4 +138,3 @@ export default function ProjectFundamentalsPanel({
     </div>
   );
 }
-

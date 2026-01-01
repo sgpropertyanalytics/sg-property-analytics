@@ -39,14 +39,15 @@ registerPlugin(waterfallConnectorPlugin);
 /**
  * Supply Waterfall Chart Component
  *
- * @param {Object} props
- * @param {'regional'|'district'} props.view - Chart view mode
- * @param {string|null} props.selectedRegion - For district view, which region to show
- * @param {boolean} props.includeGls - Whether to include GLS pipeline (from context)
- * @param {number} props.launchYear - Year filter for upcoming launches (from context)
- * @param {number} props.height - Chart height in pixels
+ * @param {{
+ *  view?: 'regional'|'district',
+ *  selectedRegion?: string | null,
+ *  includeGls?: boolean,
+ *  launchYear?: number,
+ *  height?: number,
+ * }} props
  */
-export const SupplyWaterfallChart = React.memo(function SupplyWaterfallChart({
+function SupplyWaterfallChartBase({
   view = 'regional',
   selectedRegion = null,
   // Props kept for documentation but values come from shared context
@@ -192,6 +193,8 @@ export const SupplyWaterfallChart = React.memo(function SupplyWaterfallChart({
       </div>
     </ChartFrame>
   );
-});
+}
+
+export const SupplyWaterfallChart = React.memo(SupplyWaterfallChartBase);
 
 export default SupplyWaterfallChart;

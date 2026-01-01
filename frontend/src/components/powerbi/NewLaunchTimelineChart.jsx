@@ -30,12 +30,9 @@ const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
 /**
  * New Launch Timeline Chart Component
  *
- * @param {Object} props
- * @param {number} props.height - Chart height in pixels
+ * @param {{ height?: number }} props
  */
-export const NewLaunchTimelineChart = React.memo(function NewLaunchTimelineChart({
-  height = 300,
-}) {
+function NewLaunchTimelineChartBase({ height = 300 }) {
   // Get GLOBAL filters and timeGrouping from context
   // filterKey updates immediately on filter change - used for instant overlay feedback
   const { buildApiParams, debouncedFilterKey, filterKey, filters, timeGrouping } = usePowerBIFilters();
@@ -400,6 +397,8 @@ export const NewLaunchTimelineChart = React.memo(function NewLaunchTimelineChart
       </ChartFrame>
     </div>
   );
-});
+}
+
+export const NewLaunchTimelineChart = React.memo(NewLaunchTimelineChartBase);
 
 export default NewLaunchTimelineChart;

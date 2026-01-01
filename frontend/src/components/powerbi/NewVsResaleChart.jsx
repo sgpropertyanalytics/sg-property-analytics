@@ -71,8 +71,10 @@ if (typeof window !== 'undefined') {
  * Only the drill level (year/quarter/month) is visual-local.
  *
  * Power BI Pattern: Global slicers MUST apply to ALL visuals.
+ *
+ * @param {{ height?: number }} props
  */
-export const NewVsResaleChart = React.memo(function NewVsResaleChart({ height = 350 }) {
+function NewVsResaleChartBase({ height = 350 }) {
   // Get GLOBAL filters and timeGrouping from context
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
   // filterKey updates immediately on filter change - used for instant overlay feedback
@@ -574,6 +576,8 @@ export const NewVsResaleChart = React.memo(function NewVsResaleChart({ height = 
     </ChartFrame>
     </div>
   );
-});
+}
+
+export const NewVsResaleChart = React.memo(NewVsResaleChartBase);
 
 export default NewVsResaleChart;

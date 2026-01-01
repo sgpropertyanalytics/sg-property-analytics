@@ -82,7 +82,21 @@ const aggregateByQuarter = (transactions) => {
     }));
 };
 
-export const PriceGrowthChart = React.memo(function PriceGrowthChart({
+/**
+ * @param {{
+ *  data?: { data?: Array<Record<string, any>> } | null,
+ *  districtAverage?: Array<Record<string, any>>,
+ *  loading?: boolean,
+ *  isFetching?: boolean,
+ *  isBootPending?: boolean,
+ *  error?: Error | null,
+ *  onRetry?: () => void,
+ *  projectName?: string,
+ *  district?: string,
+ *  height?: number,
+ * }} props
+ */
+function PriceGrowthChartBase({
   data = null,
   districtAverage = [],
   loading = false,
@@ -364,6 +378,8 @@ export const PriceGrowthChart = React.memo(function PriceGrowthChart({
     </div>
     </ChartFrame>
   );
-});
+}
+
+export const PriceGrowthChart = React.memo(PriceGrowthChartBase);
 
 export default PriceGrowthChart;

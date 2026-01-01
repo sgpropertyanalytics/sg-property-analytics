@@ -5,6 +5,7 @@
     "jsx": "react-jsx",
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "types": ["vite/client"],
 
     // Type-check JS files without converting to TS
     "allowJs": true,

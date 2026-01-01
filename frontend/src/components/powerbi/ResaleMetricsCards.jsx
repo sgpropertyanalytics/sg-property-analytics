@@ -81,6 +81,17 @@ function ResaleMetricsSkeleton({ compact = false }) {
   );
 }
 
+/**
+ * @param {{
+ *  totalResaleTransactions?: number | null,
+ *  resales12m?: number | null,
+ *  marketTurnoverPct?: number | null,
+ *  recentTurnoverPct?: number | null,
+ *  totalUnits?: number | null,
+ *  loading?: boolean,
+ *  compact?: boolean,
+ * }} props
+ */
 export default function ResaleMetricsCards({
   totalResaleTransactions,
   resales12m,
@@ -193,4 +204,3 @@ export default function ResaleMetricsCards({
     </div>
   );
 }
-

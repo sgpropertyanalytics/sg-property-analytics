@@ -32,7 +32,27 @@ const COLORS = {
   unitMarker: '#547792',
 };
 
-export const PriceBandChart = React.memo(function PriceBandChart({
+/**
+ * @param {{
+ *  bands?: Array<Record<string, any>>,
+ *  latest?: Record<string, any>,
+ *  trend?: Record<string, any>,
+ *  verdict?: string,
+ *  unitPsf?: number | null,
+ *  dataSource?: string,
+ *  proxyLabel?: string,
+ *  dataQuality?: string,
+ *  totalResaleTransactions?: number,
+ *  loading?: boolean,
+ *  isFetching?: boolean,
+ *  isBootPending?: boolean,
+ *  error?: Error | null,
+ *  onRetry?: () => void,
+ *  projectName?: string,
+ *  height?: number,
+ * }} props
+ */
+function PriceBandChartBase({
   bands = [],
   latest,
   trend,
@@ -378,6 +398,8 @@ export const PriceBandChart = React.memo(function PriceBandChart({
     </div>
     </ChartFrame>
   );
-});
+}
+
+export const PriceBandChart = React.memo(PriceBandChartBase);
 
 export default PriceBandChart;

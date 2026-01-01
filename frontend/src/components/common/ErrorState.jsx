@@ -1,6 +1,9 @@
 import React from 'react';
 
-export const ErrorState = React.memo(function ErrorState({ message, onRetry }) {
+/**
+ * @param {{ message: string, onRetry?: () => void }} props
+ */
+function ErrorStateBase({ message, onRetry }) {
   return (
     <div className="rounded-lg border border-red-200 bg-red-50 p-3">
       <div className="text-sm text-red-700">Error: {message}</div>
@@ -13,4 +16,6 @@ export const ErrorState = React.memo(function ErrorState({ message, onRetry }) {
       </button>
     </div>
   );
-});
+}
+
+export const ErrorState = React.memo(ErrorStateBase);

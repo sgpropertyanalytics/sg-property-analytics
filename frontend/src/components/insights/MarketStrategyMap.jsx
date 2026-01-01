@@ -437,9 +437,17 @@ function RegionSummaryBar({ districtData, selectedPeriod }) {
  * - Controlled: Pass selectedPeriod, selectedBed, selectedSaleType, onFilterChange props
  * - Uncontrolled: Uses internal state (legacy behavior)
  *
- * @param {string} selectedSaleType - Sale type enum value (page-level enforcement)
+ * @param {{
+ *  selectedPeriod?: string,
+ *  selectedBed?: string,
+ *  selectedSaleType?: string,
+ *  onFilterChange?: (filterType: string, value: string) => void,
+ *  mapMode?: string,
+ *  onModeChange?: (value: string) => void,
+ *  enabled?: boolean,
+ * }} props
  */
-const MarketStrategyMap = React.memo(function MarketStrategyMap({
+function MarketStrategyMapBase({
   selectedPeriod: controlledPeriod,
   selectedBed: controlledBed,
   selectedSaleType = SaleType.RESALE,
@@ -864,6 +872,8 @@ const MarketStrategyMap = React.memo(function MarketStrategyMap({
       `}</style>
     </div>
   );
-});
+}
+
+const MarketStrategyMap = React.memo(MarketStrategyMapBase);
 
 export default MarketStrategyMap;

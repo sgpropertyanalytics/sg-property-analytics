@@ -42,7 +42,18 @@ import {
 // MAIN COMPONENT
 // =============================================================================
 
-const DistrictLiquidityMap = React.memo(function DistrictLiquidityMap({
+/**
+ * @param {{
+ *  saleType?: string,
+ *  selectedPeriod?: string,
+ *  selectedBed?: string,
+ *  onFilterChange?: (filterType: string, value: string) => void,
+ *  mapMode?: string,
+ *  onModeChange?: (value: string) => void,
+ *  enabled?: boolean,
+ * }} props
+ */
+function DistrictLiquidityMapBase({
   saleType = SaleType.RESALE,
   selectedPeriod: controlledPeriod,
   selectedBed: controlledBed,
@@ -540,6 +551,8 @@ const DistrictLiquidityMap = React.memo(function DistrictLiquidityMap({
       `}</style>
     </div>
   );
-});
+}
+
+const DistrictLiquidityMap = React.memo(DistrictLiquidityMapBase);
 
 export default DistrictLiquidityMap;

@@ -33,8 +33,8 @@ function formatUnits(value) {
  * Supply KPI Cards Component
  *
  * @param {Object} props
- * @param {boolean} props.includeGls - Whether to include GLS pipeline in the display (from context)
- * @param {number} props.launchYear - Year filter for upcoming launches (from context)
+ * @param {boolean} [props.includeGls] - Whether to include GLS pipeline in the display (from context)
+ * @param {number} [props.launchYear] - Year filter for upcoming launches (from context)
  */
 export function SupplyKpiCards({
   // Props are kept for documentation but values come from shared context
