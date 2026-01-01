@@ -27,7 +27,8 @@ import { useStaleRequestGuard } from '../hooks';
  *
  * AuthContext Integration:
  * - bootstrapSubscription(sub) - after firebase-sync returns subscription
- * - fetchSubscription() - on page refresh when token is ready
+ * - ensureSubscription() - canonical auto-fetch entrypoint (idempotent)
+ * - fetchSubscription() - internal fetch (used by ensureSubscription)
  * - clearSubscription() - on logout or 401 token failure
  */
 
@@ -216,6 +217,10 @@ export function SubscriptionProvider({ children }) {
   // cleared after first fetchSubscription skip. Prevents duplicate fetch after sign-in
   // without relying on timing assumptions.
   const bootstrappedInSessionRef = useRef(false);
+
+  // Auto-only debounce for ensureSubscription (manual refresh bypasses)
+  const lastEnsureAttemptRef = useRef({ email: null, ts: 0 });
+  const ENSURE_DEBOUNCE_MS = 1000;
 
   // Analytics context for upsell tracking
   const [upsellContext, setUpsellContext] = useState({
@@ -407,6 +412,54 @@ export function SubscriptionProvider({ children }) {
   }, [startRequest, isStale, getSignal]);
 
   /**
+   * Canonical subscription fetch authority.
+   * Idempotent auto-fetch entrypoint for AuthContext.
+   * Skips if already resolved/loading for the same user, or in ERROR state
+   * (manual retry required).
+   */
+  const ensureSubscription = useCallback((email, options = {}) => {
+    const { force = false, reason = 'auto' } = options;
+    const normalizedEmail = normalizeEmail(email);
+    if (!normalizedEmail) {
+      console.warn('[Subscription] ensureSubscription called without valid email', { reason });
+      return;
+    }
+
+    const now = Date.now();
+    if (!force
+      && lastEnsureAttemptRef.current.email === normalizedEmail
+      && now - lastEnsureAttemptRef.current.ts < ENSURE_DEBOUNCE_MS) {
+      console.log('[Subscription] ensureSubscription debounced', { email: normalizedEmail, reason });
+      return;
+    }
+
+    const isSameUser = currentUserEmailRef.current === normalizedEmail;
+    const isResolved = status === SubscriptionStatus.RESOLVED;
+    const isLoading = status === SubscriptionStatus.LOADING;
+    const isError = status === SubscriptionStatus.ERROR;
+
+    if (!force && isSameUser && (isResolved || isLoading)) {
+      console.log('[Subscription] ensureSubscription skipped (already resolved/loading)', {
+        email: normalizedEmail,
+        status,
+        reason,
+      });
+      return;
+    }
+
+    if (!force && isSameUser && isError) {
+      console.warn('[Subscription] ensureSubscription skipped (error state requires manual retry)', {
+        email: normalizedEmail,
+        reason,
+      });
+      return;
+    }
+
+    lastEnsureAttemptRef.current = { email: normalizedEmail, ts: now };
+    fetchSubscription(normalizedEmail);
+  }, [fetchSubscription, status]);
+
+  /**
    * Clear subscription (called on logout or 401)
    * Sets to free tier with RESOLVED status (explicit logout = explicit free)
    */
@@ -419,6 +472,7 @@ export function SubscriptionProvider({ children }) {
     setFetchError(null);
     // Reset bootstrap flag for clean state on next sign-in
     bootstrappedInSessionRef.current = false;
+    lastEnsureAttemptRef.current = { email: null, ts: 0 };
     // Clear per-user cache
     clearCachedSubscription(email);
     currentUserEmailRef.current = null;
@@ -606,6 +660,7 @@ export function SubscriptionProvider({ children }) {
     clearSubscription,
     refreshSubscription,
     retrySubscription,
+    ensureSubscription,
     setSubscription,
   }), [
     subscription,
@@ -631,6 +686,7 @@ export function SubscriptionProvider({ children }) {
     clearSubscription,
     refreshSubscription,
     retrySubscription,
+    ensureSubscription,
   ]);
 
   return (
