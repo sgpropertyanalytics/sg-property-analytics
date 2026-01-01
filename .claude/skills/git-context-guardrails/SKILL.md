@@ -123,6 +123,12 @@ From git history, identify:
 - [ ] No band-aid fixes or special-casing
 - [ ] Solves the CLASS of problem, not just this instance
 - [ ] Another developer can understand and maintain this
+
+### Standardization Validation
+- Reference implementation: [e.g., "TimeTrendChart.jsx"]
+- [ ] Matches the reference pattern exactly
+- [ ] No deviation from sibling implementations
+- [ ] Same hooks, same state handling, same structure
 ```
 
 **Implementation proposals without this report are INVALID.**
@@ -162,7 +168,47 @@ From git history, identify:
 
 **If any answer is concerning → redesign the solution.**
 
-## Part 6: Forbidden Patterns
+## Part 6: Standardization Rule
+
+**All charts, components, and logic MUST follow the same standardized patterns.**
+
+### The Uniformity Principle
+
+| Element | Must Match |
+|---------|------------|
+| **Charts** | Same structure, hooks, state handling, error/loading patterns |
+| **Data fetching** | `useAbortableQuery` + `buildApiParams` + adapters |
+| **State management** | Context patterns (e.g., `PowerBIFilterContext`) |
+| **Component structure** | Page → Container → Pure Component |
+
+### Find the Reference First
+
+```bash
+# Find similar implementations
+ls frontend/src/components/powerbi/
+
+# Pick ONE as canonical reference
+cat frontend/src/components/powerbi/TimeTrendChart.jsx
+
+# Your implementation MUST match this exactly
+```
+
+### FORBIDDEN Deviations
+
+- Chart A uses one pattern, Chart B uses different pattern
+- Component X fetches data differently than Component Y
+- "Creative" solutions that differ from established patterns
+- One-off implementations that don't match siblings
+
+### Deviation Requires Explicit Approval
+
+1. Document WHY standard pattern doesn't work
+2. Get explicit user approval before deviating
+3. Consider updating the standard instead
+
+**Default: Match existing patterns exactly. No creativity. No variation.**
+
+## Part 7: Forbidden Patterns
 
 ### Starting Without System Architecture Understanding
 ```
@@ -208,7 +254,19 @@ Assistant: "Let me first review the codebase and provide my findings report..."
 # Correct: Use or extend buildApiParams
 ```
 
-## Part 7: Correct Patterns
+### Deviating From Sibling Implementations
+```
+# Existing charts: All use useAbortableQuery + buildApiParams + ChartSlot
+# Your chart: Uses different hooks/structure <- WRONG
+# Correct: Match the exact pattern of existing charts
+
+# Find reference:
+ls frontend/src/components/powerbi/
+cat frontend/src/components/powerbi/TimeTrendChart.jsx
+# Match this EXACTLY
+```
+
+## Part 8: Correct Patterns
 
 ### Full Context-First Flow
 ```
@@ -286,3 +344,9 @@ Based on these findings, I'll implement by:
 - [ ] No band-aid fixes or special-casing
 - [ ] Solves the CLASS of problem, not just this instance
 - [ ] Another developer can understand and maintain this
+
+**Standardization Validation:**
+- [ ] Identified reference implementation (existing similar chart/component)
+- [ ] Matches the reference pattern exactly
+- [ ] No deviation from sibling implementations
+- [ ] Same hooks, same state handling, same structure as siblings

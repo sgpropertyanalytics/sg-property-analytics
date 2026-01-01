@@ -362,6 +362,57 @@ Before implementing ANY task, Claude MUST understand the codebase context first.
 
 **If any answer is concerning → redesign the solution.**
 
+## Standardization Rule (NON-NEGOTIABLE)
+
+**All charts, components, and logic MUST follow the same standardized patterns.**
+
+### The Uniformity Principle
+
+| Element | Must Be Standardized To |
+|---------|------------------------|
+| **Charts** | Same structure, same hooks, same state handling, same error/loading patterns |
+| **Data fetching** | `useAbortableQuery` + `buildApiParams` + adapters |
+| **State management** | Context patterns (e.g., `PowerBIFilterContext`) |
+| **API calls** | `apiClient` with standard error handling |
+| **Component structure** | Page → Container → Pure Component pattern |
+| **Props interface** | Consistent prop naming across similar components |
+
+### No Deviation Without Explicit Approval
+
+**FORBIDDEN:**
+- Chart A uses one pattern, Chart B uses a different pattern
+- Component X fetches data one way, Component Y fetches differently
+- Logic implemented differently across similar features
+- "Creative" solutions that differ from established patterns
+- One-off implementations that don't match siblings
+
+**REQUIRED:**
+- All similar components look and behave the same way
+- New charts copy the exact pattern of existing charts
+- Logic follows the same flow as sibling implementations
+- When in doubt, find an existing example and match it exactly
+
+### Before Implementing, Find the Reference
+
+```bash
+# Find how similar charts are implemented
+ls frontend/src/components/powerbi/
+
+# Pick ONE as the canonical reference
+cat frontend/src/components/powerbi/TimeTrendChart.jsx
+
+# Your implementation MUST match this pattern exactly
+```
+
+### Deviation Requires Explicit Justification
+
+If you believe a deviation is necessary:
+1. **Document WHY** the standard pattern doesn't work
+2. **Get explicit approval** before implementing differently
+3. **Consider updating the standard** instead of deviating
+
+**Default behavior: Match existing patterns exactly. No creativity. No variation.**
+
 ## The Pre-Planning Checklist (MANDATORY)
 
 Before writing OR planning ANY code change:
@@ -431,6 +482,13 @@ Before ANY implementation, Claude MUST explicitly report:
 - [ ] No band-aid fixes or special-casing
 - [ ] Solves the CLASS of problem, not just this instance
 - [ ] Another developer can understand and maintain this
+
+### Standardization Validation
+- Reference implementation: [e.g., "TimeTrendChart.jsx"]
+- [ ] Matches the reference pattern exactly
+- [ ] No deviation from sibling implementations
+- [ ] Same hooks, same state handling, same structure
+- [ ] If deviation needed: documented justification and explicit approval obtained
 ```
 
 **This report is NOT optional.** Implementation proposals without this report are invalid.
@@ -1243,6 +1301,12 @@ Regions: CCR=#213448, RCR=#547792, OCR=#94B4C1
 - [ ] No band-aid fixes or special-casing
 - [ ] Solves the CLASS of problem, not just this instance
 - [ ] Another developer can understand and maintain this
+
+**Standardization Validation:**
+- [ ] Identified reference implementation (existing similar chart/component)
+- [ ] Matches the reference pattern exactly
+- [ ] No deviation from sibling implementations
+- [ ] Same hooks, same state handling, same structure as siblings
 
 ## Pre-Commit
 - [ ] Can explain file in one sentence
