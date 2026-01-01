@@ -140,12 +140,15 @@ class TestSubscriptionContract:
         assert contract.version == "v3"
 
     def test_response_has_subscription_fields(self, contract_registry):
-        """ResponseSchema should include tier, subscribed, ends_at."""
+        """ResponseSchema should include tier, has_access, subscribed, and expiry."""
         contract = contract_registry["auth/subscription"]
         data_fields = contract.response_schema.data_fields
 
         assert "tier" in data_fields
+        assert "has_access" in data_fields
         assert "subscribed" in data_fields
+        assert "entitlement_source" in data_fields
+        assert "access_expires_at" in data_fields
         assert "ends_at" in data_fields
 
 

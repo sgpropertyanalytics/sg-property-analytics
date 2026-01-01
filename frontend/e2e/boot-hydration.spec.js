@@ -163,7 +163,7 @@ test.describe('Boot Hydration Smoke Tests', () => {
       await context.addInitScript(() => {
         localStorage.setItem('token', 'mock-jwt-token-for-testing');
         localStorage.setItem('subscription_cache', JSON.stringify({
-          tier: 'enterprise',
+          tier: 'premium',
           subscribed: true,
           ends_at: null,
           version: 2,

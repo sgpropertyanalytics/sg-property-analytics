@@ -184,7 +184,7 @@ def stripe_webhook():
             if user_id and plan_id:
                 user = User.query.get(int(user_id))
                 if user:
-                    user.tier = 'premium'
+                    user.plan_tier = 'premium'
                     user.subscription_status = 'active'
                     user.subscription_ends_at = datetime.utcnow() + PLAN_DURATIONS.get(plan_id, timedelta(days=90))
                     db.session.commit()
@@ -198,7 +198,7 @@ def stripe_webhook():
             if customer_id:
                 user = User.query.filter_by(stripe_customer_id=customer_id).first()
                 if user:
-                    user.tier = 'free'
+                    user.plan_tier = 'free'
                     user.subscription_status = None
                     user.subscription_ends_at = None
                     db.session.commit()
@@ -223,13 +223,13 @@ def stripe_webhook():
 
                     # Set tier based on status
                     if status in ('active', 'trialing'):
-                        user.tier = 'premium'
+                        user.plan_tier = 'premium'
                     elif status == 'canceled':
                         # Canceled but still has access until period end
                         # Keep tier as premium, is_subscribed() will check dates
                         pass  # Don't change tier yet
                     elif status in ('unpaid', 'incomplete', 'incomplete_expired'):
-                        user.tier = 'free'
+                        user.plan_tier = 'free'
                     # past_due: keep premium tier but is_subscribed() handles grace
 
                     db.session.commit()

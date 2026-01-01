@@ -255,7 +255,10 @@ SUBSCRIPTION_SERVICE_SCHEMA = ServiceBoundarySchema(
 SUBSCRIPTION_RESPONSE_SCHEMA = ResponseSchema(
     data_fields={
         "tier": FieldSpec(name="tier", type=str, required=True),
+        "has_access": FieldSpec(name="has_access", type=bool, required=True),
         "subscribed": FieldSpec(name="subscribed", type=bool, required=True),
+        "entitlement_source": FieldSpec(name="entitlement_source", type=str, nullable=True),
+        "access_expires_at": FieldSpec(name="access_expires_at", type=str, nullable=True),
         "ends_at": FieldSpec(name="ends_at", type=str, nullable=True),
     },
     meta_fields={
