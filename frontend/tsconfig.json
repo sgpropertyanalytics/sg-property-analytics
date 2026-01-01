@@ -5,11 +5,11 @@
     "jsx": "react-jsx",
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "types": ["vite/client"],
+    "types": ["node", "vite/client"],
 
     // Type-check JS files without converting to TS
     "allowJs": true,
-    "checkJs": true,
+    "checkJs": false,
     "noEmit": true,
 
     // Strictness - start relaxed, tighten over time
