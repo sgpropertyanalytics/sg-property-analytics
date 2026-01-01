@@ -44,6 +44,7 @@ import {
   TIME_LEVELS,
   LOCATION_LEVELS,
   DEFAULT_TIME_FILTER,
+  isValidTimeFilter,
 } from './constants';
 
 // Derived state and API params (consolidated)
@@ -88,19 +89,24 @@ export function PowerBIFilterProvider({ children, pageId: explicitPageId }) {
 
   // ===== Migration Helper =====
   // Converts old datePreset/dateRange format to new unified timeFilter
+  // Also validates existing timeFilter to handle corrupted storage
   const migrateFilters = (saved) => {
-    // If already has timeFilter, no migration needed
-    if (saved.timeFilter) {
-      // Remove legacy fields if present
-      const { datePreset, dateRange, ...rest } = saved;
+    if (!saved || typeof saved !== 'object') {
+      return INITIAL_FILTERS;
+    }
+
+    // Remove legacy fields regardless of path taken
+    const { datePreset, dateRange, ...rest } = saved;
+
+    // If already has valid timeFilter, use it
+    if (isValidTimeFilter(saved.timeFilter)) {
       return { ...INITIAL_FILTERS, ...rest, timeFilter: saved.timeFilter };
     }
 
-    // Migrate from old format
-    const { datePreset, dateRange, ...rest } = saved;
-    let timeFilter = INITIAL_FILTERS.timeFilter; // Default
+    // Migrate from old format or use default
+    let timeFilter = DEFAULT_TIME_FILTER;
 
-    if (datePreset && datePreset !== 'custom') {
+    if (datePreset && datePreset !== 'custom' && typeof datePreset === 'string') {
       // Old preset mode -> new preset mode
       timeFilter = { type: 'preset', value: datePreset };
     } else if (dateRange && (dateRange.start || dateRange.end)) {

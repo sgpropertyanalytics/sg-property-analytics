@@ -38,9 +38,29 @@ export const INITIAL_FILTERS = {
 
 /**
  * Default time filter value (preset mode with 1 year).
- * Used for reset operations.
+ * Used for reset operations and fallbacks.
  */
 export const DEFAULT_TIME_FILTER = { type: 'preset', value: 'Y1' };
+
+/**
+ * Validates timeFilter structure.
+ * Returns true if valid preset or custom type with appropriate fields.
+ */
+export function isValidTimeFilter(tf) {
+  if (!tf || typeof tf !== 'object') return false;
+  if (tf.type === 'preset') return typeof tf.value === 'string';
+  if (tf.type === 'custom') return true; // start/end can be null
+  return false;
+}
+
+/**
+ * Safely gets timeFilter with fallback to default.
+ * Use this instead of direct access for consistency.
+ */
+export function getTimeFilter(filters) {
+  const tf = filters?.timeFilter;
+  return isValidTimeFilter(tf) ? tf : DEFAULT_TIME_FILTER;
+}
 
 /**
  * Default fact filter state.

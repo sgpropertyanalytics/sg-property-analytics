@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { usePowerBIFilters } from '../../context/PowerBIFilter';
+import { getTimeFilter } from '../../context/PowerBIFilter/constants';
 import {
   REGIONS,
   DISTRICT_NAMES,
@@ -35,8 +36,8 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
     resetFilters,
   } = usePowerBIFilters();
 
-  // Get time filter state - unified structure
-  const timeFilter = filters.timeFilter || { type: 'preset', value: 'Y1' };
+  // Get time filter state - use helper for consistent fallback
+  const timeFilter = getTimeFilter(filters);
   const isPresetMode = timeFilter.type === 'preset';
   const currentPreset = isPresetMode ? timeFilter.value : 'custom';
 
