@@ -337,7 +337,7 @@ export function MacroOverviewContent() {
                           height={compressionHeight}
                           saleType={SALE_TYPE}
                           sharedData={compressionData}
-                          sharedStatus={shouldFetchCompression ? compressionStatus : 'pending'}
+                          sharedStatus={compressionStatus}
                         />
                       </Suspense>
                     </ChartWatermark>
@@ -349,7 +349,7 @@ export function MacroOverviewContent() {
                           height={compressionHeight}
                           saleType={SALE_TYPE}
                           sharedData={compressionData}
-                          sharedStatus={shouldFetchCompression ? compressionStatus : 'pending'}
+                          sharedStatus={compressionStatus}
                         />
                       </Suspense>
                     </ChartWatermark>
@@ -367,7 +367,7 @@ export function MacroOverviewContent() {
                           height={oscillatorHeight}
                           saleType={SALE_TYPE}
                           sharedRawData={compressionRaw}
-                          sharedStatus={shouldFetchCompression ? compressionStatus : 'pending'}
+                          sharedStatus={compressionStatus}
                         />
                       </Suspense>
                     </ChartWatermark>
@@ -387,7 +387,7 @@ export function MacroOverviewContent() {
                           height={standardChartHeight}
                           saleType={SALE_TYPE}
                           sharedData={dashboardPanels?.price_histogram}
-                          sharedStatus={shouldFetchPanels ? dashboardStatus : 'pending'}
+                          sharedStatus={dashboardStatus}
                         />
                       </ChartWatermark>
                     </ErrorBoundary>
@@ -400,7 +400,7 @@ export function MacroOverviewContent() {
                           height={standardChartHeight}
                           saleType={SALE_TYPE}
                           sharedData={dashboardPanels?.beads_chart}
-                          sharedStatus={shouldFetchPanels ? dashboardStatus : 'pending'}
+                          sharedStatus={dashboardStatus}
                         />
                       </ChartWatermark>
                     </ErrorBoundary>

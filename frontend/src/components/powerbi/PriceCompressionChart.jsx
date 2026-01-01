@@ -54,7 +54,8 @@ export const PriceCompressionChart = React.memo(function PriceCompressionChart({
   const chartRef = useRef(null);
 
   // Skip internal fetch if parent provides sharedData (eliminates duplicate API call)
-  const useSharedData = sharedData !== null;
+  // Use loose equality to catch both null AND undefined (common when data hasn't arrived)
+  const useSharedData = sharedData != null;
 
   // Defer fetch until chart is visible (low priority - below the fold)
   // IMPORTANT: filterKey must include ALL state that affects the query data
