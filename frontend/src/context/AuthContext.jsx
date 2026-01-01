@@ -96,6 +96,18 @@ export function AuthProvider({ children }) {
   // Subscription context methods (SubscriptionProvider wraps AuthProvider)
   const { bootstrapSubscription, fetchSubscription, clearSubscription } = useSubscription();
 
+  // P0 FIX: Ensure auth listener registers exactly once.
+  // Use refs so callback always reads latest functions/state without re-registering.
+  const authListenerRegisteredRef = useRef(false);
+  const authStateGuardRef = useRef(authStateGuard);
+  authStateGuardRef.current = authStateGuard;
+  const fetchSubscriptionRef = useRef(fetchSubscription);
+  fetchSubscriptionRef.current = fetchSubscription;
+  const bootstrapSubscriptionRef = useRef(bootstrapSubscription);
+  bootstrapSubscriptionRef.current = bootstrapSubscription;
+  const tokenStatusRef = useRef(tokenStatus);
+  tokenStatusRef.current = tokenStatus;
+
   // 5s safety net for authUiLoading - enables Google button even if Firebase is slow
   useEffect(() => {
     if (!authUiLoading) return; // Already cleared
@@ -129,12 +141,19 @@ export function AuthProvider({ children }) {
       const auth = getFirebaseAuth();
       setLoading(true);
 
+      if (process.env.NODE_ENV !== 'production') {
+        if (authListenerRegisteredRef.current) {
+          console.error('[Auth] onAuthStateChanged registered more than once', new Error().stack);
+        }
+        authListenerRegisteredRef.current = true;
+      }
+
       // Handle redirect result (for mobile sign-in)
       getRedirectResult(auth)
         .then(async (result) => {
           if (result?.user) {
             // User signed in via redirect - sync with backend
-            const requestId = startRequest();
+            const requestId = authStateGuardRef.current.startRequest();
             try {
               const idToken = await result.user.getIdToken();
               const response = await apiClient.post('/auth/firebase-sync', {
@@ -143,14 +162,14 @@ export function AuthProvider({ children }) {
                 displayName: result.user.displayName,
                 photoURL: result.user.photoURL,
               }, {
-                signal: getSignal(),
+                signal: authStateGuardRef.current.getSignal(),
               });
 
-              if (!isStale(requestId) && response.data.token) {
+              if (!authStateGuardRef.current.isStale(requestId) && response.data.token) {
                 localStorage.setItem('token', response.data.token);
                 // Bootstrap subscription from firebase-sync response
                 if (response.data.subscription) {
-                  bootstrapSubscription(response.data.subscription, result.user.email);
+                  bootstrapSubscriptionRef.current(response.data.subscription, result.user.email);
                 }
               }
             } catch (err) {
@@ -167,7 +186,7 @@ export function AuthProvider({ children }) {
       const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
         // Start a new request for each auth state change - cancels any in-flight API calls
         // Uses authStateGuard - separate from tokenRefreshGuard to avoid cross-abort
-        const requestId = authStateGuard.startRequest();
+        const requestId = authStateGuardRef.current.startRequest();
         // Local flag to track if we've set initialized in this callback
         let didSetInitialized = false;
 
@@ -180,7 +199,7 @@ export function AuthProvider({ children }) {
           // CRITICAL: Set initialized=true SYNCHRONOUSLY after we know auth state.
           // This is the ONLY place initialized should be set for normal auth flow.
           // Guard: Only set if this is still the current request (prevents race conditions)
-          if (!authStateGuard.isStale(requestId)) {
+          if (!authStateGuardRef.current.isStale(requestId)) {
             setLoading(false);
             setAuthUiLoading(false); // Clear UI loading on first auth state
             setInitialized(true);
@@ -195,23 +214,23 @@ export function AuthProvider({ children }) {
             // User exists, token exists (page refresh)
             setTokenStatus(TokenStatus.PRESENT);
             // Fetch subscription from backend (no firebase-sync on refresh)
-            fetchSubscription(firebaseUser.email);
+            fetchSubscriptionRef.current(firebaseUser.email);
           } else {
             // User exists, no token → need sync
-            prevTokenStatusRef.current = tokenStatus; // Store for abort recovery
+            prevTokenStatusRef.current = tokenStatusRef.current; // Store for abort recovery
             setTokenStatus(TokenStatus.REFRESHING);
 
             // Sync with backend to get token
             const result = await syncTokenWithBackend(
               firebaseUser,
               requestId,
-              authStateGuard.getSignal,
-              authStateGuard.isStale
+              authStateGuardRef.current.getSignal,
+              authStateGuardRef.current.isStale
             );
 
             // Update token status based on result
             // Guard: Only update if this is still the current request
-            if (!authStateGuard.isStale(requestId)) {
+            if (!authStateGuardRef.current.isStale(requestId)) {
               if (result.aborted) {
                 // Abort is transient - restore previous status (never stay in REFRESHING)
                 // This avoids accidentally downgrading PRESENT→MISSING on abort
@@ -236,7 +255,7 @@ export function AuthProvider({ children }) {
           // SAFETY NET: Guarantee initialized is set even if everything above fails.
           // This is defensive programming - the try block should always set it,
           // but this ensures no code path can leave boot stuck.
-          if (!authStateGuard.isStale(requestId) && !didSetInitialized) {
+          if (!authStateGuardRef.current.isStale(requestId) && !didSetInitialized) {
             console.warn('[Auth] Safety net: setting initialized in finally block');
             setLoading(false);
             setInitialized(true);
@@ -306,8 +325,8 @@ export function AuthProvider({ children }) {
       // If init fails, mark token as present (no blocking)
       setTokenStatus(TokenStatus.PRESENT);
     }
-  // authStateGuard methods are stable, but list them for clarity
-  }, [authStateGuard]);
+  // Register once by design; guard/functions are accessed via refs.
+  }, []);
 
   // Sync Firebase user with backend
   const syncWithBackend = useCallback(async (firebaseUser) => {
