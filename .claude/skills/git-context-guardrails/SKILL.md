@@ -172,6 +172,16 @@ From git history, identify:
 
 **All code, logic, architectural patterns, and process flows MUST follow the same standardized patterns across the ENTIRE codebase (frontend AND backend).**
 
+### Core Principle: Unified System Architecture
+
+**The system architecture design MUST be aligned, standardized, and consistent across the entire codebase.**
+
+- **ONE architectural pattern** for each type of operation
+- **ONE data flow pattern** that all features follow
+- **ONE way** to structure routes, services, components, utilities
+- **No architectural drift** - new code follows same design as existing
+- **Every piece of code must feel like it was written by the same person**
+
 ### The Uniformity Principle
 
 **Frontend:**

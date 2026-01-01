@@ -366,6 +366,19 @@ Before implementing ANY task, Claude MUST understand the codebase context first.
 
 **All code, logic, architectural patterns, and process flows MUST follow the same standardized patterns across the ENTIRE codebase (frontend AND backend).**
 
+### Core Principle: Unified System Architecture
+
+**The system architecture design MUST be aligned, standardized, and consistent across the entire codebase.**
+
+This means:
+- **ONE architectural pattern** for each type of operation (not multiple approaches)
+- **ONE data flow pattern** that all features follow
+- **ONE way** to structure routes, services, components, and utilities
+- **Consistency** between how frontend and backend interact
+- **No architectural drift** - new code follows the same design as existing code
+
+**Every piece of code must feel like it was written by the same person following the same design.**
+
 ### The Uniformity Principle
 
 **Frontend Standardization:**
