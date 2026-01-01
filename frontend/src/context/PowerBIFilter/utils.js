@@ -64,7 +64,12 @@ export function deriveActiveFilters(filters, breadcrumbs, drillPath) {
  */
 export function countActiveFilters(filters) {
   let count = 0;
-  if (filters.dateRange.start || filters.dateRange.end) count++;
+  // Count time filter if: custom date range set OR preset is not default (Y1)
+  if (filters.dateRange.start || filters.dateRange.end) {
+    count++;
+  } else if (filters.datePreset && filters.datePreset !== 'Y1') {
+    count++;
+  }
   if (filters.districts.length > 0) count++;
   if (filters.bedroomTypes.length > 0) count++;
   if (filters.segments.length > 0) count++;
