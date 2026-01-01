@@ -31,7 +31,7 @@ function debugLog(stage, data) {
   if (!DEBUG_NEW_VS_RESALE) return;
   const timestamp = new Date().toISOString().slice(11, 23);
   // eslint-disable-next-line no-console -- intentional debug utility
-  console.log(`[NewVsResale ${timestamp}] ${stage}:`, data);
+  console.warn(`[NewVsResale ${timestamp}] ${stage}:`, data);
 }
 
 function debugWarn(stage, data) {
@@ -44,14 +44,14 @@ function debugWarn(stage, data) {
 if (typeof window !== 'undefined') {
   window.__debugNewVsResale = () => {
     /* eslint-disable no-console -- intentional debug utility for developers */
-    console.log('%c[NewVsResale] Debug enabled. Watch for these log stages:', 'color: blue; font-weight: bold');
-    console.log('  1. MOUNT - Component mounted with initial filters');
-    console.log('  2. API_PARAMS - Params being sent to API');
-    console.log('  3. API_RESPONSE - Raw response from backend');
-    console.log('  4. TRANSFORMED_DATA - After adapter transformation');
-    console.log('  5. CHART_ARRAYS - Final arrays for Chart.js');
-    console.log('  6. RENDER - Rendering decision');
-    console.log('%c⚠️ Watch for warnings: RESALE_DATA_MISSING, EMPTY_RESALE_LINE', 'color: orange');
+    console.warn('%c[NewVsResale] Debug enabled. Watch for these log stages:', 'color: blue; font-weight: bold');
+    console.warn('  1. MOUNT - Component mounted with initial filters');
+    console.warn('  2. API_PARAMS - Params being sent to API');
+    console.warn('  3. API_RESPONSE - Raw response from backend');
+    console.warn('  4. TRANSFORMED_DATA - After adapter transformation');
+    console.warn('  5. CHART_ARRAYS - Final arrays for Chart.js');
+    console.warn('  6. RENDER - Rendering decision');
+    console.warn('%c⚠️ Watch for warnings: RESALE_DATA_MISSING, EMPTY_RESALE_LINE', 'color: orange');
     /* eslint-enable no-console */
   };
 }

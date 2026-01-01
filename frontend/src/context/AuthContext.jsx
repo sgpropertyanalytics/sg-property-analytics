@@ -238,7 +238,7 @@ export function AuthProvider({ children }) {
               if (result.aborted) {
                 // Abort is transient - restore previous status (never stay in REFRESHING)
                 // This avoids accidentally downgrading PRESENT→MISSING on abort
-                console.log('[Auth] Token sync aborted, restoring prev status:', prevTokenStatusRef.current);
+                console.warn('[Auth] Token sync aborted, restoring prev status:', prevTokenStatusRef.current);
                 setTokenStatus(prevTokenStatusRef.current);
               } else if (result.ok) {
                 setTokenStatus(TokenStatus.PRESENT);
@@ -306,7 +306,7 @@ export function AuthProvider({ children }) {
           if (isAbortError(err)) {
             // Debug level - this happens normally during boot/navigation
             if (process.env.NODE_ENV === 'development') {
-              console.log('[Auth] Token sync cancelled (expected during boot/navigation)');
+              console.warn('[Auth] Token sync cancelled (expected during boot/navigation)');
             }
             return { ok: false, aborted: true };
           }
@@ -466,7 +466,7 @@ export function AuthProvider({ children }) {
   // Returns structured result: { ok: boolean, tokenStored: boolean, reason?: string }
   // P0 FIX: Uses separate tokenRefreshGuard to avoid aborting syncTokenWithBackend
   const refreshToken = useCallback(async () => {
-    console.log('[Auth] refreshToken called, user:', user?.email);
+    console.warn('[Auth] refreshToken called, user:', user?.email);
 
     if (!user) {
       console.warn('[Auth] Cannot refresh token - no user');
@@ -482,11 +482,11 @@ export function AuthProvider({ children }) {
 
     try {
       // Force refresh the Firebase ID token
-      console.log('[Auth] Getting fresh Firebase ID token...');
+      console.warn('[Auth] Getting fresh Firebase ID token...');
       const idToken = await user.getIdToken(true); // true = force refresh
-      console.log('[Auth] Got Firebase ID token, length:', idToken?.length);
+      console.warn('[Auth] Got Firebase ID token, length:', idToken?.length);
 
-      console.log('[Auth] Calling /auth/firebase-sync...');
+      console.warn('[Auth] Calling /auth/firebase-sync...');
       const response = await apiClient.post('/auth/firebase-sync', {
         idToken,
         email: user.email,
@@ -496,7 +496,7 @@ export function AuthProvider({ children }) {
         signal: tokenRefreshGuard.getSignal(),
       });
 
-      console.log('[Auth] firebase-sync response:', {
+      console.warn('[Auth] firebase-sync response:', {
         status: response.status,
         hasToken: !!response.data?.token,
         tokenLength: response.data?.token?.length,
@@ -517,7 +517,7 @@ export function AuthProvider({ children }) {
         }
         const storedToken = localStorage.getItem('token');
         const tokenStored = storedToken === response.data.token;
-        console.log('[Auth] Token stored successfully:', tokenStored);
+        console.warn('[Auth] Token stored successfully:', tokenStored);
         // Update token status
         setTokenStatus(TokenStatus.PRESENT);
         return { ok: true, tokenStored, reason: null };
@@ -569,7 +569,7 @@ export function AuthProvider({ children }) {
       return { ok: false, reason: 'no_user' };
     }
 
-    console.log('[Auth] Manual token sync retry triggered');
+    console.warn('[Auth] Manual token sync retry triggered');
     prevTokenStatusRef.current = tokenStatus; // Store for abort recovery
     setTokenStatus(TokenStatus.REFRESHING);
 
@@ -599,7 +599,7 @@ export function AuthProvider({ children }) {
           bootstrapSubscription(response.data.subscription, user.email);
         }
         setTokenStatus(TokenStatus.PRESENT);
-        console.log('[Auth] Token sync retry succeeded');
+        console.warn('[Auth] Token sync retry succeeded');
         return { ok: true, reason: null };
       }
 
@@ -610,7 +610,7 @@ export function AuthProvider({ children }) {
     } catch (err) {
       // Abort is transient - restore prev status (never stay in REFRESHING)
       if (isAbortError(err)) {
-        console.log('[Auth] Token sync retry aborted, restoring prev status:', prevTokenStatusRef.current);
+        console.warn('[Auth] Token sync retry aborted, restoring prev status:', prevTokenStatusRef.current);
         if (!tokenRefreshGuard.isStale(requestId)) {
           setTokenStatus(prevTokenStatusRef.current);
         }
@@ -643,7 +643,7 @@ export function AuthProvider({ children }) {
 
       // Debounce: Skip if refresh was done recently
       if (now - lastRefreshTime < REFRESH_DEBOUNCE_MS) {
-        console.log('[Auth] Token refresh skipped (debounced)', { url });
+        console.warn('[Auth] Token refresh skipped (debounced)', { url });
         return;
       }
 
@@ -655,16 +655,16 @@ export function AuthProvider({ children }) {
 
       // Skip if already refreshing (debounce parallel 401s)
       if (isRefreshing) {
-        console.log('[Auth] Token refresh already in progress - skipping');
+        console.warn('[Auth] Token refresh already in progress - skipping');
         return;
       }
 
-      console.log('[Auth] Token expired event received, refreshing...', { url });
+      console.warn('[Auth] Token expired event received, refreshing...', { url });
       isRefreshing = true;
 
       try {
         const result = await refreshToken();
-        console.log('[Auth] Token refresh result:', result);
+        console.warn('[Auth] Token refresh result:', result);
 
         if (result.ok) {
           // Only update lastRefreshTime on SUCCESS (requirement: debounce successful refreshes)

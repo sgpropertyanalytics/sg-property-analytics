@@ -78,6 +78,7 @@ export const REGION_BADGE_CLASSES = {
   CCR: 'bg-[#213448] text-white',
   RCR: 'bg-[#547792] text-white',
   OCR: 'bg-[#94B4C1] text-[#213448]',
+  SAND: 'bg-[#EAE0CF] text-[#213448]',
 };
 
 /**

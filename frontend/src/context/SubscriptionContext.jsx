@@ -249,7 +249,7 @@ export function SubscriptionProvider({ children }) {
       console.warn('[Subscription] Bootstrap called without valid email - skipping cache');
     }
 
-    console.log('[Subscription] Bootstrapping:', sub, 'for user:', normalizedEmail);
+    console.warn('[Subscription] Bootstrapping:', sub, 'for user:', normalizedEmail);
     const newSub = {
       tier: sub.tier,
       subscribed: sub.subscribed || false,
@@ -286,7 +286,7 @@ export function SubscriptionProvider({ children }) {
   const fetchSubscription = useCallback(async (email) => {
     // Race guard: If no token, user logged out - don't fetch
     if (!localStorage.getItem('token')) {
-      console.log('[Subscription] No token, skipping fetch');
+      console.warn('[Subscription] No token, skipping fetch');
       return;
     }
 
@@ -294,7 +294,7 @@ export function SubscriptionProvider({ children }) {
     // This prevents the onAuthStateChanged → fetchSubscription duplicate after sign-in
     // Deterministic: no timing assumptions, just "was bootstrap called before this fetch?"
     if (bootstrappedInSessionRef.current) {
-      console.log('[Subscription] Skipping fetch - already bootstrapped in this session');
+      console.warn('[Subscription] Skipping fetch - already bootstrapped in this session');
       bootstrappedInSessionRef.current = false; // Clear flag so future fetches work
       return;
     }
@@ -313,7 +313,7 @@ export function SubscriptionProvider({ children }) {
     // Avoid repeated fetch calls for the same user while a request is in flight
     if (activeRequestRef.current.type === 'fetch'
       && activeRequestRef.current.email === (normalizedEmail || email)) {
-      console.log('[Subscription] Fetch already in progress for:', normalizedEmail || email);
+      console.warn('[Subscription] Fetch already in progress for:', normalizedEmail || email);
       return;
     }
 
@@ -332,7 +332,7 @@ export function SubscriptionProvider({ children }) {
     // Step 1: Load per-user cache first (fast display while verifying)
     const cachedSub = normalizedEmail ? getCachedSubscription(normalizedEmail) : null;
     if (cachedSub) {
-      console.log('[Subscription] Loaded from cache for:', normalizedEmail, cachedSub);
+      console.warn('[Subscription] Loaded from cache for:', normalizedEmail, cachedSub);
       setSubscription(cachedSub);
       setStatus(SubscriptionStatus.RESOLVED);
       // Continue to verify from backend...
@@ -341,7 +341,7 @@ export function SubscriptionProvider({ children }) {
     const requestId = startRequest();
     lastFetchAttemptRef.current = { email: normalizedEmail, ts: now };
     activeRequestRef.current = { requestId, email: normalizedEmail || email, type: 'fetch' };
-    console.log('[Subscription] Fetching /auth/subscription for:', normalizedEmail || email);
+    console.warn('[Subscription] Fetching /auth/subscription for:', normalizedEmail || email);
     setLoading(true);
     // Only set LOADING if we didn't have cache (avoid flash)
     if (!cachedSub) {
@@ -358,20 +358,20 @@ export function SubscriptionProvider({ children }) {
 
       // Race guard: Re-check token after fetch (logout may have occurred during request)
       if (!localStorage.getItem('token')) {
-        console.log('[Subscription] Token removed during fetch, discarding result');
+        console.warn('[Subscription] Token removed during fetch, discarding result');
         return;
       }
 
       // Race guard: User switched accounts mid-flight (email changed)
       if (normalizedEmail && currentUserEmailRef.current !== normalizedEmail) {
-        console.log('[Subscription] Email changed during fetch, discarding result:',
+        console.warn('[Subscription] Email changed during fetch, discarding result:',
           { requested: normalizedEmail, current: currentUserEmailRef.current });
         return;
       }
 
       const subData = unwrapSubscriptionResponse(response.data);
       if (subData) {
-        console.log('[Subscription] Fetch success:', subData);
+        console.warn('[Subscription] Fetch success:', subData);
         setSubscription(subData);
         // Cache only if we have a valid normalized email
         if (normalizedEmail) {
@@ -387,7 +387,7 @@ export function SubscriptionProvider({ children }) {
       }
     } catch (err) {
       if (err.name === 'CanceledError' || err.name === 'AbortError') {
-        console.log('[Subscription] Fetch aborted');
+        console.warn('[Subscription] Fetch aborted');
         setStatus(lastStableStatusRef.current);
         return;
       }
@@ -429,7 +429,7 @@ export function SubscriptionProvider({ children }) {
     if (!force
       && lastEnsureAttemptRef.current.email === normalizedEmail
       && now - lastEnsureAttemptRef.current.ts < ENSURE_DEBOUNCE_MS) {
-      console.log('[Subscription] ensureSubscription debounced', { email: normalizedEmail, reason });
+      console.warn('[Subscription] ensureSubscription debounced', { email: normalizedEmail, reason });
       return;
     }
 
@@ -439,7 +439,7 @@ export function SubscriptionProvider({ children }) {
     const isError = status === SubscriptionStatus.ERROR;
 
     if (!force && isSameUser && (isResolved || isLoading)) {
-      console.log('[Subscription] ensureSubscription skipped (already resolved/loading)', {
+      console.warn('[Subscription] ensureSubscription skipped (already resolved/loading)', {
         email: normalizedEmail,
         status,
         reason,
@@ -465,7 +465,7 @@ export function SubscriptionProvider({ children }) {
    */
   const clearSubscription = useCallback(() => {
     const email = currentUserEmailRef.current;
-    console.log('[Subscription] Clearing (logout) for:', email);
+    console.warn('[Subscription] Clearing (logout) for:', email);
     setSubscription({ tier: 'free', subscribed: false, ends_at: null });
     setStatus(SubscriptionStatus.RESOLVED);
     setLoading(false);
@@ -485,7 +485,7 @@ export function SubscriptionProvider({ children }) {
   const refreshSubscription = useCallback(async () => {
     const email = currentUserEmailRef.current;
     if (activeRequestRef.current.type === 'refresh' && activeRequestRef.current.email === email) {
-      console.log('[Subscription] Refresh already in progress for:', email);
+      console.warn('[Subscription] Refresh already in progress for:', email);
       return;
     }
     const now = Date.now();
@@ -496,7 +496,7 @@ export function SubscriptionProvider({ children }) {
     }
     const requestId = startRequest();
     activeRequestRef.current = { requestId, email, type: 'refresh' };
-    console.log('[Subscription] Refreshing for:', email);
+    console.warn('[Subscription] Refreshing for:', email);
     setLoading(true);
     setStatus(SubscriptionStatus.LOADING);
     setFetchError(null);
@@ -510,7 +510,7 @@ export function SubscriptionProvider({ children }) {
 
       const subData = unwrapSubscriptionResponse(response.data);
       if (subData) {
-        console.log('[Subscription] Refresh success:', subData);
+        console.warn('[Subscription] Refresh success:', subData);
         setSubscription(subData);
         cacheSubscription(subData, email);
         setStatus(SubscriptionStatus.RESOLVED);
@@ -551,7 +551,7 @@ export function SubscriptionProvider({ children }) {
       console.warn('[Subscription] Retry requested without current user email');
       return;
     }
-    console.log('[Subscription] Manual retry triggered for:', email);
+    console.warn('[Subscription] Manual retry triggered for:', email);
     await refreshSubscription();
   }, [refreshSubscription]);
 

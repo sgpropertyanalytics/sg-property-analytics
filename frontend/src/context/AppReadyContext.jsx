@@ -137,7 +137,7 @@ export function AppReadyProvider({ children }) {
       // Boot completed - log duration (always, not just dev)
       const bootDuration = Date.now() - bootStartRef.current;
       if (process.env.NODE_ENV === 'development') {
-        console.log(`[AppReady] ✓ Boot complete in ${bootDuration}ms`);
+        console.warn(`[AppReady] ✓ Boot complete in ${bootDuration}ms`);
       }
       // Reset flags for potential page navigation
       hasLoggedWarningRef.current = false;
@@ -189,7 +189,7 @@ export function AppReadyProvider({ children }) {
     if (process.env.NODE_ENV === 'development') {
       // Only log when appReady changes or during boot phase
       if (prevAppReadyRef.current !== appReady || !appReady) {
-        console.log('[AppReady] Boot status:', {
+        console.warn('[AppReady] Boot status:', {
           ...bootStatus,
           elapsed: `${Date.now() - bootStartRef.current}ms`,
         });

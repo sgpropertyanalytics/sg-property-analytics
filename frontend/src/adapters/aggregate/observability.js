@@ -24,14 +24,14 @@ export const logFetchDebug = (chartName, { endpoint, timeGrain, response, rowCou
 
   /* eslint-disable no-console */
   console.group(`[${chartName}] Data Fetch`);
-  console.log('Endpoint:', endpoint);
-  console.log('Time Grain:', timeGrain);
+  console.warn('Endpoint:', endpoint);
+  console.warn('Time Grain:', timeGrain);
   if (response?.meta) {
-    console.log('API Contract Version:', response.meta.apiContractVersion || API_CONTRACT_VERSION);
+    console.warn('API Contract Version:', response.meta.apiContractVersion || API_CONTRACT_VERSION);
   }
-  console.log('Row Count:', rowCount);
+  console.warn('Row Count:', rowCount);
   if (rowCount > 0 && response?.data?.[0]) {
-    console.log('First Row Keys:', Object.keys(response.data[0]));
+    console.warn('First Row Keys:', Object.keys(response.data[0]));
   }
   console.groupEnd();
   /* eslint-enable no-console */
