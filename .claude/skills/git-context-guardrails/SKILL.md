@@ -170,9 +170,11 @@ From git history, identify:
 
 ## Part 6: Standardization Rule
 
-**All charts, components, and logic MUST follow the same standardized patterns.**
+**All code, logic, architectural patterns, and process flows MUST follow the same standardized patterns across the ENTIRE codebase (frontend AND backend).**
 
 ### The Uniformity Principle
+
+**Frontend:**
 
 | Element | Must Match |
 |---------|------------|
@@ -181,24 +183,50 @@ From git history, identify:
 | **State management** | Context patterns (e.g., `PowerBIFilterContext`) |
 | **Component structure** | Page → Container → Pure Component |
 
+**Backend:**
+
+| Element | Must Match |
+|---------|------------|
+| **Route handlers** | parse → validate → call service → return response |
+| **Service functions** | receive params → build query → execute → transform → return |
+| **SQL queries** | `:param` bindings, COALESCE for nulls, same JOIN patterns |
+| **Input validation** | `to_int()`, `to_date()`, `to_list()` from normalize.py |
+
+**Architectural:**
+
+| Element | Must Match |
+|---------|------------|
+| **Data flow** | Frontend → API → Route → Service → DB → Response → Adapter → UI |
+| **Layer responsibilities** | Routes parse, Services compute, Utils transform |
+| **Business logic** | Pages decide, Components render, Backend enforces |
+
 ### Find the Reference First
 
 ```bash
-# Find similar implementations
+# FRONTEND: Find similar implementations
 ls frontend/src/components/powerbi/
-
-# Pick ONE as canonical reference
 cat frontend/src/components/powerbi/TimeTrendChart.jsx
 
-# Your implementation MUST match this exactly
+# BACKEND: Find similar routes
+ls backend/routes/
+cat backend/routes/analytics.py
+
+# BACKEND: Find similar services
+ls backend/services/
+cat backend/services/dashboard_service.py
+
+# Your implementation MUST match the reference exactly
 ```
 
 ### FORBIDDEN Deviations
 
 - Chart A uses one pattern, Chart B uses different pattern
 - Component X fetches data differently than Component Y
+- Route A parses params differently than Route B
+- Service A structures queries differently than Service B
 - "Creative" solutions that differ from established patterns
 - One-off implementations that don't match siblings
+- Different architectural decisions in different places
 
 ### Deviation Requires Explicit Approval
 
@@ -206,7 +234,7 @@ cat frontend/src/components/powerbi/TimeTrendChart.jsx
 2. Get explicit user approval before deviating
 3. Consider updating the standard instead
 
-**Default: Match existing patterns exactly. No creativity. No variation.**
+**Default: Match existing patterns exactly. No creativity. No variation. Frontend AND backend.**
 
 ## Part 7: Forbidden Patterns
 

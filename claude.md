@@ -364,9 +364,11 @@ Before implementing ANY task, Claude MUST understand the codebase context first.
 
 ## Standardization Rule (NON-NEGOTIABLE)
 
-**All charts, components, and logic MUST follow the same standardized patterns.**
+**All code, logic, architectural patterns, and process flows MUST follow the same standardized patterns across the ENTIRE codebase (frontend AND backend).**
 
 ### The Uniformity Principle
+
+**Frontend Standardization:**
 
 | Element | Must Be Standardized To |
 |---------|------------------------|
@@ -376,32 +378,77 @@ Before implementing ANY task, Claude MUST understand the codebase context first.
 | **API calls** | `apiClient` with standard error handling |
 | **Component structure** | Page → Container → Pure Component pattern |
 | **Props interface** | Consistent prop naming across similar components |
+| **Error handling** | Same try/catch patterns, same error boundaries |
+| **Loading states** | Same skeleton/spinner patterns |
+
+**Backend Standardization:**
+
+| Element | Must Be Standardized To |
+|---------|------------------------|
+| **Route handlers** | Same structure: parse → validate → call service → return response |
+| **Service functions** | Same pattern: receive params → build query → execute → transform → return |
+| **SQL queries** | Same style: `:param` bindings, COALESCE for nulls, same JOIN patterns |
+| **Input validation** | `to_int()`, `to_date()`, `to_list()` from `utils/normalize.py` |
+| **Error responses** | Same error envelope structure, same HTTP status codes |
+| **Database access** | Same connection patterns, same transaction handling |
+| **Date handling** | Python `date` objects, never strings in service layer |
+
+**Architectural Standardization:**
+
+| Element | Must Be Standardized To |
+|---------|------------------------|
+| **Data flow** | Frontend → API → Route → Service → DB → Response → Adapter → UI |
+| **Layer responsibilities** | Routes parse, Services compute, Utils transform |
+| **Business logic location** | Pages decide, Components render, Backend enforces |
+| **Parameter passing** | Same param naming, same normalization flow |
+| **Response shapes** | Same JSON structure for similar endpoints |
+
+**Process Flow Standardization:**
+
+| Process | Must Follow |
+|---------|-------------|
+| **Adding a chart** | Copy existing chart → modify data source → adjust rendering |
+| **Adding an endpoint** | Extend `/api/aggregate` OR copy existing route pattern exactly |
+| **Adding a filter** | Use PowerBIFilterContext → buildApiParams flow |
+| **Adding validation** | Use existing normalize.py functions |
+| **Error handling** | Same patterns for 400s vs 500s |
 
 ### No Deviation Without Explicit Approval
 
 **FORBIDDEN:**
 - Chart A uses one pattern, Chart B uses a different pattern
 - Component X fetches data one way, Component Y fetches differently
+- Route A parses params one way, Route B parses differently
+- Service A structures queries differently than Service B
 - Logic implemented differently across similar features
 - "Creative" solutions that differ from established patterns
 - One-off implementations that don't match siblings
+- Different error handling approaches in different places
+- Different data flow patterns for similar operations
 
 **REQUIRED:**
-- All similar components look and behave the same way
-- New charts copy the exact pattern of existing charts
+- All similar code (frontend OR backend) follows the same pattern
+- New implementations copy the exact pattern of existing ones
 - Logic follows the same flow as sibling implementations
+- Same architectural decisions across the entire codebase
 - When in doubt, find an existing example and match it exactly
 
 ### Before Implementing, Find the Reference
 
 ```bash
-# Find how similar charts are implemented
+# FRONTEND: Find how similar charts/components are implemented
 ls frontend/src/components/powerbi/
-
-# Pick ONE as the canonical reference
 cat frontend/src/components/powerbi/TimeTrendChart.jsx
 
-# Your implementation MUST match this pattern exactly
+# BACKEND: Find how similar routes are implemented
+ls backend/routes/
+cat backend/routes/analytics.py
+
+# BACKEND: Find how similar services are implemented
+ls backend/services/
+cat backend/services/dashboard_service.py
+
+# Your implementation MUST match the reference pattern exactly
 ```
 
 ### Deviation Requires Explicit Justification
@@ -411,7 +458,7 @@ If you believe a deviation is necessary:
 2. **Get explicit approval** before implementing differently
 3. **Consider updating the standard** instead of deviating
 
-**Default behavior: Match existing patterns exactly. No creativity. No variation.**
+**Default behavior: Match existing patterns exactly. No creativity. No variation. Frontend AND backend.**
 
 ## The Pre-Planning Checklist (MANDATORY)
 
