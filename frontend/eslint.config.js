@@ -100,9 +100,9 @@ export default [
     },
   },
 
-  // TypeScript parsing support
+  // TypeScript/TSX parsing support (also used for JSX so interface/JSDoc types parse cleanly)
   {
-    files: ['src/**/*.{ts,tsx}'],
+    files: ['src/**/*.{js,jsx,ts,tsx}'],
     languageOptions: {
       parser: tsParser,
       ecmaVersion: 'latest',
