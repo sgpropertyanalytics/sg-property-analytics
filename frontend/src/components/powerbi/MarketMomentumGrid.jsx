@@ -42,9 +42,11 @@ function periodToDateFrom(period) {
  * It receives filters as props from the parent component (DistrictDeepDive).
  * This is intentional - PowerBIFilterContext only affects Market Pulse page.
  *
- * @param {string} period - '3m', '6m', '12m', or 'all'
- * @param {string} bedroom - 'all', '1', '2', '3', '4', '5'
- * @param {string} saleType - 'all', 'New Sale', 'Resale'
+ * @param {{
+ *  period?: string,
+ *  bedroom?: string,
+ *  saleType?: string,
+ * }} props
  */
 export function MarketMomentumGrid({ period = '12m', bedroom = 'all', saleType = 'all' }) {
   // Create a stable filter key for dependency tracking
