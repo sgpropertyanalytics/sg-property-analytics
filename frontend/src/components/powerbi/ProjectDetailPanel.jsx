@@ -110,8 +110,13 @@ function ProjectDetailPanelInner({
         };
 
         // Apply sidebar filters for trend/price views (but not highlight)
-        if (filters.dateRange.start) baseParams.date_from = filters.dateRange.start;
-        if (filters.dateRange.end) baseParams.date_to = filters.dateRange.end;
+        const tf = filters.timeFilter;
+        if (tf?.type === 'preset' && tf.value) {
+          baseParams.timeframe = tf.value;
+        } else if (tf?.type === 'custom') {
+          if (tf.start) baseParams.date_from = tf.start;
+          if (tf.end) baseParams.date_to = tf.end;
+        }
         if (filters.bedroomTypes.length > 0) {
           baseParams.bedroom = filters.bedroomTypes.join(',');
         }
@@ -138,9 +143,13 @@ function ProjectDetailPanelInner({
           panels: 'price_histogram',
           histogram_bins: 20,
         };
-        // Apply date filters to histogram as well
-        if (filters.dateRange.start) histogramParams.date_from = filters.dateRange.start;
-        if (filters.dateRange.end) histogramParams.date_to = filters.dateRange.end;
+        // Apply time filters to histogram as well
+        if (tf?.type === 'preset' && tf.value) {
+          histogramParams.timeframe = tf.value;
+        } else if (tf?.type === 'custom') {
+          if (tf.start) histogramParams.date_from = tf.start;
+          if (tf.end) histogramParams.date_to = tf.end;
+        }
         if (filters.bedroomTypes.length > 0) {
           histogramParams.bedroom = filters.bedroomTypes.join(',');
         }

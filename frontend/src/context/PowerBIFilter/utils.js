@@ -19,13 +19,17 @@
 export function deriveActiveFilters(filters, breadcrumbs, drillPath) {
   const combined = { ...filters };
 
-  // Apply time breadcrumb filters
+  // Apply time breadcrumb filters (overrides timeFilter with custom date range)
   if (breadcrumbs.time.length > 0) {
     const lastTime = breadcrumbs.time[breadcrumbs.time.length - 1];
     if (lastTime && lastTime.value) {
       if (drillPath.time === 'quarter') {
         const yearStr = String(breadcrumbs.time[0].value);
-        combined.dateRange = { start: `${yearStr}-01-01`, end: `${yearStr}-12-31` };
+        combined.timeFilter = {
+          type: 'custom',
+          start: `${yearStr}-01-01`,
+          end: `${yearStr}-12-31`,
+        };
       } else if (drillPath.time === 'month') {
         const lastValue = String(lastTime.value);
         let year;
@@ -40,7 +44,8 @@ export function deriveActiveFilters(filters, breadcrumbs, drillPath) {
         const quarterStartMonth = (q - 1) * 3 + 1;
         const quarterEndMonth = quarterStartMonth + 2;
         const lastDay = new Date(parseInt(year), quarterEndMonth, 0).getDate();
-        combined.dateRange = {
+        combined.timeFilter = {
+          type: 'custom',
           start: `${year}-${String(quarterStartMonth).padStart(2, '0')}-01`,
           end: `${year}-${String(quarterEndMonth).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`,
         };
@@ -61,23 +66,29 @@ export function deriveActiveFilters(filters, breadcrumbs, drillPath) {
 
 /**
  * Count active filters for badge display.
+ * @param {Object} filters - Filter state object (with null guards)
  */
 export function countActiveFilters(filters) {
+  if (!filters) return 0;
+
   let count = 0;
   // Count time filter if: custom date range set OR preset is not default (Y1)
-  if (filters.dateRange.start || filters.dateRange.end) {
-    count++;
-  } else if (filters.datePreset && filters.datePreset !== 'Y1') {
-    count++;
+  const tf = filters.timeFilter;
+  if (tf) {
+    if (tf.type === 'custom' && (tf.start || tf.end)) {
+      count++;
+    } else if (tf.type === 'preset' && tf.value && tf.value !== 'Y1') {
+      count++;
+    }
   }
-  if (filters.districts.length > 0) count++;
-  if (filters.bedroomTypes.length > 0) count++;
-  if (filters.segments.length > 0) count++;
+  if (filters.districts?.length > 0) count++;
+  if (filters.bedroomTypes?.length > 0) count++;
+  if (filters.segments?.length > 0) count++;
   if (filters.saleType) count++;
-  if (filters.psfRange.min !== null || filters.psfRange.max !== null) count++;
-  if (filters.sizeRange.min !== null || filters.sizeRange.max !== null) count++;
+  if (filters.psfRange?.min !== null || filters.psfRange?.max !== null) count++;
+  if (filters.sizeRange?.min !== null || filters.sizeRange?.max !== null) count++;
   if (filters.tenure) count++;
-  if (filters.propertyAge.min !== null || filters.propertyAge.max !== null) count++;
+  if (filters.propertyAge?.min !== null || filters.propertyAge?.max !== null) count++;
   if (filters.propertyAgeBucket) count++;
   if (filters.project) count++;
   return count;
@@ -85,11 +96,11 @@ export function countActiveFilters(filters) {
 
 /**
  * Generate stable filter key for chart dependencies.
+ * Uses unified timeFilter - no more datePreset/dateRange split.
  */
 export function generateFilterKey(activeFilters, factFilter) {
   return JSON.stringify({
-    datePreset: activeFilters.datePreset,
-    dateRange: activeFilters.dateRange,
+    timeFilter: activeFilters.timeFilter,
     districts: activeFilters.districts,
     bedroomTypes: activeFilters.bedroomTypes,
     segments: activeFilters.segments,
@@ -165,19 +176,19 @@ export function buildApiParamsFromState(
     excludeOwnDimension = null,
   } = options;
 
-  // CLEAN SEMANTIC: Presets send timeframe ID, custom sends explicit dates
-  // No mixed semantics - one or the other, never both
-  // See timeframes.js: "Frontend passes timeframe ID → Backend resolves to dates"
-  const preset = activeFilters.datePreset;
+  // CLEAN SEMANTIC: Unified timeFilter handles both preset and custom modes
+  // Preset mode: send timeframe ID → Backend resolves to dates
+  // Custom mode: send explicit dates
+  const tf = activeFilters.timeFilter;
 
-  if (preset && preset !== 'custom') {
+  if (tf?.type === 'preset') {
     // Preset mode: send timeframe param, NOT dates
     // Backend resolves 'Y1' → last 12 months, 'all' → no filter, etc.
-    params.timeframe = preset;
-  } else {
+    params.timeframe = tf.value;
+  } else if (tf?.type === 'custom') {
     // Custom mode: send explicit dates
-    if (activeFilters.dateRange.start) params.dateFrom = activeFilters.dateRange.start;
-    if (activeFilters.dateRange.end) params.dateTo = activeFilters.dateRange.end;
+    if (tf.start) params.dateFrom = tf.start;
+    if (tf.end) params.dateTo = tf.end;
   }
 
   // Districts

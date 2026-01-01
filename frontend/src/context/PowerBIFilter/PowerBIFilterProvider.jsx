@@ -43,6 +43,8 @@ import {
   INITIAL_BREADCRUMBS,
   TIME_LEVELS,
   LOCATION_LEVELS,
+  DEFAULT_TIME_FILTER,
+  isValidTimeFilter,
 } from './constants';
 
 // Derived state and API params (consolidated)
@@ -85,13 +87,43 @@ export function PowerBIFilterProvider({ children, pageId: explicitPageId }) {
     return isHydrated(pageId);
   });
 
+  // ===== Migration Helper =====
+  // Converts old datePreset/dateRange format to new unified timeFilter
+  // Also validates existing timeFilter to handle corrupted storage
+  const migrateFilters = (saved) => {
+    if (!saved || typeof saved !== 'object') {
+      return INITIAL_FILTERS;
+    }
+
+    // Remove legacy fields regardless of path taken
+    const { datePreset, dateRange, ...rest } = saved;
+
+    // If already has valid timeFilter, use it
+    if (isValidTimeFilter(saved.timeFilter)) {
+      return { ...INITIAL_FILTERS, ...rest, timeFilter: saved.timeFilter };
+    }
+
+    // Migrate from old format or use default
+    let timeFilter = DEFAULT_TIME_FILTER;
+
+    if (datePreset && datePreset !== 'custom' && typeof datePreset === 'string') {
+      // Old preset mode -> new preset mode
+      timeFilter = { type: 'preset', value: datePreset };
+    } else if (dateRange && (dateRange.start || dateRange.end)) {
+      // Old custom mode -> new custom mode
+      timeFilter = { type: 'custom', start: dateRange.start, end: dateRange.end };
+    }
+
+    return { ...INITIAL_FILTERS, ...rest, timeFilter };
+  };
+
   // ===== Core State =====
   // Filters persist to page-namespaced sessionStorage
   const [filters, setFilters] = useState(() => {
     const saved = readFilterStorage(pageId, STORAGE_KEYS.FILTERS, null);
     if (saved) {
-      // Merge with INITIAL_FILTERS to handle any new fields added after save
-      return { ...INITIAL_FILTERS, ...saved };
+      // Migrate old format and merge with INITIAL_FILTERS for any new fields
+      return migrateFilters(saved);
     }
     return INITIAL_FILTERS;
   });
@@ -111,7 +143,7 @@ export function PowerBIFilterProvider({ children, pageId: explicitPageId }) {
       prevPageIdRef.current = pageId;
       // Load filters for the new page (or reset to initial if none stored)
       const savedFilters = readFilterStorage(pageId, STORAGE_KEYS.FILTERS, null);
-      setFilters(savedFilters ? { ...INITIAL_FILTERS, ...savedFilters } : INITIAL_FILTERS);
+      setFilters(savedFilters ? migrateFilters(savedFilters) : INITIAL_FILTERS);
       // Check if new page was already hydrated
       setFiltersReady(isHydrated(pageId));
       if (!isHydrated(pageId)) {
@@ -168,8 +200,42 @@ export function PowerBIFilterProvider({ children, pageId: explicitPageId }) {
   });
 
   // ===== Filter Setters =====
+
+  // Unified time filter setter - single source of truth
+  const setTimeFilter = useCallback((timeFilter) => {
+    setFilters((prev) => ({ ...prev, timeFilter }));
+  }, []);
+
+  // Convenience setter for preset mode
+  const setTimePreset = useCallback((presetValue) => {
+    setFilters((prev) => ({
+      ...prev,
+      timeFilter: { type: 'preset', value: presetValue },
+    }));
+  }, []);
+
+  // Convenience setter for custom date range mode
+  const setTimeRange = useCallback((start, end) => {
+    setFilters((prev) => ({
+      ...prev,
+      timeFilter: { type: 'custom', start, end },
+    }));
+  }, []);
+
+  // BACKWARD COMPATIBILITY: Legacy setters that map to new unified structure
+  // These will be removed in a future cleanup phase
   const setDateRange = useCallback((start, end) => {
-    setFilters((prev) => ({ ...prev, dateRange: { start, end } }));
+    setFilters((prev) => ({
+      ...prev,
+      timeFilter: { type: 'custom', start, end },
+    }));
+  }, []);
+
+  const setDatePreset = useCallback((preset) => {
+    setFilters((prev) => ({
+      ...prev,
+      timeFilter: { type: 'preset', value: preset },
+    }));
   }, []);
 
   const setDistricts = useCallback((districts) => {
@@ -258,18 +324,6 @@ export function PowerBIFilterProvider({ children, pageId: explicitPageId }) {
 
   const setProject = useCallback((project) => {
     setFilters((prev) => ({ ...prev, project }));
-  }, []);
-
-  // INVARIANT: When switching to a preset (not 'custom'), clear dateRange
-  // This ensures clean semantics - preset mode uses timeframe ID, custom mode uses dates
-  const setDatePreset = useCallback((preset) => {
-    setFilters((prev) => ({
-      ...prev,
-      datePreset: preset,
-      // Clear dateRange when switching to preset mode (not custom)
-      // This prevents stale dates from being sent alongside timeframe
-      dateRange: preset !== 'custom' ? { start: null, end: null } : prev.dateRange,
-    }));
   }, []);
 
   const resetFilters = useCallback(() => {
@@ -434,7 +488,14 @@ export function PowerBIFilterProvider({ children, pageId: explicitPageId }) {
   // Actions context - stable callbacks, never triggers re-renders
   const actionsValue = useMemo(
     () => ({
+      // New unified time filter setters
+      setTimeFilter,
+      setTimePreset,
+      setTimeRange,
+      // Legacy aliases (for backward compatibility)
       setDateRange,
+      setDatePreset,
+      // Other filter setters
       setDistricts,
       toggleDistrict,
       setBedroomTypes,
@@ -448,7 +509,6 @@ export function PowerBIFilterProvider({ children, pageId: explicitPageId }) {
       setPropertyAge,
       setPropertyAgeBucket,
       setProject,
-      setDatePreset,
       resetFilters,
       drillDown,
       drillUp,
@@ -486,9 +546,15 @@ export function PowerBIFilterProvider({ children, pageId: explicitPageId }) {
       selectedProject,
       timeGrouping,
 
-      // Actions
+      // Actions - new unified time filter setters
+      setTimeFilter,
+      setTimePreset,
+      setTimeRange,
+      // Actions - legacy aliases
       setTimeGrouping,
       setDateRange,
+      setDatePreset,
+      // Actions - other setters
       setDistricts,
       toggleDistrict,
       setBedroomTypes,
@@ -502,7 +568,6 @@ export function PowerBIFilterProvider({ children, pageId: explicitPageId }) {
       setPropertyAge,
       setPropertyAgeBucket,
       setProject,
-      setDatePreset,
       resetFilters,
       drillDown,
       drillUp,

@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { usePowerBIFilters } from '../../context/PowerBIFilter';
+import { getTimeFilter } from '../../context/PowerBIFilter/constants';
 import {
   REGIONS,
   DISTRICT_NAMES,
@@ -25,8 +26,8 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
     filters,
     filterOptions,
     activeFilterCount,
-    setDateRange,
-    setDatePreset,
+    setTimePreset,
+    setTimeRange,
     setDistricts,
     setBedroomTypes,
     toggleBedroomType,
@@ -35,8 +36,10 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
     resetFilters,
   } = usePowerBIFilters();
 
-  // Get datePreset from central filter state
-  const datePreset = filters.datePreset;
+  // Get time filter state - use helper for consistent fallback
+  const timeFilter = getTimeFilter(filters);
+  const isPresetMode = timeFilter.type === 'preset';
+  const currentPreset = isPresetMode ? timeFilter.value : 'custom';
 
   /**
    * Handle filter button click with switch/multi-select behavior
@@ -73,33 +76,32 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
   // Handle preset button click
   // CLEAN SEMANTIC: Preset mode sends timeframe ID to backend, not dates
   // Backend resolves the actual date bounds. See timeframes.js.
-  // Note: setDatePreset() in provider automatically clears dateRange for presets
   const handlePresetClick = useCallback((preset) => {
-    if (preset === datePreset) {
+    if (preset === currentPreset) {
       // Clicking same preset clears it (show all data)
-      setDatePreset('all');
+      setTimePreset('all');
     } else {
-      // Just set the preset - provider clears dateRange automatically
-      setDatePreset(preset);
+      // Set the preset
+      setTimePreset(preset);
     }
-  }, [datePreset, setDatePreset]);
+  }, [currentPreset, setTimePreset]);
 
   // Handle custom date changes (when user manually picks dates)
   const handleCustomDateChange = useCallback((start, end) => {
-    setDateRange(start, end);
-    // If either date is set, mark as custom
     if (start || end) {
-      setDatePreset('custom');
+      // Set custom time range
+      setTimeRange(start, end);
     } else {
-      setDatePreset('all');
+      // No dates = show all
+      setTimePreset('all');
     }
-  }, [setDateRange, setDatePreset]);
+  }, [setTimeRange, setTimePreset]);
 
   // Reset filters handler
   const handleResetFilters = useCallback(() => {
     resetFilters();
     setShowAdvanced(false);
-    // resetFilters() resets to INITIAL_FILTERS which has datePreset: 'Y1'
+    // resetFilters() resets to INITIAL_FILTERS which has timeFilter: { type: 'preset', value: 'Y1' }
   }, [resetFilters]);
 
   const toggleSection = (section) => {
@@ -214,7 +216,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                 className={`px-3 py-2 text-sm font-medium transition-all min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#213448] focus-visible:ring-inset ${
                   filterOptions.loading
                     ? 'bg-gray-100/80 text-gray-400 cursor-wait'
-                    : datePreset === opt.id
+                    : currentPreset === opt.id
                       ? 'bg-[#213448] text-white shadow-inner'
                       : 'bg-transparent text-slate-500 hover:bg-white/50 hover:text-slate-900'
                 }`}
@@ -377,7 +379,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
             }
             expanded={expandedSections.date}
             onToggle={() => toggleSection('date')}
-            activeCount={filters.dateRange.start || filters.dateRange.end ? 1 : 0}
+            activeCount={(timeFilter.type === 'custom' && (timeFilter.start || timeFilter.end)) || (timeFilter.type === 'preset' && timeFilter.value !== 'Y1') ? 1 : 0}
           >
             <div className="grid grid-cols-5 gap-1.5">
               {TIMEFRAME_OPTIONS.map(opt => (
@@ -389,7 +391,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                   className={`min-h-[44px] py-2 text-sm rounded-md border transition-colors ${
                     filterOptions.loading
                       ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-wait'
-                      : datePreset === opt.id
+                      : currentPreset === opt.id
                         ? 'bg-[#547792] text-white border-[#547792]'
                         : 'bg-white text-[#213448] border-[#94B4C1] hover:border-[#547792] hover:bg-[#EAE0CF]/50'
                   }`}
@@ -403,7 +405,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                 Using today as anchor (data range loading...)
               </div>
             )}
-            {datePreset === 'custom' && (
+            {currentPreset === 'custom' && (
               <div className="flex items-center justify-between mt-2">
                 <span className="text-xs text-[#547792] font-medium">Custom range selected</span>
                 <button
@@ -436,8 +438,8 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                   <span className="text-xs text-slate-500 w-10">From</span>
                   <input
                     type="month"
-                    value={filters.dateRange.start ? filters.dateRange.start.substring(0, 7) : ''}
-                    onChange={(e) => handleCustomDateChange(e.target.value ? `${e.target.value}-01` : null, filters.dateRange.end)}
+                    value={timeFilter.start ? timeFilter.start.substring(0, 7) : ''}
+                    onChange={(e) => handleCustomDateChange(e.target.value ? `${e.target.value}-01` : null, timeFilter.end)}
                     className="flex-1 px-2 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     min={filterOptions.dateRange.min ? filterOptions.dateRange.min.substring(0, 7) : undefined}
                     max={filterOptions.dateRange.max ? filterOptions.dateRange.max.substring(0, 7) : undefined}
@@ -447,14 +449,14 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                   <span className="text-xs text-slate-500 w-10">To</span>
                   <input
                     type="month"
-                    value={filters.dateRange.end ? filters.dateRange.end.substring(0, 7) : ''}
+                    value={timeFilter.end ? timeFilter.end.substring(0, 7) : ''}
                     onChange={(e) => {
                       if (e.target.value) {
                         const [year, month] = e.target.value.split('-');
                         const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
-                        handleCustomDateChange(filters.dateRange.start, `${e.target.value}-${String(lastDay).padStart(2, '0')}`);
+                        handleCustomDateChange(timeFilter.start, `${e.target.value}-${String(lastDay).padStart(2, '0')}`);
                       } else {
-                        handleCustomDateChange(filters.dateRange.start, null);
+                        handleCustomDateChange(timeFilter.start, null);
                       }
                     }}
                     className="flex-1 px-2 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -658,7 +660,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
           }
           expanded={expandedSections.date}
           onToggle={() => toggleSection('date')}
-          activeCount={filters.dateRange.start || filters.dateRange.end ? 1 : 0}
+          activeCount={(timeFilter.type === 'custom' && (timeFilter.start || timeFilter.end)) || (timeFilter.type === 'preset' && timeFilter.value !== 'Y1') ? 1 : 0}
         >
           {/* Preset Buttons - Primary interaction */}
           {/* Shows loading indicator when filter options not ready, buttons still work with fallback to today */}
@@ -672,7 +674,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                 className={`min-h-[44px] py-2 text-sm rounded-md border transition-colors ${
                   filterOptions.loading
                     ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-wait'
-                    : datePreset === opt.id
+                    : currentPreset === opt.id
                       ? 'bg-[#547792] text-white border-[#547792]'
                       : 'bg-white text-[#213448] border-[#94B4C1] hover:border-[#547792] hover:bg-[#EAE0CF]/50'
                 }`}
@@ -689,7 +691,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
           )}
 
           {/* Custom indicator when manually edited */}
-          {datePreset === 'custom' && (
+          {currentPreset === 'custom' && (
             <div className="flex items-center justify-between mt-2">
               <span className="text-xs text-[#547792] font-medium">Custom range selected</span>
               <button
@@ -726,8 +728,8 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                 <span className="text-xs text-slate-500 w-10">From</span>
                 <input
                   type="month"
-                  value={filters.dateRange.start ? filters.dateRange.start.substring(0, 7) : ''}
-                  onChange={(e) => handleCustomDateChange(e.target.value ? `${e.target.value}-01` : null, filters.dateRange.end)}
+                  value={timeFilter.start ? timeFilter.start.substring(0, 7) : ''}
+                  onChange={(e) => handleCustomDateChange(e.target.value ? `${e.target.value}-01` : null, timeFilter.end)}
                   className="flex-1 px-2 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   min={filterOptions.dateRange.min ? filterOptions.dateRange.min.substring(0, 7) : undefined}
                   max={filterOptions.dateRange.max ? filterOptions.dateRange.max.substring(0, 7) : undefined}
@@ -737,16 +739,16 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                 <span className="text-xs text-slate-500 w-10">To</span>
                 <input
                   type="month"
-                  value={filters.dateRange.end ? filters.dateRange.end.substring(0, 7) : ''}
+                  value={timeFilter.end ? timeFilter.end.substring(0, 7) : ''}
                   onChange={(e) => {
                     if (e.target.value) {
                       // Get last day of the selected month (e.g., Sep has 30, Feb has 28/29)
                       // month from input is 1-based (01-12), day 0 trick gives last day of that month
                       const [year, month] = e.target.value.split('-');
                       const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
-                      handleCustomDateChange(filters.dateRange.start, `${e.target.value}-${String(lastDay).padStart(2, '0')}`);
+                      handleCustomDateChange(timeFilter.start, `${e.target.value}-${String(lastDay).padStart(2, '0')}`);
                     } else {
-                      handleCustomDateChange(filters.dateRange.start, null);
+                      handleCustomDateChange(timeFilter.start, null);
                     }
                   }}
                   className="flex-1 px-2 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"

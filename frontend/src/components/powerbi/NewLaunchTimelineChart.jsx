@@ -110,9 +110,11 @@ function NewLaunchTimelineChartBase({ height = 300 }) {
   // Build filter summary for display
   const getFilterSummary = () => {
     const parts = [];
-    if (filters?.dateRange?.start || filters?.dateRange?.end) {
-      const start = filters.dateRange.start ? filters.dateRange.start.slice(0, 7) : '...';
-      const end = filters.dateRange.end ? filters.dateRange.end.slice(0, 7) : '...';
+    // Show time filter info
+    const tf = filters?.timeFilter;
+    if (tf?.type === 'custom' && (tf.start || tf.end)) {
+      const start = tf.start ? tf.start.slice(0, 7) : '...';
+      const end = tf.end ? tf.end.slice(0, 7) : '...';
       parts.push(`${start} to ${end}`);
     }
     if (filters?.districts?.length > 0) {

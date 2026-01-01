@@ -84,7 +84,7 @@ function NewVsResaleChartBase({ height = 350 }) {
   useEffect(() => {
     debugLog('MOUNT', {
       initialFilters: {
-        dateRange: filters?.dateRange,
+        timeFilter: filters?.timeFilter,
         districts: filters?.districts?.length || 0,
         segments: filters?.segments?.length || 0,
       },
@@ -121,7 +121,7 @@ function NewVsResaleChartBase({ height = 350 }) {
       debugLog('API_PARAMS', {
         params,
         filterContext: {
-          dateRange: filters?.dateRange,
+          timeFilter: filters?.timeFilter,
           districts: filters?.districts,
           segments: filters?.segments,
           bedroomTypes: filters?.bedroomTypes,
@@ -195,10 +195,11 @@ function NewVsResaleChartBase({ height = 350 }) {
   // Build filter summary for display
   const getFilterSummary = () => {
     const parts = [];
-    // Show date range if a sidebar date filter is applied
-    if (filters?.dateRange?.start || filters?.dateRange?.end) {
-      const start = filters.dateRange.start ? filters.dateRange.start.slice(0, 7) : '...';
-      const end = filters.dateRange.end ? filters.dateRange.end.slice(0, 7) : '...';
+    // Show time filter info
+    const tf = filters?.timeFilter;
+    if (tf?.type === 'custom' && (tf.start || tf.end)) {
+      const start = tf.start ? tf.start.slice(0, 7) : '...';
+      const end = tf.end ? tf.end.slice(0, 7) : '...';
       parts.push(`${start} to ${end}`);
     }
     if (filters?.districts?.length > 0) {
@@ -437,8 +438,7 @@ function NewVsResaleChartBase({ height = 350 }) {
       districts: filters?.districts?.join(',') || null,
       segments: filters?.segments?.join(',') || null,
       bedroomTypes: filters?.bedroomTypes?.join(',') || null,
-      dateFrom: filters?.dateRange?.start || null,
-      dateTo: filters?.dateRange?.end || null,
+      timeFilter: filters?.timeFilter || null,
     },
     recordCount: chartData?.length || 0,
     warnings: isSeverelySparse ? ['Sparse resale data - some periods may be missing'] : [],
