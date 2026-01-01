@@ -13,7 +13,10 @@ import React from 'react';
  *   <FilterButton />
  * </PageHeader>
  */
-export const PageHeader = React.memo(function PageHeader({ title, subtitle, children }) {
+/**
+ * @param {{ title: string, subtitle?: string, children?: React.ReactNode }} props
+ */
+function PageHeaderBase({ title, subtitle, children }) {
   return (
     <div className="flex flex-row justify-between items-start w-full mb-4 md:mb-6 gap-4">
       {/* SLOT 1: LEFT (Identity) */}
@@ -36,6 +39,8 @@ export const PageHeader = React.memo(function PageHeader({ title, subtitle, chil
       )}
     </div>
   );
-});
+}
+
+export const PageHeader = React.memo(PageHeaderBase);
 
 export default PageHeader;

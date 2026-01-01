@@ -5,6 +5,7 @@
  * Helps users understand how metrics are calculated and data is categorized.
  */
 
+import React from 'react';
 import { PageHeader } from '../components/ui';
 import { useData } from '../context/DataContext';
 import { LocTrendChart } from '../components/LocTrendChart';
@@ -91,6 +92,9 @@ const REGIONS = [
   },
 ];
 
+/**
+ * @param {{ title: string, children: React.ReactNode, id?: string }} props
+ */
 function SectionCard({ title, children, id }) {
   return (
     <div id={id} className="min-w-0 bg-white rounded-xl border border-[#94B4C1]/30 shadow-sm overflow-hidden scroll-mt-4">

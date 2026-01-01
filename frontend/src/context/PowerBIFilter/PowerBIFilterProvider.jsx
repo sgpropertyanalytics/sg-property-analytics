@@ -64,6 +64,9 @@ const FilterOptionsContext = createContext(null);
 // Legacy combined context for backward compatibility
 const PowerBIFilterContext = createContext(null);
 
+/**
+ * @param {{ children: import('react').ReactNode, pageId?: string }} props
+ */
 export function PowerBIFilterProvider({ children, pageId: explicitPageId }) {
   // ===== Page Identification =====
   // Derive page ID from route for namespaced storage
