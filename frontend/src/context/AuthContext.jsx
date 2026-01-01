@@ -94,15 +94,19 @@ export function AuthProvider({ children }) {
   const tokenRefreshGuard = useStaleRequestGuard(); // For refreshToken() calls
 
   // Subscription context methods (SubscriptionProvider wraps AuthProvider)
-  const { bootstrapSubscription, fetchSubscription, clearSubscription } = useSubscription();
+  const {
+    bootstrapSubscription,
+    ensureSubscription,
+    clearSubscription,
+  } = useSubscription();
 
   // P0 FIX: Ensure auth listener registers exactly once.
   // Use refs so callback always reads latest functions/state without re-registering.
   const authListenerRegisteredRef = useRef(false);
   const authStateGuardRef = useRef(authStateGuard);
   authStateGuardRef.current = authStateGuard;
-  const fetchSubscriptionRef = useRef(fetchSubscription);
-  fetchSubscriptionRef.current = fetchSubscription;
+  const ensureSubscriptionRef = useRef(ensureSubscription);
+  ensureSubscriptionRef.current = ensureSubscription;
   const bootstrapSubscriptionRef = useRef(bootstrapSubscription);
   bootstrapSubscriptionRef.current = bootstrapSubscription;
   const tokenStatusRef = useRef(tokenStatus);
@@ -214,7 +218,7 @@ export function AuthProvider({ children }) {
             // User exists, token exists (page refresh)
             setTokenStatus(TokenStatus.PRESENT);
             // Fetch subscription from backend (no firebase-sync on refresh)
-            fetchSubscriptionRef.current(firebaseUser.email);
+            ensureSubscriptionRef.current(firebaseUser.email, { reason: 'auth_listener' });
           } else {
             // User exists, no token → need sync
             prevTokenStatusRef.current = tokenStatusRef.current; // Store for abort recovery
