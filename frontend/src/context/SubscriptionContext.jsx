@@ -197,6 +197,17 @@ export function SubscriptionProvider({ children }) {
   // Track current user email for per-user cache operations
   const currentUserEmailRef = useRef(null);
 
+  // 429 cooldown (prevents repeated hammering after rate limit)
+  const cooldownUntilRef = useRef(0);
+
+  // Track last stable status to avoid leaving LOADING after aborts
+  const lastStableStatusRef = useRef(status);
+  useEffect(() => {
+    if (status !== SubscriptionStatus.LOADING) {
+      lastStableStatusRef.current = status;
+    }
+  }, [status]);
+
   // Deterministic guard: Set true when bootstrapSubscription is called (from firebase-sync),
   // cleared after first fetchSubscription skip. Prevents duplicate fetch after sign-in
   // without relying on timing assumptions.
@@ -297,6 +308,13 @@ export function SubscriptionProvider({ children }) {
       return;
     }
 
+    const now = Date.now();
+    if (cooldownUntilRef.current > now) {
+      const waitMs = cooldownUntilRef.current - now;
+      console.warn('[Subscription] Fetch blocked by cooldown:', { waitMs });
+      return;
+    }
+
     // Step 1: Load per-user cache first (fast display while verifying)
     const cachedSub = normalizedEmail ? getCachedSubscription(normalizedEmail) : null;
     if (cachedSub) {
@@ -355,15 +373,23 @@ export function SubscriptionProvider({ children }) {
     } catch (err) {
       if (err.name === 'CanceledError' || err.name === 'AbortError') {
         console.log('[Subscription] Fetch aborted');
+        setStatus(lastStableStatusRef.current);
         return;
       }
       if (isStale(requestId)) return;
 
+      if (err.response?.status === 429) {
+        const retryAfterHeader = Number(err.response?.headers?.['retry-after']);
+        const retryAfterMs = Number.isFinite(retryAfterHeader) ? retryAfterHeader * 1000 : 15000;
+        cooldownUntilRef.current = Date.now() + retryAfterMs;
+        console.warn('[Subscription] Rate limited, entering cooldown:', { retryAfterMs });
+      }
+
       console.error('[Subscription] Fetch error:', err.message);
       setFetchError(err);
       setStatus(SubscriptionStatus.ERROR);
-      setLoading(false);
     } finally {
+      setLoading(false);
       if (activeRequestRef.current.requestId === requestId) {
         activeRequestRef.current = { requestId: null, email: null, type: null };
       }
@@ -394,6 +420,12 @@ export function SubscriptionProvider({ children }) {
    */
   const refreshSubscription = useCallback(async () => {
     const email = currentUserEmailRef.current;
+    const now = Date.now();
+    if (cooldownUntilRef.current > now) {
+      const waitMs = cooldownUntilRef.current - now;
+      console.warn('[Subscription] Refresh blocked by cooldown:', { waitMs });
+      return;
+    }
     const requestId = startRequest();
     activeRequestRef.current = { requestId, email, type: 'refresh' };
     console.log('[Subscription] Refreshing for:', email);
@@ -419,8 +451,17 @@ export function SubscriptionProvider({ children }) {
         setStatus(SubscriptionStatus.ERROR);
       }
     } catch (err) {
-      if (err.name === 'CanceledError' || err.name === 'AbortError') return;
+      if (err.name === 'CanceledError' || err.name === 'AbortError') {
+        setStatus(lastStableStatusRef.current);
+        return;
+      }
       if (isStale(requestId)) return;
+      if (err.response?.status === 429) {
+        const retryAfterHeader = Number(err.response?.headers?.['retry-after']);
+        const retryAfterMs = Number.isFinite(retryAfterHeader) ? retryAfterHeader * 1000 : 15000;
+        cooldownUntilRef.current = Date.now() + retryAfterMs;
+        console.warn('[Subscription] Rate limited, entering cooldown:', { retryAfterMs });
+      }
       console.error('[Subscription] Refresh error:', err.message);
       setFetchError(err);
       setStatus(SubscriptionStatus.ERROR);
