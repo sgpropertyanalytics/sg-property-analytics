@@ -18,6 +18,7 @@
 ### Agents
 | Agent | Trigger |
 |-------|---------|
+| `eli5-guardian` | "explain to me", "complicated", "simplify" |
 | `regression-snapshot-guard` | "verify no regressions", "before deploy" |
 | `fullstack-consistency-reviewer` | **MANDATORY before merge** |
 | `ingestion-orchestrator` | "scrape", "ingest", "upload CSV" |
