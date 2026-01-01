@@ -191,6 +191,9 @@ export function SubscriptionProvider({ children }) {
   // Ref for hidePaywall timeout cleanup
   const hidePaywallTimeoutRef = useRef(null);
 
+  // Track active subscription request to avoid duplicate fetch abort loops
+  const activeRequestRef = useRef({ requestId: null, email: null, type: null });
+
   // Track current user email for per-user cache operations
   const currentUserEmailRef = useRef(null);
 
@@ -287,6 +290,13 @@ export function SubscriptionProvider({ children }) {
       currentUserEmailRef.current = normalizedEmail;
     }
 
+    // Avoid repeated fetch calls for the same user while a request is in flight
+    if (loading && activeRequestRef.current.type === 'fetch'
+      && activeRequestRef.current.email === (normalizedEmail || email)) {
+      console.log('[Subscription] Fetch already in progress for:', normalizedEmail || email);
+      return;
+    }
+
     // Step 1: Load per-user cache first (fast display while verifying)
     const cachedSub = normalizedEmail ? getCachedSubscription(normalizedEmail) : null;
     if (cachedSub) {
@@ -297,6 +307,7 @@ export function SubscriptionProvider({ children }) {
     }
 
     const requestId = startRequest();
+    activeRequestRef.current = { requestId, email: normalizedEmail || email, type: 'fetch' };
     console.log('[Subscription] Fetching /auth/subscription for:', normalizedEmail || email);
     setLoading(true);
     // Only set LOADING if we didn't have cache (avoid flash)
@@ -352,8 +363,12 @@ export function SubscriptionProvider({ children }) {
       setFetchError(err);
       setStatus(SubscriptionStatus.ERROR);
       setLoading(false);
+    } finally {
+      if (activeRequestRef.current.requestId === requestId) {
+        activeRequestRef.current = { requestId: null, email: null, type: null };
+      }
     }
-  }, [startRequest, isStale, getSignal]);
+  }, [startRequest, isStale, getSignal, loading]);
 
   /**
    * Clear subscription (called on logout or 401)
@@ -380,6 +395,7 @@ export function SubscriptionProvider({ children }) {
   const refreshSubscription = useCallback(async () => {
     const email = currentUserEmailRef.current;
     const requestId = startRequest();
+    activeRequestRef.current = { requestId, email, type: 'refresh' };
     console.log('[Subscription] Refreshing for:', email);
     setLoading(true);
     setStatus(SubscriptionStatus.LOADING);
@@ -409,11 +425,26 @@ export function SubscriptionProvider({ children }) {
       setFetchError(err);
       setStatus(SubscriptionStatus.ERROR);
     } finally {
-      if (!isStale(requestId)) {
-        setLoading(false);
+      setLoading(false);
+      if (activeRequestRef.current.requestId === requestId) {
+        activeRequestRef.current = { requestId: null, email: null, type: null };
       }
     }
   }, [startRequest, isStale, getSignal]);
+
+  /**
+   * Manual retry wrapper for boot recovery
+   * Delegates to refreshSubscription using currentUserEmailRef
+   */
+  const retrySubscription = useCallback(async () => {
+    const email = currentUserEmailRef.current;
+    if (!email) {
+      console.warn('[Subscription] Retry requested without current user email');
+      return;
+    }
+    console.log('[Subscription] Manual retry triggered for:', email);
+    await refreshSubscription();
+  }, [refreshSubscription]);
 
   // ===== DERIVED STATE =====
 
@@ -519,6 +550,7 @@ export function SubscriptionProvider({ children }) {
     fetchSubscription,
     clearSubscription,
     refreshSubscription,
+    retrySubscription,
     setSubscription,
   }), [
     subscription,
@@ -543,6 +575,7 @@ export function SubscriptionProvider({ children }) {
     fetchSubscription,
     clearSubscription,
     refreshSubscription,
+    retrySubscription,
   ]);
 
   return (
