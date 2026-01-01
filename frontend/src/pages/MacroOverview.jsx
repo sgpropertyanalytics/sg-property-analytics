@@ -140,9 +140,10 @@ export function MacroOverviewContent() {
   );
 
   // Transform raw data for compression charts (memoized to avoid re-transform on every render)
+  // DESIGN: Transform is grain-agnostic - trusts data's own periodGrain
   const compressionData = useMemo(
-    () => transformCompressionSeries(compressionRaw, timeGrouping),
-    [compressionRaw, timeGrouping]
+    () => transformCompressionSeries(compressionRaw),
+    [compressionRaw]
   );
 
   // Shared dashboard panels for histogram + beads (reduces request fanout)

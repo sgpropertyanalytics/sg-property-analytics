@@ -16,6 +16,7 @@ import {
   detectMarketSignals,
   logFetchDebug,
   assertKnownVersion,
+  validateResponseGrain,
 } from '../../adapters';
 
 // Time level labels for display
@@ -79,7 +80,8 @@ export const PriceCompressionChart = React.memo(function PriceCompressionChart({
 
       const response = await getAggregate(params, { signal, priority: 'low' });
       const rawData = response.data || [];
-      const transformed = transformCompressionSeries(rawData, 'quarter');
+      // Transform is grain-agnostic - trusts data's own periodGrain
+      const transformed = transformCompressionSeries(rawData);
       return calculateHistoricalBaseline(transformed);
     },
     [], // Empty deps = fetch once on mount
@@ -113,8 +115,12 @@ export const PriceCompressionChart = React.memo(function PriceCompressionChart({
         rowCount: rawData.length,
       });
 
+      // Validate grain at fetch boundary (dev-only, on success)
+      validateResponseGrain(rawData, timeGrouping, 'PriceCompressionChart');
+
       // Use adapter for transformation - centralizes all data munging
-      return transformCompressionSeries(rawData, timeGrouping);
+      // Transform is grain-agnostic - trusts data's own periodGrain
+      return transformCompressionSeries(rawData);
     },
     [debouncedFilterKey, timeGrouping, saleType],
     { initialData: [], enabled: shouldFetch && !useSharedData, keepPreviousData: true }

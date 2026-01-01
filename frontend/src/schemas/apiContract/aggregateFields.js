@@ -86,34 +86,22 @@ export const getAggField = (row, field) => {
 /**
  * Get the period value from an aggregate row.
  * This is the CANONICAL way to access time values from API responses.
- * USE: getPeriod(row) or getPeriod(row, 'quarter')
+ *
+ * DESIGN: Transforms should trust the data's own periodGrain, not an expected
+ * grain from the UI. This avoids false warnings when keepPreviousData shows
+ * stale data during refresh. Grain validation should happen at fetch-site
+ * when status === 'success'.
  *
  * @param {Object} row - Aggregate row from API
- * @param {string} [expectedGrain] - Optional expected time grain for validation
  * @returns {string|number|null} Period value or null
  *
  * @example
- * // Simple usage - just get the period
  * const period = getPeriod(row);
- *
- * // With validation - warn if grain doesn't match
- * const period = getPeriod(row, 'quarter');
+ * const grain = getPeriodGrain(row); // Use data's own grain
  */
-export const getPeriod = (row, expectedGrain = null) => {
+export const getPeriod = (row) => {
   if (!row) return null;
-
-  if (row.period !== undefined) {
-    // Validate grain if provided
-    if (expectedGrain && row.periodGrain && row.periodGrain !== expectedGrain) {
-      console.warn(
-        `Period grain mismatch: expected '${expectedGrain}' but got '${row.periodGrain}'`,
-        row
-      );
-    }
-    return row.period;
-  }
-
-  return null;
+  return row.period !== undefined ? row.period : null;
 };
 
 /**

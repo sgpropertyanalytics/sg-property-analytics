@@ -19,12 +19,16 @@ import { isDev } from './validation';
  *
  * Used by PriceCompressionChart to analyze price spreads between regions.
  *
+ * DESIGN: This transform is grain-agnostic. It trusts the data's own periodGrain
+ * rather than an expected grain from the UI. This is the correct pattern when
+ * using keepPreviousData, where stale data (old grain) may be displayed while
+ * fresh data (new grain) loads.
+ *
  * @param {Array} rawData - Raw data from /api/aggregate with region breakdown
- * @param {string} expectedGrain - Expected time grain
  * @returns {Array} Transformed data with structure:
- *   { period, ccr, rcr, ocr, ccrRcrSpread, rcrOcrSpread, combinedSpread, ccrRcrChange, rcrOcrChange, counts }
+ *   { period, periodGrain, ccr, rcr, ocr, ccrRcrSpread, rcrOcrSpread, combinedSpread, ccrRcrChange, rcrOcrChange, counts }
  */
-export const transformCompressionSeries = (rawData, expectedGrain = null) => {
+export const transformCompressionSeries = (rawData) => {
   if (!Array.isArray(rawData)) {
     if (isDev) console.warn('[transformCompressionSeries] Invalid input', rawData);
     return [];
@@ -34,13 +38,13 @@ export const transformCompressionSeries = (rawData, expectedGrain = null) => {
   const grouped = {};
 
   rawData.forEach((row) => {
-    const period = getPeriod(row, expectedGrain);
+    const period = getPeriod(row);
     if (period === null) return;
 
     if (!grouped[period]) {
       grouped[period] = {
         period,
-        periodGrain: getPeriodGrain(row) || expectedGrain,
+        periodGrain: getPeriodGrain(row),  // Trust data's own grain
         CCR: null,
         RCR: null,
         OCR: null,

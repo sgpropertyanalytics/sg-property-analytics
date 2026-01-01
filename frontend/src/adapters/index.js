@@ -17,6 +17,7 @@ export {
   // Validation
   validateRow,
   validateResponse,
+  validateResponseGrain,
   assertKnownVersion,
   // Sorting
   comparePeriods,

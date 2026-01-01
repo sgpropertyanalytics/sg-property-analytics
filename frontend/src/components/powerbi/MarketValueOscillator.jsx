@@ -16,6 +16,7 @@ import {
   transformCompressionSeries,
   logFetchDebug,
   assertKnownVersion,
+  validateResponseGrain,
 } from '../../adapters';
 import { SaleType } from '../../schemas/apiContract';
 
@@ -71,7 +72,8 @@ export function MarketValueOscillator({ height = 420, saleType = null, sharedRaw
 
       const response = await getAggregate(params, { signal, priority: 'low' });
       const rawData = response.data || [];
-      const compressionData = transformCompressionSeries(rawData, 'quarter');
+      // Transform is grain-agnostic - trusts data's own periodGrain
+      const compressionData = transformCompressionSeries(rawData);
       return calculateZScoreStats(compressionData);
     },
     [saleType], // Refetch if saleType changes (rare - usually constant from page)
@@ -115,18 +117,23 @@ export function MarketValueOscillator({ height = 420, saleType = null, sharedRaw
         rowCount: rawData.length,
       });
 
+      // Validate grain at fetch boundary (dev-only, on success)
+      validateResponseGrain(rawData, timeGrouping, 'MarketValueOscillator');
+
       // Transform to Z-scores using historical baseline
-      return transformOscillatorSeries(rawData, timeGrouping, baselineStats);
+      // Transform is grain-agnostic - trusts data's own periodGrain
+      return transformOscillatorSeries(rawData, baselineStats);
     },
     [debouncedFilterKey, timeGrouping, baselineStats, saleType],
     { initialData: [], enabled: shouldFetch && !useShared, keepPreviousData: true }
   );
 
   // When using shared data, transform it with useMemo (same transform as internal fetch)
+  // Transform is grain-agnostic - trusts data's own periodGrain
   const sharedTransformedData = useMemo(() => {
     if (!useShared || !sharedRawData || sharedRawData.length === 0) return [];
-    return transformOscillatorSeries(sharedRawData, timeGrouping, baselineStats);
-  }, [useShared, sharedRawData, timeGrouping, baselineStats]);
+    return transformOscillatorSeries(sharedRawData, baselineStats);
+  }, [useShared, sharedRawData, baselineStats]);
 
   // Use shared data when available, otherwise use fetched data
   const data = useShared ? sharedTransformedData : fetchedData;

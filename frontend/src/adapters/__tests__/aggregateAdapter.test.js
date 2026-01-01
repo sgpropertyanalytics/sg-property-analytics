@@ -59,7 +59,8 @@ const regionAggregateData = [
 
 describe('transformTimeSeries', () => {
   test('groups by period with sale type breakdown', () => {
-    const result = transformTimeSeries(quarterAggregateData, 'quarter');
+    // Transform is grain-agnostic - trusts data's own periodGrain
+    const result = transformTimeSeries(quarterAggregateData);
 
     expect(result).toHaveLength(2); // Q3 and Q4
 
@@ -72,14 +73,14 @@ describe('transformTimeSeries', () => {
   });
 
   test('sorts periods in ascending order', () => {
-    const result = transformTimeSeries(quarterAggregateData, 'quarter');
+    const result = transformTimeSeries(quarterAggregateData);
 
     expect(result[0].period).toBe('2024-Q3');
     expect(result[1].period).toBe('2024-Q4');
   });
 
   test('handles empty data', () => {
-    const result = transformTimeSeries([], 'quarter');
+    const result = transformTimeSeries([]);
 
     expect(result).toEqual([]);
   });
@@ -91,7 +92,7 @@ describe('transformTimeSeries', () => {
       { saleType: 'new_sale', count: 25 }, // no period field at all
     ];
 
-    const result = transformTimeSeries(dataWithNull, 'quarter');
+    const result = transformTimeSeries(dataWithNull);
 
     expect(result).toHaveLength(1);
     expect(result[0].period).toBe('2024-Q4');
@@ -104,7 +105,8 @@ describe('transformTimeSeries', () => {
 
 describe('transformTimeSeriesByRegion', () => {
   test('groups by period with region breakdown', () => {
-    const result = transformTimeSeriesByRegion(regionAggregateData, 'quarter');
+    // Transform is grain-agnostic - trusts data's own periodGrain
+    const result = transformTimeSeriesByRegion(regionAggregateData);
 
     expect(result).toHaveLength(2); // Q3 and Q4
 
@@ -119,7 +121,7 @@ describe('transformTimeSeriesByRegion', () => {
   });
 
   test('sorts periods in ascending order', () => {
-    const result = transformTimeSeriesByRegion(regionAggregateData, 'quarter');
+    const result = transformTimeSeriesByRegion(regionAggregateData);
 
     expect(result[0].period).toBe('2024-Q3');
     expect(result[1].period).toBe('2024-Q4');
@@ -131,7 +133,7 @@ describe('transformTimeSeriesByRegion', () => {
       // No RCR or OCR data
     ];
 
-    const result = transformTimeSeriesByRegion(partialData, 'quarter');
+    const result = transformTimeSeriesByRegion(partialData);
 
     expect(result).toHaveLength(1);
     expect(result[0].ccrMedianPsf).toBe(2800);
@@ -251,7 +253,8 @@ describe('Adapter Smoke Test', () => {
       { period: '2024-Q4', periodGrain: 'quarter', saleType: 'resale', count: 500, totalValue: 750000000 },
     ];
 
-    const result = transformTimeSeries(rawData, 'quarter');
+    // Transform is grain-agnostic - trusts data's own periodGrain
+    const result = transformTimeSeries(rawData);
 
     // ========== ASSERTIONS ==========
     // 1. Result is array
@@ -1007,7 +1010,8 @@ describe('Golden Tests - Adapter Output Shapes', () => {
         { period: '2024-Q4', periodGrain: 'quarter', saleType: 'resale', count: 200, totalValue: 350000000 },
       ];
 
-      const result = transformTimeSeries(input, 'quarter');
+      // Transform is grain-agnostic - trusts data's own periodGrain
+      const result = transformTimeSeries(input);
 
       // Golden shape - every output row MUST have these required fields
       expect(result).toHaveLength(1);
@@ -1032,7 +1036,8 @@ describe('Golden Tests - Adapter Output Shapes', () => {
         { period: '2024-Q4', periodGrain: 'quarter', region: 'rcr', medianPsf: 2200, count: 200 },
       ];
 
-      const result = transformTimeSeriesByRegion(input, 'quarter');
+      // Transform is grain-agnostic - trusts data's own periodGrain
+      const result = transformTimeSeriesByRegion(input);
 
       // Golden shape - every output row MUST have these fields
       expect(result).toHaveLength(1);
@@ -1175,8 +1180,9 @@ describe('Golden Tests - Adapter Output Shapes', () => {
 
   describe('Empty input handling', () => {
     test('simple array adapters return empty array for empty input', () => {
-      expect(transformTimeSeries([], 'quarter')).toEqual([]);
-      expect(transformTimeSeriesByRegion([], 'quarter')).toEqual([]);
+      // Transform is grain-agnostic - no second parameter needed
+      expect(transformTimeSeries([])).toEqual([]);
+      expect(transformTimeSeriesByRegion([])).toEqual([]);
     });
 
     test('complex adapters return structured empty result for empty input', () => {
@@ -1202,9 +1208,10 @@ describe('Golden Tests - Adapter Output Shapes', () => {
     });
 
     test('simple array adapters return empty array for null/undefined input', () => {
-      expect(transformTimeSeries(null, 'quarter')).toEqual([]);
-      expect(transformTimeSeries(undefined, 'quarter')).toEqual([]);
-      expect(transformTimeSeriesByRegion(null, 'quarter')).toEqual([]);
+      // Transform is grain-agnostic - no second parameter needed
+      expect(transformTimeSeries(null)).toEqual([]);
+      expect(transformTimeSeries(undefined)).toEqual([]);
+      expect(transformTimeSeriesByRegion(null)).toEqual([]);
     });
 
     test('complex adapters return structured empty result for null input', () => {

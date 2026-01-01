@@ -8,7 +8,7 @@ import { getAggregate } from '../../api/client';
 import { PreviewChartOverlay, ChartSlot } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 // SaleType imports removed - Market Core is Resale-only
-import { transformTimeSeries, logFetchDebug, assertKnownVersion } from '../../adapters';
+import { transformTimeSeries, logFetchDebug, assertKnownVersion, validateResponseGrain } from '../../adapters';
 import { niceMax } from '../../utils/niceAxisMax';
 
 /**
@@ -65,8 +65,12 @@ export const TimeTrendChart = React.memo(function TimeTrendChart({ height = 300,
           rowCount: rawData.length,
         });
 
+        // Validate grain at fetch boundary (dev-only, on success)
+        validateResponseGrain(rawData, timeGrouping, 'TimeTrendChart');
+
         // Use adapter for transformation (schema-safe, sorted)
-        return transformTimeSeries(rawData, timeGrouping);
+        // Transform is grain-agnostic - trusts data's own periodGrain
+        return transformTimeSeries(rawData);
       } catch (err) {
         captureError(err);
         throw err;

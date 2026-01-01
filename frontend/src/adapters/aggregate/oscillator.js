@@ -60,20 +60,21 @@ export const calculateZScoreStats = (data) => {
 /**
  * Transform raw aggregate data into Z-score oscillator format.
  *
+ * DESIGN: Grain-agnostic - delegates to transformCompressionSeries which trusts data's own grain.
+ *
  * @param {Array} rawData - Raw data from /api/aggregate with region breakdown
- * @param {string} expectedGrain - Expected time grain (month, quarter, year)
  * @param {Object} baselineStats - Optional pre-computed baseline stats (for stable normalization)
  * @returns {Array} Transformed data with structure:
- *   { period, zCcrRcr, zRcrOcr, ccrRcrSpread, rcrOcrSpread, counts }
+ *   { period, periodGrain, zCcrRcr, zRcrOcr, ccrRcrSpread, rcrOcrSpread, counts }
  */
-export const transformOscillatorSeries = (rawData, expectedGrain = null, baselineStats = null) => {
+export const transformOscillatorSeries = (rawData, baselineStats = null) => {
   if (!Array.isArray(rawData)) {
     if (isDev) console.warn('[transformOscillatorSeries] Invalid input', rawData);
     return [];
   }
 
-  // First, get compression data (spreads)
-  const compressionData = transformCompressionSeries(rawData, expectedGrain);
+  // First, get compression data (spreads) - grain-agnostic
+  const compressionData = transformCompressionSeries(rawData);
 
   if (compressionData.length === 0) {
     return [];

@@ -12,6 +12,7 @@ import {
   transformCompressionSeries,
   logFetchDebug,
   assertKnownVersion,
+  validateResponseGrain,
 } from '../../adapters';
 
 // Time level labels for display
@@ -80,7 +81,11 @@ export const AbsolutePsfChart = React.memo(function AbsolutePsfChart({ height = 
         rowCount: rawData.length,
       });
 
-      return transformCompressionSeries(rawData, timeGrouping);
+      // Validate grain at fetch boundary (dev-only, on success)
+      validateResponseGrain(rawData, timeGrouping, 'AbsolutePsfChart');
+
+      // Transform is grain-agnostic - trusts data's own periodGrain
+      return transformCompressionSeries(rawData);
     },
     [debouncedFilterKey, timeGrouping, saleType],
     { initialData: [], enabled: shouldFetch && !useSharedData, keepPreviousData: true }

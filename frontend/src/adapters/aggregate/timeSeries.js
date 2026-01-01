@@ -21,12 +21,16 @@ import { isDev } from './validation';
  *
  * This is the standard transformation for charts like TimeTrendChart.
  *
+ * DESIGN: This transform is grain-agnostic. It trusts the data's own periodGrain
+ * rather than an expected grain from the UI. This is the correct pattern when
+ * using keepPreviousData, where stale data (old grain) may be displayed while
+ * fresh data (new grain) loads.
+ *
  * @param {Array} rawData - Raw data from /api/aggregate
- * @param {string} expectedGrain - Expected time grain ('year', 'quarter', 'month')
  * @returns {Array} Transformed and sorted data with structure:
- *   { period, newSaleCount, resaleCount, newSaleValue, resaleValue, totalCount, totalValue }
+ *   { period, periodGrain, newSaleCount, resaleCount, newSaleValue, resaleValue, totalCount, totalValue }
  */
-export const transformTimeSeries = (rawData, expectedGrain = null) => {
+export const transformTimeSeries = (rawData) => {
   if (!Array.isArray(rawData)) {
     if (isDev) console.warn('[transformTimeSeries] Invalid input - expected array', rawData);
     return [];
@@ -35,7 +39,7 @@ export const transformTimeSeries = (rawData, expectedGrain = null) => {
   const groupedByTime = {};
 
   rawData.forEach((row) => {
-    const period = getPeriod(row, expectedGrain);
+    const period = getPeriod(row);
 
     // Skip rows with missing period
     if (period === null) {
@@ -47,7 +51,7 @@ export const transformTimeSeries = (rawData, expectedGrain = null) => {
     if (!groupedByTime[period]) {
       groupedByTime[period] = {
         period,
-        periodGrain: getPeriodGrain(row) || expectedGrain,
+        periodGrain: getPeriodGrain(row),  // Trust data's own grain
         newSaleCount: 0,
         resaleCount: 0,
         newSaleValue: 0,
@@ -83,18 +87,19 @@ export const transformTimeSeries = (rawData, expectedGrain = null) => {
  *
  * Used for charts that break down by CCR/RCR/OCR region.
  *
+ * DESIGN: Grain-agnostic - trusts data's own periodGrain.
+ *
  * @param {Array} rawData - Raw data from /api/aggregate
- * @param {string} expectedGrain - Expected time grain
  * @returns {Array} Transformed data with structure:
- *   { period, ccrMedianPsf, rcrMedianPsf, ocrMedianPsf, ccrCount, rcrCount, ocrCount }
+ *   { period, periodGrain, ccrMedianPsf, rcrMedianPsf, ocrMedianPsf, ccrCount, rcrCount, ocrCount }
  */
-export const transformTimeSeriesByRegion = (rawData, expectedGrain = null) => {
+export const transformTimeSeriesByRegion = (rawData) => {
   if (!Array.isArray(rawData)) return [];
 
   const groupedByTime = {};
 
   rawData.forEach((row) => {
-    const period = getPeriod(row, expectedGrain);
+    const period = getPeriod(row);
     if (period === null) return;
 
     const region = getAggField(row, AggField.REGION);
@@ -104,7 +109,7 @@ export const transformTimeSeriesByRegion = (rawData, expectedGrain = null) => {
     if (!groupedByTime[period]) {
       groupedByTime[period] = {
         period,
-        periodGrain: getPeriodGrain(row) || expectedGrain,
+        periodGrain: getPeriodGrain(row),  // Trust data's own grain
         ccrMedianPsf: null,
         rcrMedianPsf: null,
         ocrMedianPsf: null,

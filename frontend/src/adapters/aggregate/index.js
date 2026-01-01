@@ -38,6 +38,7 @@ import {
   assertKnownVersion,
   validateRow,
   validateResponse,
+  validateResponseGrain,
 } from './validation';
 
 import { comparePeriods, sortByPeriod } from './sorting';
@@ -114,6 +115,7 @@ export {
   assertKnownVersion,
   validateRow,
   validateResponse,
+  validateResponseGrain,
   // Sorting
   comparePeriods,
   sortByPeriod,
@@ -174,6 +176,7 @@ export default {
   // Validation
   validateRow,
   validateResponse,
+  validateResponseGrain,
   // Sorting
   comparePeriods,
   sortByPeriod,

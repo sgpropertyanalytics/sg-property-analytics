@@ -93,6 +93,64 @@ export const validateRow = (row, requiredFields, context = 'row') => {
 };
 
 /**
+ * Validate response grain matches expected grain (fetch-site validation).
+ *
+ * DESIGN: This is the correct place for grain validation - at the fetch boundary,
+ * only when status === 'success'. Unlike transform-layer validation, this won't
+ * fire false positives when keepPreviousData shows stale data during refresh.
+ *
+ * Rules:
+ * - Dev-only (no-op in production)
+ * - Only validates when expectedGrain is provided (indicates time grouping)
+ * - Warns once per response (checks first row only)
+ * - Catches real contract violations (backend returning wrong grain)
+ *
+ * @param {Array} data - Raw data array from API response
+ * @param {string|null} expectedGrain - Expected grain ('year'|'quarter'|'month'), or null to skip validation
+ * @param {string} context - Component/endpoint name for warning context
+ * @returns {boolean} True if valid (or skipped), false if mismatch
+ *
+ * @example
+ * // In chart's fetch function, after successful response:
+ * const rawData = response.data || [];
+ * validateResponseGrain(rawData, timeGrouping, 'TimeTrendChart');
+ * return transformTimeSeries(rawData);
+ */
+export const validateResponseGrain = (data, expectedGrain, context = 'unknown') => {
+  // Skip in production (graceful degradation)
+  if (!isDev && !isTest) return true;
+
+  // Skip if no expected grain (request didn't include time grouping)
+  if (!expectedGrain) return true;
+
+  // Skip if no data
+  if (!Array.isArray(data) || data.length === 0) return true;
+
+  // Check first row's grain (warn once, not per row)
+  const actualGrain = data[0]?.periodGrain;
+
+  // Skip if response has no grain (non-time-grouped endpoint)
+  if (!actualGrain) return true;
+
+  // Validate grain match
+  if (actualGrain !== expectedGrain) {
+    const message =
+      `[Grain Mismatch] ${context}: expected '${expectedGrain}' but got '${actualGrain}'. ` +
+      `This may indicate a backend contract violation or incorrect query params.`;
+
+    if (isTest) {
+      // In test mode, just warn (don't throw - grain mismatches aren't fatal)
+      console.warn(message);
+    } else {
+      console.warn(message);
+    }
+    return false;
+  }
+
+  return true;
+};
+
+/**
  * Validate API response structure.
  * In dev mode, logs warnings for invalid structure and checks version.
  *
