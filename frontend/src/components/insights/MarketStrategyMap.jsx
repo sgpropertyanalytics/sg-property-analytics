@@ -486,7 +486,7 @@ const MarketStrategyMap = React.memo(function MarketStrategyMap({
   };
 
   // Fetch data with canonical hook (handles abort, stale, boot gating)
-  const { data: districtData = [], status, error, refetch } = useGatedAbortableQuery(
+  const { data, status, error, refetch } = useGatedAbortableQuery(
     async (signal) => {
       const response = await apiClient.get('/insights/district-psf', {
         params: { period: selectedPeriod, bed: selectedBed, sale_type: selectedSaleType },
@@ -499,6 +499,9 @@ const MarketStrategyMap = React.memo(function MarketStrategyMap({
     [selectedPeriod, selectedBed, selectedSaleType],
     { enabled, initialData: [] }
   );
+
+  // Guard against null during in-flight state (same pattern as DistrictLiquidityMap)
+  const districtData = data || [];
 
   // Derive loading from status
   const loading =
