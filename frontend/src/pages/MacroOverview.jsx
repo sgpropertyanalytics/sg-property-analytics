@@ -109,16 +109,18 @@ export function MacroOverviewContent() {
   const getKpi = (kpiId) => kpis.items.find(k => getKpiField(k, KpiField.KPI_ID) === kpiId);
 
   // Defer below-the-fold chart data to reduce initial load fanout
+  // fetchOnMount: true ensures queries start immediately (skeleton shown during boot)
+  // Without this, shouldFetch=false on first render → status='idle' → wrong "No data" UI
   const { shouldFetch: shouldFetchCompression, containerRef: compressionRef } = useDeferredFetch({
     filterKey: `${debouncedFilterKey}:${timeGrouping}`,
     priority: 'low',
-    fetchOnMount: false,
+    fetchOnMount: true,
   });
 
   const { shouldFetch: shouldFetchPanels, containerRef: panelsRef } = useDeferredFetch({
     filterKey: debouncedFilterKey,
     priority: 'medium',
-    fetchOnMount: false,
+    fetchOnMount: true,
   });
 
   // SHARED DATA FETCH: Compression/Absolute PSF/Oscillator charts use identical API call
@@ -338,7 +340,7 @@ export function MacroOverviewContent() {
                           height={compressionHeight}
                           saleType={SALE_TYPE}
                           sharedData={compressionData}
-                          sharedStatus={compressionStatus}
+                          sharedStatus={shouldFetchCompression ? compressionStatus : 'pending'}
                         />
                       </Suspense>
                     </ChartWatermark>
@@ -350,7 +352,7 @@ export function MacroOverviewContent() {
                           height={compressionHeight}
                           saleType={SALE_TYPE}
                           sharedData={compressionData}
-                          sharedStatus={compressionStatus}
+                          sharedStatus={shouldFetchCompression ? compressionStatus : 'pending'}
                         />
                       </Suspense>
                     </ChartWatermark>
@@ -368,7 +370,7 @@ export function MacroOverviewContent() {
                           height={oscillatorHeight}
                           saleType={SALE_TYPE}
                           sharedRawData={compressionRaw}
-                          sharedStatus={compressionStatus}
+                          sharedStatus={shouldFetchCompression ? compressionStatus : 'pending'}
                         />
                       </Suspense>
                     </ChartWatermark>
@@ -388,7 +390,7 @@ export function MacroOverviewContent() {
                           height={standardChartHeight}
                           saleType={SALE_TYPE}
                           sharedData={dashboardPanels?.price_histogram}
-                          sharedStatus={dashboardStatus}
+                          sharedStatus={shouldFetchPanels ? dashboardStatus : 'pending'}
                         />
                       </ChartWatermark>
                     </ErrorBoundary>
@@ -401,7 +403,7 @@ export function MacroOverviewContent() {
                           height={standardChartHeight}
                           saleType={SALE_TYPE}
                           sharedData={dashboardPanels?.beads_chart}
-                          sharedStatus={dashboardStatus}
+                          sharedStatus={shouldFetchPanels ? dashboardStatus : 'pending'}
                         />
                       </ChartWatermark>
                     </ErrorBoundary>
