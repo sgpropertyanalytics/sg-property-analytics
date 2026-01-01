@@ -45,7 +45,7 @@ export function DebugProvider({ children }) {
       if (typeof window !== 'undefined') {
         window.__DEBUG_MODE__ = next;
       }
-      console.log(`[Debug] Mode ${next ? 'ENABLED' : 'DISABLED'} - Press Ctrl+Shift+D to toggle`);
+      console.warn(`[Debug] Mode ${next ? 'ENABLED' : 'DISABLED'} - Press Ctrl+Shift+D to toggle`);
       return next;
     });
   }, []);

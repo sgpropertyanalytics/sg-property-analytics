@@ -2,6 +2,7 @@ import js from '@eslint/js';
 import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 import globals from 'globals';
+import tsParser from '@typescript-eslint/parser';
 import designPlugin from './eslint-plugin-design/index.js';
 
 /**
@@ -96,6 +97,21 @@ export default [
         varsIgnorePattern: '^_',
       }],
       'no-console': ['warn', { allow: ['warn', 'error'] }],
+    },
+  },
+
+  // TypeScript parsing support
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    languageOptions: {
+      parser: tsParser,
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      parserOptions: {
+        ecmaFeatures: {
+          jsx: true,
+        },
+      },
     },
   },
 

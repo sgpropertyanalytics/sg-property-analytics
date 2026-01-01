@@ -95,7 +95,7 @@ export function logTimingPhase(chartName, phase, durationMs) {
   const status = budgetKey ? getBudgetStatus(budgetKey, durationMs) : 'ok';
   const icon = status === 'exceeded' ? '\u{1F534}' : status === 'warning' ? '\u{1F7E1}' : '\u{2705}';
 
-  console.log(`${icon} [${chartName}] ${phase}: ${durationMs}ms`);
+  console.warn(`${icon} [${chartName}] ${phase}: ${durationMs}ms`);
 }
 
 /**

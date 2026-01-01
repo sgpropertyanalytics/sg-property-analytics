@@ -69,11 +69,11 @@ export const BeadsChart = React.memo(function BeadsChart({
 
       // DEBUG: Log raw API data and transformed result
       const rawBeadsData = apiData.beads_chart;
-      console.log('[BeadsChart] Raw API beads_chart data:', rawBeadsData);
-      console.log('[BeadsChart] Sample row:', rawBeadsData?.[0]);
+      console.warn('[BeadsChart] Raw API beads_chart data:', rawBeadsData);
+      console.warn('[BeadsChart] Sample row:', rawBeadsData?.[0]);
 
       const transformed = transformBeadsChartSeries(rawBeadsData);
-      console.log('[BeadsChart] Transformed data:', {
+      console.warn('[BeadsChart] Transformed data:', {
         datasetCount: transformed.datasets?.length,
         datasets: transformed.datasets?.map(ds => ({
           label: ds.label,

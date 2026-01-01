@@ -36,10 +36,11 @@ export const formatPeriodLabel = (date, timeGrain) => {
     }
     case 'month':
       return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-    default:
+    default: {
       // Default to quarter format
       const q = Math.floor(month / 3) + 1;
       return `Q${q} ${year}`;
+    }
   }
 };
 
