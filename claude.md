@@ -13,6 +13,7 @@
 | `/frontend-design` | Building UI components/pages |
 | `/lazy-import-guardrails` | React.lazy() / dynamic imports |
 | `/backend-impact-guardrails` | **Backend changes (MANDATORY)** |
+| `/git-context-guardrails` | **ANY implementation (MANDATORY)** |
 
 ## Agents
 | Agent | Trigger |
@@ -292,6 +293,213 @@ Request params  → Normalized params (g.normalized_params) → Response keys
 - Adapters do minimal reshaping, not meaning conversion
 - Backend emits consistent field names
 - Frontend adapters handle v1/v2 normalization
+
+---
+
+# 0.6 PRE-PLANNING CONTEXT INVARIANTS (NON-NEGOTIABLE)
+
+Before implementing ANY task, Claude MUST understand the codebase context first.
+
+## System Architecture Understanding (MANDATORY FIRST STEP)
+
+**Before proposing ANY solution, understand the system-level architecture:**
+
+1. **Read Core Architecture Docs**
+   - `docs/architecture.md` - Overall system design
+   - `docs/frontend.md` - Frontend patterns
+   - `docs/backend.md` - Backend patterns
+   - `CLAUDE.md` - All rules and standards
+
+2. **Understand the Existing Design**
+   - How does data flow through the system?
+   - What are the established layers (pages → components → utils → API)?
+   - What patterns are already in place?
+
+3. **Identify the Canonical Approach**
+   - How is this type of problem ALREADY solved in the codebase?
+   - What is the established pattern for this feature type?
+   - What utilities/hooks/components already exist for this?
+
+**You MUST understand the system before proposing changes to it.**
+
+## No New System Design (NON-NEGOTIABLE)
+
+**NEVER introduce new architectural patterns, system designs, or logic paradigms.**
+
+| If You're Tempted To... | Instead... |
+|-------------------------|------------|
+| Create a new state management approach | Use existing context/hooks pattern |
+| Introduce a new data fetching pattern | Use `useAbortableQuery` + adapters |
+| Design a new component architecture | Follow existing page → component → util flow |
+| Add a new utility pattern | Extend existing utils or follow their pattern exactly |
+| Create a new API calling convention | Use `buildApiParams` + `apiClient` |
+
+**The architecture is SETTLED. Your job is to work WITHIN it, not redesign it.**
+
+## Production-Grade Solutions Only (NON-NEGOTIABLE)
+
+**Every solution MUST be:**
+- **Long-term**: Will this work in 2 years? At 10x scale?
+- **Scalable**: Does this handle edge cases and growth?
+- **Consistent**: Does this match how similar problems are solved?
+- **Maintainable**: Can another developer understand and modify this?
+
+**FORBIDDEN: Band-Aid Fixes**
+
+| Band-Aid (FORBIDDEN) | Production-Grade (REQUIRED) |
+|----------------------|----------------------------|
+| `if (specificEdgeCase)` hack | Fix the root cause |
+| Hardcoded values for "just this case" | Use constants/config |
+| Duplicating code "to be safe" | Reuse existing solution |
+| Quick workaround that "works for now" | Proper architectural solution |
+| Special-casing instead of generalizing | Extend existing patterns |
+| `// TODO: fix later` | Fix it now or don't merge |
+
+**Ask yourself:**
+- Would I be embarrassed if a senior engineer reviewed this?
+- Does this solve the CLASS of problem or just THIS instance?
+- Will this create tech debt?
+
+**If any answer is concerning → redesign the solution.**
+
+## The Pre-Planning Checklist (MANDATORY)
+
+Before writing OR planning ANY code change:
+
+1. **Identify Related Files**
+   - Which files will be modified?
+   - Which files are in the same module/directory?
+   - Which files import/depend on the target files?
+
+2. **Review Git History for Related Files**
+   ```bash
+   git log --oneline -20 -- <file1> <file2> ...
+   git log -p -5 -- <file1> <file2> ...  # With diffs
+   ```
+
+3. **Understand Recent Patterns**
+   - What naming conventions are used?
+   - What architectural patterns were recently applied?
+   - Are there any ongoing refactors or migrations?
+
+4. **Check for Related Issues/PRs**
+   - Are there open issues related to this area?
+   - Were there recent PRs that touched this code?
+   - Is there context in commit messages about WHY changes were made?
+
+## Required Context Before Planning
+
+| Context Type | What to Look For |
+|--------------|------------------|
+| **Commit Messages** | Intent behind changes, linked issues, migration notes |
+| **Diffs** | Actual code patterns, recent refactors, naming conventions |
+| **Dependencies** | What imports this file, what does this file import |
+| **Standards** | Were recent commits following CLAUDE.md rules? |
+
+## Mandatory Findings Report (FLAG BEFORE IMPLEMENTING)
+
+Before ANY implementation, Claude MUST explicitly report:
+
+```
+## Current Standards & Patterns Identified
+
+### System Architecture Understanding
+- Data flow: [How data flows for this feature type]
+- Layer responsibilities: [Which layer owns what logic]
+- Established pattern: [How similar features are implemented]
+
+### Existing Code to Reuse
+- [List existing hooks, utilities, components that solve this problem]
+- [List shared logic that should NOT be recreated]
+- [List patterns that MUST be followed]
+
+### Design System / Approach
+- [Current architectural pattern for this type of feature]
+- [Naming conventions from recent commits]
+- [File organization pattern]
+
+### Standards from CLAUDE.md
+- [Relevant rules that apply to this task]
+- [Required patterns (e.g., SaleType enum, buildApiParams)]
+
+### Recent Changes That Inform This Task
+- [Commit abc123: "refactor X" - must follow this pattern]
+- [Ongoing migration: Y - must align with this]
+
+### Production-Grade Validation
+- [ ] Solution works long-term (2+ years, 10x scale)
+- [ ] No band-aid fixes or special-casing
+- [ ] Solves the CLASS of problem, not just this instance
+- [ ] Another developer can understand and maintain this
+```
+
+**This report is NOT optional.** Implementation proposals without this report are invalid.
+
+## Reuse-First Rule (NON-NEGOTIABLE)
+
+**NEVER introduce new code when existing solutions exist.**
+
+| Scenario | Required Action |
+|----------|-----------------|
+| Similar hook exists | Reuse or extend it, don't create new |
+| Shared utility does this | Import and use it, don't rewrite |
+| Pattern exists elsewhere | Follow that pattern exactly |
+| Component can be composed | Compose existing, don't create new |
+
+**Before writing ANY new code, answer:**
+1. Does this logic already exist somewhere?
+2. Can an existing solution be extended?
+3. Is there a shared utility for this?
+4. What's the established pattern for this type of code?
+
+**If the answer to any is YES → reuse, don't recreate.**
+
+## Forbidden Behaviors
+
+- Starting implementation without the Mandatory Findings Report
+- Starting implementation without reviewing related file history
+- Proposing changes that contradict recent commit patterns
+- Ignoring ongoing migrations or refactors visible in git log
+- Duplicating logic that was recently consolidated
+- Undoing intentional changes from recent commits
+- Creating new hooks/utils/components when reusable ones exist
+- Introducing new patterns when established patterns exist
+- Writing logic that a shared utility already handles
+
+## Required Git Commands Before Planning
+
+```bash
+# 1. Identify what files are involved
+git status
+git diff HEAD~5 --name-only
+
+# 2. Review history of files that will be modified
+git log --oneline -20 -- <target_files>
+
+# 3. See actual changes in recent commits
+git log -p -5 -- <target_files>
+
+# 4. Check for related work in progress
+git branch -a | grep -i <feature_keyword>
+
+# 5. Look for linked issues in commit messages
+git log --grep="<issue_keyword>" --oneline -10
+```
+
+## When This Rule Applies
+
+This is MANDATORY for ALL implementation tasks:
+- Bug fixes
+- New features
+- Refactors
+- Performance improvements
+- UI/layout changes
+- API changes
+- Database changes
+
+Only exceptions:
+- Pure documentation changes (no code)
+- Pure exploration/research (no implementation planned)
 
 ---
 
@@ -1003,6 +1211,38 @@ Regions: CCR=#213448, RCR=#547792, OCR=#94B4C1
 ---
 
 # 10. CHECKLISTS
+
+## Pre-Planning (MANDATORY - before any implementation)
+
+**System Architecture Understanding (FIRST):**
+- [ ] Read relevant docs (architecture.md, frontend.md, backend.md)
+- [ ] Understand data flow for this feature type
+- [ ] Identified how similar features are already implemented
+- [ ] Confirmed NO new system design or architectural patterns needed
+
+**Context Gathering:**
+- [ ] Identified target files and their dependencies
+- [ ] Ran `git log -20 -- <target_files>`
+- [ ] Reviewed diffs of last 5 related commits
+- [ ] Searched for existing hooks/utils/components to reuse
+
+**Mandatory Findings Report (must output before implementing):**
+- [ ] Documented system architecture understanding
+- [ ] Listed existing code to reuse
+- [ ] Documented design system/approach from codebase
+- [ ] Listed relevant CLAUDE.md standards
+- [ ] Referenced recent commits that inform this task
+
+**Reuse-First Validation:**
+- [ ] Confirmed NO new code where existing solutions work
+- [ ] Confirmed plan follows established patterns
+- [ ] No contradictions with ongoing migrations/refactors
+
+**Production-Grade Validation:**
+- [ ] Solution works long-term (2+ years, 10x scale)
+- [ ] No band-aid fixes or special-casing
+- [ ] Solves the CLASS of problem, not just this instance
+- [ ] Another developer can understand and maintain this
 
 ## Pre-Commit
 - [ ] Can explain file in one sentence
