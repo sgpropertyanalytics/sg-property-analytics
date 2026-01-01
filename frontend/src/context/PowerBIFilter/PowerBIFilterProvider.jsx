@@ -86,13 +86,38 @@ export function PowerBIFilterProvider({ children, pageId: explicitPageId }) {
     return isHydrated(pageId);
   });
 
+  // ===== Migration Helper =====
+  // Converts old datePreset/dateRange format to new unified timeFilter
+  const migrateFilters = (saved) => {
+    // If already has timeFilter, no migration needed
+    if (saved.timeFilter) {
+      // Remove legacy fields if present
+      const { datePreset, dateRange, ...rest } = saved;
+      return { ...INITIAL_FILTERS, ...rest, timeFilter: saved.timeFilter };
+    }
+
+    // Migrate from old format
+    const { datePreset, dateRange, ...rest } = saved;
+    let timeFilter = INITIAL_FILTERS.timeFilter; // Default
+
+    if (datePreset && datePreset !== 'custom') {
+      // Old preset mode -> new preset mode
+      timeFilter = { type: 'preset', value: datePreset };
+    } else if (dateRange && (dateRange.start || dateRange.end)) {
+      // Old custom mode -> new custom mode
+      timeFilter = { type: 'custom', start: dateRange.start, end: dateRange.end };
+    }
+
+    return { ...INITIAL_FILTERS, ...rest, timeFilter };
+  };
+
   // ===== Core State =====
   // Filters persist to page-namespaced sessionStorage
   const [filters, setFilters] = useState(() => {
     const saved = readFilterStorage(pageId, STORAGE_KEYS.FILTERS, null);
     if (saved) {
-      // Merge with INITIAL_FILTERS to handle any new fields added after save
-      return { ...INITIAL_FILTERS, ...saved };
+      // Migrate old format and merge with INITIAL_FILTERS for any new fields
+      return migrateFilters(saved);
     }
     return INITIAL_FILTERS;
   });
@@ -112,7 +137,7 @@ export function PowerBIFilterProvider({ children, pageId: explicitPageId }) {
       prevPageIdRef.current = pageId;
       // Load filters for the new page (or reset to initial if none stored)
       const savedFilters = readFilterStorage(pageId, STORAGE_KEYS.FILTERS, null);
-      setFilters(savedFilters ? { ...INITIAL_FILTERS, ...savedFilters } : INITIAL_FILTERS);
+      setFilters(savedFilters ? migrateFilters(savedFilters) : INITIAL_FILTERS);
       // Check if new page was already hydrated
       setFiltersReady(isHydrated(pageId));
       if (!isHydrated(pageId)) {
