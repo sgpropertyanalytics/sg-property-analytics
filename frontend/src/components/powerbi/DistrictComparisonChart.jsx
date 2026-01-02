@@ -81,10 +81,11 @@ function DistrictComparisonChartBase({
       return transformDistrictComparison(response.data, selectedProject, minUnits);
     },
     [filterKey, minUnits],
-    { chartName: 'DistrictComparisonChart', initialData: { groups: [], stats: { maxPsf: 0, minPsf: 0, projectCount: 0, selectedRank: null } }, keepPreviousData: true }
+    { chartName: 'DistrictComparisonChart', initialData: null, keepPreviousData: true }
   );
 
-  const { groups, stats } = transformedData || { groups: [], stats: {} };
+  // Default fallback for when data is null (initial load) - matches PriceDistributionChart pattern
+  const { groups, stats } = transformedData ?? { groups: [], stats: { maxPsf: 0, minPsf: 0, projectCount: 0, selectedRank: null } };
 
   // Calculate total projects for dynamic height
   const totalProjects = useMemo(

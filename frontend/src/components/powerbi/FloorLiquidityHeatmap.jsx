@@ -74,12 +74,13 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
       };
     },
     [filterKey, windowMonths],
-    { chartName: 'FloorLiquidityHeatmap', initialData: { data: { projects: [], floor_zone_order: [] }, meta: { exclusions: {} } }, keepPreviousData: true }
+    { chartName: 'FloorLiquidityHeatmap', initialData: null, keepPreviousData: true }
   );
 
-  // Extract data and meta from response
-  const data = apiResponse?.data || { projects: [], floor_zone_order: [] };
-  const meta = apiResponse?.meta || { exclusions: {} };
+  // Default fallback for when data is null (initial load) - matches PriceDistributionChart pattern
+  const safeResponse = apiResponse ?? { data: { projects: [], floor_zone_order: [] }, meta: { exclusions: {} } };
+  const data = safeResponse.data;
+  const meta = safeResponse.meta;
 
   // Group projects by district and calculate district-level aggregations
   const projectsByDistrict = useMemo(() => {
