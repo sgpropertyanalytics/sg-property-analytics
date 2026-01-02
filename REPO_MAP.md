@@ -300,6 +300,44 @@ sgpropertytrend/
 
 ---
 
+## 9. Historical Incidents (Landmines)
+
+These incidents shaped the current architecture. Learn from them.
+
+### CSV Deletion Incident (Dec 30, 2025)
+
+**What happened:** Claude Code had a `cleanup_resale_projects()` function that deleted rows from `new_launch_units.csv` during runtime.
+
+**Impact:** Broke Resale Velocity KPI - data silently disappeared.
+
+**Fix:** Created `backend/utils/fs_guard.py` - runtime guard that makes CSV deletion IMPOSSIBLE.
+
+**Protection now:**
+```
+backend/data/       → IMMUTABLE (writes blocked)
+scripts/data/       → IMMUTABLE (writes blocked)
+backend/data/generated/ → OK to write
+```
+
+**If you try to delete a CSV, you'll see:**
+```
+FS_GUARD VIOLATION: BLOCKED DELETE
+Path: /backend/data/new_launch_units.csv
+Reason: This file is in a protected data directory.
+```
+
+### Custom Hooks Incident (Dec 25, 2025)
+
+**What happened:** 400+ lines of custom hooks were written (`useQuery`, `useAbortableQuery`, `useStaleRequestGuard`, `useGatedAbortableQuery`). A `datePreset` cache key bug occurred because `generateFilterKey()` manually listed filter fields and forgot `datePreset`.
+
+**Impact:** Stale data shown to users, race conditions, hard-to-debug caching issues.
+
+**Fix:** Migrated to React Query via `useAppQuery.js` which auto-generates cache keys.
+
+**Lesson:** Don't write custom infrastructure. Use libraries (React Query, Zustand).
+
+---
+
 ## Quick Reference Links
 
 - **Rules & Invariants**: [CLAUDE.md](./CLAUDE.md)
