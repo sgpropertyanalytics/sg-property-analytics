@@ -1,6 +1,10 @@
 name: Claude Code
 
 on:
+  # Auto-review every PR
+  pull_request:
+    types: [opened, synchronize]
+  # Also respond to @claude mentions
   issue_comment:
     types: [created]
   pull_request_review_comment:
@@ -11,8 +15,112 @@ on:
     types: [submitted]
 
 jobs:
+  # ===========================================
+  # Auto-review: Stability check on every PR
+  # ===========================================
+  stability-review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Claude PR Review
+        uses: anthropic/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            Review this PR using the following 10-point checklist. Be concise but thorough.
+
+            ## 1. Correctness / Logic
+            - Does the code actually do what the PR claims?
+            - Edge cases handled?
+            - Any silent behavior changes?
+
+            ## 2. Side Effects & Regressions
+            - Does this break existing flows?
+            - Any shared logic touched?
+            - Any unintended behavior change?
+
+            ## 3. State & Lifecycle Safety
+            - React: hooks order, dependency arrays, stale closures
+            - Backend: async flow, race conditions, retries, idempotency
+            - No updates after unmount / stale requests
+
+            ## 4. Error Handling & Fallbacks
+            - Are errors handled or swallowed silently?
+            - Meaningful user-facing errors?
+            - Safe fallback states?
+            - Red flags: empty catch {}, console.log instead of error handling
+
+            ## 5. Performance / Overfetching
+            - Unnecessary re-renders?
+            - Repeated API calls?
+            - Heavy computation inside render?
+            - Missing memoization?
+
+            ## 6. API / Contract Consistency
+            - Does frontend match backend contract?
+            - Any implicit assumptions?
+            - Breaking changes without versioning?
+            - Does any route use request.args.get() instead of g.normalized_params?
+
+            ## 7. Code Simplicity & Readability
+            - Is this over-engineered?
+            - Can this be simpler?
+            - Is intent obvious without comments?
+
+            ## 8. Naming & Structure
+            - Clear variable and function names?
+            - Files in the right layer? (see CLAUDE.md §1.1)
+            - No "temporary" naming left behind?
+
+            ## 9. Security / Data Safety
+            - Auth checks present?
+            - Sensitive data exposed?
+            - Token / credential handling correct?
+            - No client-side trust assumptions?
+
+            ## 10. Cleanup & Technical Debt
+            - Dead code?
+            - Debug logs left in?
+            - TODOs without tickets?
+            - Duplicate logic?
+
+            ---
+
+            ## Output Format
+
+            For each category, report:
+            - ✅ if no issues found
+            - ⚠️ if minor concerns (explain briefly)
+            - ❌ if blocking issues (explain with file:line)
+
+            Example:
+            ```
+            1. Correctness: ✅
+            2. Side Effects: ⚠️ Touches shared utility - verify callers
+            3. State Safety: ❌ Missing cleanup in useEffect (Chart.jsx:45)
+            ...
+            ```
+
+            End with: **Recommendation: APPROVE / REQUEST CHANGES / NEEDS DISCUSSION**
+
+            ---
+
+            DO NOT suggest:
+            - Library replacements (Pydantic, Zustand, etc.) - architecture is settled
+            - Refactoring unrelated code
+            - Style/formatting preferences
+
+  # ===========================================
+  # On-demand: Respond to @claude mentions
+  # ===========================================
   claude:
-    # Only run when @claude is mentioned or on new issues assigned to claude
     if: |
       (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
