@@ -1,5 +1,7 @@
 import React, { useState, useMemo, lazy, Suspense } from 'react';
-import { PowerBIFilterProvider, usePowerBIFilters, TIME_GROUP_BY } from '../context/PowerBIFilter';
+import { PowerBIFilterProvider, TIME_GROUP_BY } from '../context/PowerBIFilter';
+// Phase 3.3: Migrated from usePowerBIFilters to useZustandFilters
+import { useZustandFilters } from '../stores';
 import { TimeTrendChart } from '../components/powerbi/TimeTrendChart';
 import { PriceDistributionChart } from '../components/powerbi/PriceDistributionChart';
 import { BeadsChart } from '../components/powerbi/BeadsChart';
@@ -63,7 +65,8 @@ const SALE_TYPE = SaleType.RESALE;
 
 export function MacroOverviewContent() {
   const { apiMetadata } = useData();
-  const { filters, buildApiParams, debouncedFilterKey, timeGrouping } = usePowerBIFilters();
+  // Phase 3.3: Now reading from Zustand store
+  const { filters, buildApiParams, debouncedFilterKey, timeGrouping } = useZustandFilters();
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTitle, setModalTitle] = useState('');

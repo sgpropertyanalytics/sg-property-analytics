@@ -9,9 +9,11 @@
  * - Derived state computed on access
  * - Compatibility hooks matching existing API
  *
- * MIGRATION STATUS: Sub-Phase 3.0 (Foundation)
- * - Store created but NOT consumed by any components yet
- * - Context is still the source of truth
+ * MIGRATION STATUS: Sub-Phase 3.3 (Write Migration)
+ * - Phase 3.0: Store created ✓
+ * - Phase 3.1: Context → Zustand sync ✓
+ * - Phase 3.2: Read components migrated to Zustand ✓
+ * - Phase 3.3: Write components migrating to Zustand (IN PROGRESS)
  * - Enable via VITE_ENABLE_ZUSTAND_FILTERS=true for testing
  */
 
@@ -22,6 +24,10 @@ import { useMemo, useCallback } from 'react';
 
 // Import debounce hook for debouncedFilterKey compatibility
 import { useDebouncedFilterKey } from '../context/PowerBIFilter/hooks';
+
+// Phase 3.3: Import filterOptions context for write components
+// filterOptions contains API-fetched metadata (districts list, date range) - not filter state
+import { useFilterOptionsContext } from '../context/PowerBIFilter';
 
 // Import constants from existing filter system
 import {
@@ -702,6 +708,22 @@ export function useZustandFilterActions() {
 export function useZustandFilters() {
   const store = useFilterStore();
 
+  // Phase 3.3: Get filterOptions from Context
+  // This is API-fetched metadata (districts list, date range), not filter state
+  // Safe to call even if PowerBIFilterProvider exists - it just reads from Context
+  let filterOptions;
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    filterOptions = useFilterOptionsContext();
+  } catch {
+    // Fallback for tests without PowerBIFilterProvider
+    filterOptions = {
+      loading: false,
+      districtsRaw: [],
+      dateRange: { min: null, max: null },
+    };
+  }
+
   // Compute derived state
   const activeFilters = store.getActiveFilters();
   const activeFilterCount = store.getActiveFilterCount();
@@ -730,6 +752,9 @@ export function useZustandFilters() {
       breadcrumbs: store.breadcrumbs,
       selectedProject: store.selectedProject,
       timeGrouping: store.timeGrouping,
+
+      // === Filter Options (from Context - API metadata) ===
+      filterOptions,
 
       // === Derived State ===
       activeFilters,
@@ -781,6 +806,7 @@ export function useZustandFilters() {
     }),
     [
       store,
+      filterOptions,
       activeFilters,
       activeFilterCount,
       filterKey,
