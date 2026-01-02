@@ -41,9 +41,8 @@ export function MarketMomentumGrid({ period = 'Y1', bedroom = 'all', saleType = 
   }, [filterKey]);
   const isFiltering = filterKey !== debouncedFilterKey;
 
-  // Data fetching with useGatedAbortableQuery - gates on appReady
-  // isBootPending = true while waiting for app boot
-  const { data, status, error, isBootPending, isFetching, refetch } = useAppQuery(
+  // Data fetching with useAppQuery - gates on appReady via context
+  const { data, status, error, refetch } = useAppQuery(
     async (signal) => {
       // Build API params from props (not PowerBIFilterContext)
       const params = {
@@ -118,9 +117,7 @@ export function MarketMomentumGrid({ period = 'Y1', bedroom = 'all', saleType = 
   return (
     <ChartFrame
       status={status}
-      isFetching={isFetching}
       isFiltering={isFiltering}
-      isBootPending={isBootPending}
       error={error}
       onRetry={refetch}
       empty={!safeData || Object.keys(safeData).length === 0}
