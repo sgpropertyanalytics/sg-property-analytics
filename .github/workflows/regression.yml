@@ -446,6 +446,7 @@ jobs:
       - name: Run E2E tests
         run: cd frontend && npm run test:e2e
         env:
+          CI: true
           BASE_URL: http://localhost:4173
 
       - name: Upload Playwright report

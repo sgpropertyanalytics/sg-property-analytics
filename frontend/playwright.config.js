@@ -23,7 +23,7 @@ const config = {
     ['html', { open: 'never' }],
   ],
   use: {
-    baseURL: process.env.BASE_URL || 'http://localhost:5173',
+    baseURL: process.env.BASE_URL || (process.env.CI ? 'http://localhost:4173' : 'http://localhost:5173'),
     headless: true,
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure',
@@ -36,8 +36,8 @@ const config = {
     },
   ],
   webServer: {
-    command: 'npm run dev',
-    port: 5173,
+    command: process.env.CI ? 'npm run preview' : 'npm run dev',
+    port: process.env.CI ? 4173 : 5173,
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
   },
