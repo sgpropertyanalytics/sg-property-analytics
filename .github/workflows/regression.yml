@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
   schedule:
     # Security audit runs nightly at 2am UTC
     - cron: '0 2 * * *'
