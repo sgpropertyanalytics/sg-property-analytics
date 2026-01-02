@@ -97,18 +97,30 @@ AGGREGATE_PARAM_SCHEMA = ParamSchema(
             description="Project name filter (exact match for drill-through)"
         ),
 
-        # Date range
+        # Time filter (unified)
+        # Frontend sends timeframe ID; backend resolves to date bounds
+        # This takes precedence over explicit date_from/date_to
+        "timeframe": FieldSpec(
+            name="timeframe",
+            type=str,
+            nullable=True,
+            default=None,  # None = use date_from/date_to or default to Y1
+            allowed_values=["M3", "M6", "Y1", "Y3", "Y5", "all", "3m", "6m", "12m", "1y", "2y", "3y", "5y"],
+            description="Timeframe preset (M3, M6, Y1, Y3, Y5, all). Takes precedence over date_from/date_to."
+        ),
+
+        # Date range (explicit dates - used when timeframe not provided)
         "date_from": FieldSpec(
             name="date_from",
             type=date,
             nullable=True,
-            description="Start date (inclusive), YYYY-MM-DD"
+            description="Start date (inclusive), YYYY-MM-DD. Ignored if timeframe is set."
         ),
         "date_to": FieldSpec(
             name="date_to",
             type=date,
             nullable=True,
-            description="End date (inclusive), YYYY-MM-DD"
+            description="End date (inclusive), YYYY-MM-DD. Ignored if timeframe is set."
         ),
 
         # Value range filters

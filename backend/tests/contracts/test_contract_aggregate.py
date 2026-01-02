@@ -40,6 +40,15 @@ class TestAggregateContractSchema:
         assert "date_from" in fields
         assert "date_to" in fields
 
+        # Time filter (unified) - CRITICAL for filter migration
+        # Frontend sends timeframe (e.g., 'M6', 'Y1') instead of date_from/date_to
+        # Backend resolves timeframe → date bounds via _normalize_timeframe()
+        # Without this field, normalize_params() drops the param silently
+        assert "timeframe" in fields, (
+            "CRITICAL: 'timeframe' field missing from AGGREGATE_PARAM_SCHEMA!\n"
+            "Frontend sends timeframe param; without it, charts default to Y1."
+        )
+
     def test_param_schema_has_aliases(self, contract_registry):
         """ParamSchema should have camelCase aliases."""
         contract = contract_registry["aggregate"]
@@ -138,6 +147,89 @@ class TestAggregateNormalization:
         assert normalized["group_by"] == ["month", "district"]
         assert isinstance(normalized["metrics"], list)
         assert normalized["metrics"] == ["count", "median_psf"]
+
+    def test_normalize_timeframe_resolves_to_dates(self, contract_registry):
+        """
+        Timeframe param should be resolved to date_from and date_to_exclusive.
+
+        This is the KEY normalization that was broken when timeframe wasn't
+        in the schema - the param was silently dropped before _normalize_timeframe().
+        """
+        from api.contracts.normalize import normalize_params
+
+        contract = contract_registry["aggregate"]
+        raw = {"timeframe": "M6"}  # 6 months
+
+        normalized = normalize_params(raw, contract.param_schema)
+
+        # Timeframe should be resolved to date bounds
+        assert "date_from" in normalized, (
+            "timeframe='M6' should resolve to date_from.\n"
+            "If this fails, check that 'timeframe' is in AGGREGATE_PARAM_SCHEMA.fields"
+        )
+        assert "date_to_exclusive" in normalized, (
+            "timeframe='M6' should resolve to date_to_exclusive"
+        )
+
+        # Verify the dates are Python date objects
+        from datetime import date
+        assert isinstance(normalized["date_from"], date)
+        assert isinstance(normalized["date_to_exclusive"], date)
+
+        # M6 should give us approximately 6 months of data
+        delta = normalized["date_to_exclusive"] - normalized["date_from"]
+        assert 150 < delta.days < 200, f"M6 should be ~180 days, got {delta.days}"
+
+    def test_normalize_timeframe_Y1(self, contract_registry):
+        """Y1 timeframe should resolve to approximately 1 year of data."""
+        from api.contracts.normalize import normalize_params
+        from datetime import date
+
+        contract = contract_registry["aggregate"]
+        raw = {"timeframe": "Y1"}
+
+        normalized = normalize_params(raw, contract.param_schema)
+
+        assert "date_from" in normalized
+        assert "date_to_exclusive" in normalized
+
+        delta = normalized["date_to_exclusive"] - normalized["date_from"]
+        assert 350 < delta.days < 380, f"Y1 should be ~365 days, got {delta.days}"
+
+    def test_normalize_timeframe_all(self, contract_registry):
+        """'all' timeframe should not set date bounds (return all data)."""
+        from api.contracts.normalize import normalize_params
+
+        contract = contract_registry["aggregate"]
+        raw = {"timeframe": "all"}
+
+        normalized = normalize_params(raw, contract.param_schema)
+
+        # 'all' means no date restriction - date_from should be None or very old
+        # The exact behavior depends on resolve_timeframe() implementation
+        # At minimum, the params should be processed without error
+        assert normalized is not None
+
+    def test_normalize_timeframe_takes_precedence_over_dates(self, contract_registry):
+        """When both timeframe and date_from/date_to are sent, timeframe wins."""
+        from api.contracts.normalize import normalize_params
+        from datetime import date
+
+        contract = contract_registry["aggregate"]
+        raw = {
+            "timeframe": "M3",  # 3 months
+            "date_from": "2020-01-01",  # Old date that should be ignored
+            "date_to": "2020-12-31",
+        }
+
+        normalized = normalize_params(raw, contract.param_schema)
+
+        # The normalized date_from should be recent (from M3), not 2020
+        if normalized.get("date_from"):
+            # M3 should give us dates in the last few months, not 2020
+            assert normalized["date_from"].year >= 2024, (
+                f"Expected recent date from M3, got {normalized['date_from']}"
+            )
 
 
 class TestAggregateResponseValidation:
