@@ -326,15 +326,38 @@ Path: /backend/data/new_launch_units.csv
 Reason: This file is in a protected data directory.
 ```
 
-### Custom Hooks Incident (Dec 25, 2025)
+### Layer-Upon-Layer Incident (Dec 25, 2025)
 
-**What happened:** 400+ lines of custom hooks were written (`useQuery`, `useAbortableQuery`, `useStaleRequestGuard`, `useGatedAbortableQuery`). A `datePreset` cache key bug occurred because `generateFilterKey()` manually listed filter fields and forgot `datePreset`.
+**What happened:** Instead of using React Query and Zustand, custom hooks kept getting added to "fix" issues:
 
-**Impact:** Stale data shown to users, race conditions, hard-to-debug caching issues.
+```
+useQuery.js           → "We need query state management"
+useAbortableQuery.js  → "We need abort handling" (layer 2)
+useStaleRequestGuard.js → "We need stale detection" (layer 3)
+useGatedAbortableQuery.js → "We need visibility gating" (layer 4)
+generateFilterKey()   → "We need cache keys" (layer 5)
+```
 
-**Fix:** Migrated to React Query via `useAppQuery.js` which auto-generates cache keys.
+**Result:** 400+ lines of custom infrastructure. Then `datePreset` was forgotten in `generateFilterKey()` → stale data bug.
 
-**Lesson:** Don't write custom infrastructure. Use libraries (React Query, Zustand).
+**The irony:** React Query does ALL of this in 5 lines:
+```js
+const { data } = useQuery({
+  queryKey: ['aggregate', filters],  // Auto cache key from object
+  queryFn: ({ signal }) => fetch(url, { signal }),  // Auto abort
+  staleTime: 30000,  // Auto stale detection
+  enabled: isVisible  // Auto visibility gating
+});
+```
+
+**Impact:** Stale data shown to users, race conditions, 400+ lines to maintain.
+
+**Fix:** Migrated to React Query via `useAppQuery.js`.
+
+**Lesson:**
+- React Query solves: data fetching, caching, abort, stale detection, retries
+- Zustand solves: global state (replacing large Context files)
+- **If you're writing >50 lines of infrastructure, STOP and find a library**
 
 ---
 
