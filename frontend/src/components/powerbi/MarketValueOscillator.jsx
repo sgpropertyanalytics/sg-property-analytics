@@ -20,6 +20,7 @@ import {
   logFetchDebug,
   assertKnownVersion,
   validateResponseGrain,
+  DEFAULT_BASELINE_STATS,
 } from '../../adapters';
 import { SaleType } from '../../schemas/apiContract';
 
@@ -95,8 +96,8 @@ export function MarketValueOscillator({ height = 420, saleType = null, sharedRaw
     }
   );
 
-  // Default fallback for baseline stats (initial load) - matches main query pattern
-  const safeBaselineStats = baselineStats ?? { ccrRcr: { mean: 400, stdDev: 200 }, rcrOcr: { mean: 200, stdDev: 100 } };
+  // Fallback to conservative defaults until real baseline loads (see DEFAULT_BASELINE_STATS JSDoc)
+  const safeBaselineStats = baselineStats ?? DEFAULT_BASELINE_STATS;
 
   // Determine if we should use shared data from parent (P0 performance fix)
   // When sharedRawData is provided, we skip the internal fetch entirely

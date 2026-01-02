@@ -83,6 +83,7 @@ import {
   getZScoreShortLabel,
   getZScoreColor,
   calculateRollingAverage,
+  DEFAULT_BASELINE_STATS,
 } from './oscillator';
 
 import {
@@ -153,6 +154,7 @@ export {
   getZScoreShortLabel,
   getZScoreColor,
   calculateRollingAverage,
+  DEFAULT_BASELINE_STATS,
   // Price Range Matrix
   transformPriceRangeMatrix,
   formatPriceShort,
@@ -211,6 +213,7 @@ export default {
   getZScoreShortLabel,
   getZScoreColor,
   calculateRollingAverage,
+  DEFAULT_BASELINE_STATS,
   // Price Range Matrix
   transformPriceRangeMatrix,
   formatPriceShort,
