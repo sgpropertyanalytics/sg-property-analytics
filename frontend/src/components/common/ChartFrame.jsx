@@ -112,6 +112,20 @@ export const ChartFrame = React.memo(function ChartFrame({
       case 'success':
         // ONLY show empty state when status === 'success' AND data is empty
         if (empty) {
+          // If actively filtering, show updating overlay on empty state
+          // This prevents jarring "No data" flash during filter transitions
+          if (isFiltering) {
+            return (
+              <div className="relative" style={{ minHeight: height }}>
+                <div className="transition-all duration-150 opacity-60 blur-[1px] flex items-center justify-center text-sm text-[#547792]" style={{ minHeight: height }}>
+                  No data for selected filters.
+                </div>
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                  <UpdateIndicator />
+                </div>
+              </div>
+            );
+          }
           return (
             <div
               className="flex items-center justify-center text-sm text-[#547792]"

@@ -315,6 +315,21 @@ describe('buildApiParamsFromState - timeFilter', () => {
     expect(params.timeframe).toBe('all');
   });
 
+  it('maps all preset timeframe values correctly (M3, M6, Y1, Y3, Y5, all)', () => {
+    const presets = ['M3', 'M6', 'Y1', 'Y3', 'Y5', 'all'];
+
+    presets.forEach((preset) => {
+      const activeFilters = createBaseFilters();
+      activeFilters.timeFilter = { type: 'preset', value: preset };
+
+      const params = buildApiParamsFromState(activeFilters, activeFilters, emptyFactFilter);
+
+      expect(params.timeframe).toBe(preset);
+      expect(params.dateFrom).toBeUndefined();
+      expect(params.dateTo).toBeUndefined();
+    });
+  });
+
   it('maps custom date range to dateFrom/dateTo params', () => {
     const activeFilters = createBaseFilters();
     activeFilters.timeFilter = {

@@ -49,16 +49,19 @@ jobs:
               - '.ci/baselines/**'
 
   # ============================================================
-  # Contract Guard - Only when contracts change
+  # Contract Guard - Schema Drift Detection (BLOCKING)
+  # Regenerates contracts and fails if they differ from committed
   # ============================================================
   contract-guard:
-    name: Contract Guard
+    name: Contract Guard (Schema Drift)
     runs-on: ubuntu-latest
     needs: changes
     if: ${{ needs.changes.outputs.contracts == 'true' || needs.changes.outputs.backend == 'true' }}
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Need for git diff against base
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -72,8 +75,13 @@ jobs:
           cd backend
           pip install -r requirements.txt
 
-      - name: Generate and validate contracts
+      - name: Check for contract drift
+        id: drift-check
         run: |
+          # Save current committed version BEFORE regeneration
+          cp frontend/src/generated/apiContract.json /tmp/before.json 2>/dev/null || echo "{}" > /tmp/before.json
+
+          # Regenerate fresh from Python schemas
           python backend/scripts/generate_contracts.py
 
           # Verify files exist and are non-empty
@@ -86,16 +94,34 @@ jobs:
             exit 1
           }
 
-          # Check if manifest changed (contracts out of sync)
-          if ! git diff --exit-code backend/contracts_manifest.sha256; then
-            echo "::error::Contracts changed but not committed. Run: python backend/scripts/generate_contracts.py"
+          # Check for ANY difference between committed and regenerated
+          if ! diff -q /tmp/before.json frontend/src/generated/apiContract.json > /dev/null 2>&1; then
+            echo "drift=true" >> $GITHUB_OUTPUT
+            echo "::error::Contract drift detected! Backend schemas changed but contracts not regenerated."
+            echo "::error::Fix: Run 'python backend/scripts/generate_contracts.py' and commit the result."
             echo ""
-            echo "=== Contract Diff ==="
-            git diff frontend/src/generated/apiContract.json | head -100
+            echo "### Contract Drift Detected" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Backend schema definitions have changed but \`apiContract.json\` was not regenerated." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Fix:** Run locally and commit:" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+            echo "python backend/scripts/generate_contracts.py" >> $GITHUB_STEP_SUMMARY
+            echo "git add frontend/src/generated/" >> $GITHUB_STEP_SUMMARY
+            echo "git commit --amend --no-edit" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "<details><summary>Diff (first 50 lines)</summary>" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`diff" >> $GITHUB_STEP_SUMMARY
+            diff /tmp/before.json frontend/src/generated/apiContract.json | head -50 >> $GITHUB_STEP_SUMMARY || true
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "</details>" >> $GITHUB_STEP_SUMMARY
             exit 1
           fi
 
-          echo "✓ Contracts are in sync"
+          echo "drift=false" >> $GITHUB_OUTPUT
+          echo "✓ Contracts are in sync with backend schemas"
 
   # ============================================================
   # Frontend Import Guard - Only when frontend changes
@@ -382,6 +408,128 @@ jobs:
           echo "::warning::Integration tests skipped - DATABASE_URL not configured"
 
   # ============================================================
+  # Frontend Tests - CATCHES RUNTIME ERRORS BEFORE DEPLOY
+  # ============================================================
+  frontend-tests:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    needs: changes
+    if: ${{ needs.changes.outputs.frontend == 'true' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: cd frontend && npm ci
+
+      - name: Lint
+        run: cd frontend && npm run lint:ci
+
+      - name: Type check
+        run: cd frontend && npm run typecheck
+
+      - name: Unit tests
+        run: cd frontend && npm run test:ci
+
+      - name: Build
+        run: cd frontend && npm run build
+
+  # ============================================================
+  # Frontend E2E Tests - CATCHES RUNTIME CRASHES (PR gate)
+  # Runs smoke tests only - fast and stable
+  # ============================================================
+  frontend-e2e:
+    name: Frontend E2E (Smoke)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [changes, frontend-tests]
+    if: ${{ needs.changes.outputs.frontend == 'true' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: cd frontend && npm ci
+
+      - name: Install Playwright browsers
+        run: cd frontend && npx playwright install --with-deps chromium
+
+      - name: Build frontend
+        run: cd frontend && npm run build
+
+      - name: Run E2E smoke tests
+        run: cd frontend && npm run test:e2e
+        env:
+          CI: true
+          BASE_URL: http://localhost:4173
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: frontend/playwright-report/
+          retention-days: 7
+
+  # ============================================================
+  # Frontend Performance Tests - NIGHTLY ONLY
+  # Comprehensive but slow - don't run on every PR
+  # ============================================================
+  frontend-perf:
+    name: Frontend Performance (Nightly)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: ${{ github.event_name == 'schedule' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: cd frontend && npm ci
+
+      - name: Install Playwright browsers
+        run: cd frontend && npx playwright install --with-deps chromium
+
+      - name: Build frontend
+        run: cd frontend && npm run build
+
+      - name: Run full E2E tests
+        run: cd frontend && npm run test:e2e:full
+        env:
+          CI: true
+          BASE_URL: http://localhost:4173
+        continue-on-error: true
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-perf-report
+          path: frontend/playwright-report/
+          retention-days: 14
+
+  # ============================================================
   # Security Audit - Nightly + PRs, warn only
   # ============================================================
   security-audit:
@@ -407,4 +555,72 @@ jobs:
             echo "::warning::Vulnerabilities found in dependencies"
             exit 0
           }
+        continue-on-error: true
+
+  # ============================================================
+  # E2E Mock Validation - Catches stale mocks (ADVISORY)
+  # Warns if E2E mocks drift from API contracts
+  # ============================================================
+  mock-validation:
+    name: E2E Mock Validation
+    runs-on: ubuntu-latest
+    needs: changes
+    if: ${{ needs.changes.outputs.frontend == 'true' || needs.changes.outputs.contracts == 'true' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Validate E2E mocks match contracts
+        run: |
+          if [ -f "scripts/validate_e2e_mocks.py" ]; then
+            python scripts/validate_e2e_mocks.py || {
+              echo "::warning::E2E mocks may be stale. Review: scripts/validate_e2e_mocks.py"
+            }
+          else
+            echo "Mock validation script not found, skipping"
+          fi
+        continue-on-error: true
+
+  # ============================================================
+  # Dead Code Detection - Catches deprecated code (ADVISORY)
+  # Warns about unused/deprecated code accumulation
+  # ============================================================
+  dead-code:
+    name: Dead Code Detection
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Find unused code
+        run: |
+          if [ -f "scripts/find_unused.py" ]; then
+            python scripts/find_unused.py > /tmp/dead_code_report.txt 2>&1 || true
+
+            # Check if any candidates found
+            if grep -q "candidate" /tmp/dead_code_report.txt 2>/dev/null; then
+              echo "::warning::Dead code candidates found. Review: scripts/find_unused.py"
+              echo ""
+              echo "### Dead Code Candidates" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+              cat /tmp/dead_code_report.txt | head -50 >> $GITHUB_STEP_SUMMARY
+              echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "✓ No dead code candidates detected"
+            fi
+          else
+            echo "Dead code detection script not found, skipping"
+          fi
         continue-on-error: true
