@@ -535,28 +535,21 @@ export function createFilterStore(pageId) {
             _version: state._version,
           }),
           // Handle version migration
-          // Always migrate filters to ensure timeFilter shape is valid, even at same version
-          // (old shapes can exist at same version depending on deployment timing)
+          // Always migrate filters to ensure timeFilter shape is valid
+          // (old shapes can exist even at same version depending on deployment timing)
           migrate: (persistedState, version) => {
             const next = persistedState ?? {};
-            const migratedFilters = migrateFilters(next.filters);
 
             if (version !== STORAGE_VERSION) {
               console.warn(
                 `[filterStore] Version mismatch: stored=${version}, current=${STORAGE_VERSION}. Migrating.`
               );
-              return {
-                ...next,
-                filters: migratedFilters,
-                timeGrouping: next.timeGrouping ?? 'quarter',
-                _version: STORAGE_VERSION,
-              };
             }
 
-            // Same version: ensure shape correctness
             return {
               ...next,
-              filters: migratedFilters,
+              filters: migrateFilters(next.filters),
+              timeGrouping: next.timeGrouping ?? 'quarter',
               _version: STORAGE_VERSION,
             };
           },
