@@ -1,5 +1,5 @@
 import React from 'react';
-import { PowerBIFilterProvider } from '../context/PowerBIFilter';
+// Phase 3.4: PowerBIFilterProvider removed - useZustandFilters is self-contained
 import { FilterBar } from '../components/powerbi/FilterBar';
 import { NewVsResaleChart } from '../components/powerbi/NewVsResaleChart';
 import { NewLaunchTimelineChart } from '../components/powerbi/NewLaunchTimelineChart';
@@ -58,13 +58,9 @@ export function PrimaryMarketContent() {
 /**
  * Standalone PrimaryMarket with Independent Filter Context
  *
- * This page has its own PowerBIFilterProvider, completely isolated from Market Core.
- * Filter selections here do NOT affect Market Core and vice versa.
+ * Phase 3.4: No longer needs PowerBIFilterProvider - useZustandFilters is self-contained.
+ * Each page automatically gets its own filter store instance based on route.
  */
 export default function PrimaryMarket() {
-  return (
-    <PowerBIFilterProvider>
-      <PrimaryMarketContent />
-    </PowerBIFilterProvider>
-  );
+  return <PrimaryMarketContent />;
 }

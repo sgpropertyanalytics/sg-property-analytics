@@ -1,6 +1,6 @@
 import React, { useState, useMemo, lazy, Suspense } from 'react';
-import { PowerBIFilterProvider, TIME_GROUP_BY } from '../context/PowerBIFilter';
-// Phase 3.3: Migrated from usePowerBIFilters to useZustandFilters
+// Phase 3.4: PowerBIFilterProvider removed - useZustandFilters is self-contained
+import { TIME_GROUP_BY } from '../context/PowerBIFilter';
 import { useZustandFilters } from '../stores';
 import { TimeTrendChart } from '../components/powerbi/TimeTrendChart';
 import { PriceDistributionChart } from '../components/powerbi/PriceDistributionChart';
@@ -437,14 +437,10 @@ export function MacroOverviewContent() {
  * Standalone MacroOverview (Legacy Support)
  *
  * This export provides backward compatibility for direct usage without DashboardLayout.
- * Wraps content with its own PowerBIFilterProvider.
+ * Phase 3.4: No longer needs PowerBIFilterProvider - useZustandFilters is self-contained.
  *
  * For new code, prefer using MacroOverviewContent inside DashboardLayout.
  */
 export default function MacroOverview() {
-  return (
-    <PowerBIFilterProvider>
-      <MacroOverviewContent />
-    </PowerBIFilterProvider>
-  );
+  return <MacroOverviewContent />;
 }

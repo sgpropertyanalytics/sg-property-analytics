@@ -9,25 +9,27 @@
  * - Derived state computed on access
  * - Compatibility hooks matching existing API
  *
- * MIGRATION STATUS: Sub-Phase 3.3 (Write Migration)
+ * MIGRATION STATUS: Sub-Phase 3.4 (Context Removal)
  * - Phase 3.0: Store created ✓
  * - Phase 3.1: Context → Zustand sync ✓
  * - Phase 3.2: Read components migrated to Zustand ✓
- * - Phase 3.3: Write components migrating to Zustand (IN PROGRESS)
- * - Enable via VITE_ENABLE_ZUSTAND_FILTERS=true for testing
+ * - Phase 3.3: Write components migrated to Zustand ✓
+ * - Phase 3.4: Context removal (IN PROGRESS)
+ *
+ * useZustandFilters is now self-contained:
+ * - Gets filterOptions from DataContext (not PowerBIFilterContext)
+ * - Handles route reset internally (no useRouteReset hook needed)
+ * - PowerBIFilterProvider can be removed from App.jsx
  */
 
 import { create } from 'zustand';
 import { persist, subscribeWithSelector } from 'zustand/middleware';
 import { useLocation } from 'react-router-dom';
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useEffect, useRef } from 'react';
 
 // Import debounce hook for debouncedFilterKey compatibility
-import { useDebouncedFilterKey } from '../context/PowerBIFilter/hooks';
-
-// Phase 3.3: Import filterOptions context for write components
-// filterOptions contains API-fetched metadata (districts list, date range) - not filter state
-import { useFilterOptionsContext } from '../context/PowerBIFilter';
+// Phase 3.4: Also import useFilterOptions (gets data from DataContext, not PowerBIFilterProvider)
+import { useDebouncedFilterKey, useFilterOptions } from '../context/PowerBIFilter/hooks';
 
 // Import constants from existing filter system
 import {
@@ -708,21 +710,31 @@ export function useZustandFilterActions() {
 export function useZustandFilters() {
   const store = useFilterStore();
 
-  // Phase 3.3: Get filterOptions from Context
-  // This is API-fetched metadata (districts list, date range), not filter state
-  // Safe to call even if PowerBIFilterProvider exists - it just reads from Context
-  let filterOptions;
+  // Get current pathname for route reset detection
+  // Falls back to '/' in test environments without Router
+  let pathname = '/';
   try {
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    filterOptions = useFilterOptionsContext();
+    const location = useLocation();
+    pathname = location?.pathname || '/';
   } catch {
-    // Fallback for tests without PowerBIFilterProvider
-    filterOptions = {
-      loading: false,
-      districtsRaw: [],
-      dateRange: { min: null, max: null },
-    };
+    // No Router context (tests) - use fallback
   }
+  const prevPathnameRef = useRef(pathname);
+
+  // Phase 3.4: Get filterOptions from DataContext via useFilterOptions hook
+  // This doesn't require PowerBIFilterProvider - it uses DataContext directly
+  const [filterOptions] = useFilterOptions();
+
+  // Phase 3.4: Route reset - reset transient state when navigating to different page
+  // This replaces the useRouteReset hook from PowerBIFilterProvider
+  useEffect(() => {
+    if (prevPathnameRef.current !== pathname) {
+      prevPathnameRef.current = pathname;
+      // Reset transient state (drillPath, breadcrumbs, factFilter, selectedProject)
+      store.resetTransient();
+    }
+  }, [pathname, store]);
 
   // Compute derived state
   const activeFilters = store.getActiveFilters();
