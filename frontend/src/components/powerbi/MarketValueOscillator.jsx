@@ -5,7 +5,9 @@ import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
 import { Line } from 'react-chartjs-2';
 import { getAggregate } from '../../api/client';
-import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilter';
+// Phase 3.2: Migrated from usePowerBIFilters to useZustandFilters
+import { useZustandFilters } from '../../stores';
+import { TIME_GROUP_BY } from '../../context/PowerBIFilter';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { KeyInsightBox, PreviewChartOverlay, ChartSlot, InlineCard, InlineCardRow } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
@@ -51,7 +53,7 @@ const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
 export function MarketValueOscillator({ height = 420, saleType = null, sharedRawData = null, sharedStatus = 'idle' }) {
   // Get GLOBAL filters and timeGrouping from context
   // filterKey updates immediately on filter change - used for instant overlay feedback
-  const { buildApiParams, debouncedFilterKey, filterKey, timeGrouping } = usePowerBIFilters();
+  const { buildApiParams, debouncedFilterKey, filterKey, timeGrouping } = useZustandFilters();
   const { isPremium, isFreeResolved } = useSubscription();
 
   const chartRef = useRef(null);

@@ -18,6 +18,7 @@ export {
   useFilterStore,
   useFilterStoreSelector,
   // Compatibility hooks (match PowerBIFilter API)
+  useZustandFilters,
   useZustandFilterState,
   useZustandFilterActions,
   // Debug utilities

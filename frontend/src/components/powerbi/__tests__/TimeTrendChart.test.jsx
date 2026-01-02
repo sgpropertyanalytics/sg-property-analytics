@@ -146,13 +146,17 @@ let mockDebouncedFilterKey = 'filter-key-1';
 let mockTimeGrouping = 'month';
 let mockBuildApiParams = vi.fn((extra) => ({ ...extra, region: 'all' }));
 
-vi.mock('../../../context/PowerBIFilter', () => ({
-  usePowerBIFilters: () => ({
+// Phase 3.2: Mock useZustandFilters instead of usePowerBIFilters
+vi.mock('../../../stores', () => ({
+  useZustandFilters: () => ({
     buildApiParams: mockBuildApiParams,
     filterKey: mockFilterKey,
     debouncedFilterKey: mockDebouncedFilterKey,
     timeGrouping: mockTimeGrouping,
   }),
+}));
+
+vi.mock('../../../context/PowerBIFilter', () => ({
   TIME_GROUP_BY: {
     month: 'month',
     quarter: 'quarter',

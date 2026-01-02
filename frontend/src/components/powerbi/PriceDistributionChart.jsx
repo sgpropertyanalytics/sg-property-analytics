@@ -4,7 +4,8 @@ import { useAppQuery, QueryStatus } from '../../hooks';
 import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
 import { Bar } from 'react-chartjs-2';
-import { usePowerBIFilters } from '../../context/PowerBIFilter';
+// Phase 3.2: Migrated from usePowerBIFilters to useZustandFilters
+import { useZustandFilters } from '../../stores';
 import { getDashboard } from '../../api/client';
 import { KeyInsightBox, PreviewChartOverlay, ChartSlot, InlineCard, InlineCardRow } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
@@ -49,7 +50,7 @@ function PriceDistributionChartBase({
 }) {
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
   // filterKey updates immediately on filter change - used for instant overlay feedback
-  const { buildApiParams, debouncedFilterKey, filterKey } = usePowerBIFilters();
+  const { buildApiParams, debouncedFilterKey, filterKey } = useZustandFilters();
   const [showFullRange, setShowFullRange] = useState(false);
   const chartRef = useRef(null);
 

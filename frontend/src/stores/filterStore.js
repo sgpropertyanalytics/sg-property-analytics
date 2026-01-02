@@ -18,7 +18,10 @@
 import { create } from 'zustand';
 import { persist, subscribeWithSelector } from 'zustand/middleware';
 import { useLocation } from 'react-router-dom';
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
+
+// Import debounce hook for debouncedFilterKey compatibility
+import { useDebouncedFilterKey } from '../context/PowerBIFilter/hooks';
 
 // Import constants from existing filter system
 import {
@@ -537,12 +540,24 @@ export function clearStoreCache() {
 /**
  * Get page ID from current route.
  * Must be used within React Router context.
+ * Falls back to FALLBACK_PAGE_ID in test environments without Router.
  */
 export function usePageId() {
-  const location = useLocation();
+  // Try to get location from React Router
+  // Falls back to default if not in Router context (e.g., unit tests)
+  let pathname = '/';
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const location = useLocation();
+    pathname = location?.pathname || '/';
+  } catch {
+    // No Router context (e.g., unit tests) - use fallback
+    pathname = '/';
+  }
+
   return useMemo(
-    () => getPageIdFromPathname(location.pathname),
-    [location.pathname]
+    () => getPageIdFromPathname(pathname),
+    [pathname]
   );
 }
 
@@ -659,6 +674,120 @@ export function useZustandFilterActions() {
     resetFilters: store.resetFilters,
     resetTransient: store.resetTransient,
   };
+}
+
+/**
+ * Full compatibility hook matching usePowerBIFilters from Context.
+ *
+ * PHASE 3.2: This hook provides the same interface as usePowerBIFilters(),
+ * allowing charts to migrate by simply changing their import.
+ *
+ * Includes:
+ * - All state values (filters, drillPath, breadcrumbs, etc.)
+ * - All derived values (activeFilters, filterKey, debouncedFilterKey)
+ * - All actions (setTimePreset, setDistricts, drillDown, etc.)
+ * - buildApiParams helper function
+ *
+ * Usage (drop-in replacement for usePowerBIFilters):
+ * ```jsx
+ * // Before:
+ * import { usePowerBIFilters } from '../context/PowerBIFilter';
+ * const { buildApiParams, debouncedFilterKey, filterKey, timeGrouping } = usePowerBIFilters();
+ *
+ * // After:
+ * import { useZustandFilters } from '../stores';
+ * const { buildApiParams, debouncedFilterKey, filterKey, timeGrouping } = useZustandFilters();
+ * ```
+ */
+export function useZustandFilters() {
+  const store = useFilterStore();
+
+  // Compute derived state
+  const activeFilters = store.getActiveFilters();
+  const activeFilterCount = store.getActiveFilterCount();
+  const filterKey = store.getFilterKey();
+
+  // Apply debouncing to filterKey (matches Context behavior)
+  const debouncedFilterKey = useDebouncedFilterKey(filterKey);
+
+  // Stable buildApiParams function
+  const buildApiParams = useCallback(
+    (additionalParams = {}, options = {}) => {
+      return store.buildApiParams(additionalParams, options);
+    },
+    [store]
+  );
+
+  // Return full interface matching usePowerBIFilters
+  return useMemo(
+    () => ({
+      // === State ===
+      pageId: store.pageId,
+      filtersReady: store.filtersReady,
+      filters: store.filters,
+      factFilter: store.factFilter,
+      drillPath: store.drillPath,
+      breadcrumbs: store.breadcrumbs,
+      selectedProject: store.selectedProject,
+      timeGrouping: store.timeGrouping,
+
+      // === Derived State ===
+      activeFilters,
+      activeFilterCount,
+      filterKey,
+      debouncedFilterKey,
+
+      // === Actions (Time Filter) ===
+      setTimeFilter: store.setTimeFilter,
+      setTimePreset: store.setTimePreset,
+      setTimeRange: store.setTimeRange,
+      setDateRange: store.setDateRange,
+      setDatePreset: store.setDatePreset,
+
+      // === Actions (Dimensions) ===
+      setDistricts: store.setDistricts,
+      toggleDistrict: store.toggleDistrict,
+      setBedroomTypes: store.setBedroomTypes,
+      toggleBedroomType: store.toggleBedroomType,
+      setSegments: store.setSegments,
+      toggleSegment: store.toggleSegment,
+      setSaleType: store.setSaleType,
+      setTenure: store.setTenure,
+      setProject: store.setProject,
+
+      // === Actions (Ranges) ===
+      setPsfRange: store.setPsfRange,
+      setSizeRange: store.setSizeRange,
+      setPropertyAge: store.setPropertyAge,
+      setPropertyAgeBucket: store.setPropertyAgeBucket,
+
+      // === Actions (Drill Navigation) ===
+      drillDown: store.drillDown,
+      drillUp: store.drillUp,
+      navigateToBreadcrumb: store.navigateToBreadcrumb,
+
+      // === Actions (Project Selection) ===
+      setSelectedProject: store.setSelectedProject,
+      clearSelectedProject: store.clearSelectedProject,
+
+      // === Actions (View Context) ===
+      setTimeGrouping: store.setTimeGrouping,
+
+      // === Actions (Lifecycle) ===
+      resetFilters: store.resetFilters,
+
+      // === Helper Functions ===
+      buildApiParams,
+    }),
+    [
+      store,
+      activeFilters,
+      activeFilterCount,
+      filterKey,
+      debouncedFilterKey,
+      buildApiParams,
+    ]
+  );
 }
 
 // =============================================================================

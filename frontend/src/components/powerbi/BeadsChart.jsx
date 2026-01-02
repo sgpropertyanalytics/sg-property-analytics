@@ -4,7 +4,8 @@ import { useAppQuery, useDebugOverlay, QueryStatus } from '../../hooks';
 import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
 import { Bubble } from 'react-chartjs-2';
-import { usePowerBIFilters } from '../../context/PowerBIFilter';
+// Phase 3.2: Migrated from usePowerBIFilters to useZustandFilters
+import { useZustandFilters } from '../../stores';
 import { getDashboard } from '../../api/client';
 import { KeyInsightBox, ChartSlot } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
@@ -51,7 +52,7 @@ function BeadsChartBase({
   sharedData = null,
   sharedStatus = 'idle',
 }) {
-  const { buildApiParams, debouncedFilterKey, filterKey } = usePowerBIFilters();
+  const { buildApiParams, debouncedFilterKey, filterKey } = useZustandFilters();
   const chartRef = useRef(null);
   const { wrapApiCall, DebugOverlay, debugInfo } = useDebugOverlay('BeadsChart');
 

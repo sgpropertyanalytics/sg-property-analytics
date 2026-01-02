@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { usePowerBIFilters } from '../context/PowerBIFilter';
+// Phase 3.2: Migrated from usePowerBIFilters to useZustandFilters
+import { useZustandFilters } from '../stores';
 
 /**
  * useChartLoadingState - Derives chart loading states from query and filter state
@@ -34,7 +35,7 @@ import { usePowerBIFilters } from '../context/PowerBIFilter';
  * @returns {Object} { isInitialLoading, isUpdating, isFiltering }
  */
 export function useChartLoadingState({ loading = false, isFetching = false }) {
-  const { filterKey, debouncedFilterKey } = usePowerBIFilters();
+  const { filterKey, debouncedFilterKey } = useZustandFilters();
 
   return useMemo(() => {
     // Filter is "in flight" when filterKey changed but debounce hasn't fired yet
