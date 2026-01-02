@@ -319,8 +319,8 @@ jobs:
   claude-qa:
     name: "Claude Q&A"
     if: |
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude') && !contains(github.event.comment.body, 'review')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude') && !contains(github.event.comment.body, 'review')) ||
       (github.event_name == 'issues' && github.event.action == 'opened' && contains(github.event.issue.body, '@claude'))
     runs-on: ubuntu-latest
     permissions:
