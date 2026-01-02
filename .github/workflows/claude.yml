@@ -273,6 +273,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          direct_prompt: true
           prompt: |
             # Stage 1: Deep Review
 
@@ -359,6 +360,53 @@ jobs:
 
             ---
 
+            ## 7. Pattern Consistency (Cross-File)
+
+            **IMPORTANT:** Check that similar components follow the same patterns.
+            This catches drift that per-file linting misses.
+
+            ### 7.1 Query Hook Patterns
+            For all components using data fetching, verify consistency:
+
+            | Component | initialData | keepPreviousData | Defensive Fallback | Abort/Stale Guard |
+            |-----------|-------------|------------------|-------------------|-------------------|
+            | | | | | |
+
+            - [ ] All similar charts use same `initialData` pattern (null vs object)
+            - [ ] All use `keepPreviousData` consistently
+            - [ ] All have defensive fallbacks: `(data ?? defaultShape)`
+
+            ### 7.2 Reference Patterns
+            Compare changed files against canonical implementations:
+
+            | Pattern | Reference File | Changed Files Match? |
+            |---------|----------------|---------------------|
+            | Chart data fetching | `TimeTrendChart.jsx` | |
+            | Adapter transforms | `adapters/aggregate.js` | |
+            | Filter integration | `usePowerBIFilters.js` | |
+            | Query keys | Include all data-affecting state | |
+
+            ### 7.3 Sibling Component Audit
+            If file `FooChart.jsx` changed, check siblings for consistency:
+            - Find similar charts in same directory
+            - Compare: initialData, error handling, loading states, adapter usage
+            - Flag any drift from the pattern used in changed file
+
+            **Example drift to catch:**
+            ```javascript
+            // BeadsChart.jsx (new pattern)
+            initialData: null,
+            data ?? { labels: [], datasets: [] }
+
+            // PriceCompressionChart.jsx (outdated - DRIFT!)
+            initialData: { min: 0, max: 0 },
+            // missing defensive fallback
+            ```
+
+            **Findings:**
+
+            ---
+
             ## Go/No-Go Recommendation
 
             **🚦 VERDICT:** GO / NO-GO / CONDITIONAL
@@ -391,6 +439,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          direct_prompt: true
           prompt: |
             # Stage 1: Deep Review (Requested)
 
@@ -415,6 +464,26 @@ jobs:
 
             ## 6. Breaking Changes
             - Trace downstream dependents
+
+            ## 7. Pattern Consistency (Cross-File)
+            **CRITICAL:** Check sibling components for pattern drift.
+
+            For each changed chart/component:
+            1. Find similar files in same directory
+            2. Compare: initialData, error handling, loading states, defensive fallbacks
+            3. Flag inconsistencies
+
+            Check these patterns match across similar components:
+            - [ ] `initialData: null` (not hardcoded objects)
+            - [ ] Defensive fallback: `(data ?? defaultShape)`
+            - [ ] `keepPreviousData` usage consistent
+            - [ ] Same query hook pattern (useAbortableQuery vs React Query)
+
+            **Example drift:**
+            ```javascript
+            // ChartA.jsx: initialData: null, data ?? defaults
+            // ChartB.jsx: initialData: {}, no fallback  ← DRIFT!
+            ```
 
             ---
 
