@@ -18,7 +18,8 @@ import {
   DISTRICT_CENTROIDS,
   ALL_DISTRICTS,
 } from '../../data/singaporeDistricts';
-import { useGatedAbortableQuery, QueryStatus } from '../../hooks';
+// Phase 2: Using TanStack Query via useAppQuery wrapper
+import { useAppQuery, QueryStatus } from '../../hooks';
 import { getRegionBadgeClass, BEDROOM_FILTER_OPTIONS, PERIOD_FILTER_OPTIONS } from '../../constants';
 
 // Color scale for PSF values (using project theme)
@@ -66,7 +67,7 @@ export default function MarketHeatmap() {
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
 
   // Fetch district PSF data with canonical hook (handles abort, stale, boot gating)
-  const { data: districtData = [], status, error, refetch } = useGatedAbortableQuery(
+  const { data: districtData = [], status, error, refetch } = useAppQuery(
     async (signal) => {
       const response = await apiClient.get('/insights/district-psf', {
         params: {

@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { useGatedAbortableQuery } from '../../hooks';
+// Phase 2: Using TanStack Query via useAppQuery wrapper
+import { useAppQuery } from '../../hooks';
 import { ChartFrame } from '../common/ChartFrame';
 import { getAggregate } from '../../api/client';
 import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS, DISTRICT_NAMES, getRegionForDistrict } from '../../constants';
@@ -64,7 +65,7 @@ function GrowthDumbbellChartBase({ bedroom = 'all', saleType = 'all', enabled = 
   // Data fetching with useGatedAbortableQuery - gates on appReady
   // enabled prop prevents fetching when component is hidden (e.g., in volume mode)
   // isBootPending = true while waiting for app boot
-  const { data, status, error, isBootPending, refetch } = useGatedAbortableQuery(
+  const { data, status, error, isBootPending, refetch } = useAppQuery(
     async (signal) => {
       // Build API params - NO date filters, uses full database range
       const params = {

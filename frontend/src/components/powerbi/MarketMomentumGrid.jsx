@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { useGatedAbortableQuery } from '../../hooks';
+// Phase 2: Using TanStack Query via useAppQuery wrapper
+import { useAppQuery } from '../../hooks';
 import { getAggregate } from '../../api/client';
 import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS } from '../../constants';
 import { DistrictMicroChart } from './DistrictMicroChart';
@@ -62,7 +63,7 @@ export function MarketMomentumGrid({ period = '12m', bedroom = 'all', saleType =
 
   // Data fetching with useGatedAbortableQuery - gates on appReady
   // isBootPending = true while waiting for app boot
-  const { data, status, error, isBootPending, isFetching, refetch } = useGatedAbortableQuery(
+  const { data, status, error, isBootPending, isFetching, refetch } = useAppQuery(
     async (signal) => {
       // Build API params from props (not PowerBIFilterContext)
       const params = {

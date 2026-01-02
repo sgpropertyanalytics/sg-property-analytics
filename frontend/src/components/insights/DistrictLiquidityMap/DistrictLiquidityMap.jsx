@@ -18,7 +18,8 @@ import apiClient from '../../../api/client';
 // GeoJSON is lazy-loaded to reduce initial bundle size (~100KB savings)
 import { DISTRICT_CENTROIDS } from '../../../data/districtCentroids';
 import { useSubscription } from '../../../context/SubscriptionContext';
-import { useGatedAbortableQuery, QueryStatus } from '../../../hooks';
+// Phase 2: Using TanStack Query via useAppQuery wrapper
+import { useAppQuery, QueryStatus } from '../../../hooks';
 import { SaleType } from '../../../schemas/apiContract';
 import { assertKnownVersion } from '../../../adapters';
 
@@ -100,7 +101,7 @@ function DistrictLiquidityMapBase({
   };
 
   // Fetch data with canonical hook (handles abort, stale, boot gating)
-  const { data, status, error, refetch } = useGatedAbortableQuery(
+  const { data, status, error, refetch } = useAppQuery(
     async (signal) => {
       const response = await apiClient.get('/insights/district-liquidity', {
         params: {

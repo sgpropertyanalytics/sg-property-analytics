@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { useGatedAbortableQuery } from '../../hooks';
+// Phase 2: Using TanStack Query via useAppQuery wrapper
+import { useAppQuery } from '../../hooks';
 import { getBudgetHeatmap } from '../../api/client';
 import { getBedroomLabelShort } from '../../constants';
 import { assertKnownVersion } from '../../adapters';
@@ -107,7 +108,7 @@ export function BudgetActivityHeatmap({
 
   // Fetch data with abort handling - gates on appReady
   // isBootPending = true while waiting for app boot
-  const { data, status, error, isBootPending, isFetching, refetch } = useGatedAbortableQuery(
+  const { data, status, error, isBootPending, isFetching, refetch } = useAppQuery(
     async (signal) => {
       const response = await getBudgetHeatmap(apiParams, { signal });
 

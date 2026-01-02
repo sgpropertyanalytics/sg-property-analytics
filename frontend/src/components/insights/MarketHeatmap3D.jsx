@@ -17,7 +17,8 @@ import Map, { Source, Layer, Popup } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import apiClient from '../../api/client';
 import { singaporeDistrictsGeoJSON, SINGAPORE_CENTER } from '../../data/singaporeDistrictsGeoJSON';
-import { useGatedAbortableQuery, QueryStatus } from '../../hooks';
+// Phase 2: Using TanStack Query via useAppQuery wrapper
+import { useAppQuery, QueryStatus } from '../../hooks';
 import { getRegionBadgeClass, BEDROOM_FILTER_OPTIONS, PERIOD_FILTER_OPTIONS } from '../../constants';
 
 // Theme colors (Warm Precision palette)
@@ -164,7 +165,7 @@ export default function MarketHeatmap3D() {
   const hoveredStateRef = useRef(null);
 
   // Fetch district PSF data with canonical hook (handles abort, stale, boot gating)
-  const { data: districtData = [], status, error, refetch } = useGatedAbortableQuery(
+  const { data: districtData = [], status, error, refetch } = useAppQuery(
     async (signal) => {
       const response = await apiClient.get('/insights/district-psf', {
         params: {

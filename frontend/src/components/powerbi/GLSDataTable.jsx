@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { useGatedAbortableQuery, useDeferredFetch } from '../../hooks';
+// Phase 2: Using TanStack Query via useAppQuery wrapper
+import { useAppQuery, useDeferredFetch } from '../../hooks';
 import { getGLSAll } from '../../api/client';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { getRegionBadgeClass } from '../../constants';
@@ -52,7 +53,7 @@ export function GLSDataTable({ height = 400 }) {
   // Data fetching with useGatedAbortableQuery - gates on appReady
   // enabled: shouldFetch ensures we only fetch when visible (deferred fetch)
   // isBootPending = true while waiting for app boot
-  const { data, loading, error, isBootPending, refetch } = useGatedAbortableQuery(
+  const { data, loading, error, isBootPending, refetch } = useAppQuery(
     async (signal) => {
       const params = {
         limit: 100,

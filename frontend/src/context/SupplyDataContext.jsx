@@ -15,7 +15,8 @@
  */
 
 import React, { createContext, useContext, useMemo, useState, useEffect } from 'react';
-import { useGatedAbortableQuery } from '../hooks';
+// Phase 2: Using TanStack Query via useAppQuery wrapper
+import { useAppQuery } from '../hooks';
 import { getSupplySummary } from '../api/client';
 
 // Context for supply data
@@ -52,7 +53,7 @@ export function SupplyDataProvider({
 
   // Single shared fetch for all supply data - gated on appReady
   // isBootPending = true while waiting for app boot (auth/subscription/filters)
-  const { data, loading, error, isBootPending, isFetching, refetch } = useGatedAbortableQuery(
+  const { data, loading, error, isBootPending, isFetching, refetch } = useAppQuery(
     async (signal) => {
       return getSupplySummary(
         { includeGls, launchYear },

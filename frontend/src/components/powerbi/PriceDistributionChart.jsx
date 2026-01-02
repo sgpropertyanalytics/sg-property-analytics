@@ -1,5 +1,6 @@
 import React, { useState, useRef, useMemo } from 'react';
-import { useGatedAbortableQuery, QueryStatus } from '../../hooks';
+// Phase 2: Using TanStack Query via useAppQuery wrapper
+import { useAppQuery, QueryStatus } from '../../hooks';
 import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
 import { Bar } from 'react-chartjs-2';
@@ -56,7 +57,7 @@ function PriceDistributionChartBase({
 
   // Data fetching with useGatedAbortableQuery - automatic abort/stale handling
   // Gates fetching on appReady (auth + subscription + filters)
-  const { data: histogramData, status, error, refetch } = useGatedAbortableQuery(
+  const { data: histogramData, status, error, refetch } = useAppQuery(
     async (signal) => {
       // Use dashboard endpoint with price_histogram panel
       // excludeLocationDrill: true - Price Distribution should NOT be affected by

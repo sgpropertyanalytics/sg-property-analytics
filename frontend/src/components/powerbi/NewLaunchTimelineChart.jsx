@@ -13,7 +13,8 @@
 
 import React, { useRef, useMemo, useState } from 'react';
 import { Chart } from 'react-chartjs-2';
-import { useGatedAbortableQuery, useDeferredFetch } from '../../hooks';
+// Phase 2: Using TanStack Query via useAppQuery wrapper
+import { useAppQuery, useDeferredFetch } from '../../hooks';
 import { ChartFrame } from '../common/ChartFrame';
 import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilter';
 import { getNewLaunchTimeline, getNewLaunchAbsorption } from '../../api/client';
@@ -52,7 +53,7 @@ function NewLaunchTimelineChartBase({ height = 300 }) {
   // Data fetching with useGatedAbortableQuery - gates on appReady
   // isFetching = true during background refetch when keepPreviousData is enabled
   // isBootPending = true while waiting for app boot
-  const { data, status, error, isFetching, isBootPending, refetch } = useGatedAbortableQuery(
+  const { data, status, error, isFetching, isBootPending, refetch } = useAppQuery(
     async (signal) => {
       const params = buildApiParams({
         time_grain: TIME_GROUP_BY[timeGrouping],

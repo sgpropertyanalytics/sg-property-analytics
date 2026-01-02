@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { useGatedAbortableQuery } from '../../hooks';
+// Phase 2: Using TanStack Query via useAppQuery wrapper
+import { useAppQuery } from '../../hooks';
 import { getHotProjects } from '../../api/client';
 import { BlurredProject, BlurredCurrency } from '../BlurredCell';
 import { useSubscription } from '../../context/SubscriptionContext';
@@ -53,7 +54,7 @@ export function HotProjectsTable({
 
   // Data fetching with useGatedAbortableQuery - gates on appReady
   // isBootPending = true while waiting for app boot (auth/subscription/filters)
-  const { data, loading, error, isBootPending, refetch } = useGatedAbortableQuery(
+  const { data, loading, error, isBootPending, refetch } = useAppQuery(
     async (signal) => {
       const params = { limit: 200 };
 
