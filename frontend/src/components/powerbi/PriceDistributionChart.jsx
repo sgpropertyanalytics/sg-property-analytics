@@ -78,14 +78,14 @@ function PriceDistributionChartBase({
       // Validate API contract version (dev/test only)
       assertKnownVersion(response.data, '/api/dashboard');
 
-      const responseData = response.data || {};
-      const apiData = responseData.data || {};
+      // axios interceptor already unwraps envelope: response.data = { price_histogram, ... }
+      const apiData = response.data || {};
 
       // Debug logging (dev only)
       logFetchDebug('PriceDistributionChart', {
         endpoint: '/api/dashboard?panels=price_histogram',
         timeGrain: null,
-        response: responseData,
+        response: apiData,
         rowCount: apiData.price_histogram?.bins?.length || 0,
       });
 

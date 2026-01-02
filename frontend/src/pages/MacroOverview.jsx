@@ -166,8 +166,8 @@ export function MacroOverviewContent() {
       );
 
       const response = await getDashboard(params, { signal, priority: 'medium' });
-      // Extract inner data object containing panels (response.data = { data: {...panels}, meta: {...} })
-      return response.data?.data || {};
+      // axios interceptor already unwraps envelope: response.data = { price_histogram, beads_chart }
+      return response.data || {};
     },
     [debouncedFilterKey],
     { chartName: 'MacroOverview-Dashboard', initialData: {}, keepPreviousData: true, enabled: shouldFetchPanels }
