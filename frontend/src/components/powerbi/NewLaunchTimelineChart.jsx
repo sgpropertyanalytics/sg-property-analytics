@@ -100,13 +100,13 @@ function NewLaunchTimelineChartBase({ height = 300 }) {
     [debouncedFilterKey, timeGrouping],
     {
       chartName: 'NewLaunchTimelineChart',
-      initialData: [],
+      initialData: null,  // null so hasRealData() returns false → shows skeleton during initial load
       enabled: shouldFetch,
       keepPreviousData: true,
     }
   );
 
-  // Defensive fallback - ensure data is always an array (handles edge cases during initial load)
+  // Default fallback for when data is null (initial load) - matches PriceDistributionChart pattern
   const safeData = data ?? [];
 
   // Filter out 2020 if needed (heavily skewed data from COVID-era rush launches)
