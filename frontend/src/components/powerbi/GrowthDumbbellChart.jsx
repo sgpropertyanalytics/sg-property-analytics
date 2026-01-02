@@ -102,12 +102,11 @@ function GrowthDumbbellChartBase({ bedroom = 'all', saleType = 'all', enabled = 
       return transformGrowthDumbbellSeries(rawData, { districts: ALL_DISTRICTS });
     },
     [filterKey],
-    { chartName: 'GrowthDumbbellChart', initialData: { chartData: [], startQuarter: '', endQuarter: '', excludedDistricts: [] }, enabled }
+    { chartName: 'GrowthDumbbellChart', initialData: null, enabled }
   );
 
-  // Extract transformed data and add display metadata
-  // Guard against null data during in-flight state (when keepPreviousData is false)
-  const { chartData: baseChartData, startQuarter, endQuarter, excludedDistricts = [] } = data || {
+  // Default fallback for when data is null (initial load) - matches PriceDistributionChart pattern
+  const { chartData: baseChartData, startQuarter, endQuarter, excludedDistricts = [] } = data ?? {
     chartData: [],
     startQuarter: '',
     endQuarter: '',

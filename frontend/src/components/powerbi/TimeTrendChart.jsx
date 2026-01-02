@@ -88,14 +88,17 @@ function TimeTrendChartBase({ height = 300, saleType = null, onDrillThrough: _on
       }
     },
     [debouncedFilterKey, timeGrouping, saleType],
-    { chartName: 'TimeTrendChart', initialData: [], keepPreviousData: true }
+    { chartName: 'TimeTrendChart', initialData: null, keepPreviousData: true }
   );
 
+  // Default fallback for when data is null (initial load) - matches PriceDistributionChart pattern
+  const safeData = data ?? [];
+
   // Market Core is Resale-only - single transaction count bar + total value line
-  const labels = data.map(d => d.period ?? '');
+  const labels = safeData.map(d => d.period ?? '');
   // Since we're Resale-only, totalCount IS the resale count (no sale_type grouping)
-  const transactionCounts = data.map(d => d.totalCount || 0);
-  const totalValues = data.map(d => d.totalValue || 0);
+  const transactionCounts = safeData.map(d => d.totalCount || 0);
+  const totalValues = safeData.map(d => d.totalValue || 0);
 
   // Find peak values for axis scaling
   const maxCount = Math.max(...transactionCounts, 1);
@@ -252,7 +255,7 @@ function TimeTrendChartBase({ height = 300, saleType = null, onDrillThrough: _on
       isFiltering={filterKey !== debouncedFilterKey}
       error={error}
       onRetry={refetch}
-      empty={!data || data.length === 0}
+      empty={!safeData || safeData.length === 0}
       skeleton="bar"
       height={height + 80}
     >

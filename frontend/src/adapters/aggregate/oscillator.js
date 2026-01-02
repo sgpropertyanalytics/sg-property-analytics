@@ -14,6 +14,27 @@ import { transformCompressionSeries } from './compression';
 import { isDev } from './validation';
 
 /**
+ * Default/fallback baseline statistics for Z-score calculation.
+ *
+ * These conservative estimates are used temporarily until real historical
+ * baseline data loads from the API. Values are based on approximate historical
+ * averages for Singapore property market segment spreads:
+ *
+ * - CCR-RCR spread: ~$400 PSF mean, ~$200 stdDev (higher volatility in prime segments)
+ * - RCR-OCR spread: ~$200 PSF mean, ~$100 stdDev (more stable suburban spread)
+ *
+ * These defaults ensure the oscillator chart renders immediately without waiting
+ * for baseline fetch, showing reasonable Z-score values that will be recalculated
+ * once real baseline data arrives.
+ *
+ * @type {{ ccrRcr: { mean: number, stdDev: number }, rcrOcr: { mean: number, stdDev: number } }}
+ */
+export const DEFAULT_BASELINE_STATS = {
+  ccrRcr: { mean: 400, stdDev: 200 },
+  rcrOcr: { mean: 200, stdDev: 100 },
+};
+
+/**
  * Calculate mean and standard deviation for an array of numbers.
  *
  * @param {Array<number>} arr - Array of numbers
@@ -42,10 +63,7 @@ const calculateStats = (arr) => {
  */
 export const calculateZScoreStats = (data) => {
   if (!Array.isArray(data) || data.length < 2) {
-    return {
-      ccrRcr: { mean: 400, stdDev: 200 }, // Fallback defaults
-      rcrOcr: { mean: 200, stdDev: 100 },
-    };
+    return DEFAULT_BASELINE_STATS;
   }
 
   const ccrRcrSpreads = data.map(d => d.ccrRcrSpread).filter(v => v !== null && v !== undefined);

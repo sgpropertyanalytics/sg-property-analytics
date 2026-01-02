@@ -186,14 +186,14 @@ function NewVsResaleChartBase({ height = 350 }) {
     [debouncedFilterKey, timeGrouping],
     {
       chartName: 'NewVsResaleChart',
-      initialData: { chartData: [], summary: {}, hasData: false },
+      initialData: null,  // null so hasRealData() returns false → shows skeleton during initial load
       enabled: shouldFetch,
       keepPreviousData: true, // Instant filter updates - no loading flash
     }
   );
 
-  // Extract transformed data
-  const { chartData, summary, hasData } = data;
+  // Default fallback for when data is null (initial load) - matches PriceDistributionChart pattern
+  const { chartData, summary, hasData } = data ?? { chartData: [], summary: {}, hasData: false };
 
   // Build filter summary for display
   const getFilterSummary = () => {

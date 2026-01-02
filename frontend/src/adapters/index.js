@@ -57,6 +57,7 @@ export {
   getZScoreShortLabel,
   getZScoreColor,
   calculateRollingAverage,
+  DEFAULT_BASELINE_STATS,
   // District Comparison
   transformDistrictComparison,
   truncateProjectName,

@@ -122,8 +122,11 @@ export function MarketMomentumGrid({ period = '12m', bedroom = 'all', saleType =
       return districtData;
     },
     [filterKey],
-    { chartName: 'MarketMomentumGrid', initialData: {}, keepPreviousData: true }
+    { chartName: 'MarketMomentumGrid', initialData: null, keepPreviousData: true }
   );
+
+  // Default fallback for when data is null (initial load) - matches PriceDistributionChart pattern
+  const safeData = data ?? {};
 
   // Handle district click - no cross-filter since we're not using PowerBIFilterContext
   // This is a visual-only interaction for now (could add onClick prop in future)
@@ -140,7 +143,7 @@ export function MarketMomentumGrid({ period = '12m', bedroom = 'all', saleType =
       isBootPending={isBootPending}
       error={error}
       onRetry={refetch}
-      empty={!data || Object.keys(data).length === 0}
+      empty={!safeData || Object.keys(safeData).length === 0}
       skeleton="grid"
       height={400}
     >
@@ -180,7 +183,7 @@ export function MarketMomentumGrid({ period = '12m', bedroom = 'all', saleType =
             <div key={district} className="aspect-[4/3]">
               <DistrictMicroChart
                 district={district}
-                data={data[district] || []}
+                data={safeData[district] || []}
                 onClick={handleDistrictClick}
               />
             </div>

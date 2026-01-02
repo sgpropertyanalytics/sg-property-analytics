@@ -105,17 +105,19 @@ function BeadsChartBase({
     [debouncedFilterKey, saleType],
     {
       chartName: 'BeadsChart',
-      initialData: {
-        datasets: [],
-        stats: { priceRange: { min: 0, max: 0 }, volumeRange: { min: 0, max: 0 }, totalTransactions: 0 },
-        stringRanges: { CCR: { min: 0, max: 0 }, RCR: { min: 0, max: 0 }, OCR: { min: 0, max: 0 } },
-      },
+      initialData: null,
       enabled: !useShared,
       keepPreviousData: true,
     }
   );
 
-  const resolvedData = useShared ? transformBeadsChartSeries(sharedData) : chartData;
+  // Default fallback for when data is null (initial load) - matches PriceDistributionChart pattern
+  const defaultData = {
+    datasets: [],
+    stats: { priceRange: { min: 0, max: 0 }, volumeRange: { min: 0, max: 0 }, totalTransactions: 0 },
+    stringRanges: { CCR: { min: 0, max: 0 }, RCR: { min: 0, max: 0 }, OCR: { min: 0, max: 0 } },
+  };
+  const resolvedData = (useShared ? transformBeadsChartSeries(sharedData) : chartData) ?? defaultData;
   // Use parent's status directly when using shared data
   const resolvedStatus = useShared ? sharedStatus : status;
 

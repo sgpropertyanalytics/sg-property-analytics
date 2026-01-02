@@ -89,8 +89,11 @@ function PriceCompressionChartBase({ height = 380, saleType = null, sharedData =
       return calculateHistoricalBaseline(transformed);
     },
     [], // Empty deps = fetch once on mount
-    { chartName: 'PriceCompressionChart-baseline', initialData: { min: 0, max: 1000 }, enabled: shouldFetch && !useSharedData, keepPreviousData: true }
+    { chartName: 'PriceCompressionChart-baseline', initialData: null, enabled: shouldFetch, keepPreviousData: true }
   );
+
+  // Default fallback for baseline data (initial load) - matches main query pattern
+  const safeBaselineData = baselineData ?? { min: 0, max: 1000 };
 
   // Data fetching with useGatedAbortableQuery - gates on appReady
   // Skip if parent provides sharedData (W4 fix: eliminates duplicate API call with AbsolutePsfChart)
@@ -127,19 +130,20 @@ function PriceCompressionChartBase({ height = 380, saleType = null, sharedData =
       return transformCompressionSeries(rawData);
     },
     [debouncedFilterKey, timeGrouping, saleType],
-    { chartName: 'PriceCompressionChart', initialData: [], enabled: shouldFetch && !useSharedData, keepPreviousData: true }
+    { chartName: 'PriceCompressionChart', initialData: null, enabled: shouldFetch && !useSharedData, keepPreviousData: true }
   );
 
   // Use shared data from parent if provided, otherwise use internal fetch
-  const data = useSharedData ? sharedData : internalData;
+  // Default fallback for when data is null (initial load) - matches PriceDistributionChart pattern
+  const data = (useSharedData ? sharedData : internalData) ?? [];
   // Use shared status directly when in shared mode
   const resolvedStatus = useSharedData ? sharedStatus : internalStatus;
 
 
   // Computed values - use historical baseline for stable min/max
   const compressionScore = useMemo(
-    () => calculateCompressionScore(data, baselineData),
-    [data, baselineData]
+    () => calculateCompressionScore(data, safeBaselineData),
+    [data, safeBaselineData]
   );
   const marketSignals = useMemo(() => detectMarketSignals(data), [data]);
   const averageSpreads = useMemo(() => calculateAverageSpreads(data), [data]);
