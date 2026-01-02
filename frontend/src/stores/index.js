@@ -24,3 +24,6 @@ export {
   getStoreCacheForDebug,
   logFilterState,
 } from './filterStore';
+
+// DevTools (dev only)
+export { FilterStoreDevTools } from './FilterStoreDevTools';
