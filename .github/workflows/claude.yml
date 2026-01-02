@@ -309,6 +309,40 @@ jobs:
 
             ---
 
+            ## 2b. Query Dependency & Enabling Logic
+
+            **CRITICAL:** Check that query `enabled` conditions are semantically correct.
+
+            For each query in changed files:
+
+            | Query | Purpose | enabled Condition | Correct? |
+            |-------|---------|-------------------|----------|
+            | | | | |
+
+            Common bugs to catch:
+            - [ ] **Baseline queries gated on shared data** - Baseline queries fetch independent reference data (historical bounds, benchmarks). They should NOT be disabled when parent provides `sharedData` for the main query.
+            - [ ] **Independent queries incorrectly coupled** - Two queries fetching different data should have independent `enabled` logic.
+            - [ ] **Fallback to hardcoded defaults** - If query is disabled, check if component falls back to hardcoded values instead of fetching real data.
+
+            **Example bug:**
+            ```javascript
+            // WRONG: Baseline disabled when using shared data
+            const { data: baseline } = useQuery({
+              enabled: shouldFetch && !useSharedData,  // ❌ Baseline is independent!
+            });
+
+            // CORRECT: Baseline always fetches when visible
+            const { data: baseline } = useQuery({
+              enabled: shouldFetch,  // ✓ Independent of sharedData
+            });
+            ```
+
+            **Check:** If `sharedData` is provided by parent, does it include ALL data the component needs? If not, other queries must remain enabled.
+
+            **Findings:**
+
+            ---
+
             ## 3. Contract Semantics
 
             Beyond schema drift, check semantic correctness:
