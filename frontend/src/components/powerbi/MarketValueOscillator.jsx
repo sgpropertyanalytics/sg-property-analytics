@@ -134,7 +134,7 @@ export function MarketValueOscillator({ height = 420, saleType = null, sharedRaw
       return transformOscillatorSeries(rawData, baselineStats);
     },
     [debouncedFilterKey, timeGrouping, baselineStats, saleType],
-    { chartName: 'MarketValueOscillator', initialData: [], enabled: shouldFetch && !useShared, keepPreviousData: true }
+    { chartName: 'MarketValueOscillator', initialData: null, enabled: shouldFetch && !useShared, keepPreviousData: true }
   );
 
   // When using shared data, transform it with useMemo (same transform as internal fetch)
@@ -145,7 +145,8 @@ export function MarketValueOscillator({ height = 420, saleType = null, sharedRaw
   }, [useShared, sharedRawData, baselineStats]);
 
   // Use shared data when available, otherwise use fetched data
-  const data = useShared ? sharedTransformedData : fetchedData;
+  // Default fallback for when data is null (initial load) - matches PriceDistributionChart pattern
+  const data = (useShared ? sharedTransformedData : fetchedData) ?? [];
   const status = useShared ? sharedStatus : fetchStatus;
 
   // Get latest values for KPI cards
