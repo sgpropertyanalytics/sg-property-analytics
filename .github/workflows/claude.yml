@@ -191,6 +191,60 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Get PR number
+        id: pr-number
+        run: |
+          if [ "${{ github.event_name }}" = "issue_comment" ]; then
+            echo "number=${{ github.event.issue.number }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" = "pull_request_review_comment" ]; then
+            echo "number=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+          else
+            echo "number=" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Get PR diff and files
+        id: pr-context
+        if: steps.pr-number.outputs.number != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PR_NUM="${{ steps.pr-number.outputs.number }}"
+
+          # Get list of changed files
+          echo "Getting changed files..."
+          gh pr view "$PR_NUM" --json files --jq '.files[].path' > /tmp/files.txt
+
+          # Get PR diff (limit to 100KB to avoid token overflow)
+          echo "Getting PR diff..."
+          gh pr diff "$PR_NUM" > /tmp/full_diff.txt
+          head -c 100000 /tmp/full_diff.txt > /tmp/diff.txt
+
+          # Get PR title and body
+          echo "Getting PR metadata..."
+          gh pr view "$PR_NUM" --json title,body --jq '"Title: \(.title)\n\nDescription: \(.body // \"No description\")"' > /tmp/pr_meta.txt
+
+          # Output using delimiter to handle multiline
+          echo "files<<EOFFILES" >> $GITHUB_OUTPUT
+          cat /tmp/files.txt >> $GITHUB_OUTPUT
+          echo "EOFFILES" >> $GITHUB_OUTPUT
+
+          echo "diff<<EOFDIFF" >> $GITHUB_OUTPUT
+          cat /tmp/diff.txt >> $GITHUB_OUTPUT
+          echo "EOFDIFF" >> $GITHUB_OUTPUT
+
+          echo "meta<<EOFMETA" >> $GITHUB_OUTPUT
+          cat /tmp/pr_meta.txt >> $GITHUB_OUTPUT
+          echo "EOFMETA" >> $GITHUB_OUTPUT
+
+          # Check if diff was truncated
+          FULL_SIZE=$(wc -c < /tmp/full_diff.txt)
+          if [ "$FULL_SIZE" -gt 100000 ]; then
+            echo "truncated=true" >> $GITHUB_OUTPUT
+            echo "⚠️ Diff truncated from ${FULL_SIZE} bytes to 100KB"
+          else
+            echo "truncated=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Claude Review
         uses: anthropics/claude-code-action@v1
         with:
@@ -199,7 +253,28 @@ jobs:
           prompt: |
             # Code Review
 
-            You are reviewing a PR. Read CLAUDE.md and .claude/review-rules.yml for codebase standards.
+            You are reviewing PR #${{ steps.pr-number.outputs.number }}.
+
+            ## PR Information
+            ${{ steps.pr-context.outputs.meta }}
+
+            ## Files Changed
+            ```
+            ${{ steps.pr-context.outputs.files }}
+            ```
+
+            ## Code Diff
+            ${{ steps.pr-context.outputs.truncated == 'true' && '⚠️ **Note: Diff truncated to 100KB**' || '' }}
+            ```diff
+            ${{ steps.pr-context.outputs.diff }}
+            ```
+
+            ## User Comment
+            ${{ github.event.comment.body }}
+
+            ---
+
+            Read CLAUDE.md and .claude/review-rules.yml for codebase standards.
 
             **First**, answer any specific questions the user asked in their comment.
 
