@@ -8,6 +8,7 @@ Analytics platform for Singapore private residential real estate transactions.
 
 | Document | Description |
 |----------|-------------|
+| [System Overview](SYSTEM_OVERVIEW.md) | **Start here.** High-level architecture (10 min read) |
 | [Architecture](architecture.md) | System design, layer diagrams, data flow, deployment |
 | [Backend](backend.md) | API contracts, SQL rules, services, caching |
 | [Frontend](frontend.md) | Zustand stores, TanStack Query, adapters, components |
