@@ -10,8 +10,9 @@ on:
     types: [created]
   pull_request_review_comment:
     types: [created]
-  issues:
-    types: [opened]
+  # Auto PR Summary: triggers on PR opened/updated
+  pull_request:
+    types: [opened, synchronize]
 
 jobs:
   # =============================================================================
@@ -171,14 +172,90 @@ jobs:
             **Ready to Merge:** YES / NO / AFTER FIXES
 
   # =============================================================================
+  # PR Summary: Auto-summarize every PR with risk classification
+  # =============================================================================
+  pr-summary:
+    name: "PR Summary"
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get PR diff and files
+        id: pr-context
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PR_NUM="${{ github.event.pull_request.number }}"
+
+          # Get list of changed files
+          gh pr view "$PR_NUM" --json files --jq '.files[].path' > /tmp/files.txt
+
+          # Get PR diff (limit to 50KB for auto-summary)
+          gh pr diff "$PR_NUM" > /tmp/full_diff.txt
+          head -c 50000 /tmp/full_diff.txt > /tmp/diff.txt
+
+          echo "files<<EOFFILES" >> $GITHUB_OUTPUT
+          cat /tmp/files.txt >> $GITHUB_OUTPUT
+          echo "EOFFILES" >> $GITHUB_OUTPUT
+
+          echo "diff<<EOFDIFF" >> $GITHUB_OUTPUT
+          cat /tmp/diff.txt >> $GITHUB_OUTPUT
+          echo "EOFDIFF" >> $GITHUB_OUTPUT
+
+      - name: Auto PR Summary
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: "--model claude-3-5-haiku-20241022"
+          prompt: |
+            # Auto PR Summary
+
+            PR #${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }}
+
+            ## Files Changed
+            ```
+            ${{ steps.pr-context.outputs.files }}
+            ```
+
+            ## Diff (first 50KB)
+            ```diff
+            ${{ steps.pr-context.outputs.diff }}
+            ```
+
+            ---
+
+            Provide a BRIEF summary (keep it concise):
+
+            ## 📋 Commit Summary
+            - [One line per logical change]
+
+            ## 🚦 Risk Level
+            Based on `.claude/review-rules.yml`:
+            - 🔴 CRITICAL: backend/api/contracts/, backend/services/, backend/routes/, AuthContext
+            - 🟠 HIGH: hooks/, adapters/, schemas/, normalize.py
+            - 🟡 MEDIUM: components/powerbi/, pages/, tests/
+            - 🟢 LOW: All other
+
+            **Risk: [LEVEL] - [Brief reason]**
+
+            ## 👀 Suggested Reviewers
+            [Based on files changed, suggest from: needs-backend-owner, needs-auth-owner, needs-contract-review, needs-chart-review]
+
+  # =============================================================================
   # Claude Review: Single job for all @claude mentions on PRs/Issues
   # =============================================================================
   claude-review:
     name: "Claude Review"
     if: |
       (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'issues' && github.event.action == 'opened' && contains(github.event.issue.body, '@claude'))
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude'))
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -205,6 +282,7 @@ jobs:
       - name: Get PR diff and files
         id: pr-context
         if: steps.pr-number.outputs.number != ''
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -245,7 +323,11 @@ jobs:
             echo "truncated=false" >> $GITHUB_OUTPUT
           fi
 
+          # Mark as successful
+          echo "success=true" >> $GITHUB_OUTPUT
+
       - name: Claude Review
+        if: steps.pr-number.outputs.number != '' && steps.pr-context.outputs.success == 'true'
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
