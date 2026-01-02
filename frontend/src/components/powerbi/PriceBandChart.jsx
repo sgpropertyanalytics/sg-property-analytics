@@ -64,7 +64,6 @@ function PriceBandChartBase({
   totalResaleTransactions,
   loading = false,
   isFetching = false,
-  isBootPending = false,
   error = null,
   onRetry,
   projectName = '',
@@ -279,7 +278,6 @@ function PriceBandChartBase({
     <ChartFrame
       loading={loading}
       isFetching={isFetching}
-      isBootPending={isBootPending}
       error={error}
       onRetry={onRetry}
       empty={!chartData || bands.length === 0}

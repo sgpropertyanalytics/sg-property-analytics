@@ -166,7 +166,8 @@ export function MacroOverviewContent() {
       );
 
       const response = await getDashboard(params, { signal, priority: 'medium' });
-      return response.data || {};
+      // Extract inner data object containing panels (response.data = { data: {...panels}, meta: {...} })
+      return response.data?.data || {};
     },
     [debouncedFilterKey],
     { chartName: 'MacroOverview-Dashboard', initialData: {}, keepPreviousData: true, enabled: shouldFetchPanels }

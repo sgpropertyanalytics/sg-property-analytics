@@ -1,0 +1,106 @@
+# Migration Integrity Allowlist
+# =============================
+#
+# This file tracks known exceptions to migration integrity checks.
+# Each entry must have a justification and expiry date.
+#
+# Format:
+#   - id: unique-identifier
+#     check: check_id (e.g., "duplicate_authorities", "old_path_reachable")
+#     paths:
+#       - path/to/file
+#     justification: Why this exception is needed
+#     expiry: YYYY-MM-DD (max 90 days from addition)
+#     owner: @github-username
+#
+# Rules:
+#   - Entries require expiry date (max 90 days)
+#   - Expired entries become violations
+#   - CI warns 14 days before expiry
+#   - Adding new entries requires PR review
+
+allowlist:
+  # =============================================================================
+  # WRAPPER-ONLY MIGRATION
+  # =============================================================================
+
+  # Backward compatibility shim for gradual migration
+  - id: useAbortableQuery-compat-shim
+    check: wrapper_only_migration
+    paths:
+      - frontend/src/hooks/useAbortableQuery.js
+    justification: >
+      Backward compat shim for gradual migration from useAbortableQuery to useQuery.
+      14 usages still exist. Will be removed after all callers migrate.
+    expiry: "2026-03-01"
+    owner: "@changyuesin"
+
+  # =============================================================================
+  # OLD PATH REACHABLE
+  # =============================================================================
+
+  # KPI v1 endpoint returns 410 for external API consumers
+  - id: kpi-v1-410-response
+    check: old_path_reachable
+    paths:
+      - backend/routes/analytics/kpi.py
+    justification: >
+      Returns 410 Gone for API consumers that may still call the old endpoint.
+      Provides migration guidance in response. Safe to delete after confirmation
+      that no external systems are calling it.
+    expiry: "2026-02-15"
+    owner: "@changyuesin"
+
+  # Deprecated endpoints file returns 410 for old API paths
+  - id: deprecated-endpoints-410
+    check: old_path_reachable
+    paths:
+      - backend/routes/analytics/deprecated.py
+    justification: >
+      Centralized 410 responses for deprecated endpoints (/transactions, /scatter-sample, etc.).
+      Provides migration guidance. Keep for backwards compatibility.
+    expiry: "2026-02-28"
+    owner: "@changyuesin"
+
+  # =============================================================================
+  # DUPLICATE AUTHORITIES (Known multi-location patterns)
+  # =============================================================================
+
+  # Retry mechanisms in hooks, API client, and contexts
+  - id: dual-retry-mechanism
+    check: duplicate_authorities
+    paths:
+      - frontend/src/hooks/useQuery.js
+      - frontend/src/api/client.js
+      - frontend/src/context/AuthContext.jsx
+      - frontend/src/context/SubscriptionContext.jsx
+    justification: >
+      Token refresh retry exists in useQuery (event listener for auth:token-refreshed),
+      API client interceptor, and context providers. The hook-level and context-level
+      patterns are coordinating with the API client. This is architectural complexity
+      that should be consolidated eventually.
+      TODO: Audit which retry patterns can be removed.
+    expiry: "2026-02-15"
+    owner: "@changyuesin"
+
+  # Normalization helper functions in multiple files
+  - id: normalize-helpers-scattered
+    check: duplicate_authorities
+    paths:
+      - backend/utils/normalize.py
+      - backend/utils/cache_key.py
+      - backend/utils/filter_builder.py
+      - backend/constants.py
+      - backend/services/data_processor.py
+      - backend/api/contracts/normalize.py
+      - backend/scrapers/utils/hashing.py
+      - backend/scripts/verify_units.py
+      - backend/services/data_loader.py
+    justification: >
+      Various normalize_ helper functions exist across files for different purposes.
+      utils/normalize.py is the canonical source for input normalization.
+      api/contracts/normalize.py handles contract-level normalization.
+      Others are domain-specific helpers (cache keys, filter building, scrapers).
+      Review and consolidate where possible.
+    expiry: "2026-03-15"
+    owner: "@changyuesin"

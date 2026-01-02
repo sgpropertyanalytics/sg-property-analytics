@@ -52,10 +52,9 @@ function NewLaunchTimelineChartBase({ height = 300 }) {
     fetchOnMount: true,
   });
 
-  // Data fetching with useGatedAbortableQuery - gates on appReady
-  // isFetching = true during background refetch when keepPreviousData is enabled
-  // isBootPending = true while waiting for app boot
-  const { data, status, error, isFetching, isBootPending, refetch } = useAppQuery(
+  // Data fetching with useAppQuery - gates on appReady via context
+  // isFetching = true during background refetch (used for inline spinner)
+  const { data, status, error, isFetching, refetch } = useAppQuery(
     async (signal) => {
       const params = buildApiParams({
         time_grain: TIME_GROUP_BY[timeGrouping],
@@ -300,9 +299,7 @@ function NewLaunchTimelineChartBase({ height = 300 }) {
     <div ref={containerRef}>
       <ChartFrame
         status={status}
-        isFetching={isFetching}
         isFiltering={filterKey !== debouncedFilterKey}
-        isBootPending={isBootPending}
         error={error}
         onRetry={refetch}
         empty={!hasData}

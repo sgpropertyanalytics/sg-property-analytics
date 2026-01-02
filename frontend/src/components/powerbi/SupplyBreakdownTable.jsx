@@ -41,7 +41,7 @@ export function SupplyBreakdownTable({
 
   // Consume shared data from context (single fetch for all supply components)
   // isBootPending = true while waiting for app boot (auth/subscription/filters)
-  const { data: apiResponse, loading, error, isBootPending, refetch, includeGls } = useSupplyData();
+  const { data: apiResponse, loading, error, refetch, includeGls } = useSupplyData();
 
   // Process data into table format
   const tableData = useMemo(() => {
@@ -161,7 +161,6 @@ export function SupplyBreakdownTable({
   return (
     <ChartFrame
       loading={loading}
-      isBootPending={isBootPending}
       error={error}
       onRetry={refetch}
       empty={tableData.districts.length === 0}

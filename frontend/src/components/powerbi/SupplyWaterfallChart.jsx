@@ -58,7 +58,7 @@ function SupplyWaterfallChartBase({
   const chartRef = useRef(null);
 
   // Consume shared data from context (single fetch for all supply components)
-  const { data: apiResponse, loading, error, refetch, includeGls, isBootPending, isFetching, isFiltering } = useSupplyData();
+  const { data: apiResponse, loading, error, refetch, includeGls, isFetching, isFiltering } = useSupplyData();
 
   // Transform data based on view mode
   // For TRUE waterfall: X-axis is supply stages, region is a filter
@@ -109,7 +109,6 @@ function SupplyWaterfallChartBase({
       loading={loading}
       isFetching={isFetching}
       isFiltering={isFiltering}
-      isBootPending={isBootPending}
       error={error}
       onRetry={refetch}
       empty={!chartData || !chartData.labels?.length}
