@@ -73,6 +73,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          model: claude-3-5-haiku-20241022
           prompt: |
             # Stage 0: Fast Triage + Stability Review
 
