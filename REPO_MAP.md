@@ -406,6 +406,27 @@ const { data } = useQuery({
 
 **Lesson:** Async code needs abort/cancel/timeout tests, not just success tests.
 
+### Summary: The Over-Engineering Trap
+
+Most incidents above share a pattern: **solving problems that don't exist yet.**
+
+| Over-Engineering | What Actually Happened |
+|------------------|------------------------|
+| "Let's build custom query infrastructure" | 400+ lines, cache key bug, React Query does it in 5 |
+| "Let's clean up old data automatically" | Deleted production data, broke KPIs |
+| "Let's add another layer to handle edge cases" | Created new edge cases, boot deadlock |
+
+**The Rule:**
+> Don't optimize, abstract, or "improve" unless there's a **clear, immediate problem** with **measurable benefit**.
+
+**Before adding complexity, ask:**
+1. Is there a bug RIGHT NOW? (not hypothetical)
+2. Does a library already solve this?
+3. Can I fix this in <20 lines without new abstractions?
+4. Will this make the next developer's life easier or harder?
+
+**If unsure → don't do it. Ship the simple version.**
+
 ---
 
 ## Quick Reference Links
