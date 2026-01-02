@@ -17,12 +17,17 @@ on:
 
 jobs:
   # =============================================================================
-  # STAGE 0: Fast Triage (<2 min, always runs on PR)
+  # STAGE 0: Fast Triage (<2 min, opt-in via label)
   # Goal: Quick risk signal for reviewers
+  # Trigger: Add label "needs-review" to PR
   # =============================================================================
   fast-triage:
     name: "Stage 0: Fast Triage"
-    if: github.event_name == 'pull_request'
+    if: |
+      github.event_name == 'pull_request' && (
+        contains(github.event.pull_request.labels.*.name, 'needs-review') ||
+        contains(github.event.pull_request.labels.*.name, 'claude-review')
+      )
     runs-on: ubuntu-latest
     permissions:
       contents: read
