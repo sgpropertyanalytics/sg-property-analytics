@@ -274,6 +274,20 @@ jobs:
 
             ---
 
+            ## Quick Compliance Checks
+
+            Verify these specific requirements (auto-fail if violated):
+
+            | Check | Status | Details |
+            |-------|--------|---------|
+            | **Layer responsibilities** | ✅/❌ | Pages decide logic, Components only render props |
+            | **No new abstractions** | ✅/❌ | Uses existing patterns, no reinventing |
+            | **SQL param bindings** | ✅/❌ | Uses `:param` style, never f-strings |
+            | **Outlier exclusion** | ✅/❌ | All transaction queries include `COALESCE(is_outlier, false) = false` |
+            | **Chart state handling** | ✅/❌ | Charts handle loading/error/empty/success states |
+
+            ---
+
             ## Summary
 
             | Criterion | Verdict | Notes |
