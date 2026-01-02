@@ -118,7 +118,8 @@ function DistrictLiquidityMapBase({
         meta: response.data.meta || {},
       };
     },
-    [selectedPeriod, selectedBed, saleType],
+    // Include endpoint identifier to avoid query key collision with MarketStrategyMap
+    [selectedPeriod, selectedBed, saleType, 'district-liquidity'],
     { chartName: 'DistrictLiquidityMap', enabled, initialData: { districts: [], meta: {} } }
   );
 

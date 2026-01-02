@@ -505,7 +505,8 @@ function MarketStrategyMapBase({
       assertKnownVersion(response.data, '/api/insights/district-psf');
       return response.data.districts || [];
     },
-    [selectedPeriod, selectedBed, selectedSaleType],
+    // Include endpoint identifier to avoid query key collision with DistrictLiquidityMap
+    [selectedPeriod, selectedBed, selectedSaleType, 'district-psf'],
     { chartName: 'MarketStrategyMap', enabled, initialData: [] }
   );
 
