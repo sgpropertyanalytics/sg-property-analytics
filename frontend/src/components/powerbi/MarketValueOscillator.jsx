@@ -1,5 +1,6 @@
 import React, { useMemo, useRef } from 'react';
-import { useGatedAbortableQuery, useDeferredFetch } from '../../hooks';
+// Phase 2: Using TanStack Query via useAppQuery wrapper
+import { useAppQuery, useDeferredFetch } from '../../hooks';
 import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
 import { Line } from 'react-chartjs-2';
@@ -66,7 +67,7 @@ export function MarketValueOscillator({ height = 420, saleType = null, sharedRaw
   // This provides stable mean/stdDev for Z-score calculation
   // Uses page-level saleType prop for consistency with current data
   // Defaults to RESALE if not provided (new sales can be artificially priced)
-  const { data: baselineStats } = useGatedAbortableQuery(
+  const { data: baselineStats } = useAppQuery(
     async (signal) => {
       // Use page prop or fallback to canonical RESALE enum
       // See CLAUDE.md "Business Logic Enforcement" - charts receive saleType from page
@@ -99,7 +100,7 @@ export function MarketValueOscillator({ height = 420, saleType = null, sharedRaw
 
   // Main filtered data fetching - uses page-level saleType prop
   // DISABLED when sharedRawData is provided (eliminates duplicate request)
-  const { data: fetchedData, status: fetchStatus, error, refetch } = useGatedAbortableQuery(
+  const { data: fetchedData, status: fetchStatus, error, refetch } = useAppQuery(
     async (signal) => {
       // saleType is passed from page level - see CLAUDE.md "Business Logic Enforcement"
       // Exclude segment filter - this chart always shows all regions for comparison

@@ -1,5 +1,6 @@
 import React, { useRef, useMemo, useEffect } from 'react';
-import { useGatedAbortableQuery, useDeferredFetch, QueryStatus } from '../../hooks';
+// Phase 2: Using TanStack Query via useAppQuery wrapper
+import { useAppQuery, useDeferredFetch, QueryStatus } from '../../hooks';
 import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
 import { Line } from 'react-chartjs-2';
@@ -109,7 +110,7 @@ function NewVsResaleChartBase({ height = 350 }) {
   // and smoothly transitions to new data via Chart.js animations
   // isFetching = true during background refetch when keepPreviousData is enabled
   // isBootPending = true while waiting for app boot
-  const { data, status, error, isFetching, isBootPending, refetch } = useGatedAbortableQuery(
+  const { data, status, error, isFetching, isBootPending, refetch } = useAppQuery(
     async (signal) => {
       // Use buildApiParams to include GLOBAL filters from sidebar
       // Uses global timeGrouping via TIME_GROUP_BY mapping for consistent API values

@@ -1,5 +1,6 @@
 import React, { useRef, useMemo } from 'react';
-import { useGatedAbortableQuery, useDebugOverlay, QueryStatus } from '../../hooks';
+// Phase 2: Using TanStack Query via useAppQuery wrapper
+import { useAppQuery, useDebugOverlay, QueryStatus } from '../../hooks';
 import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
 import { Bubble } from 'react-chartjs-2';
@@ -57,7 +58,7 @@ function BeadsChartBase({
   const useShared = sharedData != null;
 
   // Data fetching with useGatedAbortableQuery - gates on appReady
-  const { data: chartData, status, error, refetch } = useGatedAbortableQuery(
+  const { data: chartData, status, error, refetch } = useAppQuery(
     async (signal) => {
       // saleType is passed from page level - see CLAUDE.md "Business Logic Enforcement"
       // excludeOwnDimension: 'segment' - this chart shows all regions, so ignore segment filter

@@ -14,7 +14,8 @@ import { transformCompressionSeries } from '../adapters';
 // Standardized responsive UI components (layout wrappers only)
 import { ErrorBoundary, ChartWatermark, KPICardV2, KPICardV2Group, KPIHeroContent } from '../components/ui';
 // Desktop-first chart height with mobile guardrail
-import { useChartHeight, MOBILE_CAPS, useGatedAbortableQuery, useDeferredFetch } from '../hooks';
+// Phase 2: Using TanStack Query via useAppQuery wrapper
+import { useChartHeight, MOBILE_CAPS, useAppQuery, useDeferredFetch } from '../hooks';
 // Unified filter bar component (handles desktop + mobile)
 import { FilterBar } from '../components/powerbi/FilterBar';
 
@@ -80,7 +81,7 @@ export function MacroOverviewContent() {
   // Gates on appReady to prevent fetch before auth/subscription/filters ready
   // Reacts to: Location filters (district, bedroom, segment)
   // Ignores: Date range filters (always shows "current market" status)
-  const { data: kpiData, loading: kpisLoading, isBootPending: kpiBootPending } = useGatedAbortableQuery(
+  const { data: kpiData, loading: kpisLoading, isBootPending: kpiBootPending } = useAppQuery(
     async (signal) => {
       // Build location/property filters (react to sidebar, but NOT date range)
       const params = {};
@@ -126,7 +127,7 @@ export function MacroOverviewContent() {
   // SHARED DATA FETCH: Compression/Absolute PSF/Oscillator charts use identical API call
   // Hoisted to parent to eliminate duplicate requests (W4 performance fix)
   // PriceCompressionChart, AbsolutePsfChart, and MarketValueOscillator all consume this data
-  const { data: compressionRaw, status: compressionStatus, isBootPending: compressionBootPending } = useGatedAbortableQuery(
+  const { data: compressionRaw, status: compressionStatus, isBootPending: compressionBootPending } = useAppQuery(
     async (signal) => {
       const params = buildApiParams({
         group_by: `${TIME_GROUP_BY[timeGrouping]},region`,
@@ -151,7 +152,7 @@ export function MacroOverviewContent() {
   // Shared dashboard panels for histogram + beads (reduces request fanout)
   // These panels share the same filter behavior: exclude location drill,
   // but respect global sidebar filters (incl. segment).
-  const { data: dashboardPanels, status: dashboardStatus, isBootPending: dashboardBootPending } = useGatedAbortableQuery(
+  const { data: dashboardPanels, status: dashboardStatus, isBootPending: dashboardBootPending } = useAppQuery(
     async (signal) => {
       const params = buildApiParams(
         {

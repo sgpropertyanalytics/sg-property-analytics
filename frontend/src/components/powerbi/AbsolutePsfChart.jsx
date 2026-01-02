@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
-import { useGatedAbortableQuery, useDeferredFetch } from '../../hooks';
+// Phase 2: Using TanStack Query via useAppQuery wrapper
+import { useAppQuery, useDeferredFetch } from '../../hooks';
 import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
 import { Line } from 'react-chartjs-2';
@@ -61,7 +62,7 @@ function AbsolutePsfChartBase({ height = 300, saleType = null, sharedData = null
 
   // Data fetching - same as PriceCompressionChart for consistency
   // Skip if parent provides sharedData (W4 fix: eliminates duplicate API call with PriceCompressionChart)
-  const { data: internalData, status: internalStatus, error, refetch } = useGatedAbortableQuery(
+  const { data: internalData, status: internalStatus, error, refetch } = useAppQuery(
     async (signal) => {
       // saleType is passed from page level - see CLAUDE.md "Business Logic Enforcement"
       // Exclude segment filter - this chart always shows all regions for comparison

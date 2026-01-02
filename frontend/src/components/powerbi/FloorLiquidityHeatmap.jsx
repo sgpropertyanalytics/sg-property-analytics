@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { useGatedAbortableQuery } from '../../hooks';
+// Phase 2: Using TanStack Query via useAppQuery wrapper
+import { useAppQuery } from '../../hooks';
 import { ChartFrame } from '../common/ChartFrame';
 import { getFloorLiquidityHeatmap } from '../../api/client';
 import {
@@ -49,7 +50,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
 
   // Data fetching with useGatedAbortableQuery - gates on appReady
   // isBootPending = true while waiting for app boot (auth/subscription/filters)
-  const { data: apiResponse, status, error, isBootPending, refetch } = useGatedAbortableQuery(
+  const { data: apiResponse, status, error, isBootPending, refetch } = useAppQuery(
     async (signal) => {
       // Build params from props directly (not PowerBIFilterContext)
       const params = { window_months: windowMonths };

@@ -1,6 +1,36 @@
 import { createContext, useContext, useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import apiClient from '../api/client';
-import { useStaleRequestGuard } from '../hooks';
+
+/**
+ * Inline stale request guard (previously useStaleRequestGuard hook)
+ * Simple abort/stale request protection for subscription fetches.
+ */
+function useStaleRequestGuard() {
+  const requestIdRef = useRef(0);
+  const abortControllerRef = useRef(null);
+
+  const startRequest = useCallback(() => {
+    // Abort previous request if any
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    // Create new abort controller
+    abortControllerRef.current = new AbortController();
+    // Increment and return new request ID
+    requestIdRef.current += 1;
+    return requestIdRef.current;
+  }, []);
+
+  const isStale = useCallback((requestId) => {
+    return requestId !== requestIdRef.current;
+  }, []);
+
+  const getSignal = useCallback(() => {
+    return abortControllerRef.current?.signal;
+  }, []);
+
+  return { startRequest, isStale, getSignal };
+}
 
 /**
  * Subscription Context (Entitlement-Only)

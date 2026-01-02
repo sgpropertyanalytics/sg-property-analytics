@@ -22,7 +22,8 @@ import { SINGAPORE_CENTER } from '../../data/singaporeDistrictsGeoJSON';
 import { DISTRICT_CENTROIDS } from '../../data/districtCentroids';
 import { REGIONS, CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS, getRegionBadgeClass, BEDROOM_FILTER_OPTIONS, PERIOD_FILTER_OPTIONS } from '../../constants';
 import { useSubscription } from '../../context/SubscriptionContext';
-import { useGatedAbortableQuery, QueryStatus } from '../../hooks';
+// Phase 2: Using TanStack Query via useAppQuery wrapper
+import { useAppQuery, QueryStatus } from '../../hooks';
 import { SaleType } from '../../schemas/apiContract';
 import { getPercentile } from '../../utils/statistics';
 import { assertKnownVersion } from '../../adapters';
@@ -494,7 +495,7 @@ function MarketStrategyMapBase({
   };
 
   // Fetch data with canonical hook (handles abort, stale, boot gating)
-  const { data, status, error, refetch } = useGatedAbortableQuery(
+  const { data, status, error, refetch } = useAppQuery(
     async (signal) => {
       const response = await apiClient.get('/insights/district-psf', {
         params: { period: selectedPeriod, bed: selectedBed, sale_type: selectedSaleType },

@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
 // Chart.js components registered globally in chartSetup.js
 import { Bar } from 'react-chartjs-2';
-import { useGatedAbortableQuery } from '../../hooks';
+// Phase 2: Using TanStack Query via useAppQuery wrapper
+import { useAppQuery } from '../../hooks';
 import { ChartFrame } from '../common/ChartFrame';
 import { getAggregate } from '../../api/client';
 import {
@@ -58,7 +59,7 @@ function DistrictComparisonChartBase({
 
   // Data fetching with useGatedAbortableQuery - gates on appReady
   // isBootPending = true while waiting for app boot
-  const { data: transformedData, status, error, isBootPending } = useGatedAbortableQuery(
+  const { data: transformedData, status, error, isBootPending } = useAppQuery(
     async (signal) => {
       if (!district) {
         return { groups: [], stats: { maxPsf: 0, minPsf: 0, projectCount: 0, selectedRank: null } };

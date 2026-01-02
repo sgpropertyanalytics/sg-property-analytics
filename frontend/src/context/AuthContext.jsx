@@ -3,8 +3,35 @@ import { signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuth
 import { getFirebaseAuth, getGoogleProvider, isFirebaseConfigured } from '../lib/firebase';
 import { queryClient } from '../lib/queryClient';
 import apiClient from '../api/client';
-import { useStaleRequestGuard } from '../hooks';
 import { useSubscription } from './SubscriptionContext';
+
+/**
+ * Inline stale request guard (previously useStaleRequestGuard hook)
+ * Simple abort/stale request protection for auth operations.
+ */
+function useStaleRequestGuard() {
+  const requestIdRef = useRef(0);
+  const abortControllerRef = useRef(null);
+
+  const startRequest = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+    requestIdRef.current += 1;
+    return requestIdRef.current;
+  }, []);
+
+  const isStale = useCallback((requestId) => {
+    return requestId !== requestIdRef.current;
+  }, []);
+
+  const getSignal = useCallback(() => {
+    return abortControllerRef.current?.signal;
+  }, []);
+
+  return { startRequest, isStale, getSignal };
+}
 
 // Detect mobile browser
 const isMobile = () => {

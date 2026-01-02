@@ -1,5 +1,6 @@
 import React, { useRef, useMemo } from 'react';
-import { useGatedAbortableQuery, useDeferredFetch } from '../../hooks';
+// Phase 2: Using TanStack Query via useAppQuery wrapper
+import { useAppQuery, useDeferredFetch } from '../../hooks';
 import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
 import { Line } from 'react-chartjs-2';
@@ -71,7 +72,7 @@ function PriceCompressionChartBase({ height = 380, saleType = null, sharedData =
   // HISTORICAL BASELINE: Fetch full historical data once (no date filters)
   // This provides stable min/max for compression score calculation
   // Uses quarterly grain for efficiency - baseline doesn't need fine-grained time
-  const { data: baselineData } = useGatedAbortableQuery(
+  const { data: baselineData } = useAppQuery(
     async (signal) => {
       // No date filters, no highlights - full historical data
       const params = {
@@ -91,7 +92,7 @@ function PriceCompressionChartBase({ height = 380, saleType = null, sharedData =
 
   // Data fetching with useGatedAbortableQuery - gates on appReady
   // Skip if parent provides sharedData (W4 fix: eliminates duplicate API call with AbsolutePsfChart)
-  const { data: internalData, status: internalStatus, error, refetch } = useGatedAbortableQuery(
+  const { data: internalData, status: internalStatus, error, refetch } = useAppQuery(
     async (signal) => {
       // saleType is passed from page level - see CLAUDE.md "Business Logic Enforcement"
       // Exclude segment filter - this chart always shows all regions for comparison

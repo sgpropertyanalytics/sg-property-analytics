@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { useGatedAbortableQuery } from '../../hooks';
+// Phase 2: Using TanStack Query via useAppQuery wrapper
+import { useAppQuery } from '../../hooks';
 import { getAggregate } from '../../api/client';
 import { transformPriceRangeMatrix } from '../../adapters/aggregate';
 import {
@@ -77,7 +78,7 @@ export function PriceRangeMatrix({
 
   // Fetch data with abort handling - gates on appReady
   // isBootPending = true while waiting for app boot
-  const { data, status, error, isBootPending, isFetching, refetch } = useGatedAbortableQuery(
+  const { data, status, error, isBootPending, isFetching, refetch } = useAppQuery(
     async (signal) => {
       const response = await getAggregate(apiParams, { signal });
       return transformPriceRangeMatrix(response.data, { budget });
