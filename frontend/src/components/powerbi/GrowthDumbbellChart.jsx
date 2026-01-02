@@ -65,7 +65,7 @@ function GrowthDumbbellChartBase({ bedroom = 'all', saleType = 'all', enabled = 
   // Data fetching with useGatedAbortableQuery - gates on appReady
   // enabled prop prevents fetching when component is hidden (e.g., in volume mode)
   // isBootPending = true while waiting for app boot
-  const { data, status, error, isBootPending, refetch } = useAppQuery(
+  const { data, status, error, refetch } = useAppQuery(
     async (signal) => {
       // Build API params - NO date filters, uses full database range
       const params = {
@@ -202,7 +202,6 @@ function GrowthDumbbellChartBase({ bedroom = 'all', saleType = 'all', enabled = 
   return (
     <ChartFrame
       status={status}
-      isBootPending={isBootPending}
       error={error}
       onRetry={refetch}
       empty={!sortedData || sortedData.length === 0}

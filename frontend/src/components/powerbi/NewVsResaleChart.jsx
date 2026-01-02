@@ -110,9 +110,8 @@ function NewVsResaleChartBase({ height = 350 }) {
   // Data fetching with useGatedAbortableQuery - gates on appReady
   // keepPreviousData: true prevents loading flash when filters change - chart stays visible
   // and smoothly transitions to new data via Chart.js animations
-  // isFetching = true during background refetch when keepPreviousData is enabled
-  // isBootPending = true while waiting for app boot
-  const { data, status, error, isFetching, isBootPending, refetch } = useAppQuery(
+  // isFetching = true during background refetch (used for inline spinner)
+  const { data, status, error, isFetching, refetch } = useAppQuery(
     async (signal) => {
       // Use buildApiParams to include GLOBAL filters from sidebar
       // Uses global timeGrouping via TIME_GROUP_BY mapping for consistent API values
@@ -453,9 +452,7 @@ function NewVsResaleChartBase({ height = 350 }) {
     <div ref={containerRef}>
     <ChartFrame
       status={status}
-      isFetching={isFetching}
       isFiltering={filterKey !== debouncedFilterKey}
-      isBootPending={isBootPending}
       error={error}
       onRetry={refetch}
       empty={!hasData}

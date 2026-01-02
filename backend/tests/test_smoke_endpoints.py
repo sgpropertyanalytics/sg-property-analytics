@@ -34,7 +34,9 @@ def test_smoke_filter_options(client):
     r = client.get("/api/filter-options")
     assert r.status_code == 200
     data = r.get_json()
-    assert "districts" in data and isinstance(data["districts"], list)
+    # Response wrapped by @api_contract: {data: {...}, meta: {...}}
+    assert "data" in data, "Missing data envelope from @api_contract"
+    assert "districts" in data["data"] and isinstance(data["data"]["districts"], list)
 
 
 @pytest.mark.smoke
@@ -103,7 +105,9 @@ def test_smoke_projects_names(client):
     r = client.get("/api/projects/names")
     assert r.status_code == 200
     data = r.get_json()
-    assert "projects" in data
+    # Response wrapped by @api_contract: {data: {...}, meta: {...}}
+    assert "data" in data, "Missing data envelope from @api_contract"
+    assert "projects" in data["data"]
 
 
 @pytest.mark.smoke

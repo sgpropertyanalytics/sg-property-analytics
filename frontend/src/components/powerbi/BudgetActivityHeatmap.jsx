@@ -108,7 +108,7 @@ export function BudgetActivityHeatmap({
 
   // Fetch data with abort handling - gates on appReady
   // isBootPending = true while waiting for app boot
-  const { data, status, error, isBootPending, isFetching, refetch } = useAppQuery(
+  const { data, status, error, refetch } = useAppQuery(
     async (signal) => {
       const response = await getBudgetHeatmap(apiParams, { signal });
 
@@ -146,9 +146,7 @@ export function BudgetActivityHeatmap({
   return (
     <ChartFrame
       status={status}
-      isFetching={isFetching}
       isFiltering={isFiltering}
-      isBootPending={isBootPending}
       error={error}
       onRetry={refetch}
       empty={!data || totalCount === 0}
