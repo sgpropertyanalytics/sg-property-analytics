@@ -19,39 +19,37 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│ main.jsx                                                                         │
+│ App.jsx                                                                          │
 │ ┌─────────────────────────────────────────────────────────────────────────────┐ │
-│ │ <AuthProvider>                                                               │ │
-│ │   • Firebase OAuth (Google)                                                 │ │
-│ │   • JWT token management                                                    │ │
-│ │   • Lazy-loads Firebase (only on sign-in)                                  │ │
+│ │ <QueryClientProvider>                     TanStack Query (caching, refetch) │ │
 │ │  ┌───────────────────────────────────────────────────────────────────────┐  │ │
-│ │  │ <SubscriptionProvider>                                                 │  │ │
-│ │  │   • Tier management (free/premium)                                    │  │ │
-│ │  │   • Paywall logic                                                     │  │ │
+│ │  │ <SubscriptionProvider>                 Tier management (free/premium) │  │ │
 │ │  │  ┌─────────────────────────────────────────────────────────────────┐  │  │ │
-│ │  │  │ <DataProvider>                                                   │  │  │ │
-│ │  │  │   • Static data: available districts, API metadata              │  │  │ │
-│ │  │  │   • Fetched once at app init                                    │  │  │ │
+│ │  │  │ <AuthProvider>                      Firebase OAuth + JWT        │  │  │ │
 │ │  │  │  ┌───────────────────────────────────────────────────────────┐  │  │  │ │
-│ │  │  │  │ <PowerBIFilterProvider>                                    │  │  │  │ │
-│ │  │  │  │   • All filter state (districts, bedrooms, dates)         │  │  │  │ │
-│ │  │  │  │   • Drill state (location, time, project)                 │  │  │  │ │
-│ │  │  │  │   • Session persistence (survives navigation)             │  │  │  │ │
+│ │  │  │  │ <DataProvider>                   Static data (districts)  │  │  │  │ │
 │ │  │  │  │  ┌─────────────────────────────────────────────────────┐  │  │  │  │ │
-│ │  │  │  │  │ <RouterProvider>                                     │  │  │  │  │ │
-│ │  │  │  │  │   • React Router 6                                  │  │  │  │  │ │
-│ │  │  │  │  │   • Lazy-loaded routes                              │  │  │  │  │ │
+│ │  │  │  │  │ <BrowserRouter>               React Router 6        │  │  │  │  │ │
 │ │  │  │  │  │  ┌───────────────────────────────────────────────┐  │  │  │  │  │ │
-│ │  │  │  │  │  │ <DashboardLayout>                              │  │  │  │  │  │ │
-│ │  │  │  │  │  │   ├─ GlobalNavRail (collapsible sidebar)      │  │  │  │  │  │ │
-│ │  │  │  │  │  │   └─ <Outlet />  ← Pages render here          │  │  │  │  │  │ │
+│ │  │  │  │  │  │ <AppReadyProvider>         Boot gating        │  │  │  │  │  │ │
+│ │  │  │  │  │  │   • Waits for auth + subscription + filters   │  │  │  │  │  │ │
+│ │  │  │  │  │  │   • Gates data fetching until ready           │  │  │  │  │  │ │
+│ │  │  │  │  │  │  ┌─────────────────────────────────────────┐  │  │  │  │  │  │ │
+│ │  │  │  │  │  │  │ <Routes>                                │  │  │  │  │  │  │ │
+│ │  │  │  │  │  │  │  └─ <DashboardLayout>                  │  │  │  │  │  │  │ │
+│ │  │  │  │  │  │  │      ├─ GlobalNavRail (64-256px)       │  │  │  │  │  │  │ │
+│ │  │  │  │  │  │  │      └─ <Outlet />  ← Pages here       │  │  │  │  │  │  │ │
+│ │  │  │  │  │  │  └─────────────────────────────────────────┘  │  │  │  │  │  │ │
 │ │  │  │  │  │  └───────────────────────────────────────────────┘  │  │  │  │  │ │
 │ │  │  │  │  └─────────────────────────────────────────────────────┘  │  │  │  │ │
 │ │  │  │  └───────────────────────────────────────────────────────────┘  │  │  │ │
 │ │  │  └─────────────────────────────────────────────────────────────────┘  │  │ │
 │ │  └───────────────────────────────────────────────────────────────────────┘  │ │
 │ └─────────────────────────────────────────────────────────────────────────────┘ │
+│                                                                                  │
+│ FILTER STATE: Zustand store (not in provider tree)                              │
+│   • stores/filterStore.js - Page-namespaced, persisted to sessionStorage        │
+│   • useZustandFilters() hook - Access from any component                        │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -60,11 +58,15 @@
 ```mermaid
 flowchart TB
     subgraph Providers["Provider Stack"]
-        AP[AuthProvider]
+        QC[QueryClientProvider]
         SP[SubscriptionProvider]
+        AP[AuthProvider]
         DP[DataProvider]
-        FP[PowerBIFilterProvider]
-        RP[RouterProvider]
+        ARP[AppReadyProvider]
+    end
+
+    subgraph State["External State"]
+        ZS[Zustand Filter Store]
     end
 
     subgraph Layout["Layout"]
@@ -73,10 +75,22 @@ flowchart TB
         OL[Outlet]
     end
 
-    AP --> SP --> DP --> FP --> RP --> DL
+    QC --> SP --> AP --> DP --> ARP --> DL
     DL --> NR
     DL --> OL
+    ZS -.-> |useZustandFilters| OL
 ```
+
+### Key Architecture Change (January 2026)
+
+**PowerBIFilterProvider has been removed.** Filter state is now managed by Zustand:
+
+| Before (Phase 2) | After (Phase 4) |
+|------------------|-----------------|
+| `<PowerBIFilterProvider>` in tree | Zustand store (external) |
+| `usePowerBIFilters()` hook | `useZustandFilters()` hook |
+| Context re-renders on any change | Selector-based updates |
+| 600+ lines of context code | ~200 lines of store code |
 
 ### DashboardLayout Architecture
 
@@ -157,68 +171,115 @@ flowchart TB
 
 ## State Management
 
-### PowerBIFilterContext
+### Zustand Filter Store (Current)
 
-All filter state lives in `context/PowerBIFilter/PowerBIFilterProvider.jsx`:
+All filter state lives in `stores/filterStore.js`. Access via `useZustandFilters()`:
 
 ```javascript
+import { useZustandFilters } from '../stores';
+
 const {
   // ═══════════════════════════════════════════════════════════════════════
   // FILTER STATE
   // ═══════════════════════════════════════════════════════════════════════
   filters: {
+    timeFilter,      // { type: 'preset', value: 'Y1' } or { type: 'custom', start, end }
     districts,       // ['D09', 'D10', 'D11'] or []
-    bedrooms,        // [2, 3, 4] or []
-    saleTypes,       // ['New Sale', 'Resale'] or []
-    tenures,         // ['Freehold', '99-year'] or []
-    dateRange,       // { from: Date, to: Date }
+    bedroomTypes,    // [2, 3, 4] or []
+    segments,        // ['CCR', 'RCR', 'OCR'] or []
+    saleType,        // 'New Sale' | 'Resale' | null
+    tenure,          // 'Freehold' | '99-year' | null
+    psfRange,        // { min: number|null, max: number|null }
+    sizeRange,       // { min: number|null, max: number|null }
+    propertyAge,     // { min: number|null, max: number|null }
+    project,         // 'THE SAIL @ MARINA BAY' | null
   },
 
   // ═══════════════════════════════════════════════════════════════════════
-  // DRILL STATE
+  // DRILL STATE (resets on route change)
   // ═══════════════════════════════════════════════════════════════════════
   drillPath: {
-    location: null,  // 'CCR' | 'D09' | null
-    time: null,      // '2024' | '2024Q3' | null
+    location: 'all', // 'all' | 'region' | 'district' | 'project'
+    time: 'year',    // 'year' | 'quarter' | 'month'
   },
-  selectedProject,   // 'THE SAIL @ MARINA BAY' | null (drill-through)
-  breadcrumbs,       // [{ label: 'All', level: 'root' }, { label: 'CCR', level: 'region' }]
+  selectedProject,   // { name: string|null, district: string|null }
+  breadcrumbs: {
+    location: [],    // [{ value: 'CCR', label: 'CCR' }, ...]
+    time: [],        // [{ value: '2024', label: '2024' }, ...]
+  },
 
   // ═══════════════════════════════════════════════════════════════════════
   // VIEW STATE
   // ═══════════════════════════════════════════════════════════════════════
   timeGrouping,      // 'year' | 'quarter' | 'month'
-  filterOptions,     // { districts: [...], bedrooms: [...] } from API
+  filterOptions,     // { districts: [...], bedrooms: [...] } from DataContext
+  filtersReady,      // boolean - hydration complete
 
   // ═══════════════════════════════════════════════════════════════════════
-  // SETTERS
+  // DERIVED STATE
   // ═══════════════════════════════════════════════════════════════════════
-  setDateRange,
+  activeFilters,     // Merged filters + drill state
+  activeFilterCount, // Number of active filter selections
+  filterKey,         // Serialized filter state for cache keys
+  debouncedFilterKey, // 200ms debounced version
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // ACTIONS - TIME FILTER
+  // ═══════════════════════════════════════════════════════════════════════
+  setTimeFilter,     // (timeFilter) - unified format
+  setTimePreset,     // (value) - preset mode ('Y1', 'Y3', etc.)
+  setTimeRange,      // (start, end) - custom range mode
+  setDateRange,      // (start, end) - legacy alias
+  setDatePreset,     // (preset) - legacy alias
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // ACTIONS - DIMENSIONS
+  // ═══════════════════════════════════════════════════════════════════════
   setDistricts,
   toggleDistrict,
   setBedroomTypes,
-  toggleBedroom,
-  setSaleTypes,
-  setTimeGrouping,
+  toggleBedroomType,
+  setSegments,
+  toggleSegment,
+  setSaleType,
+  setTenure,
+  setProject,
 
   // ═══════════════════════════════════════════════════════════════════════
-  // DRILL METHODS
+  // ACTIONS - DRILL NAVIGATION
   // ═══════════════════════════════════════════════════════════════════════
-  drillIntoLocation,  // (region) or (district)
-  drillIntoTime,      // (year) or (quarter)
-  drillIntoProject,   // (projectName) - opens detail panel
-  resetDrill,         // Clear drill state
-  popBreadcrumb,      // Navigate back one level
+  drillDown,         // (type, value, label) - navigate deeper
+  drillUp,           // (type) - navigate up one level
+  navigateToBreadcrumb, // (type, index) - jump to breadcrumb
 
   // ═══════════════════════════════════════════════════════════════════════
-  // DERIVED
+  // ACTIONS - PROJECT SELECTION
   // ═══════════════════════════════════════════════════════════════════════
-  buildApiParams,     // (overrides, options) => merged params
-  filterKey,          // Serialized filter state for cache keys
-  debouncedFilterKey, // 200ms debounced version
-  countActiveFilters, // Number of active filter selections
+  setSelectedProject,   // (name, district) - opens detail panel
+  clearSelectedProject, // () - closes detail panel
 
-} = usePowerBIFilters();
+  // ═══════════════════════════════════════════════════════════════════════
+  // HELPER FUNCTIONS
+  // ═══════════════════════════════════════════════════════════════════════
+  buildApiParams,    // (overrides, options) => merged params for API calls
+
+} = useZustandFilters();
+```
+
+### Alternative Hooks (Performance Optimization)
+
+```javascript
+// State only (for read-heavy components)
+import { useZustandFilterState } from '../stores';
+const { filters, activeFilters, filterKey } = useZustandFilterState();
+
+// Actions only (stable, never causes re-renders)
+import { useZustandFilterActions } from '../stores';
+const { setTimePreset, setDistricts } = useZustandFilterActions();
+
+// Direct store access with selector (most performant)
+import { useFilterStoreSelector } from '../stores';
+const districts = useFilterStoreSelector(state => state.filters.districts);
 ```
 
 ### Filter Persistence
@@ -300,7 +361,7 @@ onChartClick={(item) => {
 └───────────────────────────────────┬────────────────────────────────────────────┘
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────────────┐
-│ PowerBIFilterContext                                                            │
+│ Zustand Filter Store (stores/filterStore.js)                                    │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐                             │
 │  │ filters     │  │ drillPath   │  │ timeGrouping│                             │
 │  │ (districts, │  │ (location,  │  │ (year/qtr/  │                             │
@@ -314,20 +375,23 @@ onChartClick={(item) => {
 └──────────────────────────┬─────────────────────────────────────────────────────┘
                            ▼
 ┌────────────────────────────────────────────────────────────────────────────────┐
-│ useAbortableQuery(fetcher, [debouncedFilterKey, timeGrouping])                  │
+│ useAppQuery(queryFn, [deps], options)                                           │
+│  TanStack Query wrapper with boot gating                                       │
 │                                                                                 │
-│  1. Dependency change detected                                                 │
-│  2. Abort previous request (AbortController.abort())                           │
-│  3. Generate new requestId                                                     │
-│  4. Start new request with signal                                              │
-│  5. On response: check if stale (requestId mismatch)                           │
-│  6. If fresh: update state                                                     │
-│  7. Return { data, loading, error }                                            │
+│  Features:                                                                      │
+│  • Waits for appReady (auth + subscription + filters) before fetching          │
+│  • Automatic abort on dependency change (via TanStack Query)                   │
+│  • Built-in caching and deduplication                                          │
+│  • Stale-while-revalidate pattern                                              │
+│  • Auto-retry on network errors                                                │
+│  • DevTools integration for debugging                                          │
+│                                                                                 │
+│  Returns: { data, status, error, refetch, isFetching, isRefetching }           │
 └──────────────────────────┬─────────────────────────────────────────────────────┘
                            ▼
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │ API Client (api/client.js)                                                      │
-│  • Request queue (max 4 concurrent)                                            │
+│  • Request queue (max 8 concurrent)                                            │
 │  • JWT token injection                                                         │
 │  • Timeout retry (cold start resilience)                                       │
 │  • URL routing (dev: localhost:5000, prod: Vercel proxy)                       │
@@ -346,44 +410,95 @@ onChartClick={(item) => {
                            ▼
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │ Chart Component                                                                 │
-│  <QueryState loading={loading} error={error} empty={!data?.length}>            │
-│    <Chart data={data} />                                                       │
-│  </QueryState>                                                                 │
+│  status === 'pending' → <Skeleton />                                           │
+│  status === 'error' → <ErrorState error={error} />                             │
+│  !data?.length → <EmptyState />                                                │
+│  else → <Chart data={data} />                                                  │
 └────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### useAbortableQuery (Primary)
+### useAppQuery (Primary - TanStack Query Wrapper)
+
+**This is the ONLY data fetching hook.** All legacy hooks have been removed.
 
 ```javascript
-import { useAbortableQuery } from '../hooks/useAbortableQuery';
+import { useAppQuery } from '../hooks';
+import { useZustandFilters } from '../stores';
+import { getAggregate } from '../api/analytics';
+import { transformTimeSeries } from '../adapters';
 
 function MyChart() {
-  const { buildApiParams, debouncedFilterKey, timeGrouping } = usePowerBIFilters();
+  const { buildApiParams, debouncedFilterKey, timeGrouping } = useZustandFilters();
 
-  const { data, loading, error } = useAbortableQuery(
+  const { data, status, error, isFetching } = useAppQuery(
     async (signal) => {
       const params = buildApiParams({ group_by: 'quarter' });
-      const response = await apiClient.get('/api/aggregate', { params, signal });
-      return transformTimeSeries(response.data.data, timeGrouping);  // Adapter!
+      const response = await getAggregate(params, { signal });
+      return transformTimeSeries(response.data, timeGrouping);  // Always use adapter!
     },
-    [debouncedFilterKey, timeGrouping],  // Dependencies
+    [debouncedFilterKey, timeGrouping],  // Dependencies → query key
     {
-      initialData: [],
-      keepPreviousData: true,  // Prevent loading flicker
-      retries: 1,              // Auto-retry on network error
+      chartName: 'MyChart',      // For dev timing instrumentation
+      keepPreviousData: true,    // Show old data while fetching new
+      staleTime: 30000,          // 30s cache freshness (default)
     }
   );
 
-  if (loading) return <Skeleton />;
-  if (error) return <ErrorState error={error} />;
+  if (status === 'pending') return <Skeleton />;
+  if (status === 'error') return <ErrorState error={error} />;
   if (!data?.length) return <EmptyState />;
   return <Chart data={data} />;
 }
 ```
 
-### useDeferredFetch (Visibility-based)
+### useAppQuery Options
 
-For charts below the fold - only fetch when visible:
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `chartName` | string | - | Name for dev timing instrumentation |
+| `enabled` | boolean | `true` | ANDed with `appReady` |
+| `keepPreviousData` | boolean | `false` | Show stale data while fetching |
+| `staleTime` | number | `30000` | Cache freshness in ms |
+| `initialData` | any | - | Initial data before first fetch |
+
+### useAppQuery Return Values
+
+| Value | Type | Description |
+|-------|------|-------------|
+| `status` | string | `'pending'` \| `'error'` \| `'success'` \| `'refreshing'` |
+| `data` | any | Query result (or `initialData` if pending) |
+| `error` | Error | Error object if query failed |
+| `refetch` | function | Manually trigger refetch |
+| `isFetching` | boolean | True when fetching (including background) |
+| `isRefetching` | boolean | True when refetching with existing data |
+| `hasData` | boolean | True if data has content |
+| `isBootPending` | boolean | True if waiting for app boot |
+
+### Migration from Legacy Hooks
+
+Legacy hooks have been **deleted**. Here's the migration path:
+
+```javascript
+// ❌ REMOVED - Do not use
+import { useAbortableQuery } from '../hooks/useAbortableQuery';
+import { useGatedAbortableQuery } from '../hooks/useGatedAbortableQuery';
+import { useStaleRequestGuard } from '../hooks/useStaleRequestGuard';
+import { useQuery } from '../hooks/useQuery';
+
+// ✅ CURRENT - Use this
+import { useAppQuery } from '../hooks';
+```
+
+| Legacy Hook | Replacement | Notes |
+|-------------|-------------|-------|
+| `useAbortableQuery` | `useAppQuery` | Same arguments |
+| `useGatedAbortableQuery` | `useAppQuery` | Boot gating is built-in |
+| `useStaleRequestGuard` | `useAppQuery` | TanStack handles stale detection |
+| `useQuery` (custom) | `useAppQuery` | TanStack provides caching |
+
+### Visibility-based Fetching
+
+For charts below the fold - still use `useDeferredFetch`:
 
 ```javascript
 import { useDeferredFetch } from '../hooks/useDeferredFetch';
@@ -391,82 +506,33 @@ import { useDeferredFetch } from '../hooks/useDeferredFetch';
 function BelowFoldChart() {
   const { shouldFetch, containerRef } = useDeferredFetch({
     filterKey: debouncedFilterKey,
-    priority: 'low',        // high | medium | low
-    staggerDelay: 200,      // ms delay based on priority
+    priority: 'low',
+    staggerDelay: 200,
   });
 
-  const { data, loading } = useAbortableQuery(
+  const { data, status } = useAppQuery(
     async (signal) => { /* ... */ },
     [debouncedFilterKey],
     { enabled: shouldFetch }  // Only fetch when visible
   );
 
-  // CRITICAL: containerRef must be OUTSIDE QueryState
+  // CRITICAL: containerRef must be OUTSIDE status checks
   return (
     <div ref={containerRef}>
-      <QueryState loading={loading}>
-        <Chart data={data} />
-      </QueryState>
+      {status === 'pending' ? <Skeleton /> : <Chart data={data} />}
     </div>
   );
 }
 ```
 
-**Bug to avoid:**
-```jsx
-// ❌ BUG: ref inside QueryState (not rendered during loading)
-<QueryState loading={loading}>
-  <div ref={containerRef}>...</div>  // Never mounts when loading!
-</QueryState>
+### TanStack Query DevTools
 
-// ✅ FIX: ref OUTSIDE QueryState
-<div ref={containerRef}>
-  <QueryState loading={loading}>...</QueryState>
-</div>
-```
+In development, TanStack Query DevTools are available (bottom-left button):
 
-### useStaleRequestGuard (Complex Cases)
-
-For multiple sequential requests or custom loading:
-
-```javascript
-import { useStaleRequestGuard } from '../hooks/useStaleRequestGuard';
-
-function ComplexChart() {
-  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
-  const [data, setData] = useState(null);
-
-  useEffect(() => {
-    const requestId = startRequest();
-    const signal = getSignal();
-
-    Promise.all([fetchA({ signal }), fetchB({ signal })])
-      .then(([a, b]) => {
-        if (isStale(requestId)) return;  // Prevent stale update
-        setData(combineData(a, b));
-      })
-      .catch(err => {
-        if (err.name === 'AbortError') return;  // Ignore abort
-        if (isStale(requestId)) return;
-        setError(err);
-      });
-  }, [dependencies]);
-}
-```
-
-### AbortError Handling
-
-**AbortError must NEVER surface as an error to users:**
-
-```javascript
-.catch(err => {
-  // Silently ignore abort errors
-  if (err.name === 'AbortError' || err.name === 'CanceledError') {
-    return;
-  }
-  setError(err);
-});
-```
+- View all cached queries
+- Inspect query state and data
+- Manually invalidate/refetch queries
+- Debug stale times and cache behavior
 
 ---
 
@@ -567,37 +633,41 @@ export function transformTimeSeries(rawData, expectedGrain = null) {
 
 ```javascript
 // components/powerbi/TimeTrendChart.jsx
-import { usePowerBIFilters } from '../../context/PowerBIFilterContext';
-import { useAbortableQuery } from '../../hooks';
+import { useZustandFilters } from '../../stores';
+import { useAppQuery } from '../../hooks';
+import { getAggregate } from '../../api/analytics';
 import { transformTimeSeries } from '../../adapters';
-import { SaleType } from '../../schemas/apiContract';
-import { QueryState, ChartSlot } from '../common';
+import { ChartFrame } from '../common';
 
 export function TimeTrendChart({ saleType }) {
-  // 1. Get filter context
-  const { buildApiParams, debouncedFilterKey, timeGrouping } = usePowerBIFilters();
+  // 1. Get filter state from Zustand
+  const { buildApiParams, debouncedFilterKey, timeGrouping } = useZustandFilters();
 
-  // 2. Fetch with adapter transform
-  const { data, loading, error } = useAbortableQuery(
+  // 2. Fetch with TanStack Query wrapper
+  const { data, status, error } = useAppQuery(
     async (signal) => {
       const params = buildApiParams({
         group_by: 'quarter',
         metrics: 'count,median_psf',
-        sale_type: saleType,  // Page passes this prop!
+        ...(saleType && { sale_type: saleType }),  // Page passes this prop!
       });
-      const response = await apiClient.get('/api/aggregate', { params, signal });
-      return transformTimeSeries(response.data.data, timeGrouping);
+      const response = await getAggregate(params, { signal });
+      return transformTimeSeries(response.data, timeGrouping);
     },
-    [debouncedFilterKey, timeGrouping, saleType]
+    [debouncedFilterKey, timeGrouping, saleType],
+    { chartName: 'TimeTrendChart', keepPreviousData: true }
   );
 
-  // 3. Render with QueryState wrapper
+  // 3. Render with ChartFrame (handles status states)
   return (
-    <ChartSlot title="Transaction Trend">
-      <QueryState loading={loading} error={error} empty={!data?.length}>
-        <Line data={chartData(data)} options={chartOptions} />
-      </QueryState>
-    </ChartSlot>
+    <ChartFrame
+      title="Transaction Trend"
+      status={status}
+      error={error}
+      isEmpty={!data?.length}
+    >
+      <Line data={chartData(data)} options={chartOptions} />
+    </ChartFrame>
   );
 }
 ```
@@ -778,10 +848,14 @@ manualChunks: {
 When adding or modifying charts:
 
 **Data Fetching:**
-- [ ] Uses `useAbortableQuery`
+- [ ] Uses `useAppQuery` (the ONLY data fetching hook)
 - [ ] Removed manual `useState` for data/loading/error
 - [ ] Passes `signal` to API calls
 - [ ] Uses `debouncedFilterKey` in dependencies
+
+**State Access:**
+- [ ] Uses `useZustandFilters()` for filter state (not `usePowerBIFilters`)
+- [ ] Imports from `../stores` not `../context/PowerBIFilter`
 
 **Adapter Usage:**
 - [ ] All transformation in adapter, not component
@@ -789,27 +863,27 @@ When adding or modifying charts:
 - [ ] Uses `getPeriod()` for time fields
 - [ ] Uses `isSaleType.*()` for type checks
 
-**QueryState:**
-- [ ] Wrapped in `QueryState` or equivalent
-- [ ] Handles loading, error, empty states
-- [ ] `ref` is outside `QueryState` if using `useDeferredFetch`
+**ChartFrame/Status:**
+- [ ] Uses `ChartFrame` with `status` prop
+- [ ] Handles pending, error, empty states
+- [ ] `ref` is outside status checks if using `useDeferredFetch`
 
-**Query Key:**
+**Query Key (deps array):**
 - [ ] Includes ALL data-affecting state
+- [ ] `debouncedFilterKey` for filter changes
 - [ ] `timeGrouping` if view changes by Y/Q/M
 - [ ] `saleType` if data scope varies
-- [ ] `drillPath` if drill affects data
 
 ### Pre-PR Checklist
 
-- [ ] Uses `useAbortableQuery` or `useStaleRequestGuard`
-- [ ] AbortError handled silently
-- [ ] Stale check before setState
+- [ ] Uses `useAppQuery` (not legacy hooks)
+- [ ] Uses `useZustandFilters` (not `usePowerBIFilters`)
 - [ ] Empty data shows EmptyState
 - [ ] No raw API data access in components
 - [ ] Enums from `apiContract`, not string literals
 - [ ] `keepPreviousData: true` to prevent flicker
 - [ ] Chart handles Year/Quarter/Month switching
+- [ ] TanStack Query DevTools shows expected caching
 
 ### Query Key Checklist
 
@@ -829,54 +903,74 @@ When adding or modifying charts:
 
 ```
 frontend/src/
-├── App.jsx                       # Routing, lazy loading
-├── main.jsx                      # Provider stack
+├── App.jsx                       # Routing, lazy loading, provider stack
+├── main.jsx                      # React root
+│
+├── stores/                       # Zustand state management (NEW)
+│   ├── filterStore.js            # Filter state (replaces PowerBIFilterProvider)
+│   └── index.js                  # Central export
+│
+├── lib/
+│   └── queryClient.js            # TanStack Query client configuration
 │
 ├── context/
 │   ├── AuthContext.jsx           # Firebase auth
 │   ├── SubscriptionContext.jsx   # Tier management
-│   ├── DataContext.jsx           # Static data
-│   └── PowerBIFilter/
-│       ├── PowerBIFilterProvider.jsx  # Main filter context
-│       ├── filterReducer.js           # State reducer
-│       └── utils.js                   # Helper functions
+│   ├── DataContext.jsx           # Static data (filter options)
+│   ├── AppReadyContext.jsx       # Boot gating (auth + sub + filters ready)
+│   ├── DebugContext.jsx          # Dev tools
+│   ├── ChartTimingContext.jsx    # Performance instrumentation (dev)
+│   └── PowerBIFilter/            # Utilities only (Provider removed)
+│       ├── constants.js          # INITIAL_FILTERS, TIME_LEVELS, etc.
+│       ├── hooks.js              # useFilterOptions, useDebouncedFilterKey
+│       ├── storage.js            # Page-namespaced persistence
+│       ├── utils.js              # deriveActiveFilters, buildApiParamsFromState
+│       └── index.js              # Re-exports utilities
 │
 ├── components/
 │   ├── layout/
 │   │   ├── DashboardLayout.jsx   # Main layout wrapper
-│   │   ├── GlobalNavRail.jsx     # Collapsible sidebar
+│   │   ├── GlobalNavRail.jsx     # Collapsible sidebar (64-256px)
 │   │   └── UserProfileMenu.jsx   # Account dropdown
 │   ├── powerbi/                  # 40+ chart components
 │   │   ├── TimeTrendChart.jsx
-│   │   ├── VolumeByLocationChart.jsx
+│   │   ├── PriceDistributionChart.jsx
 │   │   ├── PowerBIFilterSidebar.jsx
 │   │   └── ...
 │   ├── common/
-│   │   ├── QueryState.jsx        # Loading/error/empty wrapper
-│   │   ├── ChartSlot.jsx         # Chart container
+│   │   ├── ChartFrame.jsx        # Chart container with status handling
 │   │   ├── ChartSkeleton.jsx     # Loading placeholder
-│   │   └── ErrorState.jsx
+│   │   ├── ErrorState.jsx        # Error display
+│   │   └── BootStuckBanner.jsx   # Recovery UI for stuck boot
 │   ├── ui/                       # Shared primitives
-│   └── insights/                 # Specialized visualizations
+│   └── insights/                 # Specialized visualizations (maps, etc.)
 │
 ├── adapters/
 │   ├── aggregateAdapter.js       # Main export
 │   └── aggregate/                # 13 transform modules
 │       ├── index.js
 │       ├── timeSeries.js
+│       ├── compression.js
 │       └── ...
 │
 ├── hooks/
-│   ├── useAbortableQuery.js      # Primary data fetching
+│   ├── useAppQuery.js            # TanStack Query wrapper (MAIN HOOK)
 │   ├── useDeferredFetch.js       # Visibility-based fetching
-│   ├── useStaleRequestGuard.js   # Stale request detection
-│   └── useDebouncedFilterKey.js  # Filter debouncing
+│   ├── useDebouncedFilterKey.js  # Filter debouncing
+│   ├── useChartHeight.js         # Responsive chart heights
+│   ├── useChartTiming.js         # Performance timing (dev)
+│   ├── useChartLoadingState.js   # Loading state aggregation
+│   ├── useDebugOverlay.js        # Debug overlay toggle
+│   └── index.js                  # Central export
 │
 ├── pages/
-│   ├── MarketOverview.jsx
-│   ├── DistrictOverview.jsx
-│   ├── NewLaunchMarket.jsx
-│   └── ...
+│   ├── MacroOverview.jsx         # /market-overview
+│   ├── DistrictDeepDive.jsx      # /district-overview
+│   ├── PrimaryMarket.jsx         # /new-launch-market
+│   ├── SupplyInsights.jsx        # /supply-inventory
+│   ├── ProjectDeepDive.jsx       # /explore
+│   ├── ExitRisk.jsx              # /exit-risk
+│   └── Methodology.jsx           # /methodology
 │
 ├── schemas/
 │   └── apiContract/
@@ -887,10 +981,17 @@ frontend/src/
 ├── constants/
 │   └── index.js                  # Districts, regions, colors
 │
-└── api/
-    └── client.js                 # Axios instance
+├── api/
+│   ├── client.js                 # Axios instance with interceptors
+│   └── analytics.js              # API functions (getAggregate, etc.)
+│
+└── e2e/                          # Playwright E2E tests
+    ├── smoke.spec.js             # Basic functionality tests
+    ├── boot-hydration.spec.js    # Boot sequence tests
+    └── fixtures/
+        └── api-mocks.js          # API mock handlers
 ```
 
 ---
 
-*Last updated: December 2024*
+*Last updated: January 2026*

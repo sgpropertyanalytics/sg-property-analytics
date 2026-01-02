@@ -235,27 +235,46 @@ sequenceDiagram
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │ App.jsx                                                                          │
 │ ┌─────────────────────────────────────────────────────────────────────────────┐ │
-│ │ <AuthProvider>                              Firebase OAuth + JWT            │ │
+│ │ <QueryClientProvider>                     TanStack Query (caching, refetch) │ │
 │ │  ┌───────────────────────────────────────────────────────────────────────┐  │ │
-│ │  │ <SubscriptionProvider>                   Tier + paywall logic         │  │ │
+│ │  │ <SubscriptionProvider>                 Tier management (free/premium) │  │ │
 │ │  │  ┌─────────────────────────────────────────────────────────────────┐  │  │ │
-│ │  │  │ <DataProvider>                        Static data (districts)   │  │  │ │
+│ │  │  │ <AuthProvider>                      Firebase OAuth + JWT        │  │  │ │
 │ │  │  │  ┌───────────────────────────────────────────────────────────┐  │  │  │ │
-│ │  │  │  │ <PowerBIFilterProvider>            All filter state        │  │  │  │ │
+│ │  │  │  │ <DataProvider>                   Static data (districts)  │  │  │  │ │
 │ │  │  │  │  ┌─────────────────────────────────────────────────────┐  │  │  │  │ │
-│ │  │  │  │  │ <RouterProvider>                React Router 6      │  │  │  │  │ │
+│ │  │  │  │  │ <BrowserRouter>               React Router 6        │  │  │  │  │ │
 │ │  │  │  │  │  ┌───────────────────────────────────────────────┐  │  │  │  │  │ │
-│ │  │  │  │  │  │ <DashboardLayout>            Nav + Content    │  │  │  │  │  │ │
-│ │  │  │  │  │  │  ├─ GlobalNavRail (64-256px collapsible)      │  │  │  │  │  │ │
-│ │  │  │  │  │  │  └─ <Outlet />  ← Page components render here │  │  │  │  │  │ │
+│ │  │  │  │  │  │ <AppReadyProvider>         Boot gating        │  │  │  │  │  │ │
+│ │  │  │  │  │  │  ┌─────────────────────────────────────────┐  │  │  │  │  │  │ │
+│ │  │  │  │  │  │  │ <Routes>                                │  │  │  │  │  │  │ │
+│ │  │  │  │  │  │  │  └─ <DashboardLayout>                  │  │  │  │  │  │  │ │
+│ │  │  │  │  │  │  │      ├─ GlobalNavRail (64-256px)       │  │  │  │  │  │  │ │
+│ │  │  │  │  │  │  │      └─ <Outlet />  ← Pages here       │  │  │  │  │  │  │ │
+│ │  │  │  │  │  │  └─────────────────────────────────────────┘  │  │  │  │  │  │ │
 │ │  │  │  │  │  └───────────────────────────────────────────────┘  │  │  │  │  │ │
 │ │  │  │  │  └─────────────────────────────────────────────────────┘  │  │  │  │ │
 │ │  │  │  └───────────────────────────────────────────────────────────┘  │  │  │ │
 │ │  │  └─────────────────────────────────────────────────────────────────┘  │  │ │
 │ │  └───────────────────────────────────────────────────────────────────────┘  │ │
 │ └─────────────────────────────────────────────────────────────────────────────┘ │
+│                                                                                  │
+│ FILTER STATE: Zustand store (not in provider tree)                              │
+│   • stores/filterStore.js - Page-namespaced, persisted to sessionStorage        │
+│   • useZustandFilters() hook - Access from any component                        │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
+
+### Key Architecture Change (January 2026)
+
+**PowerBIFilterProvider removed.** Filter state now managed by Zustand store:
+
+| Component | Before (Phase 2) | After (Phase 4) |
+|-----------|------------------|-----------------|
+| Filter State | `<PowerBIFilterProvider>` | Zustand `filterStore.js` |
+| Filter Hook | `usePowerBIFilters()` | `useZustandFilters()` |
+| Data Fetching | `useAbortableQuery()` | `useAppQuery()` |
+| Query Library | Custom hooks | TanStack Query |
 
 ### Data Fetching Pipeline
 
@@ -265,27 +284,28 @@ sequenceDiagram
 └───────────────────────────────────┬────────────────────────────────────────────┘
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────────────┐
-│ PowerBIFilterContext                                                            │
-│  • filters (districts, bedrooms, dateRange, saleTypes)                         │
-│  • drillPath (location, time, project)                                         │
+│ Zustand Filter Store (stores/filterStore.js)                                    │
+│  • filters (districts, bedroomTypes, timeFilter, saleType)                     │
+│  • drillPath (location, time)                                                  │
 │  • timeGrouping (year | quarter | month)                                       │
 │  • buildApiParams() → merged filter + drill state                              │
 │  • debouncedFilterKey (200ms debounce)                                         │
 └───────────────────────────────────┬────────────────────────────────────────────┘
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────────────┐
-│ useAbortableQuery(fetcher, [debouncedFilterKey, timeGrouping])                  │
-│  1. Abort previous in-flight request (AbortController)                         │
-│  2. Start new request with signal                                              │
-│  3. Detect stale responses (requestId tracking)                                │
-│  4. Auto-retry on network errors (cold start resilience)                       │
-│  5. Return { data, loading, error }                                            │
+│ useAppQuery(queryFn, [deps], options)                                           │
+│  TanStack Query wrapper with boot gating                                       │
+│  1. Waits for appReady (auth + subscription + filters)                         │
+│  2. Automatic abort on dependency change                                       │
+│  3. Built-in caching and deduplication                                         │
+│  4. Stale-while-revalidate pattern                                             │
+│  5. Return { data, status, error, refetch }                                    │
 └───────────────────────────────────┬────────────────────────────────────────────┘
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │ API Client (axios)                                                              │
 │  • JWT token interceptor                                                       │
-│  • Request queue (max 4 concurrent)                                            │
+│  • Request queue (max 8 concurrent)                                            │
 │  • Timeout retry (cold start)                                                  │
 │  • URL routing (dev: localhost:5000, prod: /api → Vercel proxy → Render)       │
 └───────────────────────────────────┬────────────────────────────────────────────┘
@@ -300,9 +320,10 @@ sequenceDiagram
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │ Chart Component                                                                 │
-│  <QueryState loading={loading} error={error} empty={!data?.length}>            │
-│    <Chart data={data} options={options} />                                     │
-│  </QueryState>                                                                 │
+│  status === 'pending' → <Skeleton />                                           │
+│  status === 'error' → <ErrorState error={error} />                             │
+│  !data?.length → <EmptyState />                                                │
+│  else → <Chart data={data} />                                                  │
 └────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -310,7 +331,7 @@ sequenceDiagram
 
 ```mermaid
 flowchart LR
-    subgraph Context["PowerBIFilterContext"]
+    subgraph Store["Zustand Filter Store"]
         F[filters]
         D[drillPath]
         T[timeGrouping]
@@ -319,9 +340,8 @@ flowchart LR
     end
 
     subgraph Hooks["Data Fetching"]
-        AQ[useAbortableQuery]
+        AQ[useAppQuery]
         DF[useDeferredFetch]
-        SG[useStaleRequestGuard]
     end
 
     subgraph Transform["Adapters"]
@@ -329,13 +349,13 @@ flowchart LR
     end
 
     subgraph UI["Components"]
-        QS[QueryState]
+        CF[ChartFrame]
         CH[Chart]
     end
 
     F & D & T --> B --> K
     K --> AQ & DF
-    AQ --> AD --> QS --> CH
+    AQ --> AD --> CF --> CH
 ```
 
 ---
@@ -480,6 +500,7 @@ sg-property-analyzer/
 │   │   │   ├── wrapper.py        # @api_contract decorator
 │   │   │   ├── normalize.py      # Param normalization
 │   │   │   ├── validate.py       # Schema validation
+│   │   │   ├── contract_schema.py # Enums, version, serialization
 │   │   │   └── schemas/          # 17 endpoint contracts
 │   │   │       ├── aggregate.py
 │   │   │       ├── dashboard.py
@@ -503,7 +524,7 @@ sg-property-analyzer/
 │   ├── services/                 # 37 service files
 │   │   ├── dashboard_service.py  # Core analytics
 │   │   ├── classifier.py         # Domain logic
-│   │   ├── etl/                   # ETL pipeline
+│   │   ├── etl/                  # ETL pipeline
 │   │   │   ├── orchestrator.py
 │   │   │   ├── loaders.py
 │   │   │   └── validators.py
@@ -518,31 +539,45 @@ sg-property-analyzer/
 │   ├── db/
 │   │   └── sql.py                # SQL helpers, outlier filter
 │   │
-│   ├── api/
-│   │   ├── contracts/
-│   │   │   └── contract_schema.py   # Enums, version, serialization
-│   │
 │   ├── utils/
 │   │   └── normalize.py          # Input boundary (to_int, to_date)
+│   │
+│   ├── tests/
+│   │   ├── contracts/            # Contract validation tests
+│   │   │   ├── test_contract_aggregate.py
+│   │   │   └── test_frontend_backend_alignment.py
+│   │   └── snapshots/            # Regression snapshots
 │   │
 │   └── migrations/               # Database migrations
 │
 ├── frontend/
 │   ├── src/
-│   │   ├── App.jsx               # Routing, provider setup
+│   │   ├── App.jsx               # Routing, provider stack
+│   │   │
+│   │   ├── stores/               # Zustand state management (NEW)
+│   │   │   ├── filterStore.js    # Filter state (replaces PowerBIFilterProvider)
+│   │   │   └── index.js          # Central export
+│   │   │
+│   │   ├── lib/
+│   │   │   └── queryClient.js    # TanStack Query configuration
 │   │   │
 │   │   ├── context/
 │   │   │   ├── AuthContext.jsx
 │   │   │   ├── SubscriptionContext.jsx
 │   │   │   ├── DataContext.jsx
-│   │   │   └── PowerBIFilter/
-│   │   │       └── PowerBIFilterProvider.jsx
+│   │   │   ├── AppReadyContext.jsx  # Boot gating
+│   │   │   └── PowerBIFilter/       # Utilities only (Provider removed)
+│   │   │       ├── constants.js
+│   │   │       ├── hooks.js
+│   │   │       ├── storage.js
+│   │   │       └── utils.js
 │   │   │
 │   │   ├── components/
 │   │   │   ├── layout/
 │   │   │   │   ├── DashboardLayout.jsx
 │   │   │   │   └── GlobalNavRail.jsx
 │   │   │   ├── powerbi/          # 40+ chart components
+│   │   │   ├── common/           # ChartFrame, ErrorState, etc.
 │   │   │   ├── ui/               # Shared UI primitives
 │   │   │   └── insights/         # Specialized visualizations
 │   │   │
@@ -551,13 +586,13 @@ sg-property-analyzer/
 │   │   │   └── aggregate/        # 13 transform modules
 │   │   │       ├── index.js
 │   │   │       ├── timeSeries.js
-│   │   │       ├── distribution.js
 │   │   │       └── ...
 │   │   │
 │   │   ├── hooks/
-│   │   │   ├── useAbortableQuery.js
+│   │   │   ├── useAppQuery.js    # TanStack Query wrapper (MAIN)
 │   │   │   ├── useDeferredFetch.js
-│   │   │   └── useStaleRequestGuard.js
+│   │   │   ├── useDebouncedFilterKey.js
+│   │   │   └── index.js
 │   │   │
 │   │   ├── pages/                # Page components
 │   │   │
@@ -573,10 +608,25 @@ sg-property-analyzer/
 │   │   └── api/
 │   │       └── client.js         # Axios client
 │   │
+│   ├── e2e/                      # Playwright E2E tests
+│   │   ├── smoke.spec.js
+│   │   ├── boot-hydration.spec.js
+│   │   └── fixtures/
+│   │       └── api-mocks.js
+│   │
 │   └── vite.config.js            # Build config, chunks
 │
+├── .github/
+│   └── workflows/
+│       ├── claude.yml            # Claude Code PR review (3-stage)
+│       └── regression.yml        # CI/CD pipeline
+│
+├── scripts/
+│   ├── upload.py                 # Data upload
+│   ├── map_change_impact.py      # PR impact analysis
+│   └── validate_e2e_mocks.py     # E2E mock validation
+│
 ├── docs/                         # Documentation
-├── scripts/                      # Upload, migration scripts
 └── rawdata/                      # CSV files
 ```
 
@@ -642,4 +692,4 @@ sg-property-analyzer/
 
 ---
 
-*Last updated: December 2024*
+*Last updated: January 2026*
