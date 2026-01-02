@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { usePowerBIFilters } from '../../context/PowerBIFilter';
+// Phase 3.3: Migrated from usePowerBIFilters to useZustandFilters
+import { useZustandFilters } from '../../stores';
 import { getTimeFilter } from '../../context/PowerBIFilter/constants';
 import {
   REGIONS,
@@ -22,6 +23,7 @@ import { TimeGranularityToggle } from './TimeGranularityToggle';
  * - drawer: Full-screen drawer for mobile
  */
 export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, layout = 'sidebar', onClose }) {
+  // Phase 3.3: Now writing to Zustand store (actions update Zustand state)
   const {
     filters,
     filterOptions,
@@ -34,7 +36,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
     setSegments,
     toggleSegment,
     resetFilters,
-  } = usePowerBIFilters();
+  } = useZustandFilters();
 
   // Get time filter state - use helper for consistent fallback
   const timeFilter = getTimeFilter(filters);

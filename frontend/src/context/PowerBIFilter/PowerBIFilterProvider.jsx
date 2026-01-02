@@ -58,6 +58,9 @@ import {
 // Hooks (consolidated)
 import { useFilterOptions, useRouteReset, useDebouncedFilterKey } from './hooks';
 
+// Zustand store for Phase 3 migration (sync Context → Zustand)
+import { getFilterStore, ZUSTAND_FILTERS_ENABLED } from '../../stores/filterStore';
+
 // Split contexts for performance optimization
 const FilterStateContext = createContext(null);
 const FilterActionsContext = createContext(null);
@@ -175,6 +178,61 @@ export function PowerBIFilterProvider({ children, pageId: explicitPageId }) {
   useEffect(() => {
     writeFilterStorage(pageId, STORAGE_KEYS.FILTERS, filters);
   }, [pageId, filters]);
+
+  // ===== Zustand Sync (Phase 3.1) =====
+  // Sync Context state TO Zustand store for migration validation.
+  // Context is source of truth; Zustand is follower.
+  // This runs in dev mode always (for validation) or when feature flag is enabled.
+  const isDev = import.meta.env.DEV;
+  const shouldSyncToZustand = isDev || ZUSTAND_FILTERS_ENABLED;
+
+  useEffect(() => {
+    if (!shouldSyncToZustand) return;
+
+    try {
+      const store = getFilterStore(pageId);
+
+      // Sync all state from Context to Zustand
+      // Using setState directly to batch all updates
+      store.setState({
+        // Meta
+        pageId,
+        filtersReady,
+        // Core state
+        filters,
+        factFilter,
+        drillPath,
+        breadcrumbs,
+        selectedProject,
+        timeGrouping,
+      });
+
+      // Log sync in dev mode for debugging
+      if (isDev && import.meta.env.VITE_DEBUG_ZUSTAND_SYNC === 'true') {
+        console.log('[PowerBIFilterProvider] Synced to Zustand:', {
+          pageId,
+          filtersReady,
+          filters: filters.timeFilter,
+          drillPath,
+        });
+      }
+    } catch (error) {
+      // Don't break the app if Zustand sync fails
+      if (isDev) {
+        console.warn('[PowerBIFilterProvider] Zustand sync failed:', error);
+      }
+    }
+  }, [
+    shouldSyncToZustand,
+    pageId,
+    filtersReady,
+    filters,
+    factFilter,
+    drillPath,
+    breadcrumbs,
+    selectedProject,
+    timeGrouping,
+  ]);
 
   // ===== Filter Options (from API) =====
   const [filterOptions] = useFilterOptions();

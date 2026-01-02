@@ -16,7 +16,9 @@ import { Chart } from 'react-chartjs-2';
 // Phase 2: Using TanStack Query via useAppQuery wrapper
 import { useAppQuery, useDeferredFetch } from '../../hooks';
 import { ChartFrame } from '../common/ChartFrame';
-import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilter';
+// Phase 3.2: Migrated from usePowerBIFilters to useZustandFilters
+import { useZustandFilters } from '../../stores';
+import { TIME_GROUP_BY } from '../../context/PowerBIFilter';
 import { getNewLaunchTimeline, getNewLaunchAbsorption } from '../../api/client';
 import { PreviewChartOverlay, ChartSlot, KeyInsightBox } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
@@ -36,7 +38,7 @@ const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
 function NewLaunchTimelineChartBase({ height = 300 }) {
   // Get GLOBAL filters and timeGrouping from context
   // filterKey updates immediately on filter change - used for instant overlay feedback
-  const { buildApiParams, debouncedFilterKey, filterKey, filters, timeGrouping } = usePowerBIFilters();
+  const { buildApiParams, debouncedFilterKey, filterKey, filters, timeGrouping } = useZustandFilters();
 
   // 2020 had heavily skewed new launch data - exclude by default
   const [include2020, setInclude2020] = useState(false);

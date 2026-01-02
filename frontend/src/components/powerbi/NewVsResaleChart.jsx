@@ -5,7 +5,9 @@ import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
 import { Line } from 'react-chartjs-2';
 import { getNewVsResale } from '../../api/client';
-import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilter';
+// Phase 3.2: Migrated from usePowerBIFilters to useZustandFilters
+import { useZustandFilters } from '../../stores';
+import { TIME_GROUP_BY } from '../../context/PowerBIFilter';
 import { KeyInsightBox, PreviewChartOverlay, ChartSlot } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 import { transformNewVsResaleSeries, logFetchDebug, assertKnownVersion } from '../../adapters';
@@ -79,7 +81,7 @@ function NewVsResaleChartBase({ height = 350 }) {
   // Get GLOBAL filters and timeGrouping from context
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
   // filterKey updates immediately on filter change - used for instant overlay feedback
-  const { buildApiParams, debouncedFilterKey, filterKey, filters, timeGrouping } = usePowerBIFilters();
+  const { buildApiParams, debouncedFilterKey, filterKey, filters, timeGrouping } = useZustandFilters();
 
   // DEBUG: Log on mount
   useEffect(() => {

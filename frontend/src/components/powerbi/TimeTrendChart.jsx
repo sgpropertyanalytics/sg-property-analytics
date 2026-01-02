@@ -4,7 +4,9 @@ import { useAppQuery, useDebugOverlay } from '../../hooks';
 import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
 import { Chart } from 'react-chartjs-2';
-import { usePowerBIFilters, TIME_GROUP_BY } from '../../context/PowerBIFilter';
+// Phase 3.2: Migrated from usePowerBIFilters to useZustandFilters
+import { useZustandFilters } from '../../stores';
+import { TIME_GROUP_BY } from '../../context/PowerBIFilter';
 import { getAggregate } from '../../api/client';
 import { PreviewChartOverlay, ChartSlot } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
@@ -33,7 +35,8 @@ function TimeTrendChartBase({ height = 300, saleType = null, onDrillThrough: _on
   // Use global timeGrouping from context (controlled by toolbar toggle)
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
   // filterKey updates immediately on filter change - used for instant overlay feedback
-  const { buildApiParams, debouncedFilterKey, filterKey, timeGrouping } = usePowerBIFilters();
+  // Phase 3.2: Now reading from Zustand store (synced with Context)
+  const { buildApiParams, debouncedFilterKey, filterKey, timeGrouping } = useZustandFilters();
   const chartRef = useRef(null);
 
   // Debug overlay for API diagnostics (toggle with Ctrl+Shift+D)

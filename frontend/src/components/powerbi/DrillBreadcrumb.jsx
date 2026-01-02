@@ -1,5 +1,6 @@
 import React from 'react';
-import { usePowerBIFilters } from '../../context/PowerBIFilter';
+// Phase 3.3: Migrated from usePowerBIFilters to useZustandFilters
+import { useZustandFilters } from '../../stores';
 
 /**
  * Drill-down Breadcrumb Navigation
@@ -11,12 +12,13 @@ import { usePowerBIFilters } from '../../context/PowerBIFilter';
  * Location: All > CCR > D09 > Marina Bay Suites
  */
 export function DrillBreadcrumb() {
+  // Phase 3.3: Now writing to Zustand store
   const {
     drillPath,
     breadcrumbs,
     navigateToBreadcrumb,
     drillUp,
-  } = usePowerBIFilters();
+  } = useZustandFilters();
 
   const hasTimeBreadcrumbs = breadcrumbs.time.length > 0;
   const hasLocationBreadcrumbs = breadcrumbs.location.length > 0;

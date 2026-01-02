@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { usePowerBIFilters } from '../../context/PowerBIFilter';
+// Phase 3.3: Migrated from usePowerBIFilters to useZustandFilters
+import { useZustandFilters } from '../../stores';
 import { PowerBIFilterSidebar } from './PowerBIFilterSidebar';
 
 /**
@@ -15,7 +16,7 @@ import { PowerBIFilterSidebar } from './PowerBIFilterSidebar';
  * A change here affects ALL pages automatically.
  */
 export function FilterBar() {
-  const { activeFilterCount } = usePowerBIFilters();
+  const { activeFilterCount } = useZustandFilters();
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
   // Body scroll lock when filter drawer is open (iOS Safari fix)

@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 // Chart.js components registered globally in chartSetup.js
 import { Line, Bar } from 'react-chartjs-2';
-import { usePowerBIFilters } from '../../context/PowerBIFilter';
+// Phase 3.3: Migrated from usePowerBIFilters to useZustandFilters
+import { useZustandFilters } from '../../stores';
 import { getAggregate, getProjectInventory, getDashboard } from '../../api/client';
 import { DISTRICT_NAMES } from '../../constants';
 import {
@@ -28,7 +29,8 @@ const K_PROJECT_THRESHOLD = 15;
  * It uses its own API queries filtered to the selected project only.
  */
 export function ProjectDetailPanel() {
-  const { selectedProject, clearSelectedProject, filters } = usePowerBIFilters();
+  // Phase 3.3: Now reading/writing to Zustand store
+  const { selectedProject, clearSelectedProject, filters } = useZustandFilters();
   const [trendData, setTrendData] = useState([]);
   const [priceData, setPriceData] = useState([]);
   const [loading, setLoading] = useState(true);

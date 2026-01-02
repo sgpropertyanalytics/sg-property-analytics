@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { usePowerBIFilters } from '../../context/PowerBIFilter';
+// Phase 3.3: Migrated from usePowerBIFilters to useZustandFilters
+import { useZustandFilters } from '../../stores';
 
 /**
  * TimeGranularityToggle - Global time grouping control
@@ -15,7 +16,8 @@ import { usePowerBIFilters } from '../../context/PowerBIFilter';
  * - Controls all time-series charts simultaneously
  */
 export function TimeGranularityToggle({ className = '', layout = 'default' }) {
-  const { timeGrouping, setTimeGrouping } = usePowerBIFilters();
+  // Phase 3.3: Now writing to Zustand store
+  const { timeGrouping, setTimeGrouping } = useZustandFilters();
   const [showHelper, setShowHelper] = useState(false);
 
   const options = [

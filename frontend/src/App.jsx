@@ -18,7 +18,7 @@ import { queryClient } from './lib/queryClient';
 import { DataProvider } from './context/DataContext';
 import { AuthProvider } from './context/AuthContext';
 import { SubscriptionProvider } from './context/SubscriptionContext';
-import { PowerBIFilterProvider } from './context/PowerBIFilter';
+// Phase 3.4: PowerBIFilterProvider removed - useZustandFilters is now self-contained
 import { AppReadyProvider } from './context/AppReadyContext';
 import { DebugProvider } from './context/DebugContext';
 import { ChartTimingProvider } from './context/ChartTimingContext';
@@ -140,8 +140,6 @@ function App() {
           <DebugProvider>
           <ChartTimingProvider>
           <BrowserRouter>
-            {/* PowerBIFilterProvider wraps all routes to prevent context recreation on navigation */}
-            <PowerBIFilterProvider>
             {/* AppReadyProvider gates data fetching until boot is complete (auth + subscription + filters) */}
             <AppReadyProvider>
             {/* BootStuckBanner - Recovery UI when boot is stuck >10s */}
@@ -228,7 +226,6 @@ function App() {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
             </AppReadyProvider>
-            </PowerBIFilterProvider>
           </BrowserRouter>
           </ChartTimingProvider>
           </DebugProvider>
