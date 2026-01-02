@@ -612,7 +612,10 @@ export function SubscriptionProvider({ children }) {
   const isPremium = isPremiumResolved;
 
   // DEPRECATED - use isResolved
-  const isTierKnown = isResolved;
+  // P0 FIX: isTierKnown must include ERROR state to prevent boot deadlock.
+  // When subscription fetch fails, we treat tier as "known" (defaulting to free restrictions).
+  // This allows AppReadyContext.tierResolved to become true and unblock boot.
+  const isTierKnown = isResolved || isError;
   const isSubscriptionReady = isResolved || isError;
 
   const daysUntilExpiry = useMemo(() => {
