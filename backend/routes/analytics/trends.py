@@ -78,7 +78,9 @@ def new_vs_resale():
     segment = segments[0] if segments else None
 
     date_from = params.get("date_from")
-    date_to = params.get("date_to")
+    # Use date_to_exclusive from normalizer (timeframe resolution) if available
+    # Fall back to date_to for explicit date params (converted +1 day by normalizer)
+    date_to = params.get("date_to_exclusive") or params.get("date_to")
     if date_to:
         date_to = clamp_date_to_today(date_to)
 
