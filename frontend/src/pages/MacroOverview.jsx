@@ -167,7 +167,20 @@ export function MacroOverviewContent() {
 
       const response = await getDashboard(params, { signal, priority: 'medium' });
       // Extract inner data object containing panels (response.data = { data: {...panels}, meta: {...} })
-      return response.data?.data || {};
+      const panelsData = response.data?.data || {};
+      // DEBUG: Log dashboard panels response
+      if (import.meta.env.DEV) {
+        console.log('[MacroOverview] Dashboard panels response:', {
+          hasResponse: !!response,
+          responseDataKeys: response.data ? Object.keys(response.data) : [],
+          panelsDataKeys: Object.keys(panelsData),
+          priceHistogramExists: 'price_histogram' in panelsData,
+          priceHistogramBinsLength: panelsData.price_histogram?.bins?.length,
+          beadsChartExists: 'beads_chart' in panelsData,
+          beadsChartLength: panelsData.beads_chart?.length,
+        });
+      }
+      return panelsData;
     },
     [debouncedFilterKey],
     { chartName: 'MacroOverview-Dashboard', initialData: {}, keepPreviousData: true, enabled: shouldFetchPanels }

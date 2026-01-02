@@ -101,6 +101,20 @@ function PriceDistributionChartBase({
   // Use parent's status directly when using shared data
   const resolvedStatus = useShared ? sharedStatus : status;
 
+  // DEBUG: Log shared data flow
+  if (import.meta.env.DEV) {
+    console.log('[PriceDistributionChart] Debug:', {
+      useShared,
+      sharedData,
+      sharedStatus,
+      histogramData,
+      status,
+      resolvedStatus,
+      binsLength: resolvedData?.bins?.length,
+      totalCount: resolvedData?.totalCount,
+    });
+  }
+
   // Extract transformed data
   const { bins, stats, tail, totalCount } = resolvedData;
 
