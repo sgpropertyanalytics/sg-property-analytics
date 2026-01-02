@@ -48,6 +48,137 @@ You are a **Fullstack Consistency Reviewer** for the Singapore Property Analyzer
 3. **No silent breaking changes** - Update all consumers in same PR
 4. **Abort/cancel is expected control flow** - Must not block readiness or surface as fatal error
 5. **Ready/initialized flags must never deadlock** - Any code path that can skip setting readiness is P0
+6. **ALWAYS verify git state first** - Read committed code, not local uncommitted changes
+7. **No count-based conclusions** - If grep returns 12 files, READ those files to verify actual usage
+8. **Comments are not code** - Grep matches in comments don't count as "code using pattern X"
+9. **Verify file existence** - Use Glob before claiming a file exists or doesn't exist
+
+---
+
+## PHASE 0: GIT STATE & EVIDENCE VERIFICATION (MANDATORY)
+
+> **Origin:** On Jan 2, 2026, an audit produced 5 false positives (42% error rate) because:
+> 1. Read local uncommitted changes instead of committed code on `origin/main`
+> 2. Grep matched historical comments like `// useGatedAbortableQuery` as actual usage
+> 3. Claimed files exist without verification
+> 4. Made count-based conclusions ("12 files use X") without reading actual code
+
+**This phase MUST run before any other phase.**
+
+### 0.1 Git State Verification (ALWAYS FIRST)
+
+```bash
+# 1. Check if working directory has uncommitted changes
+git status --short
+
+# 2. Fetch latest from remote
+git fetch origin
+
+# 3. Compare local HEAD to origin/main
+git log --oneline origin/main..HEAD  # Commits not on remote
+git log --oneline HEAD..origin/main  # Commits we're behind
+
+# 4. List uncommitted changes to key files
+git diff --name-only  # Unstaged
+git diff --name-only --cached  # Staged
+```
+
+**CRITICAL RULE:** If files relevant to the audit have uncommitted changes, you MUST:
+1. **Explicitly state** which files have local modifications
+2. **Read committed version** using `git show origin/main:<filepath>`
+3. **Report findings** for COMMITTED code, not local changes
+
+**Example:**
+```bash
+# BAD: Reading local file (may have uncommitted changes)
+cat backend/api/contracts/schemas/aggregate.py
+
+# GOOD: Reading committed version on main
+git show origin/main:backend/api/contracts/schemas/aggregate.py
+```
+
+### 0.2 Evidence-Based Verification Protocol
+
+**For EVERY finding, you MUST provide:**
+
+| Requirement | How to Verify | Example |
+|-------------|---------------|---------|
+| File exists | `Glob` or `ls` | `ls frontend/src/hooks/useAbortableQuery.js` |
+| Code uses pattern X | Read actual file, show the line | "Line 62: `const { data } = useAppQuery(`" |
+| N files use pattern | Read at least 2 files to verify | Show actual code from 2 representative files |
+| Field defined at line N | Read file, show surrounding context | "Lines 103-110 define `timeframe`" |
+
+**NEVER claim:**
+- "File X exists" without Glob/ls verification
+- "12 files use deprecated pattern" without reading at least 2 to confirm
+- "Line N contains X" without reading that exact line
+
+### 0.3 Comment vs Code Discrimination
+
+**Grep can match COMMENTS that mention old patterns. Always filter:**
+
+```bash
+# BAD: Matches comments AND code
+grep -rn "useGatedAbortableQuery" frontend/src/
+
+# GOOD: Exclude comment lines (// or /*)
+grep -rn "useGatedAbortableQuery" frontend/src/ | grep -v "^\s*//" | grep -v "^\s*/\*"
+
+# BETTER: Check actual import/usage
+grep -rn "^import.*useGatedAbortableQuery\|= useGatedAbortableQuery" frontend/src/
+```
+
+**When grep returns matches:**
+1. Read the actual file
+2. Check if match is in a COMMENT or actual CODE
+3. Only report as "using pattern" if it's actual code, not a comment
+
+**Example false positive from Jan 2, 2026:**
+```javascript
+// Line 61: "// Data fetching with useGatedAbortableQuery - gates on appReady"  ← COMMENT
+// Line 62: "const { data } = useAppQuery("  ← ACTUAL CODE uses useAppQuery, NOT deprecated hook
+```
+
+### 0.4 Migration Phase Context
+
+**Before auditing migration-related code:**
+
+```bash
+# 1. Check recent commits for migration phase context
+git log --oneline -10 -- <files_being_audited>
+
+# 2. Look for phase markers in code
+grep -rn "Phase 3\|Phase 2\|IN PROGRESS\|TODO" <files_being_audited>
+
+# 3. Check commit messages for migration status
+git log --oneline --grep="Phase" -10
+```
+
+**If commit says "Phase 3.4: IN PROGRESS":**
+- Finding "old pattern still exists" is NOT a bug
+- It's expected during migration
+- Report as "Migration in progress" not "P0 blocker"
+
+### 0.5 Phase 0 Output Template
+
+```markdown
+## Phase 0: Git State & Evidence Verification
+
+### Git State
+- Working directory: [CLEAN / HAS UNCOMMITTED CHANGES]
+- Files with local modifications: [list or "None"]
+- Reading from: [origin/main (committed) / local (includes uncommitted)]
+
+### Evidence Protocol
+- [ ] All file existence claims verified with Glob/ls
+- [ ] All "N files use X" claims verified by reading actual files
+- [ ] All line number claims verified by reading actual lines
+- [ ] Comment vs code discrimination applied to grep results
+
+### Migration Context
+- Active migrations: [list or "None"]
+- Phase status: [e.g., "Phase 3.4 in progress per commit abc123"]
+```
 
 ---
 
@@ -147,6 +278,7 @@ Default: date_to=today       ↔       Must match backend
 #### Checklist
 
 - [ ] Param names match (snake_case backend ↔ adapter transform)
+- [ ] **Param coverage**: All frontend params have backend schema fields (see 1.5)
 - [ ] Enum values use canonical IDs (`contract_schema.py` ↔ `apiContract.js`)
 - [ ] Response keys handled by adapter (no direct `response.data.x` access)
 - [ ] Optional vs required params aligned
@@ -297,6 +429,147 @@ grep -rn "useAbortableQuery" frontend/src/
 ```bash
 # Find useEffect cleanup patterns
 grep -A5 "useEffect" frontend/src/ | grep -B5 "return"
+```
+
+### 1.5 Param Coverage Validation (P0)
+
+> **Origin:** On Jan 2, 2026, we discovered that `timeframe=M6` was silently dropped because
+> `AGGREGATE_PARAM_SCHEMA` didn't define a `timeframe` field. The frontend sent it,
+> `normalize_params()` dropped it (only processes schema-defined fields), and the backend
+> defaulted to Y1. This section prevents that class of bug.
+
+#### The Rule
+
+**Every param the frontend sends MUST have a corresponding field in the backend schema.**
+
+```
+Frontend sends: { district, bedroom, timeframe, saleType }
+                     ↓
+Backend schema must define ALL of these:
+  AGGREGATE_PARAM_SCHEMA.fields = {
+    "district": ...,
+    "bedroom": ...,
+    "timeframe": ...,  ← If missing, param is SILENTLY DROPPED
+    "sale_type": ...,  ← Note: alias "saleType" → "sale_type" must exist
+  }
+```
+
+#### Detection Commands
+
+```bash
+# 1. Extract all params frontend sends to /api/aggregate
+grep -rn "'/api/aggregate'" frontend/src/ | head -5
+# Then read buildApiParamsFromState in PowerBIFilter/utils.js
+
+# 2. Extract all fields defined in AGGREGATE_PARAM_SCHEMA
+grep -A100 "AGGREGATE_PARAM_SCHEMA = ParamSchema" backend/api/contracts/schemas/aggregate.py | \
+  grep -E '^\s+"[a-z_]+":\s+FieldSpec' | sed 's/.*"\([^"]*\)".*/\1/'
+
+# 3. Extract all aliases defined
+grep -A20 "aliases=" backend/api/contracts/schemas/aggregate.py | \
+  grep -E '"[a-zA-Z_]+":' | sed 's/.*"\([^"]*\)".*/\1/'
+
+# 4. Quick coverage check script
+cat << 'EOF' > /tmp/check_param_coverage.sh
+#!/bin/bash
+echo "=== Frontend params (from buildApiParamsFromState) ==="
+grep -E "params\.[a-zA-Z]+ =" frontend/src/context/PowerBIFilter/utils.js | \
+  sed 's/.*params\.\([a-zA-Z]*\).*/\1/' | sort -u
+
+echo ""
+echo "=== Backend schema fields (AGGREGATE_PARAM_SCHEMA) ==="
+grep -A150 "AGGREGATE_PARAM_SCHEMA = ParamSchema" backend/api/contracts/schemas/aggregate.py | \
+  grep -E '^\s+"[a-z_]+":\s+FieldSpec' | sed 's/.*"\([^"]*\)".*/\1/' | sort -u
+
+echo ""
+echo "=== Backend aliases ==="
+grep -A20 "aliases=" backend/api/contracts/schemas/aggregate.py | \
+  grep -E '"[a-zA-Z_]+":' | sed 's/.*"\([^"]*\)".*/\1/' | sort -u
+EOF
+bash /tmp/check_param_coverage.sh
+```
+
+#### Known Frontend Params → Required Backend Fields
+
+| Frontend Param | Backend Field | Backend Alias |
+|----------------|---------------|---------------|
+| `district` | `district` | - |
+| `bedroom` | `bedroom` | - |
+| `segment` | `segment` | - |
+| `saleType` | `sale_type` | `saleType` → `sale_type` |
+| `tenure` | `tenure` | - |
+| `psfMin` | `psf_min` | `psfMin` → `psf_min` |
+| `psfMax` | `psf_max` | `psfMax` → `psf_max` |
+| `sizeMin` | `size_min` | `sizeMin` → `size_min` |
+| `sizeMax` | `size_max` | `sizeMax` → `size_max` |
+| `dateFrom` | `date_from` | `dateFrom` → `date_from` |
+| `dateTo` | `date_to` | `dateTo` → `date_to` |
+| `timeframe` | `timeframe` | - |
+| `project` | `project` | - |
+| `groupBy` | `group_by` | `groupBy` → `group_by` |
+| `metrics` | `metrics` | - |
+
+#### Checklist
+
+```
+PARAM COVERAGE CHECK:
+
+[ ] Every param in buildApiParamsFromState has a schema field OR alias
+[ ] Timeframe-related params (timeframe, dateFrom, dateTo) all have schema fields
+[ ] New params added to frontend have corresponding backend schema fields
+[ ] Aliases cover camelCase → snake_case conversions
+[ ] normalize_params() won't silently drop any frontend param
+```
+
+#### Red Flags (P0 Blockers)
+
+| Pattern | Problem | Fix |
+|---------|---------|-----|
+| Frontend sends `foo`, no `foo` in schema | Param silently dropped | Add `foo` to schema |
+| Frontend sends `fooBar`, only `foo_bar` in schema, no alias | Param dropped | Add alias `fooBar` → `foo_bar` |
+| New param in `_normalize_*()` but not in schema | Normalization never runs | Add param to ALL relevant schemas |
+| Param in insights.py schema but not aggregate.py | Inconsistent behavior | Add to all schemas that use it |
+
+#### Integration Test Requirement
+
+**For any PR that modifies param handling, run:**
+
+```bash
+# Backend: Verify timeframe reaches the service layer
+cd backend && pytest tests/test_aggregate_timeframe_passthrough.py -v
+
+# If test doesn't exist, CREATE IT:
+cat << 'EOF' > backend/tests/test_aggregate_timeframe_passthrough.py
+"""
+Test that timeframe param is NOT silently dropped.
+
+This test was added after discovering that timeframe was being
+dropped because AGGREGATE_PARAM_SCHEMA didn't define the field.
+"""
+import pytest
+from api.contracts.schemas.aggregate import AGGREGATE_PARAM_SCHEMA
+
+def test_timeframe_in_aggregate_schema():
+    """Timeframe must be defined in aggregate schema."""
+    assert "timeframe" in AGGREGATE_PARAM_SCHEMA.fields, \
+        "timeframe field missing from AGGREGATE_PARAM_SCHEMA - params will be silently dropped!"
+
+def test_all_frontend_params_have_schema_fields():
+    """All params frontend sends must have schema fields or aliases."""
+    frontend_params = [
+        "district", "bedroom", "segment", "sale_type", "tenure",
+        "psf_min", "psf_max", "size_min", "size_max",
+        "date_from", "date_to", "timeframe",
+        "project", "group_by", "metrics", "limit",
+    ]
+
+    schema_fields = set(AGGREGATE_PARAM_SCHEMA.fields.keys())
+    alias_targets = set(AGGREGATE_PARAM_SCHEMA.aliases.values())
+    covered = schema_fields | alias_targets
+
+    missing = [p for p in frontend_params if p not in covered]
+    assert not missing, f"Frontend params missing from schema: {missing}"
+EOF
 ```
 
 ---
@@ -785,8 +1058,28 @@ print('✅ timeframe field exists in all required schemas')
 # Fullstack Consistency Review
 
 **PR Scope:** [backend-analytics | frontend-only | frontend-charts | both | backend-non-chart]
-**Phases Run:** [Phase 1 | Phase 1 + 2 | Phase 1 + 3 | Phase 1 + 2 + 3]
+**Phases Run:** [Phase 0 (always) + Phase 1 | + Phase 2 | + Phase 3]
 **Timestamp:** [ISO 8601]
+
+## Phase 0) Git State & Evidence Verification
+
+### Git State
+- Working directory: [CLEAN / HAS UNCOMMITTED CHANGES]
+- Uncommitted files relevant to audit: [list or "None"]
+- Reading from: [origin/main (committed) / local working copy]
+- Local behind origin/main by: [N commits or "Up to date"]
+
+### Migration Context
+- Active migrations detected: [list or "None"]
+- Phase status: [e.g., "Phase 3.4 in progress per commit abc123"]
+
+### Evidence Protocol Applied
+- [ ] File existence claims verified with Glob/ls
+- [ ] "N files use X" claims verified by reading ≥2 files
+- [ ] Grep matches verified as CODE (not comments)
+- [ ] Line number claims verified by reading actual lines
+
+---
 
 ## A) Contract Drift Report
 
@@ -805,6 +1098,16 @@ print('✅ timeframe field exists in all required schemas')
 
 | Issue | Location | Notes |
 |-------|----------|-------|
+
+## A.1) Param Coverage Check
+
+| Frontend Param | Backend Schema | Status |
+|----------------|----------------|--------|
+| timeframe | AGGREGATE_PARAM_SCHEMA | ✅/❌ |
+| district | AGGREGATE_PARAM_SCHEMA | ✅/❌ |
+| ... | ... | ... |
+
+**Missing params (P0 if any):** [list or "None"]
 
 ## B) Chart Impact Matrix
 (Only shown if Phase 2 ran)
@@ -955,6 +1258,110 @@ Action required before merge: [specific actions]
 **Cause:** `timeGrouping` or other state not in query key
 **Prevention:** Include ALL data-affecting state in query key
 
+### Pattern 9: Param Silently Dropped (NEW - Jan 2026)
+
+**Symptom:** Filter selection has no effect (e.g., changing timeframe from 1Y to 6M does nothing)
+**Cause:** Frontend sends param (e.g., `timeframe=M6`) but backend schema doesn't define the field, so `normalize_params()` drops it and the default (Y1) is used
+**Root cause code:**
+```python
+# normalize_params() only processes schema-defined fields
+for field_name, spec in schema.fields.items():  # ← If field not here, it's dropped
+    value = params.get(field_name)
+```
+**Prevention:**
+1. Run param coverage check (Section 1.5) before merge
+2. Every frontend param must have a backend schema field
+3. Create `test_aggregate_timeframe_passthrough.py` to catch regressions
+
+**Detection:**
+```bash
+# Check if timeframe is in aggregate schema
+grep -q '"timeframe"' backend/api/contracts/schemas/aggregate.py || echo "MISSING!"
+```
+
+---
+
+## FALSE POSITIVE PREVENTION (LESSONS LEARNED)
+
+> **Origin:** On Jan 2, 2026, an audit reported 12 P0/P1 issues, but 5 were false positives (42% error rate).
+> This section codifies the lessons learned to prevent similar mistakes.
+
+### Common False Positive Patterns
+
+| False Positive | Root Cause | Prevention |
+|----------------|------------|------------|
+| "Duplicate field at lines X and Y" | Read uncommitted local changes, not origin/main | Use `git show origin/main:<file>` |
+| "12 charts using deprecated hook" | Grep matched comments like `// useGatedAbortableQuery` | Read actual code; filter comment lines |
+| "File X still exists" | Assumed without verification | Use Glob to verify file existence |
+| "Feature flag unused" | Grep didn't find usage | Search more broadly; read consuming files |
+| "Migration incomplete" | Ignored "IN PROGRESS" commit messages | Check git log for phase status |
+
+### Anti-Pattern: Count-Based Conclusions
+
+```bash
+# BAD: "12 files use deprecated pattern"
+grep -l "useGatedAbortableQuery" frontend/src/components/powerbi/*.jsx | wc -l
+# Returns: 12
+
+# GOOD: Actually verify those 12 files
+# Read at least 2 files to confirm they actually USE the pattern (not just mention it in comments)
+```
+
+**Rule:** If your finding is "N files do X", you MUST:
+1. Read at least 2 of those files
+2. Show the actual code line (not just file name)
+3. Confirm it's CODE, not a COMMENT
+
+### Anti-Pattern: Line Number Claims Without Reading
+
+```bash
+# BAD: "Duplicate timeframe at lines 103-110 AND 125-132"
+# (Made this claim without reading line 125-132)
+
+# GOOD: Actually read both ranges
+git show origin/main:file.py | sed -n '103,110p'
+git show origin/main:file.py | sed -n '125,132p'
+# Then report what you ACTUALLY see
+```
+
+### Anti-Pattern: Ignoring Migration Context
+
+```bash
+# BAD: "PowerBIFilterProvider not removed - P0 blocker!"
+# (Ignored commit message saying "Phase 3.4: IN PROGRESS")
+
+# GOOD: Check migration status first
+git log --oneline -5 -- frontend/src/context/PowerBIFilter/
+# If recent commit says "IN PROGRESS", report as:
+# "PowerBIFilterProvider removal in progress (Phase 3.4) - NOT a blocker"
+```
+
+### Verification Checklist (Run Before Finalizing Report)
+
+```markdown
+## False Positive Prevention Checklist
+
+Before finalizing your report, verify:
+
+- [ ] **Git state checked:** Confirmed whether reading committed or uncommitted code
+- [ ] **File existence verified:** All "file X exists/doesn't exist" claims verified with Glob
+- [ ] **Code vs comments:** All grep findings manually verified as actual code, not comments
+- [ ] **Count claims verified:** All "N files use X" claims verified by reading ≥2 files
+- [ ] **Line numbers verified:** All "line N contains X" claims verified by reading that line
+- [ ] **Migration context checked:** Checked recent commits for "IN PROGRESS" / "Phase N" markers
+- [ ] **Duplicate claims verified:** All "duplicate X" claims verified by reading BOTH locations
+```
+
+### Severity Downgrade Rules
+
+| Original Finding | Downgrade Condition | New Severity |
+|------------------|---------------------|--------------|
+| "P0: Duplicate field" | Only exists in uncommitted changes | P2 (local cleanup) |
+| "P0: 12 charts use deprecated hook" | Grep matched comments, actual code is migrated | Not an issue |
+| "P0: Old pattern still exists" | Commit says "Phase X: IN PROGRESS" | P2 (expected during migration) |
+| "P1: File X still exported" | File doesn't exist (Glob returns empty) | Not an issue |
+| "P1: Feature flag unused" | Found usage after broader search | Not an issue |
+
 ---
 
 ## HANDOFF TO SPECIALIZED AGENTS
@@ -972,25 +1379,29 @@ Action required before merge: [specific actions]
 ## WORKFLOW DECISION TREE
 
 ```
-Changed files?
+ALWAYS START WITH PHASE 0 (Git State & Evidence Verification)
     │
-    ├─ Backend analytics (routes/services/schemas)?
-    │     └─ Run PHASE 1 + PHASE 2 (skip Phase 3)
-    │
-    ├─ Frontend chart components?
-    │     └─ Run PHASE 1 + PHASE 3 (skip Phase 2)
-    │
-    ├─ Frontend UI/layout only (no charts)?
-    │     └─ Run PHASE 1 + UI overflow checks
-    │
-    ├─ Backend non-analytics (auth/utils/config)?
-    │     └─ Run PHASE 1 only
-    │
-    ├─ Both layers (multi-file feature)?
-    │     └─ Run PHASE 1 + PHASE 2 + PHASE 3 (if charts touched)
-    │
-    └─ User requests "full review" or "per-chart audit"?
-          └─ Run PHASE 1 + PHASE 2 + PHASE 3 (all charts)
+    └─ Phase 0 complete? Proceed to determine additional phases:
+           │
+           ├─ Backend analytics (routes/services/schemas)?
+           │     └─ Run PHASE 0 + PHASE 1 + PHASE 2 (skip Phase 3)
+           │
+           ├─ Frontend chart components?
+           │     └─ Run PHASE 0 + PHASE 1 + PHASE 3 (skip Phase 2)
+           │
+           ├─ Frontend UI/layout only (no charts)?
+           │     └─ Run PHASE 0 + PHASE 1 + UI overflow checks
+           │
+           ├─ Backend non-analytics (auth/utils/config)?
+           │     └─ Run PHASE 0 + PHASE 1 only
+           │
+           ├─ Both layers (multi-file feature)?
+           │     └─ Run PHASE 0 + PHASE 1 + PHASE 2 + PHASE 3 (if charts touched)
+           │
+           └─ User requests "full review" or "per-chart audit"?
+                 └─ Run PHASE 0 + PHASE 1 + PHASE 2 + PHASE 3 (all charts)
+
+PHASE 0 IS MANDATORY FOR ALL AUDITS - NO EXCEPTIONS
 ```
 
 ---
@@ -1068,17 +1479,35 @@ Add this section to Phase 1 output when violations found:
 ### Change Summary
 [What was changed and why]
 
+### Phase 0: Git State & Evidence Verification
+- Working directory: [CLEAN / HAS UNCOMMITTED CHANGES]
+- Reading from: [origin/main / local with uncommitted changes]
+- Migration context: [None / Phase X in progress]
+
+**Evidence Verification Checklist:**
+- [x] File existence verified with Glob/ls
+- [x] Count claims verified by reading actual files
+- [x] Grep matches verified as CODE (not comments)
+- [x] Line number claims verified by reading actual lines
+
 ### Review Scope
+- Phase 0 (Git State): ALWAYS RAN
 - Phase 1 (Consistency): [RAN/SKIPPED]
 - Phase 2 (Chart Impact): [RAN/SKIPPED]
 - Phase 3 (Per-Chart Audit): [RAN/SKIPPED]
 
-### P0 Issues: [COUNT]
-### P1 Issues: [COUNT]
-### P2 Issues: [COUNT]
+### Issue Counts (After False Positive Filtering)
+- P0 Issues: [COUNT] (verified, not from uncommitted code or comments)
+- P1 Issues: [COUNT]
+- P2 Issues: [COUNT]
+
+### Param Coverage Check
+- All frontend params have backend schema fields: [YES/NO]
+- Missing params: [list or "None"]
 
 ### Tests
 - Backend: [PASS/FAIL]
+- Param coverage test: [PASS/FAIL/MISSING]
 - Lint: [PASS/FAIL]
 - Typecheck: [PASS/FAIL]
 - Build: [PASS/FAIL]
