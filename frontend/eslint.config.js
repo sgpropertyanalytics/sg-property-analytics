@@ -97,6 +97,7 @@ export default [
         varsIgnorePattern: '^_',
       }],
       'no-console': ['warn', { allow: ['warn', 'error'] }],
+      'no-empty': ['error', { allowEmptyCatch: false }], // Catch blocks must handle errors
     },
   },
 
