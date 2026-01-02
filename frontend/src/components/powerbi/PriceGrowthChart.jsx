@@ -101,7 +101,6 @@ function PriceGrowthChartBase({
   districtAverage = [],
   loading = false,
   isFetching = false,
-  isBootPending = false,
   error = null,
   onRetry,
   projectName = '',
@@ -312,7 +311,6 @@ function PriceGrowthChartBase({
     <ChartFrame
       loading={loading}
       isFetching={isFetching}
-      isBootPending={isBootPending}
       error={error}
       onRetry={onRetry}
       empty={!chartData || aggregatedData.length === 0}
