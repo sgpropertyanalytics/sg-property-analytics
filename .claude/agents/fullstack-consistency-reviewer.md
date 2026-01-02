@@ -152,6 +152,8 @@ Default: date_to=today       ↔       Must match backend
 - [ ] Optional vs required params aligned
 - [ ] Defaults are explicit and consistent across layers
 - [ ] Filter-to-API-param mapping tests pass
+- [ ] **Frontend-backend param alignment verified** (run `pytest tests/contracts/test_frontend_backend_alignment.py`)
+- [ ] **timeframe field exists in all time-filtered schemas** (aggregate, dashboard, insights)
 
 #### Filter-to-API-Param Tests
 
@@ -182,6 +184,52 @@ cd frontend && npm test -- filterParams --run
 | `includeFactFilter: true` | `priceMin/priceMax` included | Fact filter toggle |
 
 **If tests missing:** Create `filterParams.test.js` with above cases.
+
+#### Programmatic Frontend-Backend Param Alignment Verification
+
+> **CRITICAL:** Frontend filter-to-param tests only verify the frontend produces params correctly.
+> They do NOT verify the backend ACCEPTS those params. This gap caused a P0 bug where
+> `timeframe` was output by frontend but silently dropped by backend.
+
+**Run the alignment test:**
+```bash
+cd backend && pytest tests/contracts/test_frontend_backend_alignment.py -v
+```
+
+**Manual verification (if tests not available):**
+```bash
+# 1. Get all params frontend sends to /api/aggregate
+# Check frontend/src/context/PowerBIFilter/utils.js buildApiParamsFromState()
+
+# 2. Get all params backend accepts
+cd backend && python3 -c "
+from api.contracts.schemas.aggregate import AGGREGATE_PARAM_SCHEMA
+print('Schema fields:', list(AGGREGATE_PARAM_SCHEMA.fields.keys()))
+print('Schema aliases:', AGGREGATE_PARAM_SCHEMA.aliases if hasattr(AGGREGATE_PARAM_SCHEMA, 'aliases') else {})
+"
+
+# 3. Verify timeframe specifically (the field that was missing)
+cd backend && python3 -c "
+from api.contracts.schemas.aggregate import AGGREGATE_PARAM_SCHEMA
+assert 'timeframe' in AGGREGATE_PARAM_SCHEMA.fields, 'CRITICAL: timeframe missing!'
+print('✅ timeframe field exists in AGGREGATE_PARAM_SCHEMA')
+"
+```
+
+**Required verification for any filter-related PR:**
+
+| Verification | Command | Pass Criteria |
+|--------------|---------|---------------|
+| Alignment test | `pytest tests/contracts/test_frontend_backend_alignment.py` | All tests pass |
+| timeframe in aggregate | Check schema has `timeframe` field | Field exists |
+| timeframe in dashboard | Check schema has `timeframe` field | Field exists |
+| Normalization test | `pytest tests/contracts/test_contract_aggregate.py -k timeframe` | Resolves to dates |
+
+**Red Flags (Block Merge):**
+
+1. Frontend adds new param to `buildApiParamsFromState()` without backend schema update
+2. Backend schema missing `timeframe` field (charts ignore time filter)
+3. Alignment tests fail or are skipped
 
 #### Key Files to Check
 
@@ -698,6 +746,12 @@ Issues:
 # Backend tests
 cd backend && pytest tests/ -v --tb=short
 
+# Frontend-backend param alignment (CRITICAL for filter changes)
+cd backend && pytest tests/contracts/test_frontend_backend_alignment.py -v
+
+# Timeframe normalization tests (prevent regression of P0 bug)
+cd backend && pytest tests/contracts/test_contract_aggregate.py -k timeframe -v
+
 # Frontend lint
 cd frontend && npm run lint:ci
 
@@ -706,6 +760,21 @@ cd frontend && npm run typecheck
 
 # Frontend build
 cd frontend && npm run build
+```
+
+**For filter-related PRs, MUST also run:**
+```bash
+# Frontend filter mapping tests
+cd frontend && npm test -- filterParams --run
+
+# Verify timeframe field exists in all schemas
+cd backend && python3 -c "
+from api.contracts.schemas.aggregate import AGGREGATE_PARAM_SCHEMA
+from api.contracts.schemas.dashboard import DASHBOARD_PARAM_SCHEMA
+assert 'timeframe' in AGGREGATE_PARAM_SCHEMA.fields, 'Missing in aggregate!'
+assert 'timeframe' in DASHBOARD_PARAM_SCHEMA.fields, 'Missing in dashboard!'
+print('✅ timeframe field exists in all required schemas')
+"
 ```
 
 ---
@@ -776,6 +845,18 @@ cd frontend && npm run build
 $ cd backend && pytest tests/ -v --tb=short
 [actual output]
 Result: PASS/FAIL (X/Y tests)
+```
+
+### Frontend-Backend Param Alignment Tests
+```bash
+$ cd backend && pytest tests/contracts/test_frontend_backend_alignment.py -v
+[actual output]
+Result: PASS/FAIL
+
+# Critical checks:
+- timeframe in AGGREGATE_PARAM_SCHEMA: PASS/FAIL
+- timeframe in DASHBOARD_PARAM_SCHEMA: PASS/FAIL
+- All frontend params accepted by backend: PASS/FAIL
 ```
 
 ### Frontend Lint

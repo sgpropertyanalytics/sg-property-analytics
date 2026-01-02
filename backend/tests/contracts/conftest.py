@@ -35,7 +35,7 @@ def client(app):
 def contract_registry():
     """Get the contract registry after loading schemas."""
     # Import to trigger registration
-    from api.contracts.schemas import aggregate, kpi_summary
+    from api.contracts.schemas import aggregate, kpi_summary, dashboard
     from api.contracts import CONTRACTS
     return CONTRACTS
 
