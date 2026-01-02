@@ -9,7 +9,8 @@ describe('api client queue and cache', () => {
     const controller = new AbortController();
     const execute = vi.fn(() => Promise.resolve('ok'));
 
-    __test__.setActiveRequests(4);
+    // Set to MAX_CONCURRENT_REQUESTS (8) to force queuing
+    __test__.setActiveRequests(8);
     const promise = __test__.queueRequest(execute, { signal: controller.signal });
     controller.abort();
 

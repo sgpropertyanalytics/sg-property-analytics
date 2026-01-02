@@ -23,12 +23,12 @@ describe('unwrapSubscriptionResponse', () => {
 
       const result = unwrapSubscriptionResponse(axiosResponseData);
 
+      // unwrapSubscriptionResponse only extracts tier, subscribed, ends_at
+      // Debug fields (_debug_user_id, _debug_email) are intentionally not preserved
       expect(result).toEqual({
         tier: 'premium',
         subscribed: true,
         ends_at: '2025-12-31T00:00:00Z',
-        _debug_user_id: 123,
-        _debug_email: 'user@example.com',
       });
       expect(result.tier).toBe('premium');
       expect(result.subscribed).toBe(true);
