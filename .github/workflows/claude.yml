@@ -119,12 +119,128 @@ jobs:
             - Style/formatting preferences
 
   # ===========================================
+  # Deep Review: @claude deep-review
+  # Comprehensive P0 critical analysis
+  # ===========================================
+  deep-review:
+    if: |
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude deep-review')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude deep-review'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Claude Deep Review
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            # Deep Review: P0 Critical Analysis
+
+            Perform a comprehensive deep-dive analysis of this PR. Focus ONLY on critical issues that could cause production failures, data corruption, or breaking changes.
+
+            ---
+
+            ## 1. API Contract Integrity
+            - Compare changed backend routes with frontend adapters
+            - Check: response shapes, field names, field types match exactly
+            - Flag: renamed fields, removed fields, changed types
+            - Verify: frontend adapters handle all response variations
+            - Check: any route using `request.args.get()` instead of `g.normalized_params`
+
+            ## 2. Orphaned Code Detection
+            - Find: removed Providers but hooks still called (like useFilterState without PowerBIFilterProvider)
+            - Find: deleted functions/components still imported elsewhere
+            - Find: removed Context but consumers still exist
+            - Find: dead imports that will crash at runtime
+
+            ## 3. Breaking Change Analysis
+            - Trace: what downstream code depends on changed files
+            - Check: are all consumers updated?
+            - Flag: shared utilities modified without checking all callers
+            - Flag: changed function signatures without updating call sites
+
+            ## 4. Data Flow Verification
+            - Trace: Backend service → Route → API → Adapter → Component
+            - Check: data transformations preserve required fields
+            - Check: null/undefined handling at each layer
+            - Flag: implicit assumptions about data shape
+
+            ## 5. State & Provider Tree
+            - Check: all hooks used within correct Provider boundaries
+            - Check: Context dependencies satisfied in component tree
+            - Flag: hooks that assume parent context exists
+            - Check: proper cleanup in useEffect (abort controllers, subscriptions)
+
+            ## 6. Migration Completeness
+            - If migrating patterns: are ALL usages migrated?
+            - Find: mixed old/new patterns that will conflict
+            - Flag: partial migrations (some files updated, others not)
+
+            ## 7. SQL & Backend Safety
+            - Check: uses `:param` bindings (not f-strings, not %(param)s)
+            - Check: includes `COALESCE(is_outlier, false) = false`
+            - Check: date bounds are exclusive upper bound
+            - Check: proper NULL handling with param guards
+
+            ## 8. Frontend Async Safety
+            - Check: API calls use abort signal
+            - Check: stale request protection (requestId or React Query)
+            - Check: no setState after unmount
+            - Flag: useEffect with async but no cleanup
+
+            ## 9. Security & Auth
+            - Check: protected routes have auth checks
+            - Check: no sensitive data in client bundles
+            - Check: API keys, tokens not exposed
+            - Flag: client-side trust assumptions
+
+            ## 10. Implicit Dependencies
+            - Find: hardcoded values that should be constants
+            - Find: magic numbers without explanation
+            - Find: assumed environment (paths, URLs, configs)
+            - Flag: code that works locally but may fail in prod
+
+            ---
+
+            ## Output Format
+
+            ### 🚨 P0 Critical (Must Fix Before Merge)
+            List blocking issues with file:line references
+
+            ### ⚠️ P1 High (Should Fix)
+            List important issues that could cause problems
+
+            ### 📋 Dependency Graph
+            ```
+            Changed: [list changed files]
+            Affects: [list downstream files/components]
+            ```
+
+            ### ✅ Verified Safe
+            List areas checked with no issues found
+
+            ---
+
+            End with: **VERDICT: SAFE TO MERGE / BLOCK - FIX REQUIRED / NEEDS MANUAL VERIFICATION**
+
+            Be thorough. This is the last line of defense before production.
+
+  # ===========================================
   # On-demand: Respond to @claude mentions
   # ===========================================
   claude:
     if: |
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude') && !contains(github.event.comment.body, '@claude deep-review')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude') && !contains(github.event.comment.body, '@claude deep-review')) ||
       (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
       (github.event_name == 'issues' && github.event.action == 'opened' && contains(github.event.issue.body, '@claude')) ||
       (github.event_name == 'issues' && github.event.action == 'assigned' && github.event.assignee.login == 'claude[bot]')
@@ -145,5 +261,3 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           # Uses your CLAUDE.md automatically for context
-          # Optional: customize model or behavior
-          # claude_args: "--model claude-sonnet-4-20250514"
