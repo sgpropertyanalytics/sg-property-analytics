@@ -16,6 +16,7 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { mockApiEndpoints } from './fixtures/api-mocks.js';
 
 // Base URL - adjust for your environment
 const BASE_URL = process.env.BASE_URL || 'http://localhost:5173';
@@ -24,6 +25,11 @@ const BASE_URL = process.env.BASE_URL || 'http://localhost:5173';
 const DASHBOARD_PATH = '/market-overview';
 
 test.describe('Boot Hydration Smoke Tests', () => {
+  // Mock API endpoints so tests don't depend on backend
+  test.beforeEach(async ({ page }) => {
+    await mockApiEndpoints(page);
+  });
+
   test.describe('First Login Flow', () => {
     test('first login shows skeleton then charts load (no "No data" flash)', async ({ page }) => {
       // Clear all storage to simulate fresh first login
