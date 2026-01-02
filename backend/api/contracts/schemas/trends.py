@@ -24,6 +24,17 @@ from ..registry import (
 
 NEW_VS_RESALE_PARAM_SCHEMA = ParamSchema(
     fields={
+        # Time filter (unified) - CRITICAL: Must match aggregate.py pattern
+        # Frontend sends timeframe ID; backend resolves to date bounds
+        # This takes precedence over explicit date_from/date_to
+        "timeframe": FieldSpec(
+            name="timeframe",
+            type=str,
+            nullable=True,
+            default=None,
+            allowed_values=["M3", "M6", "Y1", "Y3", "Y5", "all", "3m", "6m", "12m", "1y", "2y", "3y", "5y"],
+            description="Timeframe preset (M3, M6, Y1, Y3, Y5, all). Takes precedence over date_from/date_to."
+        ),
         "district": FieldSpec(
             name="district",
             type=str,
@@ -40,15 +51,18 @@ NEW_VS_RESALE_PARAM_SCHEMA = ParamSchema(
             allowed_values=["CCR", "RCR", "OCR"],
             description="Market segment"
         ),
+        # Date range (explicit dates - used when timeframe not provided)
         "date_from": FieldSpec(
             name="date_from",
             type=date,
-            description="Start date (YYYY-MM-DD)"
+            nullable=True,
+            description="Start date (YYYY-MM-DD). Ignored if timeframe is set."
         ),
         "date_to": FieldSpec(
             name="date_to",
             type=date,
-            description="End date (YYYY-MM-DD)"
+            nullable=True,
+            description="End date (YYYY-MM-DD). Ignored if timeframe is set."
         ),
         "time_grain": FieldSpec(
             name="time_grain",
@@ -67,11 +81,12 @@ NEW_VS_RESALE_PARAM_SCHEMA = ParamSchema(
 
 NEW_VS_RESALE_SERVICE_SCHEMA = ServiceBoundarySchema(
     fields={
-        "districts": FieldSpec(name="districts", type=list),
-        "bedrooms": FieldSpec(name="bedrooms", type=list),
-        "segment": FieldSpec(name="segment", type=str),
-        "date_from": FieldSpec(name="date_from", type=date),
-        "date_to": FieldSpec(name="date_to", type=date),
+        "districts": FieldSpec(name="districts", type=list, nullable=True),
+        "bedrooms": FieldSpec(name="bedrooms", type=list, nullable=True),
+        "segment": FieldSpec(name="segment", type=str, nullable=True),
+        "date_from": FieldSpec(name="date_from", type=date, nullable=True),
+        # Normalizer converts timeframe -> date_to_exclusive (exclusive bound)
+        "date_to_exclusive": FieldSpec(name="date_to_exclusive", type=date, nullable=True),
         "time_grain": FieldSpec(name="time_grain", type=str, default="quarter"),
     }
 )

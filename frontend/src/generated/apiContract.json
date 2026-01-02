@@ -4453,7 +4453,7 @@
           "date_from": {
             "allowed_values": null,
             "default": null,
-            "description": "Start date (inclusive) for launch_date filter, YYYY-MM-DD",
+            "description": "Start date (inclusive) for launch_date filter, YYYY-MM-DD. Ignored if timeframe is set.",
             "name": "date_from",
             "nullable": true,
             "required": false,
@@ -4462,7 +4462,7 @@
           "date_to": {
             "allowed_values": null,
             "default": null,
-            "description": "End date (inclusive, converted to exclusive+1day by normalizer), YYYY-MM-DD",
+            "description": "End date (inclusive, converted to exclusive+1day by normalizer), YYYY-MM-DD. Ignored if timeframe is set.",
             "name": "date_to",
             "nullable": true,
             "required": false,
@@ -4499,6 +4499,29 @@
             "default": "quarter",
             "description": "Time grouping: month, quarter, or year",
             "name": "time_grain",
+            "nullable": true,
+            "required": false,
+            "type": "str"
+          },
+          "timeframe": {
+            "allowed_values": [
+              "M3",
+              "M6",
+              "Y1",
+              "Y3",
+              "Y5",
+              "all",
+              "3m",
+              "6m",
+              "12m",
+              "1y",
+              "2y",
+              "3y",
+              "5y"
+            ],
+            "default": null,
+            "description": "Timeframe preset (M3, M6, Y1, Y3, Y5, all). Takes precedence over date_from/date_to.",
+            "name": "timeframe",
             "nullable": true,
             "required": false,
             "type": "str"
@@ -4675,7 +4698,7 @@
           "date_from": {
             "allowed_values": null,
             "default": null,
-            "description": "Start date (inclusive) for launch_date filter, YYYY-MM-DD",
+            "description": "Start date (inclusive) for launch_date filter, YYYY-MM-DD. Ignored if timeframe is set.",
             "name": "date_from",
             "nullable": true,
             "required": false,
@@ -4684,7 +4707,7 @@
           "date_to": {
             "allowed_values": null,
             "default": null,
-            "description": "End date (inclusive) for launch_date filter, YYYY-MM-DD",
+            "description": "End date (inclusive) for launch_date filter, YYYY-MM-DD. Ignored if timeframe is set.",
             "name": "date_to",
             "nullable": true,
             "required": false,
@@ -4721,6 +4744,29 @@
             "default": "quarter",
             "description": "Time grouping: month, quarter, or year",
             "name": "time_grain",
+            "nullable": true,
+            "required": false,
+            "type": "str"
+          },
+          "timeframe": {
+            "allowed_values": [
+              "M3",
+              "M6",
+              "Y1",
+              "Y3",
+              "Y5",
+              "all",
+              "3m",
+              "6m",
+              "12m",
+              "1y",
+              "2y",
+              "3y",
+              "5y"
+            ],
+            "default": null,
+            "description": "Timeframe preset (M3, M6, Y1, Y3, Y5, all). Takes precedence over date_from/date_to.",
+            "name": "timeframe",
             "nullable": true,
             "required": false,
             "type": "str"
@@ -6636,7 +6682,7 @@
           "date_from": {
             "allowed_values": null,
             "default": null,
-            "description": "Start date (YYYY-MM-DD)",
+            "description": "Start date (YYYY-MM-DD). Ignored if timeframe is set.",
             "name": "date_from",
             "nullable": true,
             "required": false,
@@ -6645,7 +6691,7 @@
           "date_to": {
             "allowed_values": null,
             "default": null,
-            "description": "End date (YYYY-MM-DD)",
+            "description": "End date (YYYY-MM-DD). Ignored if timeframe is set.",
             "name": "date_to",
             "nullable": true,
             "required": false,
@@ -6682,6 +6728,29 @@
             "default": "quarter",
             "description": "Time aggregation level",
             "name": "time_grain",
+            "nullable": true,
+            "required": false,
+            "type": "str"
+          },
+          "timeframe": {
+            "allowed_values": [
+              "M3",
+              "M6",
+              "Y1",
+              "Y3",
+              "Y5",
+              "all",
+              "3m",
+              "6m",
+              "12m",
+              "1y",
+              "2y",
+              "3y",
+              "5y"
+            ],
+            "default": null,
+            "description": "Timeframe preset (M3, M6, Y1, Y3, Y5, all). Takes precedence over date_from/date_to.",
+            "name": "timeframe",
             "nullable": true,
             "required": false,
             "type": "str"
@@ -6774,11 +6843,11 @@
             "required": false,
             "type": "date"
           },
-          "date_to": {
+          "date_to_exclusive": {
             "allowed_values": null,
             "default": null,
             "description": "",
-            "name": "date_to",
+            "name": "date_to_exclusive",
             "nullable": true,
             "required": false,
             "type": "date"
