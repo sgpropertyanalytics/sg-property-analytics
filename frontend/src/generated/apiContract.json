@@ -33,7 +33,7 @@
           "date_from": {
             "allowed_values": null,
             "default": null,
-            "description": "Start date (inclusive), YYYY-MM-DD",
+            "description": "Start date (inclusive), YYYY-MM-DD. Ignored if timeframe is set.",
             "name": "date_from",
             "nullable": true,
             "required": false,
@@ -42,7 +42,7 @@
           "date_to": {
             "allowed_values": null,
             "default": null,
-            "description": "End date (inclusive), YYYY-MM-DD",
+            "description": "End date (inclusive), YYYY-MM-DD. Ignored if timeframe is set.",
             "name": "date_to",
             "nullable": true,
             "required": false,
@@ -195,6 +195,29 @@
             "default": null,
             "description": "Tenure filter (freehold, 99_year, 999_year)",
             "name": "tenure",
+            "nullable": true,
+            "required": false,
+            "type": "str"
+          },
+          "timeframe": {
+            "allowed_values": [
+              "M3",
+              "M6",
+              "Y1",
+              "Y3",
+              "Y5",
+              "all",
+              "3m",
+              "6m",
+              "12m",
+              "1y",
+              "2y",
+              "3y",
+              "5y"
+            ],
+            "default": null,
+            "description": "Timeframe preset (M3, M6, Y1, Y3, Y5, all). Takes precedence over date_from/date_to.",
+            "name": "timeframe",
             "nullable": true,
             "required": false,
             "type": "str"
@@ -493,6 +516,15 @@
             "nullable": true,
             "required": false,
             "type": "int"
+          },
+          "warnings": {
+            "allowed_values": null,
+            "default": null,
+            "description": "Diagnostic warnings about normalization or data quality",
+            "name": "warnings",
+            "nullable": true,
+            "required": false,
+            "type": "list"
           }
         },
         "required_meta": [
@@ -1207,6 +1239,15 @@
       },
       "response_schema": {
         "data_fields": {
+          "access_expires_at": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "access_expires_at",
+            "nullable": true,
+            "required": false,
+            "type": "str"
+          },
           "ends_at": {
             "allowed_values": null,
             "default": null,
@@ -1215,6 +1256,24 @@
             "nullable": true,
             "required": false,
             "type": "str"
+          },
+          "entitlement_source": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "entitlement_source",
+            "nullable": true,
+            "required": false,
+            "type": "str"
+          },
+          "has_access": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "has_access",
+            "nullable": true,
+            "required": true,
+            "type": "bool"
           },
           "subscribed": {
             "allowed_values": null,
@@ -2334,7 +2393,7 @@
           "date_from": {
             "allowed_values": null,
             "default": null,
-            "description": "Start date (inclusive), YYYY-MM-DD",
+            "description": "Start date (inclusive), YYYY-MM-DD. Ignored if timeframe is set.",
             "name": "date_from",
             "nullable": true,
             "required": false,
@@ -2343,7 +2402,7 @@
           "date_to": {
             "allowed_values": null,
             "default": null,
-            "description": "End date (inclusive), YYYY-MM-DD",
+            "description": "End date (inclusive), YYYY-MM-DD. Ignored if timeframe is set.",
             "name": "date_to",
             "nullable": true,
             "required": false,
@@ -2536,6 +2595,29 @@
             "default": "month",
             "description": "Time granularity for time_series panel",
             "name": "time_grain",
+            "nullable": true,
+            "required": false,
+            "type": "str"
+          },
+          "timeframe": {
+            "allowed_values": [
+              "M3",
+              "M6",
+              "Y1",
+              "Y3",
+              "Y5",
+              "all",
+              "3m",
+              "6m",
+              "12m",
+              "1y",
+              "2y",
+              "3y",
+              "5y"
+            ],
+            "default": null,
+            "description": "Timeframe preset (M3, M6, Y1, Y3, Y5, all). Takes precedence over date_from/date_to.",
+            "name": "timeframe",
             "nullable": true,
             "required": false,
             "type": "str"
@@ -4341,6 +4423,231 @@
         }
       },
       "version": "v3"
+    },
+    "new-launch-absorption": {
+      "compat_map": {
+        "params": {},
+        "response": {}
+      },
+      "endpoint": "new-launch-absorption",
+      "mode": "warn",
+      "param_schema": {
+        "aliases": {
+          "bedrooms": "bedroom",
+          "dateFrom": "date_from",
+          "dateTo": "date_to",
+          "districts": "district",
+          "segments": "segment",
+          "timeGrain": "time_grain"
+        },
+        "fields": {
+          "bedroom": {
+            "allowed_values": null,
+            "default": null,
+            "description": "Comma-separated bedroom counts (1,2,3 - normalized to List[int])",
+            "name": "bedroom",
+            "nullable": true,
+            "required": false,
+            "type": "str"
+          },
+          "date_from": {
+            "allowed_values": null,
+            "default": null,
+            "description": "Start date (inclusive) for launch_date filter, YYYY-MM-DD",
+            "name": "date_from",
+            "nullable": true,
+            "required": false,
+            "type": "date"
+          },
+          "date_to": {
+            "allowed_values": null,
+            "default": null,
+            "description": "End date (inclusive, converted to exclusive+1day by normalizer), YYYY-MM-DD",
+            "name": "date_to",
+            "nullable": true,
+            "required": false,
+            "type": "date"
+          },
+          "district": {
+            "allowed_values": null,
+            "default": null,
+            "description": "Comma-separated district codes (D01,D02 or 1,2 - normalized to Dxx)",
+            "name": "district",
+            "nullable": true,
+            "required": false,
+            "type": "str"
+          },
+          "segment": {
+            "allowed_values": [
+              "CCR",
+              "RCR",
+              "OCR"
+            ],
+            "default": null,
+            "description": "Market segment filter (CCR, RCR, OCR)",
+            "name": "segment",
+            "nullable": true,
+            "required": false,
+            "type": "str"
+          },
+          "time_grain": {
+            "allowed_values": [
+              "month",
+              "quarter",
+              "year"
+            ],
+            "default": "quarter",
+            "description": "Time grouping: month, quarter, or year",
+            "name": "time_grain",
+            "nullable": true,
+            "required": false,
+            "type": "str"
+          }
+        }
+      },
+      "response_schema": {
+        "data_fields": {
+          "avgAbsorption": {
+            "allowed_values": null,
+            "default": null,
+            "description": "Average launch-month absorption % (0-100), null if no data",
+            "name": "avgAbsorption",
+            "nullable": true,
+            "required": false,
+            "type": "float"
+          },
+          "periodStart": {
+            "allowed_values": null,
+            "default": null,
+            "description": "ISO date string for period start (e.g., '2024-01-01')",
+            "name": "periodStart",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "projectCount": {
+            "allowed_values": null,
+            "default": null,
+            "description": "Number of projects launched in this period",
+            "name": "projectCount",
+            "nullable": true,
+            "required": true,
+            "type": "int"
+          },
+          "projectsMissing": {
+            "allowed_values": null,
+            "default": null,
+            "description": "Projects missing total_units data (excluded from average)",
+            "name": "projectsMissing",
+            "nullable": true,
+            "required": true,
+            "type": "int"
+          },
+          "projectsWithUnits": {
+            "allowed_values": null,
+            "default": null,
+            "description": "Projects with valid total_units data",
+            "name": "projectsWithUnits",
+            "nullable": true,
+            "required": true,
+            "type": "int"
+          }
+        },
+        "data_is_list": true,
+        "meta_fields": {
+          "apiVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "elapsedMs": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "elapsedMs",
+            "nullable": true,
+            "required": true,
+            "type": "float"
+          },
+          "requestId": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "requestId",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          }
+        },
+        "required_meta": [
+          "requestId",
+          "elapsedMs",
+          "apiVersion"
+        ]
+      },
+      "service_schema": {
+        "fields": {
+          "bedrooms": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "bedrooms",
+            "nullable": true,
+            "required": false,
+            "type": "list"
+          },
+          "date_from": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "date_from",
+            "nullable": true,
+            "required": false,
+            "type": "date"
+          },
+          "date_to_exclusive": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "date_to_exclusive",
+            "nullable": true,
+            "required": false,
+            "type": "date"
+          },
+          "districts": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "districts",
+            "nullable": true,
+            "required": false,
+            "type": "list"
+          },
+          "segments": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "segments",
+            "nullable": true,
+            "required": false,
+            "type": "list"
+          },
+          "time_grain": {
+            "allowed_values": null,
+            "default": "quarter",
+            "description": "",
+            "name": "time_grain",
+            "nullable": true,
+            "required": false,
+            "type": "str"
+          }
+        }
+      },
+      "version": "v1"
     },
     "new-launch-timeline": {
       "compat_map": {
