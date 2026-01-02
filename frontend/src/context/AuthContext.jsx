@@ -272,8 +272,17 @@ export function AuthProvider({ children }) {
                 setTokenStatus(TokenStatus.PRESENT);
               } else {
                 // Non-abort error → set error state
-                // SubscriptionContext should handle this appropriately
+                // P0 FIX: Bootstrap subscription with free tier to break deadlock.
+                // Without this, subscription stays in PENDING forever because:
+                // 1. fetchSubscription checks for token (missing) and returns early
+                // 2. Subscription never transitions out of PENDING
+                // 3. AppReadyContext waits forever
+                // By bootstrapping free tier, we ensure subscription resolves and boot completes.
                 setTokenStatus(TokenStatus.ERROR);
+                bootstrapSubscriptionRef.current(
+                  { tier: 'free', subscribed: false, ends_at: null },
+                  firebaseUser.email
+                );
               }
             }
           }
@@ -633,9 +642,14 @@ export function AuthProvider({ children }) {
         return { ok: true, reason: null };
       }
 
-      // No token in response → set MISSING (not ERROR) to avoid deadlock
+      // No token in response → set ERROR and bootstrap free tier
+      // P0 FIX: Ensure subscription is resolved to break deadlock
       console.warn('[Auth] Token sync response missing token');
-      setTokenStatus(TokenStatus.MISSING);
+      setTokenStatus(TokenStatus.ERROR);
+      bootstrapSubscription(
+        { tier: 'free', subscribed: false, ends_at: null },
+        user.email
+      );
       return { ok: false, reason: 'no_token_in_response' };
     } catch (err) {
       // Abort is transient - restore prev status (never stay in REFRESHING)
@@ -652,11 +666,16 @@ export function AuthProvider({ children }) {
         return { ok: false, reason: 'stale_request' };
       }
 
+      // P0 FIX: Bootstrap free tier on error to ensure subscription resolves
       console.error('[Auth] Token sync retry failed:', err);
       setTokenStatus(TokenStatus.ERROR);
+      bootstrapSubscription(
+        { tier: 'free', subscribed: false, ends_at: null },
+        user.email
+      );
       return { ok: false, reason: 'error' };
     }
-  }, [user, tokenRefreshGuard, tokenStatus]);
+  }, [user, tokenRefreshGuard, tokenStatus, bootstrapSubscription]);
 
   // Listen for auth:token-expired events from API client
   // When a 401 occurs on non-auth endpoints, the client dispatches this event
