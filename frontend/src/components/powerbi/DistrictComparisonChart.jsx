@@ -59,7 +59,7 @@ function DistrictComparisonChartBase({
 
   // Data fetching with useGatedAbortableQuery - gates on appReady
   // isBootPending = true while waiting for app boot
-  const { data: transformedData, status, error, isBootPending } = useAppQuery(
+  const { data: transformedData, status, error } = useAppQuery(
     async (signal) => {
       if (!district) {
         return { groups: [], stats: { maxPsf: 0, minPsf: 0, projectCount: 0, selectedRank: null } };
@@ -255,7 +255,6 @@ function DistrictComparisonChartBase({
       <div className="p-4">
         <ChartFrame
           status={status}
-          isBootPending={isBootPending}
           error={error}
           empty={!groups || groups.length === 0}
           height={chartHeight}
