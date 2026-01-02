@@ -33,6 +33,42 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Map change impact
+        id: impact
+        run: |
+          # Get changed files
+          CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD 2>/dev/null || git diff --name-only HEAD~1)
+          echo "Changed files:"
+          echo "$CHANGED"
+
+          # Run impact mapping if script exists
+          if [ -f "scripts/map_change_impact.py" ]; then
+            echo "$CHANGED" | python scripts/map_change_impact.py > /tmp/impact.json 2>/dev/null || true
+            if [ -f "/tmp/impact.json" ]; then
+              echo "impact<<EOF" >> $GITHUB_OUTPUT
+              cat /tmp/impact.json >> $GITHUB_OUTPUT
+              echo "EOF" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+          # Quick risk assessment based on paths
+          if echo "$CHANGED" | grep -q "backend/services/\|backend/api/contracts/"; then
+            echo "risk=HIGH - Backend service/contract changes affect multiple charts" >> $GITHUB_OUTPUT
+          elif echo "$CHANGED" | grep -q "frontend/src/context/Auth\|backend/routes/auth"; then
+            echo "risk=HIGH - Auth changes require careful review" >> $GITHUB_OUTPUT
+          elif echo "$CHANGED" | grep -q "frontend/src/adapters/\|frontend/src/hooks/"; then
+            echo "risk=MEDIUM - Adapter/hook changes affect data flow" >> $GITHUB_OUTPUT
+          elif echo "$CHANGED" | grep -q "frontend/src/components/powerbi/"; then
+            echo "risk=MEDIUM - Chart component changes" >> $GITHUB_OUTPUT
+          else
+            echo "risk=LOW - Standard changes" >> $GITHUB_OUTPUT
+          fi
+
       - name: Claude Fast Triage
         uses: anthropics/claude-code-action@v1
         with:
@@ -41,6 +77,17 @@ jobs:
             # Stage 0: Fast Triage + Stability Review
 
             Analyze this PR quickly. Be diff-aware: only analyze changed files + nearby dependents.
+
+            ## Pre-computed Impact Analysis
+
+            **Auto-detected risk:** ${{ steps.impact.outputs.risk }}
+
+            **Impact details (if available):**
+            ```json
+            ${{ steps.impact.outputs.impact }}
+            ```
+
+            Use this impact analysis to focus your review. If impact shows affected charts/pages, verify those areas specifically.
 
             ---
 
@@ -420,6 +467,31 @@ jobs:
 
             return JSON.stringify(summary);
 
+      - name: Get failure details
+        id: failure-logs
+        if: github.event.workflow_run.conclusion == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const jobs = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.payload.workflow_run.id
+            });
+
+            // Get failed jobs with their failed steps
+            const failedJobs = jobs.data.jobs
+              .filter(j => j.conclusion === 'failure')
+              .slice(0, 3)  // Limit to 3 jobs to avoid token overflow
+              .map(job => ({
+                name: job.name,
+                failed_steps: job.steps
+                  .filter(s => s.conclusion === 'failure')
+                  .map(s => s.name)
+              }));
+
+            return JSON.stringify(failedJobs, null, 2);
+
       - name: Claude CI Summary
         if: steps.pr.outputs.result != 'null'
         uses: anthropics/claude-code-action@v1
@@ -437,6 +509,18 @@ jobs:
             ```
 
             Overall workflow conclusion: **${{ github.event.workflow_run.conclusion }}**
+
+            ## Failed Jobs Detail (if any)
+
+            ```json
+            ${{ steps.failure-logs.outputs.result }}
+            ```
+
+            Use the failed steps to diagnose root causes. Common patterns:
+            - `contract-guard` + "drift detected" → Run `python backend/scripts/generate_contracts.py`
+            - `frontend-tests` + "lint" → Run `npm run lint:ci` locally
+            - `frontend-e2e` + timeout → Check for missing mocks or slow renders
+            - `integration-tests` + "snapshot" → Intentional data change? Run `--update-snapshots`
 
             ---
 

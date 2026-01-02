@@ -1,0 +1,80 @@
+# Claude Code Action Review Rules
+# This config ensures consistent PR reviews across all stages
+
+# Deprecated modules - flag when touched
+deprecated_modules:
+  - path: "frontend/src/hooks/useQuery.js"
+    message: "Use React Query instead"
+  - path: "frontend/src/hooks/useAbortableQuery.js"
+    message: "Migrate to React Query"
+  - path: "frontend/src/hooks/useStaleRequestGuard.js"
+    message: "React Query handles stale requests automatically"
+  - path: "frontend/src/hooks/useGatedAbortableQuery.js"
+    message: "Migrate to React Query"
+  - pattern: "/api/v1/*"
+    message: "v1 endpoints deprecated, use v2"
+  - pattern: "generateFilterKey()"
+    message: "React Query auto-generates cache keys"
+
+# Canonical patterns - enforce these
+canonical_patterns:
+  fetch_authority: "api/client.js is the only fetch entry point"
+  query_hooks: "Use useAppQuery for all data fetching"
+  abort_handling: "React Query handles abort automatically"
+  enum_source: "Use SaleType enum from schemas/apiContract, never string literals"
+  contract_access: "Use getAggField() and AggField enum, never direct field access"
+  outlier_filter: "All transaction queries MUST include COALESCE(is_outlier, false) = false"
+  param_style: "Use :param bindings only, never f-strings or %(param)s"
+
+# Risk directories - auto-score PRs
+risk_directories:
+  critical:
+    - "backend/api/contracts/"
+    - "backend/services/"
+    - "frontend/src/context/AuthContext"
+    - "backend/routes/"
+  high:
+    - "frontend/src/hooks/"
+    - "frontend/src/adapters/"
+    - "frontend/src/schemas/"
+    - "backend/utils/normalize.py"
+  medium:
+    - "frontend/src/components/powerbi/"
+    - "frontend/src/pages/"
+    - "backend/tests/"
+
+# Review limits - prevent whack-a-mole
+review_limits:
+  max_changes_per_review: 5
+  max_files_for_fast_triage: 50
+  deep_review_threshold_loc: 500
+
+# Clean order rubric - review in this order
+review_order:
+  1: "Build/tooling failures (lint, typecheck, build)"
+  2: "Contract/route correctness (schema drift, endpoint matching)"
+  3: "Runtime safety (auth, query hooks, stale/race conditions)"
+  4: "Regression snapshots drift (silent data changes)"
+  5: "Refactors/cleanup/style (only after above pass)"
+
+# Required human review tags - auto-suggest based on files
+human_review_tags:
+  - files: ["backend/services/", "backend/routes/"]
+    tag: "needs-backend-owner"
+  - files: ["frontend/src/context/AuthContext", "backend/routes/auth.py"]
+    tag: "needs-auth-owner"
+  - files: ["backend/api/contracts/"]
+    tag: "needs-contract-review"
+  - files: ["frontend/src/components/powerbi/"]
+    tag: "needs-chart-review"
+
+# Suggested tests - based on changed files
+suggested_tests:
+  - files: ["frontend/src/components/", "frontend/src/pages/"]
+    tests: ["npm run test:e2e"]
+  - files: ["backend/services/", "backend/routes/"]
+    tests: ["pytest tests/test_regression_snapshots.py", "pytest tests/test_smoke_endpoints.py"]
+  - files: ["backend/api/contracts/"]
+    tests: ["python backend/scripts/generate_contracts.py", "pytest tests/test_api_contract.py"]
+  - files: ["frontend/src/adapters/"]
+    tests: ["npm run test:ci", "npm run test:e2e"]
