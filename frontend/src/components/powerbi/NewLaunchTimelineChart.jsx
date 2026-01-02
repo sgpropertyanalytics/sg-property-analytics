@@ -106,9 +106,12 @@ function NewLaunchTimelineChartBase({ height = 300 }) {
     }
   );
 
+  // Defensive fallback - ensure data is always an array (handles edge cases during initial load)
+  const safeData = data ?? [];
+
   // Filter out 2020 if needed (heavily skewed data from COVID-era rush launches)
   // Uses Date-based check from adapter (not label string)
-  const filteredData = include2020 ? data : data.filter(d => !is2020Period(d.periodStart));
+  const filteredData = include2020 ? safeData : safeData.filter(d => !is2020Period(d.periodStart));
 
   // Build filter summary for display
   const getFilterSummary = () => {

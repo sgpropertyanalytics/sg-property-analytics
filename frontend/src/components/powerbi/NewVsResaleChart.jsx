@@ -192,8 +192,8 @@ function NewVsResaleChartBase({ height = 350 }) {
     }
   );
 
-  // Extract transformed data
-  const { chartData, summary, hasData } = data;
+  // Extract transformed data with defensive fallback (handles edge cases during initial load)
+  const { chartData = [], summary = {}, hasData = false } = data ?? {};
 
   // Build filter summary for display
   const getFilterSummary = () => {
