@@ -80,6 +80,7 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: "--model claude-3-5-haiku-20241022"
+          direct_prompt: true
           prompt: |
             # Stage 0: Fast Triage + Stability Review
 
