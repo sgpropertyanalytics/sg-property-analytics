@@ -38,9 +38,9 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           prompt: |
-            # Stage 0: Fast Triage
+            # Stage 0: Fast Triage + Stability Review
 
-            Analyze this PR quickly (<2 min). Be diff-aware: only analyze changed files + nearby dependents.
+            Analyze this PR quickly. Be diff-aware: only analyze changed files + nearby dependents.
 
             ---
 
@@ -66,12 +66,87 @@ jobs:
 
             ---
 
-            ## 2. Top 5 Findings
+            ## 2. Stability Checklist (10-Point)
 
-            List the 5 most important observations (or fewer if clean):
+            Review each category. Report: ✅ (no issues) / ⚠️ (minor) / ❌ (blocking with file:line)
 
-            | # | File:Line | Finding | Why It Matters |
-            |---|-----------|---------|----------------|
+            ### 2.1 Correctness / Logic
+            - Does the code actually do what the PR claims?
+            - Edge cases handled?
+            - Any silent behavior changes?
+
+            ### 2.2 Side Effects & Regressions
+            - Does this break existing flows?
+            - Any shared logic touched?
+            - Any unintended behavior change?
+
+            ### 2.3 State & Lifecycle Safety
+            - React: hooks order, dependency arrays, stale closures
+            - Backend: async flow, race conditions, retries, idempotency
+            - No updates after unmount / stale requests
+
+            ### 2.4 Error Handling & Fallbacks
+            - Are errors handled or swallowed silently?
+            - Meaningful user-facing errors?
+            - Safe fallback states?
+            - Red flags: empty catch {}, console.log instead of error handling
+
+            ### 2.5 Performance / Overfetching
+            - Unnecessary re-renders?
+            - Repeated API calls?
+            - Heavy computation inside render?
+            - Missing memoization?
+
+            ### 2.6 API / Contract Consistency
+            - Does frontend match backend contract?
+            - Any implicit assumptions?
+            - Breaking changes without versioning?
+            - Does any route use request.args.get() instead of g.normalized_params?
+
+            ### 2.7 Code Simplicity & Readability
+            - Is this over-engineered?
+            - Can this be simpler?
+            - Is intent obvious without comments?
+
+            ### 2.8 Naming & Structure
+            - Clear variable and function names?
+            - Files in the right layer? (Pages decide, Components render)
+            - No "temporary" naming left behind?
+
+            ### 2.9 Security / Data Safety
+            - Auth checks present?
+            - Sensitive data exposed?
+            - Token / credential handling correct?
+            - No client-side trust assumptions?
+
+            ### 2.10 Cleanup & Technical Debt
+            - Dead code?
+            - Debug logs left in?
+            - TODOs without tickets?
+            - Duplicate logic?
+
+            **Checklist Summary:**
+            ```
+            1. Correctness:    [✅/⚠️/❌]
+            2. Side Effects:   [✅/⚠️/❌]
+            3. State Safety:   [✅/⚠️/❌]
+            4. Error Handling: [✅/⚠️/❌]
+            5. Performance:    [✅/⚠️/❌]
+            6. API Contract:   [✅/⚠️/❌]
+            7. Simplicity:     [✅/⚠️/❌]
+            8. Naming:         [✅/⚠️/❌]
+            9. Security:       [✅/⚠️/❌]
+            10. Cleanup:       [✅/⚠️/❌]
+            ```
+
+            ---
+
+            ## 3. Top 5 Findings
+
+            List the 5 most important issues found (or fewer if clean):
+
+            | # | File:Line | Finding | Severity |
+            |---|-----------|---------|----------|
             | 1 | | | |
             | 2 | | | |
             | 3 | | | |
@@ -80,7 +155,7 @@ jobs:
 
             ---
 
-            ## 3. Required Reviewers
+            ## 4. Required Reviewers
 
             Tag who needs to review based on touched areas:
 
@@ -91,7 +166,7 @@ jobs:
 
             ---
 
-            ## 4. Suggested Tests
+            ## 5. Suggested Tests
 
             Based on changed files, recommend which test suites matter:
 
@@ -105,11 +180,18 @@ jobs:
 
             ---
 
-            ## 5. Quick Verdict
+            ## 6. Verdict
 
-            **Triage Result:** LOOKS GOOD / NEEDS ATTENTION / NEEDS DEEP REVIEW
+            **Recommendation:** APPROVE / REQUEST CHANGES / NEEDS DISCUSSION
 
-            If NEEDS DEEP REVIEW, explain why in one sentence.
+            If REQUEST CHANGES or NEEDS DISCUSSION, list the blocking issues.
+
+            ---
+
+            DO NOT suggest:
+            - Library replacements (Pydantic, Zustand, etc.) - architecture is settled
+            - Refactoring unrelated code
+            - Style/formatting preferences
 
   # =============================================================================
   # STAGE 1: Deep Review (gated by risk, file patterns, or label)
