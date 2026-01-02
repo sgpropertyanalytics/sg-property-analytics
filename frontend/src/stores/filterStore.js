@@ -535,26 +535,27 @@ export function createFilterStore(pageId) {
             _version: state._version,
           }),
           // Handle version migration
+          // Always migrate filters to ensure timeFilter shape is valid, even at same version
+          // (old shapes can exist at same version depending on deployment timing)
           migrate: (persistedState, version) => {
-            // Always migrate filters to ensure timeFilter structure is valid
-            // This handles both version mismatch AND old data format (datePreset/dateRange)
-            const migratedFilters = migrateFilters(persistedState?.filters);
+            const next = persistedState ?? {};
+            const migratedFilters = migrateFilters(next.filters);
 
             if (version !== STORAGE_VERSION) {
-              // Version mismatch - log and reset to defaults with migrated filters
               console.warn(
-                `[filterStore] Version mismatch: stored=${version}, current=${STORAGE_VERSION}. Migrating filters.`
+                `[filterStore] Version mismatch: stored=${version}, current=${STORAGE_VERSION}. Migrating.`
               );
               return {
+                ...next,
                 filters: migratedFilters,
-                timeGrouping: persistedState?.timeGrouping ?? 'quarter',
+                timeGrouping: next.timeGrouping ?? 'quarter',
                 _version: STORAGE_VERSION,
               };
             }
 
-            // Same version - still apply migration in case data was corrupted or old format
+            // Same version: ensure shape correctness
             return {
-              ...persistedState,
+              ...next,
               filters: migratedFilters,
               _version: STORAGE_VERSION,
             };
