@@ -4,8 +4,9 @@
 
 | Domain | Authority | Responsibility |
 |--------|-----------|----------------|
-| **Fetch** | `useGatedAbortableQuery` | Status machine for async state |
+| **Fetch** | `useAppQuery` | Status machine for async state (TanStack Query wrapper) |
 | **UI** | `ChartFrame` with `status=…` | Single rendering contract |
+| **Boot Gating** | `AppReadyContext` | ChartFrame reads boot state from context |
 
 ---
 
@@ -13,14 +14,17 @@
 
 **Goal:** Eliminate legacy booleans (`loading`, `isFetching`, `isBootPending`) from chart components. Make `status` the only truth that drives loading/empty/error UI.
 
+**Status:** ✅ **LARGELY COMPLETE** (2025-01-02)
+
 ---
 
 ### Scope (Allowed Changes)
 
-- [ ] Change hook destructuring to take `status`
-- [ ] Pass `status` into `ChartFrame`
-- [ ] Remove passing `loading`/`isFetching`/`isBootPending` into `ChartFrame`
-- [ ] Keep `error` + `refetch` wiring intact
+- [x] Change hook destructuring to take `status`
+- [x] Pass `status` into `ChartFrame`
+- [x] Remove passing `isFetching`/`isBootPending` into `ChartFrame`
+- [x] Keep `error` + `refetch` wiring intact
+- [x] Keep `isFiltering` (separate UI concern for debounce indicator)
 
 ### Non-Scope (Forbidden)
 
@@ -34,17 +38,20 @@
 
 ## The Standard Pattern
 
-Every chart should look like this:
+Every chart using `useAppQuery` should look like this:
 
 ```jsx
-const { data, status, error, refetch } = useGatedAbortableQuery(queryFn, deps, options);
+const { data, status, error, refetch } = useAppQuery(queryFn, deps, options);
 
 return (
   <ChartFrame
     status={status}
+    isFiltering={isFiltering}  // Optional: debounce indicator
     error={error}
     onRetry={refetch}
-    /* other chart props */
+    empty={!data || data.length === 0}
+    skeleton="bar"
+    height={400}
   >
     {/* chart content */}
   </ChartFrame>
@@ -58,6 +65,13 @@ return (
 > **Never pass both `status` AND legacy booleans to `ChartFrame`.**
 >
 > That's the "multiple truths" bug factory.
+
+**Removed props (redundant when `status` provided):**
+- `isFetching` - Status encodes this as `loading`/`refreshing`
+- `isBootPending` - ChartFrame reads from `AppReadyContext`
+
+**Kept props:**
+- `isFiltering` - Separate UI concern (debounce delay indicator)
 
 ---
 
@@ -80,35 +94,38 @@ return (
 
 ---
 
-## Execution Strategy
+## Migration Status
 
-### File-by-File Mechanical Changes
+### ✅ Completed (12 charts - use `status`)
 
-Each file follows this pattern:
+| Component | Commit |
+|-----------|--------|
+| MarketMomentumGrid | 44a7e44 |
+| BudgetActivityHeatmap | 49959cf |
+| DistrictComparisonChart | 49959cf |
+| FloorLiquidityHeatmap | 49959cf |
+| GrowthDumbbellChart | 49959cf |
+| NewLaunchTimelineChart | 49959cf |
+| NewVsResaleChart | 49959cf |
+| PriceRangeMatrix | 35ff4ed |
+| AbsolutePsfChart | Already clean |
+| BeadsChart | Already clean |
+| TimeTrendChart | Already clean |
+| MarketValueOscillator | Already clean |
 
-```diff
-- const { data, loading, isFetching, error, refetch } = useGatedAbortableQuery(…);
-+ const { data, status, error, refetch } = useGatedAbortableQuery(…);
+### ⚠️ Legacy Pattern (4 charts - use `loading`)
 
-- <ChartFrame loading={loading} isFetching={isFetching} error={error}>
-+ <ChartFrame status={status} error={error} onRetry={refetch}>
-```
+These receive async state as props from parent or use `useSupplyData`:
 
-### Commit Strategy
+| Component | Status | Notes |
+|-----------|--------|-------|
+| PriceBandChart | `isBootPending` removed | Keeps `isFetching` (legacy path needs it) |
+| PriceGrowthChart | `isBootPending` removed | Keeps `isFetching` (legacy path needs it) |
+| SupplyBreakdownTable | `isBootPending` removed | Uses `useSupplyData` with `loading` |
+| SupplyWaterfallChart | `isBootPending` removed | Uses `useSupplyData` with `loading` |
 
-- Commit in small batches (by folder/feature)
-- Easy to revert if issues arise
+### Remaining Work
 
-### Prevention (Post-PR3)
-
-Add lint rule that fails if any chart passes `loading=` or `isFetching=` into `ChartFrame`. Prevents backsliding.
-
----
-
-## Files to Migrate
-
-_TODO: List all chart components using legacy boolean pattern_
-
-- [ ] `frontend/src/components/powerbi/*.jsx`
-- [ ] `frontend/src/components/insights/*.jsx`
-- [ ] Other chart components...
+- [ ] Migrate `useSupplyData` to return `status` instead of `loading`
+- [ ] Update PriceBandChart/PriceGrowthChart callers to pass `status`
+- [ ] Add ESLint rule to prevent `isBootPending=` in ChartFrame calls

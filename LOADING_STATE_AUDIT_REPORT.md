@@ -1,6 +1,6 @@
 # UI Loading vs Empty State Audit Report
 
-**Date**: 2025-12-31
+**Date**: 2025-01-02 (Updated)
 **Scope**: All chart, table, and visual components in frontend
 **Total Components Audited**: 26
 
@@ -8,89 +8,92 @@
 
 ## Executive Summary
 
-### Overall Status: ✅ MOSTLY COMPLIANT
+### Overall Status: ✅ MIGRATION COMPLETE
 
-- **18 components** (69%) use `QueryState` correctly ✅
-- **8 components** (31%) use custom loading/empty handling
+- **12 components** migrated to `status`-only pattern with `ChartFrame` ✅
+- **4 components** use legacy `loading` pattern (justified - dumb components or `useSupplyData`)
+- **All `isBootPending` props removed** - ChartFrame reads from `AppReadyContext`
 
 ### Key Findings:
 
 1. **NO CRITICAL ISSUES FOUND** - No components show "No data" before first API response
-2. **Pattern Consistency** - Components either use QueryState OR implement manual loading/error/empty states correctly
-3. **Custom implementations are JUSTIFIED** - All custom handlers are for components with special requirements (maps, grids, nested data structures)
+2. **Pattern Consistency** - Components use `ChartFrame` with `status` prop (preferred) or legacy `loading` pattern
+3. **Boot gating centralized** - `isBootPending` no longer passed explicitly; `AppReadyContext` handles it
 
 ---
 
 ## Component Status Table
 
-| Component | File | Pattern | Status | Issue |
+| Component | File | Pattern | Status | Notes |
 |-----------|------|---------|--------|-------|
-| **POWERBI COMPONENTS** |
-| TimeTrendChart | TimeTrendChart.jsx | QueryState | ✅ PASS | Correct: `loading`, `error`, `empty={!data \|\| data.length === 0}` |
-| BeadsChart | BeadsChart.jsx | QueryState | ✅ PASS | Correct: `loading`, `error`, `empty={!hasData && !resolvedLoading}` |
-| PriceDistributionChart | PriceDistributionChart.jsx | QueryState | ✅ PASS | Correct: `loading`, `error`, `empty={!bins \|\| bins.length === 0}` |
-| NewVsResaleChart | NewVsResaleChart.jsx | QueryState | ✅ PASS | Correct: `loading`, `error`, `empty={!hasData}` |
-| AbsolutePsfChart | AbsolutePsfChart.jsx | QueryState | ✅ PASS | Correct: `loading`, `error`, `empty={!data \|\| data.length === 0}` |
-| MarketValueOscillator | MarketValueOscillator.jsx | QueryState | ✅ PASS | Correct: `loading`, `error`, `empty={!data \|\| data.length === 0}` |
-| PriceCompressionChart | PriceCompressionChart.jsx | QueryState | ✅ PASS | Correct: `loading`, `error`, `empty={!data \|\| data.length === 0}` |
-| GrowthDumbbellChart | GrowthDumbbellChart.jsx | QueryState | ✅ PASS | Correct: `loading`, `error`, `empty={!sortedData \|\| sortedData.length === 0}` |
-| FloorLiquidityHeatmap | FloorLiquidityHeatmap.jsx | QueryState | ✅ PASS | Correct: `loading`, `error`, `empty={data.projects.length === 0}` |
-| ProjectDetailPanel | ProjectDetailPanel.jsx | QueryState | ✅ PASS | Uses QueryState wrapper |
-| SupplyBreakdownTable | SupplyBreakdownTable.jsx | QueryState | ✅ PASS | Uses QueryState wrapper |
-| SupplyWaterfallChart | SupplyWaterfallChart.jsx | QueryState | ✅ PASS | Correct: `empty={!chartData \|\| !chartData.labels?.length}` |
-| HotProjectsTable | HotProjectsTable.jsx | QueryState | ✅ PASS | Uses QueryState wrapper |
-| NewLaunchTimelineChart | NewLaunchTimelineChart.jsx | QueryState | ✅ PASS | Correct: `loading`, `error`, `empty={!hasData}` |
-| UpcomingLaunchesTable | UpcomingLaunchesTable.jsx | QueryState | ✅ PASS | Uses QueryState wrapper |
-| DistrictComparisonChart | DistrictComparisonChart.jsx | QueryState | ✅ PASS | Uses QueryState wrapper |
-| GLSDataTable | GLSDataTable.jsx | QueryState | ✅ PASS | Uses QueryState wrapper |
-| **CUSTOM LOADING (JUSTIFIED)** |
-| PriceGrowthChart | PriceGrowthChart.jsx | Custom | ✅ PASS | Nested data structure `data?.data`, manual states are correct |
-| BudgetActivityHeatmap | BudgetActivityHeatmap.jsx | Custom | ✅ PASS | Heatmap with time presets, manual states are correct |
-| PriceRangeMatrix | PriceRangeMatrix.jsx | Custom | ✅ PASS | Matrix structure, manual loading/error/empty correctly implemented |
-| MarketMomentumGrid | MarketMomentumGrid.jsx | Custom | ✅ PASS | 28-district grid, manual states with retry button |
-| DistrictMicroChart | DistrictMicroChart.jsx | Custom | ✅ PASS | Micro chart, no async fetch (receives data as prop) |
-| DealCheckerContent | DealCheckerContent.jsx | Custom | ✅ PASS | Complex multi-scope comparison, manual state management |
+| **MIGRATED TO `status` (12 components)** |
+| TimeTrendChart | TimeTrendChart.jsx | ChartFrame+status | ✅ CLEAN | `status`, `isFiltering`, `error`, `onRetry` |
+| BeadsChart | BeadsChart.jsx | ChartFrame+status | ✅ CLEAN | `status`, `isFiltering`, `error`, `onRetry` |
+| AbsolutePsfChart | AbsolutePsfChart.jsx | ChartFrame+status | ✅ CLEAN | `status`, `isFiltering`, `error`, `onRetry` |
+| MarketValueOscillator | MarketValueOscillator.jsx | ChartFrame+status | ✅ CLEAN | `status`, `error`, `onRetry` |
+| NewVsResaleChart | NewVsResaleChart.jsx | ChartFrame+status | ✅ MIGRATED | Removed `isFetching`, `isBootPending` |
+| GrowthDumbbellChart | GrowthDumbbellChart.jsx | ChartFrame+status | ✅ MIGRATED | Removed `isBootPending` |
+| FloorLiquidityHeatmap | FloorLiquidityHeatmap.jsx | ChartFrame+status | ✅ MIGRATED | Removed `isBootPending` |
+| NewLaunchTimelineChart | NewLaunchTimelineChart.jsx | ChartFrame+status | ✅ MIGRATED | Removed `isFetching`, `isBootPending` |
+| DistrictComparisonChart | DistrictComparisonChart.jsx | ChartFrame+status | ✅ MIGRATED | Removed `isBootPending` |
+| BudgetActivityHeatmap | BudgetActivityHeatmap.jsx | ChartFrame+status | ✅ MIGRATED | Removed `isFetching`, `isBootPending` |
+| MarketMomentumGrid | MarketMomentumGrid.jsx | ChartFrame+status | ✅ MIGRATED | Removed `isFetching`, `isBootPending` |
+| PriceRangeMatrix | PriceRangeMatrix.jsx | ChartFrame+status | ✅ MIGRATED | Removed `isFetching`, `isBootPending` |
+| **LEGACY PATTERN - `loading` (4 components)** |
+| PriceBandChart | PriceBandChart.jsx | ChartFrame+loading | ⚠️ LEGACY | Dumb component, receives props from parent |
+| PriceGrowthChart | PriceGrowthChart.jsx | ChartFrame+loading | ⚠️ LEGACY | Dumb component, receives props from parent |
+| SupplyBreakdownTable | SupplyBreakdownTable.jsx | ChartFrame+loading | ⚠️ LEGACY | Uses `useSupplyData` (returns `loading`) |
+| SupplyWaterfallChart | SupplyWaterfallChart.jsx | ChartFrame+loading | ⚠️ LEGACY | Uses `useSupplyData` (returns `loading`) |
+| **OTHER COMPONENTS** |
+| ProjectDetailPanel | ProjectDetailPanel.jsx | ChartFrame | ✅ PASS | Uses ChartFrame wrapper |
+| HotProjectsTable | HotProjectsTable.jsx | ChartFrame | ✅ PASS | Uses ChartFrame wrapper |
+| UpcomingLaunchesTable | UpcomingLaunchesTable.jsx | ChartFrame | ✅ PASS | Uses ChartFrame wrapper |
+| GLSDataTable | GLSDataTable.jsx | ChartFrame | ✅ PASS | Uses ChartFrame wrapper |
+| DistrictMicroChart | DistrictMicroChart.jsx | Props | ✅ PASS | No async fetch (receives data as prop) |
+| DealCheckerContent | DealCheckerContent.jsx | Custom | ✅ PASS | Complex multi-scope comparison |
 | **INSIGHTS/MAPS** |
-| MarketStrategyMap | MarketStrategyMap.jsx | Custom | ✅ PASS | Map with markers, uses `useStaleRequestGuard`, correct loading gates |
-| DistrictLiquidityMap | DistrictLiquidityMap.jsx | Custom | ✅ PASS | Map with markers, uses `useStaleRequestGuard`, correct loading gates |
-| MarketHeatmap | MarketHeatmap.jsx | Custom | ✅ PASS | 3D heatmap, manual loading/error/empty correctly implemented |
-| MarketHeatmap3D | MarketHeatmap3D.jsx | Custom | ✅ PASS | 3D visualization, manual loading/error/empty correctly implemented |
+| MarketStrategyMap | MarketStrategyMap.jsx | Custom | ✅ PASS | Map with `useStaleRequestGuard` |
+| DistrictLiquidityMap | DistrictLiquidityMap.jsx | Custom | ✅ PASS | Map with `useStaleRequestGuard` |
+| MarketHeatmap | MarketHeatmap.jsx | Custom | ✅ PASS | 3D heatmap, manual states |
+| MarketHeatmap3D | MarketHeatmap3D.jsx | Custom | ✅ PASS | 3D visualization, manual states |
 
 ---
 
 ## Detailed Findings
 
-### ✅ Best Practice Pattern (18 components)
+### ✅ Best Practice Pattern (12 components - `status`)
 
-**Example: TimeTrendChart.jsx**
+**Example: TimeTrendChart.jsx (Clean Pattern)**
 
 ```jsx
-const { data, loading, error, refetch } = useAbortableQuery(
+const { data, status, error, refetch } = useAppQuery(
   async (signal) => {
     // API call
   },
   [debouncedFilterKey, timeGrouping, saleType],
-  { initialData: [], keepPreviousData: true }
+  { chartName: 'TimeTrendChart', keepPreviousData: true }
 );
 
 return (
-  <QueryState 
-    loading={loading} 
-    error={error} 
-    onRetry={refetch} 
-    empty={!data || data.length === 0} 
-    skeleton="bar" 
+  <ChartFrame
+    status={status}
+    isFiltering={isFiltering}
+    error={error}
+    onRetry={refetch}
+    empty={!data || data.length === 0}
+    skeleton="bar"
     height={height + 80}
   >
     <Chart data={data} />
-  </QueryState>
+  </ChartFrame>
 );
 ```
 
 **Why this is correct:**
-- `loading={loading}` - Shows skeleton during fetch
-- `empty={!data || data.length === 0}` - Only shows "No data" when API completes with empty result
-- `error={error}` - Shows error state with retry button
+- `status={status}` - Single source of truth for loading/refreshing/success/error
+- `isFiltering={isFiltering}` - Separate UI concern for debounce indicator
+- `empty={!data || data.length === 0}` - Only shows "No data" when `status === 'success'`
+- Boot gating automatic via `AppReadyContext` (no `isBootPending` needed)
 - No "No data" flash before first response
 
 ---
@@ -257,20 +260,27 @@ Initial → if (loading) → return <Skeleton>
 
 ## Recommendations
 
-### No Breaking Changes Required
+### ✅ Completed
 
-All components handle loading vs empty states correctly. No action needed.
+- [x] Remove `isBootPending` from all ChartFrame calls (ChartFrame reads from context)
+- [x] Remove `isFetching` from components using `status` (redundant)
+- [x] Migrate 12 charts to clean `status`-only pattern
 
-### Optional Enhancements (Low Priority)
+### Remaining Work (Low Priority)
 
-1. **Standardize custom components to QueryState** (8 components)
-   - **Benefit**: Consistency, less code
-   - **Risk**: May require adapter refactoring for nested data structures
-   - **Priority**: Low - current implementations are correct
+1. **Migrate `useSupplyData` hook to return `status`**
+   - Currently returns `loading` boolean
+   - Would allow SupplyBreakdownTable and SupplyWaterfallChart to use clean pattern
+   - **Priority**: Low - current implementation works correctly
 
-2. **Document pattern choice rationale** in component comments
-   - Why this component uses custom states vs QueryState
-   - Helps future developers understand intent
+2. **Update PriceBandChart/PriceGrowthChart callers**
+   - These are dumb components receiving props from parent
+   - Parent would need to pass `status` instead of `loading`
+   - **Priority**: Low - current implementation works correctly
+
+3. **Add ESLint rule to prevent backsliding**
+   - Fail if `isBootPending=` appears in ChartFrame props
+   - **Priority**: Medium - prevents regression
 
 ---
 
@@ -290,18 +300,22 @@ All components handle loading vs empty states correctly. No action needed.
 
 ## Conclusion
 
-**Status**: ✅ **PRODUCTION READY**
+**Status**: ✅ **MIGRATION COMPLETE**
 
-- **No critical issues** found
-- **All components** correctly distinguish loading from empty states
-- **Pattern consistency** is high (69% use QueryState, 31% have justified custom implementations)
+- **12 components** migrated to clean `status`-only pattern
+- **4 components** use justified legacy pattern (`loading`)
+- **All `isBootPending` props removed** - centralized in `AppReadyContext`
 - **No user-facing bugs** from loading/empty state confusion
 
-**Recommendation**: No changes required. Current implementation is robust.
+**Remaining tech debt** (low priority):
+- Migrate `useSupplyData` to return `status`
+- Update PriceBandChart/PriceGrowthChart callers
+- Add ESLint rule to prevent `isBootPending=` in ChartFrame
 
 ---
 
 **Audited by**: UI Layout Validator Agent
-**Date**: 2025-12-31
+**Last Updated**: 2025-01-02
+**Migration Commits**: 44a7e44, 49959cf, 35ff4ed
 **Files Scanned**: 26 components
 **Issues Found**: 0 critical, 0 major, 0 minor
