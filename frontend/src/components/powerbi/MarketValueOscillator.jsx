@@ -89,11 +89,14 @@ export function MarketValueOscillator({ height = 420, saleType = null, sharedRaw
     [saleType], // Refetch if saleType changes (rare - usually constant from page)
     {
       chartName: 'MarketValueOscillator-baseline',
-      initialData: { ccrRcr: { mean: 400, stdDev: 200 }, rcrOcr: { mean: 200, stdDev: 100 } },
+      initialData: null,
       enabled: shouldFetch,
       keepPreviousData: true,
     }
   );
+
+  // Default fallback for baseline stats (initial load) - matches main query pattern
+  const safeBaselineStats = baselineStats ?? { ccrRcr: { mean: 400, stdDev: 200 }, rcrOcr: { mean: 200, stdDev: 100 } };
 
   // Determine if we should use shared data from parent (P0 performance fix)
   // When sharedRawData is provided, we skip the internal fetch entirely
@@ -131,9 +134,9 @@ export function MarketValueOscillator({ height = 420, saleType = null, sharedRaw
 
       // Transform to Z-scores using historical baseline
       // Transform is grain-agnostic - trusts data's own periodGrain
-      return transformOscillatorSeries(rawData, baselineStats);
+      return transformOscillatorSeries(rawData, safeBaselineStats);
     },
-    [debouncedFilterKey, timeGrouping, baselineStats, saleType],
+    [debouncedFilterKey, timeGrouping, safeBaselineStats, saleType],
     { chartName: 'MarketValueOscillator', initialData: null, enabled: shouldFetch && !useShared, keepPreviousData: true }
   );
 
@@ -141,8 +144,8 @@ export function MarketValueOscillator({ height = 420, saleType = null, sharedRaw
   // Transform is grain-agnostic - trusts data's own periodGrain
   const sharedTransformedData = useMemo(() => {
     if (!useShared || !sharedRawData || sharedRawData.length === 0) return [];
-    return transformOscillatorSeries(sharedRawData, baselineStats);
-  }, [useShared, sharedRawData, baselineStats]);
+    return transformOscillatorSeries(sharedRawData, safeBaselineStats);
+  }, [useShared, sharedRawData, safeBaselineStats]);
 
   // Use shared data when available, otherwise use fetched data
   // Default fallback for when data is null (initial load) - matches PriceDistributionChart pattern
@@ -242,19 +245,19 @@ export function MarketValueOscillator({ height = 420, saleType = null, sharedRaw
             const signal = getZScoreLabel(z);
 
             if (context.datasetIndex === 0) {
-              const deviation = d.ccrRcrSpread - baselineStats.ccrRcr.mean;
+              const deviation = d.ccrRcrSpread - safeBaselineStats.ccrRcr.mean;
               return [
                 `CCR-RCR: ${z?.toFixed(2) || 'N/A'}σ (${signal})`,
                 `Current: $${d.ccrRcrSpread?.toLocaleString() || 'N/A'} PSF`,
-                `${deviation >= 0 ? '+' : ''}$${Math.round(deviation)} vs avg ($${Math.round(baselineStats.ccrRcr.mean)})`,
+                `${deviation >= 0 ? '+' : ''}$${Math.round(deviation)} vs avg ($${Math.round(safeBaselineStats.ccrRcr.mean)})`,
               ];
             }
             // RCR-OCR
-            const deviation = d.rcrOcrSpread - baselineStats.rcrOcr.mean;
+            const deviation = d.rcrOcrSpread - safeBaselineStats.rcrOcr.mean;
             return [
               `RCR-OCR: ${z?.toFixed(2) || 'N/A'}σ (${signal})`,
               `Current: $${d.rcrOcrSpread?.toLocaleString() || 'N/A'} PSF`,
-              `${deviation >= 0 ? '+' : ''}$${Math.round(deviation)} vs avg ($${Math.round(baselineStats.rcrOcr.mean)})`,
+              `${deviation >= 0 ? '+' : ''}$${Math.round(deviation)} vs avg ($${Math.round(safeBaselineStats.rcrOcr.mean)})`,
             ];
           },
         },
@@ -363,13 +366,13 @@ export function MarketValueOscillator({ height = 420, saleType = null, sharedRaw
                 label="CCR-RCR"
                 zScore={latestZCcrRcr}
                 spread={latestData.ccrRcrSpread}
-                avgSpread={baselineStats.ccrRcr.mean}
+                avgSpread={safeBaselineStats.ccrRcr.mean}
               />
               <ZScoreSignalCard
                 label="RCR-OCR"
                 zScore={latestZRcrOcr}
                 spread={latestData.rcrOcrSpread}
-                avgSpread={baselineStats.rcrOcr.mean}
+                avgSpread={safeBaselineStats.rcrOcr.mean}
               />
               {divergence !== null && (
                 <InlineCard

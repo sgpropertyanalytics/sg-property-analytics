@@ -89,8 +89,11 @@ function PriceCompressionChartBase({ height = 380, saleType = null, sharedData =
       return calculateHistoricalBaseline(transformed);
     },
     [], // Empty deps = fetch once on mount
-    { chartName: 'PriceCompressionChart-baseline', initialData: { min: 0, max: 1000 }, enabled: shouldFetch && !useSharedData, keepPreviousData: true }
+    { chartName: 'PriceCompressionChart-baseline', initialData: null, enabled: shouldFetch && !useSharedData, keepPreviousData: true }
   );
+
+  // Default fallback for baseline data (initial load) - matches main query pattern
+  const safeBaselineData = baselineData ?? { min: 0, max: 1000 };
 
   // Data fetching with useGatedAbortableQuery - gates on appReady
   // Skip if parent provides sharedData (W4 fix: eliminates duplicate API call with AbsolutePsfChart)
@@ -139,8 +142,8 @@ function PriceCompressionChartBase({ height = 380, saleType = null, sharedData =
 
   // Computed values - use historical baseline for stable min/max
   const compressionScore = useMemo(
-    () => calculateCompressionScore(data, baselineData),
-    [data, baselineData]
+    () => calculateCompressionScore(data, safeBaselineData),
+    [data, safeBaselineData]
   );
   const marketSignals = useMemo(() => detectMarketSignals(data), [data]);
   const averageSpreads = useMemo(() => calculateAverageSpreads(data), [data]);
