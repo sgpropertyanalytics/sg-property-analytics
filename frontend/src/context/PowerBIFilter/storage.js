@@ -27,8 +27,12 @@
 /**
  * Current storage schema version.
  * Increment this when filter structure changes to auto-clear stale data.
+ *
+ * Version history:
+ * - v1: Initial version with datePreset/dateRange
+ * - v2: Unified timeFilter (Phase 1 filter simplification)
  */
-export const STORAGE_VERSION = 1;
+export const STORAGE_VERSION = 2;
 
 /**
  * Safe fallback page ID when pathname is invalid/empty.
