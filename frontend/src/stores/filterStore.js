@@ -40,6 +40,8 @@ import {
   INITIAL_SELECTED_PROJECT,
   TIME_LEVELS,
   LOCATION_LEVELS,
+  DEFAULT_TIME_FILTER,
+  isValidTimeFilter,
 } from '../context/PowerBIFilter/constants';
 
 // Import utilities (pure functions - no change needed)
@@ -111,6 +113,53 @@ function createPageStorage(pageId) {
       }
     },
   };
+}
+
+// =============================================================================
+// FILTER MIGRATION
+// =============================================================================
+
+/**
+ * Migrate old filter format to new unified timeFilter format.
+ *
+ * Old format (pre-Phase 1):
+ *   { datePreset: 'M6', dateRange: { start, end }, ... }
+ *
+ * New format (Phase 1+):
+ *   { timeFilter: { type: 'preset', value: 'M6' }, ... }
+ *   { timeFilter: { type: 'custom', start, end }, ... }
+ *
+ * This ensures backward compatibility when users have old filter state
+ * stored in sessionStorage.
+ *
+ * @param {Object} savedFilters - Persisted filters from storage
+ * @returns {Object} Migrated filters with valid timeFilter
+ */
+function migrateFilters(savedFilters) {
+  if (!savedFilters || typeof savedFilters !== 'object') {
+    return { ...INITIAL_FILTERS };
+  }
+
+  // Remove legacy fields regardless of path taken
+  const { datePreset, dateRange, ...rest } = savedFilters;
+
+  // If already has valid timeFilter, use it (spread onto defaults for new fields)
+  if (isValidTimeFilter(savedFilters.timeFilter)) {
+    return { ...INITIAL_FILTERS, ...rest, timeFilter: savedFilters.timeFilter };
+  }
+
+  // Migrate from old format or use default
+  let timeFilter = DEFAULT_TIME_FILTER;
+
+  if (datePreset && datePreset !== 'custom' && typeof datePreset === 'string') {
+    // Old preset mode -> new preset mode
+    timeFilter = { type: 'preset', value: datePreset };
+  } else if (dateRange && (dateRange.start || dateRange.end)) {
+    // Old custom mode -> new custom mode
+    timeFilter = { type: 'custom', start: dateRange.start, end: dateRange.end };
+  }
+
+  return { ...INITIAL_FILTERS, ...rest, timeFilter };
 }
 
 // =============================================================================
@@ -487,18 +536,28 @@ export function createFilterStore(pageId) {
           }),
           // Handle version migration
           migrate: (persistedState, version) => {
+            // Always migrate filters to ensure timeFilter structure is valid
+            // This handles both version mismatch AND old data format (datePreset/dateRange)
+            const migratedFilters = migrateFilters(persistedState?.filters);
+
             if (version !== STORAGE_VERSION) {
-              // Version mismatch - return initial state
+              // Version mismatch - log and reset to defaults with migrated filters
               console.warn(
-                `[filterStore] Version mismatch: stored=${version}, current=${STORAGE_VERSION}. Resetting.`
+                `[filterStore] Version mismatch: stored=${version}, current=${STORAGE_VERSION}. Migrating filters.`
               );
               return {
-                filters: { ...INITIAL_FILTERS },
-                timeGrouping: 'quarter',
+                filters: migratedFilters,
+                timeGrouping: persistedState?.timeGrouping ?? 'quarter',
                 _version: STORAGE_VERSION,
               };
             }
-            return persistedState;
+
+            // Same version - still apply migration in case data was corrupted or old format
+            return {
+              ...persistedState,
+              filters: migratedFilters,
+              _version: STORAGE_VERSION,
+            };
           },
           // Mark as hydrated after rehydration
           onRehydrateStorage: () => (state) => {
