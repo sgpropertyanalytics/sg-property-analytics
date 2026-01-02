@@ -105,8 +105,9 @@ function NewLaunchTimelineChartBase({ height = 300 }) {
     }
   );
 
-  // Default fallback for when data is null (initial load) - matches PriceDistributionChart pattern
-  const safeData = data ?? [];
+  // Default fallback for when data is null or unexpected type (initial load, edge cases)
+  // Ensure safeData is always an array, even if API returns unexpected shape
+  const safeData = Array.isArray(data) ? data : [];
 
   // Filter out 2020 if needed (heavily skewed data from COVID-era rush launches)
   // Uses Date-based check from adapter (not label string)

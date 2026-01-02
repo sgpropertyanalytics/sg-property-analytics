@@ -191,8 +191,11 @@ function NewVsResaleChartBase({ height = 350 }) {
     }
   );
 
-  // Default fallback for when data is null (initial load) - matches PriceDistributionChart pattern
-  const { chartData, summary, hasData } = data ?? { chartData: [], summary: {}, hasData: false };
+  // Default fallback for when data is null or missing expected properties
+  // Use individual property defaults to handle edge cases where data exists but lacks expected fields
+  const { chartData: rawChartData = [], summary = {}, hasData = false } = data ?? {};
+  // Ensure chartData is always an array, even if API returns unexpected shape
+  const chartData = Array.isArray(rawChartData) ? rawChartData : [];
 
   // Build filter summary for display
   const getFilterSummary = () => {

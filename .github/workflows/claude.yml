@@ -171,153 +171,10 @@ jobs:
             **Ready to Merge:** YES / NO / AFTER FIXES
 
   # =============================================================================
-  # Architecture Review: @claude review triggers 6-point quality checklist
+  # Claude Review: Single job for all @claude mentions on PRs/Issues
   # =============================================================================
-  architecture-review:
-    name: "Architecture Review"
-    if: |
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude') && contains(github.event.comment.body, 'review')) ||
-      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude') && contains(github.event.comment.body, 'review'))
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
-      issues: write
-      actions: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Full history for pattern comparison
-
-      - name: Claude Architecture Review
-        uses: anthropics/claude-code-action@v1
-        with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          claude_args: "--model claude-3-5-haiku-20241022"
-          prompt: |
-            # Architecture Review Checklist
-
-            Review this PR against the codebase standards in CLAUDE.md and .claude/review-rules.yml.
-            Evaluate each criterion and provide a clear verdict.
-
-            ## 6-Point Quality Checklist
-
-            ### 1. Framework Alignment
-            **Question:** Is this aligned and consistent with the latest code design framework patterns, standards, and architectural patterns?
-
-            Check against:
-            - Layer responsibilities (Pages decide → Components render → Utils transform → Backend enforces)
-            - Single source of truth (SaleType enum, constants.py, contract_schema.py)
-            - Reference implementations in TimeTrendChart.jsx, analytics.py, dashboard_service.py
-
-            **Verdict:** ✅ ALIGNED / ⚠️ PARTIAL / ❌ VIOLATES
-
-            ### 2. Code Efficiency
-            **Question:** Is this clean, efficient code design?
-
-            Check for:
-            - Minimal code to achieve the goal
-            - No unnecessary abstractions
-            - Clear data flow
-            - Appropriate use of existing utilities
-
-            **Verdict:** ✅ CLEAN / ⚠️ COULD SIMPLIFY / ❌ NEEDS REFACTOR
-
-            ### 3. Over-Engineering Detection
-            **Question:** Are there over-engineering characteristics with redundant complexity layers?
-
-            Red flags:
-            - New abstractions for single-use cases
-            - Premature optimization
-            - Feature flags for simple changes
-            - Custom infrastructure when libraries exist (React Query, Zustand)
-            - >50 lines of custom hooks
-
-            **Verdict:** ✅ APPROPRIATE / ⚠️ BORDERLINE / ❌ OVER-ENGINEERED
-
-            ### 4. Band-Aid Detection
-            **Question:** Is this a band-aid fix?
-
-            Red flags:
-            - `if (specificEdgeCase)` hacks
-            - Hardcoded values instead of constants
-            - `// TODO: fix later` comments
-            - Duplicating code "to be safe"
-            - Workarounds instead of root cause fixes
-
-            **Verdict:** ✅ ROOT CAUSE FIX / ⚠️ ACCEPTABLE WORKAROUND / ❌ BAND-AID
-
-            ### 5. Production-Grade Assessment
-            **Question:** Is this a production-grade, long-term scalable solution that is robust and regression-proof?
-
-            Check for:
-            - Works at 10x scale
-            - Handles edge cases gracefully
-            - Has appropriate error handling
-            - Includes necessary tests
-            - Matches how similar problems are solved in codebase
-
-            **Verdict:** ✅ PRODUCTION-GRADE / ⚠️ NEEDS HARDENING / ❌ NOT READY
-
-            ### 6. Canonical Standards
-            **Question:** Does this follow canonical clean standardized framework with centralized API/Constants/related functions?
-
-            Check for:
-            - Uses existing constants (REGIONS, BEDROOM_ORDER, SaleType)
-            - Uses centralized API client (api/client.js)
-            - Uses existing adapters pattern
-            - SQL in services, not routes
-            - :param bindings, not f-strings
-
-            **Verdict:** ✅ CANONICAL / ⚠️ MINOR DEVIATIONS / ❌ NON-STANDARD
-
-            ---
-
-            ## Quick Compliance Checks
-
-            Verify these specific requirements (auto-fail if violated):
-
-            | Check | Status | Details |
-            |-------|--------|---------|
-            | **Layer responsibilities** | ✅/❌ | Pages decide logic, Components only render props |
-            | **No new abstractions** | ✅/❌ | Uses existing patterns, no reinventing |
-            | **SQL param bindings** | ✅/❌ | Uses `:param` style, never f-strings |
-            | **Outlier exclusion** | ✅/❌ | All transaction queries include `COALESCE(is_outlier, false) = false` |
-            | **Chart state handling** | ✅/❌ | Charts handle loading/error/empty/success states |
-
-            ---
-
-            ## Summary
-
-            | Criterion | Verdict | Notes |
-            |-----------|---------|-------|
-            | 1. Framework Alignment | | |
-            | 2. Code Efficiency | | |
-            | 3. Over-Engineering | | |
-            | 4. Band-Aid Detection | | |
-            | 5. Production-Grade | | |
-            | 6. Canonical Standards | | |
-
-            ## Overall Assessment
-
-            **Score:** X/6 passing
-
-            **Recommendation:** ✅ APPROVE / ⚠️ APPROVE WITH COMMENTS / 🔄 REQUEST CHANGES / ❌ BLOCK
-
-            ## Specific Issues (if any)
-
-            List specific files and line numbers that need attention.
-
-            ## Suggested Improvements (if any)
-
-            Concrete suggestions to improve the PR.
-
-  # =============================================================================
-  # Q&A: Respond to @claude questions in PRs/Issues
-  # =============================================================================
-  claude-qa:
-    name: "Claude Q&A"
+  claude-review:
+    name: "Claude Review"
     if: |
       (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
@@ -332,11 +189,126 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0
 
-      - name: Claude Q&A
+      - name: Claude Review
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: "--model claude-3-5-haiku-20241022"
-          # Answers the user's specific question using CLAUDE.md context
+          prompt: |
+            # Code Review
+
+            You are reviewing a PR. Read CLAUDE.md and .claude/review-rules.yml for codebase standards.
+
+            **First**, answer any specific questions the user asked in their comment.
+
+            **Then**, provide the architecture review:
+
+            ## 6-Point Quality Checklist
+
+            ### 1. Framework Alignment
+            **Question:** Is this aligned with the codebase's architectural patterns?
+
+            Check against:
+            - Layer responsibilities: Pages decide → Components render → Utils transform → Backend enforces
+            - Single source of truth: SaleType enum, constants.py, contract_schema.py
+            - Reference implementations: TimeTrendChart.jsx, analytics.py, dashboard_service.py
+
+            **Verdict:** ✅ ALIGNED / ⚠️ PARTIAL / ❌ VIOLATES
+
+            ### 2. Code Efficiency
+            **Question:** Is this clean, efficient code?
+
+            Check for:
+            - Minimal code to achieve the goal
+            - No unnecessary abstractions
+            - Clear data flow
+            - Appropriate use of existing utilities
+
+            **Verdict:** ✅ CLEAN / ⚠️ COULD SIMPLIFY / ❌ NEEDS REFACTOR
+
+            ### 3. Over-Engineering Detection
+            **Question:** Are there redundant complexity layers?
+
+            Red flags:
+            - New abstractions for single-use cases
+            - Premature optimization
+            - Feature flags for simple changes
+            - Custom infrastructure when libraries exist (React Query, Zustand)
+            - >50 lines of custom hooks
+
+            **Verdict:** ✅ APPROPRIATE / ⚠️ BORDERLINE / ❌ OVER-ENGINEERED
+
+            ### 4. Band-Aid Detection
+            **Question:** Is this a band-aid fix or root cause fix?
+
+            Red flags:
+            - `if (specificEdgeCase)` hacks
+            - Hardcoded values instead of constants
+            - `// TODO: fix later` comments
+            - Duplicating code "to be safe"
+            - Workarounds instead of root cause fixes
+
+            **Verdict:** ✅ ROOT CAUSE FIX / ⚠️ ACCEPTABLE WORKAROUND / ❌ BAND-AID
+
+            ### 5. Production-Grade Assessment
+            **Question:** Is this robust and regression-proof?
+
+            Check for:
+            - Works at 10x scale
+            - Handles edge cases gracefully
+            - Has appropriate error handling
+            - Includes necessary tests
+            - Matches how similar problems are solved in codebase
+
+            **Verdict:** ✅ PRODUCTION-GRADE / ⚠️ NEEDS HARDENING / ❌ NOT READY
+
+            ### 6. Canonical Standards
+            **Question:** Does this follow centralized patterns?
+
+            Check for:
+            - Uses existing constants (REGIONS, BEDROOM_ORDER, SaleType)
+            - Uses centralized API client (api/client.js)
+            - Uses existing adapters pattern
+            - SQL in services, not routes
+            - :param bindings, not f-strings
+
+            **Verdict:** ✅ CANONICAL / ⚠️ MINOR DEVIATIONS / ❌ NON-STANDARD
+
+            ---
+
+            ## Quick Compliance Checks (auto-fail if violated)
+
+            | Check | ✅/❌ | Details |
+            |-------|------|---------|
+            | Layer responsibilities | | Pages decide logic, Components only render props |
+            | No new abstractions | | Uses existing patterns, no reinventing |
+            | SQL param bindings | | Uses `:param` style, never f-strings |
+            | Outlier exclusion | | Queries include `COALESCE(is_outlier, false) = false` |
+            | Chart state handling | | Handles loading/error/empty/success states |
+
+            ---
+
+            ## Summary
+
+            | Criterion | Verdict | Notes |
+            |-----------|---------|-------|
+            | 1. Framework Alignment | | |
+            | 2. Code Efficiency | | |
+            | 3. Over-Engineering | | |
+            | 4. Band-Aid Detection | | |
+            | 5. Production-Grade | | |
+            | 6. Canonical Standards | | |
+
+            **Score:** X/6 passing
+
+            **Recommendation:** ✅ APPROVE / ⚠️ APPROVE WITH COMMENTS / 🔄 REQUEST CHANGES / ❌ BLOCK
+
+            ## Specific Issues
+
+            List specific files and line numbers that need attention.
+
+            ## Suggested Improvements
+
+            Concrete suggestions to improve the PR.
