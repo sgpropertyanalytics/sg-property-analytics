@@ -1,7 +1,7 @@
 import { createContext, useContext, useMemo, useEffect, useRef, useState } from 'react';
 import { useAuth } from './AuthContext';
 import { useSubscription } from './SubscriptionContext';
-// Phase 3.4: Use Zustand store instead of removed PowerBIFilterProvider
+// Phase 4: Migrated from useFilterState (Context) to useZustandFilterState (Zustand)
 import { useZustandFilterState } from '../stores';
 
 // Boot stuck detection thresholds (milliseconds)
@@ -31,7 +31,7 @@ const BOOT_CRITICAL_THRESHOLD_MS = 10000; // Critical: Likely a bug
  * - This prevents race conditions where charts fetch before we know subscription tier
  * - This prevents "No data" flash when filters haven't been restored yet
  *
- * PLACEMENT: Uses Zustand store for filtersReady (no provider dependency).
+ * PLACEMENT: Uses Zustand store directly (no provider needed).
  * Available for dashboard routes, not public pages.
  *
  * Usage:
@@ -70,7 +70,7 @@ export function AppReadyProvider({ children }) {
   const { initialized: authInitialized, isAuthenticated } = useAuth();
   const { isSubscriptionReady, isTierKnown } = useSubscription();
 
-  // filtersReady comes from Zustand store (Phase 3.4: replaced PowerBIFilterProvider)
+  // Phase 4: filtersReady now comes from Zustand store
   const { filtersReady } = useZustandFilterState();
 
   // P0 CONSTRAINT: App is NOT ready while tier is 'unknown'

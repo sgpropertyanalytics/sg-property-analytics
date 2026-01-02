@@ -2,7 +2,7 @@
  * Stores Index
  *
  * Central export point for all Zustand stores.
- * Part of Phase 3 filter system simplification.
+ * Phase 4: Filter migration complete. Context removed.
  */
 
 // Filter Store
@@ -25,6 +25,3 @@ export {
   getStoreCacheForDebug,
   logFilterState,
 } from './filterStore';
-
-// DevTools (dev only)
-export { FilterStoreDevTools } from './FilterStoreDevTools';

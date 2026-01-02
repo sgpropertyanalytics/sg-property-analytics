@@ -1,28 +1,15 @@
 /**
- * PowerBI Filter Context - Module Exports
+ * PowerBI Filter - Utilities Module
  *
- * This module provides Power BI-style filter state management for the dashboard.
+ * Phase 4: PowerBIFilterProvider removed. Filter state now lives in Zustand.
+ * This module now only exports:
+ * - Constants (TIME_GROUP_BY, etc.)
+ * - Pure utility functions (deriveActiveFilters, buildApiParams, etc.)
+ * - Hooks (useFilterOptions, useDebouncedFilterKey)
+ * - Storage utilities (page-namespaced persistence)
  *
- * Module Structure (4 files):
- * - constants.js: Initial state and constants
- * - utils.js: Pure functions (deriveActiveFilters, buildApiParams, etc.)
- * - hooks.js: React hooks (useFilterOptions, useRouteReset, useDebouncedFilterKey)
- * - PowerBIFilterProvider.jsx: Main provider component
+ * For filter state, use: import { useZustandFilters } from '../stores';
  */
-
-// Main exports
-export {
-  PowerBIFilterProvider,
-  usePowerBIFilters,
-  PowerBIFilterContext,
-  // New targeted hooks for performance optimization
-  useFilterState,
-  useFilterActions,
-  useFilterOptionsContext,
-  FilterStateContext,
-  FilterActionsContext,
-  FilterOptionsContext,
-} from './PowerBIFilterProvider';
 
 // Constants
 export { TIME_GROUP_BY } from './constants';
