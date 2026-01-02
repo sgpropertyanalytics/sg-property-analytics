@@ -39,6 +39,8 @@
 
 **Navigation:** [`REPO_MAP.md`](./REPO_MAP.md) (file locations, patterns, tech debt zones)
 
+**Historical Incidents:** [`REPO_MAP.md#9-historical-incidents-landmines`](./REPO_MAP.md#9-historical-incidents-landmines) - **READ BEFORE making recommendations or adding abstractions**
+
 **Docs:** `docs/architecture.md`, `docs/frontend.md`, `docs/backend.md`, `docs/BACKEND_CHART_DEPENDENCIES.md`, `docs/LIBRARY_FIRST_REFERENCE.md`
 
 ---
