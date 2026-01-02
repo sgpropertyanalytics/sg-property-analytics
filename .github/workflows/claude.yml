@@ -1,24 +1,27 @@
 name: Claude Code
 
 on:
-  # Auto-review every PR
   pull_request:
-    types: [opened, synchronize]
-  # Also respond to @claude mentions
+    types: [opened, synchronize, labeled]
   issue_comment:
     types: [created]
   pull_request_review_comment:
     types: [created]
-  issues:
-    types: [opened, assigned]
   pull_request_review:
     types: [submitted]
+  issues:
+    types: [opened, assigned]
+  workflow_run:
+    workflows: ["Regression Suite"]
+    types: [completed]
 
 jobs:
-  # ===========================================
-  # Auto-review: Stability check on every PR
-  # ===========================================
-  stability-review:
+  # =============================================================================
+  # STAGE 0: Fast Triage (<2 min, always runs on PR)
+  # Goal: Quick risk signal for reviewers
+  # =============================================================================
+  fast-triage:
+    name: "Stage 0: Fast Triage"
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     permissions:
@@ -30,99 +33,209 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Claude PR Review
+      - name: Claude Fast Triage
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           prompt: |
-            Review this PR using the following 10-point checklist. Be concise but thorough.
+            # Stage 0: Fast Triage
 
-            ## 1. Correctness / Logic
-            - Does the code actually do what the PR claims?
-            - Edge cases handled?
-            - Any silent behavior changes?
-
-            ## 2. Side Effects & Regressions
-            - Does this break existing flows?
-            - Any shared logic touched?
-            - Any unintended behavior change?
-
-            ## 3. State & Lifecycle Safety
-            - React: hooks order, dependency arrays, stale closures
-            - Backend: async flow, race conditions, retries, idempotency
-            - No updates after unmount / stale requests
-
-            ## 4. Error Handling & Fallbacks
-            - Are errors handled or swallowed silently?
-            - Meaningful user-facing errors?
-            - Safe fallback states?
-            - Red flags: empty catch {}, console.log instead of error handling
-
-            ## 5. Performance / Overfetching
-            - Unnecessary re-renders?
-            - Repeated API calls?
-            - Heavy computation inside render?
-            - Missing memoization?
-
-            ## 6. API / Contract Consistency
-            - Does frontend match backend contract?
-            - Any implicit assumptions?
-            - Breaking changes without versioning?
-            - Does any route use request.args.get() instead of g.normalized_params?
-
-            ## 7. Code Simplicity & Readability
-            - Is this over-engineered?
-            - Can this be simpler?
-            - Is intent obvious without comments?
-
-            ## 8. Naming & Structure
-            - Clear variable and function names?
-            - Files in the right layer? (see CLAUDE.md §1.1)
-            - No "temporary" naming left behind?
-
-            ## 9. Security / Data Safety
-            - Auth checks present?
-            - Sensitive data exposed?
-            - Token / credential handling correct?
-            - No client-side trust assumptions?
-
-            ## 10. Cleanup & Technical Debt
-            - Dead code?
-            - Debug logs left in?
-            - TODOs without tickets?
-            - Duplicate logic?
+            Analyze this PR quickly (<2 min). Be diff-aware: only analyze changed files + nearby dependents.
 
             ---
 
-            ## Output Format
+            ## 1. Risk Score
 
-            For each category, report:
-            - ✅ if no issues found
-            - ⚠️ if minor concerns (explain briefly)
-            - ❌ if blocking issues (explain with file:line)
+            Assign: **🟢 Low** / **🟡 Medium** / **🔴 High**
 
-            Example:
-            ```
-            1. Correctness: ✅
-            2. Side Effects: ⚠️ Touches shared utility - verify callers
-            3. State Safety: ❌ Missing cleanup in useEffect (Chart.jsx:45)
-            ...
-            ```
+            Risk factors (check which apply):
+            - [ ] Touches auth (AuthContext, login, tokens)
+            - [ ] Touches hooks/ or custom React hooks
+            - [ ] Touches api/client or adapters
+            - [ ] Touches contract schemas or generated types
+            - [ ] Touches SQL queries or services/
+            - [ ] Touches powerbi/ or dashboard components
+            - [ ] Changes shared utilities used by 3+ files
+            - [ ] PR size > 300 LOC
+            - [ ] Modifies or removes existing tests
 
-            End with: **Recommendation: APPROVE / REQUEST CHANGES / NEEDS DISCUSSION**
+            Score:
+            - 🟢 Low: 0-1 factors
+            - 🟡 Medium: 2-3 factors
+            - 🔴 High: 4+ factors OR touches auth/contracts
 
             ---
 
-            DO NOT suggest:
-            - Library replacements (Pydantic, Zustand, etc.) - architecture is settled
-            - Refactoring unrelated code
-            - Style/formatting preferences
+            ## 2. Top 5 Findings
 
-  # ===========================================
-  # Deep Review: @claude deep-review
-  # Comprehensive P0 critical analysis
-  # ===========================================
+            List the 5 most important observations (or fewer if clean):
+
+            | # | File:Line | Finding | Why It Matters |
+            |---|-----------|---------|----------------|
+            | 1 | | | |
+            | 2 | | | |
+            | 3 | | | |
+            | 4 | | | |
+            | 5 | | | |
+
+            ---
+
+            ## 3. Required Reviewers
+
+            Tag who needs to review based on touched areas:
+
+            - [ ] **Backend owner** — if routes/, services/, SQL changed
+            - [ ] **Auth owner** — if auth, tokens, login touched
+            - [ ] **Frontend owner** — if components/, pages/ changed
+            - [ ] **Data owner** — if CSV, data processing changed
+
+            ---
+
+            ## 4. Suggested Tests
+
+            Based on changed files, recommend which test suites matter:
+
+            | Test Suite | Run? | Why |
+            |------------|------|-----|
+            | `npm run lint` | | |
+            | `npm run typecheck` | | |
+            | `npm run test:ci` | | |
+            | `npm run test:e2e` | | |
+            | `pytest tests/test_*.py` | | |
+
+            ---
+
+            ## 5. Quick Verdict
+
+            **Triage Result:** LOOKS GOOD / NEEDS ATTENTION / NEEDS DEEP REVIEW
+
+            If NEEDS DEEP REVIEW, explain why in one sentence.
+
+  # =============================================================================
+  # STAGE 1: Deep Review (gated by risk, file patterns, or label)
+  # Goal: Comprehensive analysis when it matters
+  # =============================================================================
   deep-review:
+    name: "Stage 1: Deep Review"
+    if: |
+      github.event_name == 'pull_request' && (
+        contains(github.event.pull_request.labels.*.name, 'risk:high') ||
+        contains(github.event.pull_request.labels.*.name, 'needs-deep-review')
+      )
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Claude Deep Review
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            # Stage 1: Deep Review
+
+            This PR was flagged for deep review. Perform comprehensive analysis.
+
+            ---
+
+            ## 1. Architecture & Migration Consistency
+
+            - [ ] No deprecated patterns reintroduced
+            - [ ] No duplicate hook patterns (old useQuery vs React Query)
+            - [ ] No legacy endpoint usage (/districts instead of /filter-options)
+            - [ ] Migration is complete (no mixed old/new patterns)
+
+            **Findings:**
+
+            ---
+
+            ## 2. Stale/Race Safety Checklist
+
+            For each async operation in changed files:
+
+            | File | Hook/Function | Abort Signal? | Stale Guard? | Cleanup? |
+            |------|---------------|---------------|--------------|----------|
+            | | | | | |
+
+            - [ ] All API calls use abort signal
+            - [ ] No setState after unmount possible
+            - [ ] React Query OR useStaleRequestGuard used
+            - [ ] useEffect cleanup functions present
+
+            **Findings:**
+
+            ---
+
+            ## 3. Contract Semantics
+
+            Beyond schema drift, check semantic correctness:
+
+            - [ ] Response field meanings unchanged (not just names)
+            - [ ] Null handling consistent (backend sends null vs undefined)
+            - [ ] Array vs single value semantics preserved
+            - [ ] Date format expectations match (ISO string vs Date object)
+            - [ ] Enum values match between frontend/backend
+
+            **Findings:**
+
+            ---
+
+            ## 4. Provider & Context Tree
+
+            - [ ] All hooks used within required Providers
+            - [ ] No orphaned Context consumers
+            - [ ] Provider hierarchy correct (Auth > Subscription > Filters)
+
+            **Findings:**
+
+            ---
+
+            ## 5. SQL & Data Safety
+
+            - [ ] Uses `:param` bindings (not f-strings)
+            - [ ] Includes `COALESCE(is_outlier, false) = false`
+            - [ ] Date bounds exclusive upper bound
+            - [ ] NULL guards for optional params
+            - [ ] No N+1 query patterns
+
+            **Findings:**
+
+            ---
+
+            ## 6. Breaking Change Analysis
+
+            ```
+            Changed Files:
+            [list files]
+
+            Downstream Dependents:
+            [list files that import/use changed code]
+
+            Breaking Risk:
+            [assessment]
+            ```
+
+            ---
+
+            ## Go/No-Go Recommendation
+
+            **🚦 VERDICT:** GO / NO-GO / CONDITIONAL
+
+            If NO-GO or CONDITIONAL, list required fixes:
+            1.
+            2.
+            3.
+
+  # =============================================================================
+  # STAGE 1b: Deep Review (triggered by @claude deep-review comment)
+  # =============================================================================
+  deep-review-on-demand:
+    name: "Stage 1: Deep Review (on-demand)"
     if: |
       (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude deep-review')) ||
       (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude deep-review'))
@@ -133,8 +246,7 @@ jobs:
       issues: write
       id-token: write
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -143,101 +255,157 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           prompt: |
-            # Deep Review: P0 Critical Analysis
+            # Stage 1: Deep Review (Requested)
 
-            Perform a comprehensive deep-dive analysis of this PR. Focus ONLY on critical issues that could cause production failures, data corruption, or breaking changes.
+            User requested deep review. Perform comprehensive analysis.
 
-            ---
+            ## 1. Architecture & Migration Consistency
+            - No deprecated patterns, no duplicate hooks, no legacy endpoints
+            - Check migration completeness
 
-            ## 1. API Contract Integrity
-            - Compare changed backend routes with frontend adapters
-            - Check: response shapes, field names, field types match exactly
-            - Flag: renamed fields, removed fields, changed types
-            - Verify: frontend adapters handle all response variations
-            - Check: any route using `request.args.get()` instead of `g.normalized_params`
+            ## 2. Stale/Race Safety
+            - Abort signals, stale guards, cleanup functions
+            - No setState after unmount
 
-            ## 2. Orphaned Code Detection
-            - Find: removed Providers but hooks still called (like useFilterState without PowerBIFilterProvider)
-            - Find: deleted functions/components still imported elsewhere
-            - Find: removed Context but consumers still exist
-            - Find: dead imports that will crash at runtime
+            ## 3. Contract Semantics
+            - Response field meanings, null handling, enum values
 
-            ## 3. Breaking Change Analysis
-            - Trace: what downstream code depends on changed files
-            - Check: are all consumers updated?
-            - Flag: shared utilities modified without checking all callers
-            - Flag: changed function signatures without updating call sites
+            ## 4. Provider & Context Tree
+            - Hooks within Providers, no orphaned consumers
 
-            ## 4. Data Flow Verification
-            - Trace: Backend service → Route → API → Adapter → Component
-            - Check: data transformations preserve required fields
-            - Check: null/undefined handling at each layer
-            - Flag: implicit assumptions about data shape
+            ## 5. SQL & Data Safety
+            - :param bindings, outlier exclusion, NULL guards
 
-            ## 5. State & Provider Tree
-            - Check: all hooks used within correct Provider boundaries
-            - Check: Context dependencies satisfied in component tree
-            - Flag: hooks that assume parent context exists
-            - Check: proper cleanup in useEffect (abort controllers, subscriptions)
-
-            ## 6. Migration Completeness
-            - If migrating patterns: are ALL usages migrated?
-            - Find: mixed old/new patterns that will conflict
-            - Flag: partial migrations (some files updated, others not)
-
-            ## 7. SQL & Backend Safety
-            - Check: uses `:param` bindings (not f-strings, not %(param)s)
-            - Check: includes `COALESCE(is_outlier, false) = false`
-            - Check: date bounds are exclusive upper bound
-            - Check: proper NULL handling with param guards
-
-            ## 8. Frontend Async Safety
-            - Check: API calls use abort signal
-            - Check: stale request protection (requestId or React Query)
-            - Check: no setState after unmount
-            - Flag: useEffect with async but no cleanup
-
-            ## 9. Security & Auth
-            - Check: protected routes have auth checks
-            - Check: no sensitive data in client bundles
-            - Check: API keys, tokens not exposed
-            - Flag: client-side trust assumptions
-
-            ## 10. Implicit Dependencies
-            - Find: hardcoded values that should be constants
-            - Find: magic numbers without explanation
-            - Find: assumed environment (paths, URLs, configs)
-            - Flag: code that works locally but may fail in prod
+            ## 6. Breaking Changes
+            - Trace downstream dependents
 
             ---
 
-            ## Output Format
+            **🚦 VERDICT:** GO / NO-GO / CONDITIONAL
 
-            ### 🚨 P0 Critical (Must Fix Before Merge)
-            List blocking issues with file:line references
+            List any required fixes.
 
-            ### ⚠️ P1 High (Should Fix)
-            List important issues that could cause problems
+  # =============================================================================
+  # STAGE 2: CI Summary (after Regression Suite completes)
+  # Goal: Human-readable summary of CI results
+  # =============================================================================
+  ci-summary:
+    name: "Stage 2: CI Summary"
+    if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion != 'skipped'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      actions: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
 
-            ### 📋 Dependency Graph
+      - name: Get PR number
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const run = await github.rest.actions.getWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.payload.workflow_run.id
+            });
+            const prs = run.data.pull_requests;
+            if (prs && prs.length > 0) {
+              return prs[0].number;
+            }
+            return null;
+
+      - name: Get CI job results
+        id: ci-results
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const jobs = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.payload.workflow_run.id
+            });
+
+            const summary = jobs.data.jobs.map(job => ({
+              name: job.name,
+              status: job.conclusion || job.status,
+              duration: job.completed_at && job.started_at
+                ? Math.round((new Date(job.completed_at) - new Date(job.started_at)) / 1000)
+                : null
+            }));
+
+            return JSON.stringify(summary);
+
+      - name: Claude CI Summary
+        if: steps.pr.outputs.result != 'null'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            # Stage 2: CI Summary
+
+            The Regression Suite just completed. Summarize results for the team.
+
+            ## CI Job Results
+
+            ```json
+            ${{ steps.ci-results.outputs.result }}
             ```
-            Changed: [list changed files]
-            Affects: [list downstream files/components]
-            ```
 
-            ### ✅ Verified Safe
-            List areas checked with no issues found
+            Overall workflow conclusion: **${{ github.event.workflow_run.conclusion }}**
 
             ---
 
-            End with: **VERDICT: SAFE TO MERGE / BLOCK - FIX REQUIRED / NEEDS MANUAL VERIFICATION**
+            ## Your Task
 
-            Be thorough. This is the last line of defense before production.
+            ### 1. Jobs Summary
 
-  # ===========================================
-  # On-demand: Respond to @claude mentions
-  # ===========================================
-  claude:
+            | Job | Status | Duration | Purpose |
+            |-----|--------|----------|---------|
+            | (parse from JSON above) | | | (explain what each job checks) |
+
+            Map each job to what it validates:
+            - `contract-guard` → Frontend/backend contracts in sync
+            - `frontend-import-guard` → No broken imports or deprecated endpoints
+            - `sql-safety` → SQL injection protection, proper bindings
+            - `data-guard` → CSV data integrity
+            - `route-contract` → All frontend routes exist in backend
+            - `smoke-tests` → API endpoints respond
+            - `unit-tests` → Backend logic correct
+            - `integration-tests` → Regression snapshots, API invariants
+            - `frontend-tests` → Lint, typecheck, unit tests, build
+            - `frontend-e2e` → Runtime smoke tests
+            - `security-audit` → Dependency vulnerabilities
+
+            ### 2. Failures Analysis
+
+            If any jobs failed:
+
+            | Failed Job | Likely Root Cause | Suggested Fix |
+            |------------|-------------------|---------------|
+            | | | |
+
+            ### 3. Fix Order
+
+            If multiple failures, suggest order to fix (avoid whack-a-mole):
+
+            1. Fix X first because...
+            2. Then fix Y because...
+            3. Finally fix Z...
+
+            ### 4. Overall Verdict
+
+            **CI Result:** ✅ ALL PASSED / ⚠️ WARNINGS / ❌ FAILED
+
+            **Ready to Merge:** YES / NO / AFTER FIXES
+
+  # =============================================================================
+  # Q&A: Respond to general @claude questions
+  # =============================================================================
+  claude-qa:
+    name: "Claude Q&A"
     if: |
       (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude') && !contains(github.event.comment.body, '@claude deep-review')) ||
       (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude') && !contains(github.event.comment.body, '@claude deep-review')) ||
@@ -251,13 +419,12 @@ jobs:
       issues: write
       id-token: write
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
-      - name: Run Claude
+      - name: Claude Q&A
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          # Uses your CLAUDE.md automatically for context
+          # Answers the user's specific question using CLAUDE.md context
