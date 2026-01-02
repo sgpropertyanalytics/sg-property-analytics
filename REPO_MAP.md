@@ -406,6 +406,30 @@ const { data } = useQuery({
 
 **Lesson:** Async code needs abort/cancel/timeout tests, not just success tests.
 
+### "Just Replace It With Pydantic" Incident
+
+**What happened:** Claude saw 374 lines of `to_int()`, `to_date()`, `to_list()` in `normalize.py` and recommended replacing it with Pydantic.
+
+**The mistake:** Claude didn't read the full validation stack:
+- `contract_schema.py` (1,660 lines) - DB↔API enum mappings
+- `@api_contract` decorator (290 lines) - WARN/STRICT modes
+- Registry pattern - schema versioning
+
+**Why Claude got it wrong:**
+1. Pattern-matched "custom validation" → "should use library"
+2. Applied library-first rule **blindly** without checking if existing solution was good
+3. Didn't understand the full system before recommending changes
+4. Assumed "custom = bad" when actually "custom = battle-tested production system"
+
+**The lesson:**
+> "Just because you CAN replace code with a library doesn't mean you SHOULD."
+
+**Before recommending a rewrite, Claude must:**
+1. Read the FULL system, not just one file
+2. Understand WHY it was built this way
+3. Ask about actual pain points (don't assume)
+4. Check if it's already battle-tested in production
+
 ### Summary: The Over-Engineering Trap
 
 Most incidents above share a pattern: **solving problems that don't exist yet.**
