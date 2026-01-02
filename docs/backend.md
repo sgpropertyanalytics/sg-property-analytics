@@ -712,6 +712,25 @@ pytest tests/test_regression_snapshots.py -v
 
 # Update snapshots (after intentional changes)
 pytest tests/test_regression_snapshots.py --update-snapshots
+
+# Contract validation tests
+pytest tests/contracts/ -v
+```
+
+### CI/CD Integration
+
+The GitHub Actions CI pipeline runs:
+
+1. **contract-guard** - Validates frontend/backend contract alignment
+2. **sql-safety** - Checks for SQL injection patterns, proper bindings
+3. **data-guard** - CSV data integrity validation
+4. **smoke-tests** - API endpoints respond correctly
+5. **unit-tests** - Backend logic tests
+6. **integration-tests** - Regression snapshots, API invariants
+
+```yaml
+# .github/workflows/regression.yml
+# Runs on every PR to main
 ```
 
 ---
@@ -760,4 +779,4 @@ SUPPORTED_API_CONTRACT_VERSIONS = {"v1", "v2", "v3"}
 
 ---
 
-*Last updated: December 2024*
+*Last updated: January 2026*

@@ -10,7 +10,7 @@ Analytics platform for Singapore private residential real estate transactions.
 |----------|-------------|
 | [Architecture](architecture.md) | System design, layer diagrams, data flow, deployment |
 | [Backend](backend.md) | API contracts, SQL rules, services, caching |
-| [Frontend](frontend.md) | PowerBIFilterContext, hooks, adapters, components |
+| [Frontend](frontend.md) | Zustand stores, TanStack Query, adapters, components |
 
 ### Reference
 
@@ -39,12 +39,12 @@ Analytics platform for Singapore private residential real estate transactions.
 │                                                                               │
 │  Frontend (React/Vite)                 Backend (Flask)                        │
 │  ┌────────────────────────┐           ┌────────────────────────────────────┐ │
-│  │ PowerBIFilterContext   │           │ Middleware Layer                   │ │
+│  │ Zustand Filter Store   │           │ Middleware Layer                   │ │
 │  │  • filters, drill state│           │  • request_id, query_timing        │ │
 │  │  • buildApiParams()    │           ├────────────────────────────────────┤ │
 │  ├────────────────────────┤           │ API Contract Layer                 │ │
-│  │ useAbortableQuery      │  ──────▶  │  • @api_contract decorator         │ │
-│  │  • abort, stale detect │           │  • param validation/normalization  │ │
+│  │ useAppQuery (TanStack) │  ──────▶  │  • @api_contract decorator         │ │
+│  │  • caching, abort      │           │  • param validation/normalization  │ │
 │  ├────────────────────────┤           ├────────────────────────────────────┤ │
 │  │ Adapters               │           │ Routes → Services → SQL            │ │
 │  │  • transformTimeSeries │  ◀──────  │  • /api/aggregate                  │ │
@@ -66,11 +66,12 @@ Analytics platform for Singapore private residential real estate transactions.
 
 | Layer | Technology |
 |-------|------------|
-| Frontend | React 18, Vite, Tailwind CSS, Chart.js |
+| Frontend | React 18, Vite, Tailwind CSS, Chart.js, TanStack Query, Zustand |
 | Backend | Flask, SQLAlchemy, Python 3.10+ |
 | Database | PostgreSQL (Render hosted) |
 | Auth | Firebase (Google OAuth) + JWT |
 | Hosting | Vercel (frontend), Render (backend) |
+| CI/CD | GitHub Actions (3-stage Claude Code review) |
 
 ## Page Routes
 
@@ -90,7 +91,8 @@ Analytics platform for Singapore private residential real estate transactions.
 2. **Adapter pattern** - Charts never access raw API data directly
 3. **SQL-first aggregation** - No pandas in production (512MB memory limit)
 4. **API contract system** - `@api_contract` decorator validates all requests
-5. **Abort/stale protection** - `useAbortableQuery` prevents race conditions
+5. **TanStack Query** - All data fetching via `useAppQuery` (caching, abort, deduplication)
+6. **Zustand state** - Filter state via `useZustandFilters` (replaced Context)
 
 ## Project Structure
 
@@ -109,20 +111,27 @@ sg-property-analyzer/
 │   ├── services/             # 37 service files
 │   ├── models/               # SQLAlchemy models
 │   ├── db/                   # sql.py (helpers)
+│   ├── tests/                # Contract tests, snapshots
 │   └── utils/                # normalize.py (input boundary)
 │
 ├── frontend/src/
+│   ├── stores/               # Zustand state management
+│   │   └── filterStore.js    # Filter state
+│   ├── lib/
+│   │   └── queryClient.js    # TanStack Query config
 │   ├── context/
-│   │   └── PowerBIFilter/    # Main filter context
+│   │   ├── AuthContext.jsx   # Auth
+│   │   └── PowerBIFilter/    # Utilities only (Provider removed)
 │   ├── components/
 │   │   ├── layout/           # DashboardLayout, GlobalNavRail
 │   │   └── powerbi/          # 40+ chart components
 │   ├── adapters/
 │   │   └── aggregate/        # 13 transform modules
-│   ├── hooks/                # useAbortableQuery, useDeferredFetch
+│   ├── hooks/                # useAppQuery, useDeferredFetch
 │   ├── schemas/apiContract/  # Frontend enums
 │   └── api/client.js         # Axios with queue
 │
+├── .github/workflows/        # CI/CD (Claude Code review, regression)
 ├── docs/                     # This documentation
 ├── scripts/                  # Upload, migration scripts
 └── rawdata/                  # CSV files
@@ -160,30 +169,36 @@ npm run dev
 
 ## Key Concepts
 
-### PowerBIFilterContext
+### Zustand Filter Store
 
-All filter state lives in a single context:
+All filter state lives in a Zustand store:
 
 ```javascript
+import { useZustandFilters } from '../stores';
+
 const {
-  filters,           // districts, bedrooms, dateRange, saleTypes
+  filters,           // districts, bedroomTypes, timeFilter, saleType
   drillPath,         // location, time hierarchy
   timeGrouping,      // 'year' | 'quarter' | 'month'
   buildApiParams,    // Merge filters + overrides
   debouncedFilterKey // 200ms debounced cache key
-} = usePowerBIFilters();
+} = useZustandFilters();
 ```
 
 ### Data Fetching Pattern
 
 ```javascript
-const { data, loading, error } = useAbortableQuery(
+import { useAppQuery } from '../hooks';
+import { useZustandFilters } from '../stores';
+
+const { data, status, error } = useAppQuery(
   async (signal) => {
     const params = buildApiParams({ group_by: 'quarter' });
-    const response = await apiClient.get('/api/aggregate', { params, signal });
-    return transformTimeSeries(response.data.data, timeGrouping);
+    const response = await getAggregate(params, { signal });
+    return transformTimeSeries(response.data, timeGrouping);
   },
-  [debouncedFilterKey, timeGrouping]
+  [debouncedFilterKey, timeGrouping],
+  { chartName: 'MyChart', keepPreviousData: true }
 );
 ```
 
@@ -219,4 +234,4 @@ For detailed architecture diagrams, see:
 
 ---
 
-*Last updated: December 2024*
+*Last updated: January 2026*

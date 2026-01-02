@@ -11,7 +11,7 @@
 |----------------|------------|
 | Fix a chart bug | `frontend/src/components/powerbi/{ChartName}.jsx` |
 | Add API endpoint | **DON'T.** Extend `/api/aggregate` with new `group_by` value |
-| Change filter behavior | `frontend/src/context/PowerBIFilter/` |
+| Change filter behavior | `frontend/src/stores/filterStore.js` |
 | Fix data calculation | `backend/services/dashboard_service.py` |
 | Add backend constant | `backend/constants.py` |
 | Add frontend constant | `frontend/src/constants/index.js` |
@@ -31,9 +31,10 @@
 |-------|---------|-----------|-----------|
 | **Pages** | Business logic, data scope, sale type decisions | `MacroOverview.jsx`, `PrimaryMarket.jsx`, `DistrictDeepDive.jsx` | `MacroOverview.jsx` |
 | **Components** | Render props ONLY. No logic, no defaults, no state | `components/powerbi/*.jsx` | `TimeTrendChart.jsx` |
-| **Hooks** | Data fetching via React Query | `hooks/useAppQuery.js` | `useAppQuery.js` |
+| **Hooks** | Data fetching via TanStack Query | `hooks/useAppQuery.js` | `useAppQuery.js` |
 | **Adapters** | Transform API → chart format | `adapters/aggregate/*.js` | `timeSeries.js` |
-| **Context** | Global state (filters, auth, subscription) | `context/PowerBIFilter/`, `AuthContext.jsx` | - |
+| **Stores** | Zustand state (filters, etc.) | `stores/filterStore.js` | - |
+| **Context** | Auth, subscription (NOT filters) | `AuthContext.jsx`, `SubscriptionContext.jsx` | - |
 | **Constants** | Display strings, colors, enums | `constants/index.js`, `schemas/apiContract/enums.js` | - |
 
 ### Backend Layers
@@ -66,16 +67,16 @@ Routes parse → Services compute → DB executes
 User adjusts filter (sidebar)
     │
     ▼
-PowerBIFilterProvider updates state
+Zustand store (filterStore.js) updates state
     │
     ▼
-usePowerBIFilters() → deriveActiveFilters()
+useZustandFilters() → deriveActiveFilters()
     │
     ▼
 buildApiParams() creates query params
     │
     ▼
-useAppQuery() triggers fetch (React Query)
+useAppQuery() triggers fetch (TanStack Query)
     │
     ▼
 apiClient.get('/api/aggregate', { params })
@@ -127,8 +128,9 @@ Fact filter    → Transaction table ONLY
 
 | File | Purpose | Risk |
 |------|---------|------|
-| `context/PowerBIFilter/PowerBIFilterProvider.jsx` | All filter state | HIGH - affects all pages |
-| `hooks/useAppQuery.js` | React Query wrapper | HIGH - all data fetching |
+| `stores/filterStore.js` | All filter state (Zustand) | HIGH - affects all pages |
+| `hooks/useAppQuery.js` | TanStack Query wrapper | HIGH - all data fetching |
+| `lib/queryClient.js` | TanStack Query configuration | MEDIUM |
 | `components/powerbi/TimeTrendChart.jsx` | **Reference chart pattern** | REFERENCE |
 | `adapters/aggregate/timeSeries.js` | **Reference adapter pattern** | REFERENCE |
 | `adapters/aggregate/index.js` | Adapter exports | MEDIUM |
@@ -144,7 +146,7 @@ Fact filter    → Transaction table ONLY
 
 ### Phase 2 Complete - Legacy Hooks Removed
 
-The following were deleted after React Query migration:
+The following were deleted after TanStack Query migration:
 - ~~`useQuery.js`~~ → Replaced by `useAppQuery.js`
 - ~~`useAbortableQuery.js`~~ → Replaced by `useAppQuery.js`
 - ~~`useStaleRequestGuard.js`~~ → Replaced by `useAppQuery.js`
@@ -152,13 +154,25 @@ The following were deleted after React Query migration:
 
 **Current standard:** Use `useAppQuery()` for ALL data fetching.
 
-### Phase 3 Pending - Zustand Migration
+### Phase 3 Complete - Zustand Migration (January 2026)
 
-**Still tech debt (scheduled for replacement):**
-```
-frontend/src/context/PowerBIFilter/PowerBIFilterProvider.jsx  (300+ lines)
-```
-→ Will be replaced by Zustand store. **Do NOT extend this file with new features.**
+**Migration completed.** PowerBIFilterProvider has been removed.
+
+| Component | Status |
+|-----------|--------|
+| `PowerBIFilterProvider.jsx` | **DELETED** (~600 lines) |
+| `FilterStoreDevTools.jsx` | **DELETED** |
+| `stores/filterStore.js` | **CURRENT** - Zustand store |
+
+**Current standard:**
+- Use `useZustandFilters()` for filter state (not `usePowerBIFilters`)
+- Import from `../stores` not `../context/PowerBIFilter`
+
+**What remains in `context/PowerBIFilter/`:**
+- `constants.js` - Filter initial values, time levels
+- `hooks.js` - `useFilterOptions`, `useDebouncedFilterKey`
+- `storage.js` - Page-namespaced persistence utilities
+- `utils.js` - Pure functions (`deriveActiveFilters`, etc.)
 
 ### V1 Endpoints (HIGH RISK - No Contract Validation)
 
@@ -190,8 +204,13 @@ backend/routes/analytics/deprecated.py  → Contains removed endpoints
 ### Chart Component Template
 
 ```jsx
+import { useZustandFilters } from '../stores';
+import { useAppQuery } from '../hooks';
+import { getAggregate } from '../api/analytics';
+import { transformTimeSeries } from '../adapters';
+
 function MyChartBase({ height = 300, saleType = null }) {
-  const { buildApiParams, debouncedFilterKey } = usePowerBIFilters();
+  const { buildApiParams, debouncedFilterKey } = useZustandFilters();
 
   const { data, status, error } = useAppQuery(
     async (signal) => {
@@ -203,7 +222,7 @@ function MyChartBase({ height = 300, saleType = null }) {
       return transformTimeSeries(response.data);  // Always use adapter
     },
     [debouncedFilterKey, saleType],
-    { chartName: 'MyChart' }
+    { chartName: 'MyChart', keepPreviousData: true }
   );
 
   if (status === 'pending') return <Skeleton />;
@@ -240,8 +259,8 @@ function MyChartBase({ height = 300, saleType = null }) {
 | If you're doing this... | STOP. Do this instead. |
 |-------------------------|------------------------|
 | Creating new endpoint | Extend `/api/aggregate` with new `group_by` |
-| Writing custom hook >50 lines | Check if library exists (React Query, Zustand) |
-| Building new state management | Use existing PowerBIFilterContext (or wait for Zustand) |
+| Writing custom hook >50 lines | Check if library exists (TanStack Query, Zustand) |
+| Building new state management | Use existing Zustand store (`filterStore.js`) |
 | Writing 3 similar lines of code | That's fine. Don't abstract yet. |
 
 ### The Golden Rule
@@ -253,7 +272,7 @@ function MyChartBase({ height = 300, saleType = null }) {
 ## 8. Directory Tree (Annotated)
 
 ```
-sgpropertytrend/
+sg-property-analyzer/
 ├── CLAUDE.md              # Rules (non-negotiable)
 ├── REPO_MAP.md            # Navigation (this file)
 │
@@ -270,22 +289,36 @@ sgpropertytrend/
 │   ├── services/
 │   │   ├── dashboard_service.py  # Main SQL
 │   │   └── classifier.py         # Bedroom logic
-│   └── models/            # SQLAlchemy ORM
+│   ├── models/            # SQLAlchemy ORM
+│   └── tests/
+│       ├── contracts/     # Contract validation tests
+│       └── snapshots/     # Regression snapshots
 │
 ├── frontend/
 │   └── src/
 │       ├── pages/         # Business logic lives here
 │       ├── components/
 │       │   └── powerbi/   # Chart components
+│       ├── stores/        # Zustand state (NEW)
+│       │   └── filterStore.js   # Filter state
 │       ├── hooks/
-│       │   └── useAppQuery.js    # Data fetching
+│       │   └── useAppQuery.js   # TanStack Query wrapper
+│       ├── lib/
+│       │   └── queryClient.js   # TanStack Query config
 │       ├── adapters/
-│       │   └── aggregate/        # Response transforms
+│       │   └── aggregate/       # Response transforms
 │       ├── context/
-│       │   └── PowerBIFilter/    # Filter state (tech debt)
+│       │   ├── AuthContext.jsx        # Auth
+│       │   ├── SubscriptionContext.jsx # Subscription
+│       │   └── PowerBIFilter/   # Utilities only (Provider removed)
 │       ├── constants/     # Frontend constants
 │       └── schemas/
-│           └── apiContract/      # Enums
+│           └── apiContract/     # Enums
+│
+├── .github/
+│   └── workflows/
+│       ├── claude.yml     # Claude Code PR review (3-stage)
+│       └── regression.yml # CI/CD pipeline
 │
 ├── docs/                  # Architecture docs
 │   ├── architecture.md
@@ -340,7 +373,7 @@ generateFilterKey()   → "We need cache keys" (layer 5)
 
 **Result:** 400+ lines of custom infrastructure. Then `datePreset` was forgotten in `generateFilterKey()` → stale data bug.
 
-**The irony:** React Query does ALL of this in 5 lines:
+**The irony:** TanStack Query does ALL of this in 5 lines:
 ```js
 const { data } = useQuery({
   queryKey: ['aggregate', filters],  // Auto cache key from object
@@ -352,11 +385,16 @@ const { data } = useQuery({
 
 **Impact:** Stale data shown to users, race conditions, 400+ lines to maintain.
 
-**Fix:** Migrated to React Query via `useAppQuery.js`.
+**Fix:** Migrated to TanStack Query via `useAppQuery.js`. Then migrated filter state to Zustand via `filterStore.js`.
+
+**Current state (January 2026):**
+- TanStack Query: All data fetching via `useAppQuery()`
+- Zustand: All filter state via `useZustandFilters()`
+- ~1600 lines of legacy code deleted
 
 **Lesson:**
-- React Query solves: data fetching, caching, abort, stale detection, retries
-- Zustand solves: global state (replacing large Context files)
+- TanStack Query solves: data fetching, caching, abort, stale detection, retries
+- Zustand solves: global state (replaced 600+ line Context file)
 - **If you're writing >50 lines of infrastructure, STOP and find a library**
 
 ### Silent Param Drop Incident (Jan 2, 2026)
