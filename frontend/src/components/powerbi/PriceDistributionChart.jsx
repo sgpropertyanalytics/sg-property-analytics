@@ -93,10 +93,11 @@ function PriceDistributionChartBase({
       return transformDistributionSeries(apiData.price_histogram);
     },
     [debouncedFilterKey, numBins, showFullRange, saleType],
-    { chartName: 'PriceDistributionChart', initialData: { bins: [], stats: {}, tail: {}, totalCount: 0 }, enabled: !useShared, keepPreviousData: true }
+    { chartName: 'PriceDistributionChart', initialData: null, enabled: !useShared, keepPreviousData: true }
   );
 
-  const resolvedData = useShared ? transformDistributionSeries(sharedData) : histogramData;
+  // Default fallback for when histogramData is null (initial load)
+  const resolvedData = useShared ? transformDistributionSeries(sharedData) : (histogramData ?? { bins: [], stats: {}, tail: {}, totalCount: 0 });
   // Use parent's status directly when using shared data
   const resolvedStatus = useShared ? sharedStatus : status;
 
