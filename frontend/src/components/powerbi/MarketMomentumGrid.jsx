@@ -12,26 +12,6 @@ import { ChartFrame } from '../common/ChartFrame';
 const ALL_DISTRICTS = [...CCR_DISTRICTS, ...RCR_DISTRICTS, ...OCR_DISTRICTS];
 
 /**
- * Convert period string to date_from for API
- * @param {string} period - '3m', '6m', '12m', or 'all'
- * @returns {string|null} ISO date string or null for 'all'
- */
-function periodToDateFrom(period) {
-  if (period === 'all') return null;
-
-  const today = new Date();
-  let months = 12; // default
-
-  if (period === '3m') months = 3;
-  else if (period === '6m') months = 6;
-  else if (period === '12m') months = 12;
-
-  const date = new Date(today);
-  date.setMonth(date.getMonth() - months);
-  return date.toISOString().split('T')[0]; // YYYY-MM-DD
-}
-
-/**
  * MarketMomentumGrid - 28-District Price Growth Visualization
  *
  * Displays a grid of micro-charts showing historical price growth for all districts.
@@ -49,7 +29,7 @@ function periodToDateFrom(period) {
  *  saleType?: string,
  * }} props
  */
-export function MarketMomentumGrid({ period = '12m', bedroom = 'all', saleType = 'all' }) {
+export function MarketMomentumGrid({ period = 'Y1', bedroom = 'all', saleType = 'all' }) {
   // Create a stable filter key for dependency tracking
   const filterKey = useMemo(() => `${period}:${bedroom}:${saleType}`, [period, bedroom, saleType]);
 
@@ -71,10 +51,10 @@ export function MarketMomentumGrid({ period = '12m', bedroom = 'all', saleType =
         metrics: 'median_psf,total_value',
       };
 
-      // Add date_from based on period
-      const dateFrom = periodToDateFrom(period);
-      if (dateFrom) {
-        params.date_from = dateFrom;
+      // Pass timeframe ID to backend - backend resolves dates via resolve_timeframe()
+      // Canonical pattern: Frontend sends ID, backend resolves to date bounds
+      if (period && period !== 'all') {
+        params.timeframe = period;  // M3, M6, Y1, Y3, Y5
       }
 
       // Add bedroom filter
