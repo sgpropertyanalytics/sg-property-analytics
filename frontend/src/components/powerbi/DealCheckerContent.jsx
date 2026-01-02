@@ -20,7 +20,34 @@ import {
   getProjectNamesField,
 } from '../../schemas/apiContract';
 import { getPercentile } from '../../utils/statistics';
-import { useStaleRequestGuard } from '../../hooks';
+
+/**
+ * Inline stale request guard (previously useStaleRequestGuard hook)
+ * Simple abort/stale request protection for deal checker fetches.
+ */
+function useStaleRequestGuard() {
+  const requestIdRef = React.useRef(0);
+  const abortControllerRef = React.useRef(null);
+
+  const startRequest = React.useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+    requestIdRef.current += 1;
+    return requestIdRef.current;
+  }, []);
+
+  const isStale = React.useCallback((requestId) => {
+    return requestId !== requestIdRef.current;
+  }, []);
+
+  const getSignal = React.useCallback(() => {
+    return abortControllerRef.current?.signal;
+  }, []);
+
+  return { startRequest, isStale, getSignal };
+}
 
 // K-anonymity threshold for project-level data (min 15 for privacy)
 const K_PROJECT_THRESHOLD = 15;
