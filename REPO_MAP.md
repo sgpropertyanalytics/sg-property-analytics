@@ -1,0 +1,308 @@
+# Repository Map
+
+> Navigation guide for Claude Code, agents, and developers.
+> **Rules live in CLAUDE.md** | **Navigation lives here**
+
+---
+
+## 1. Quick Navigation
+
+| "I need to..." | Look at... |
+|----------------|------------|
+| Fix a chart bug | `frontend/src/components/powerbi/{ChartName}.jsx` |
+| Add API endpoint | **DON'T.** Extend `/api/aggregate` with new `group_by` value |
+| Change filter behavior | `frontend/src/context/PowerBIFilter/` |
+| Fix data calculation | `backend/services/dashboard_service.py` |
+| Add backend constant | `backend/constants.py` |
+| Add frontend constant | `frontend/src/constants/index.js` |
+| Add new enum value | `backend/api/contracts/contract_schema.py` + `frontend/src/schemas/apiContract/enums.js` |
+| Validate API params | `backend/api/contracts/` (use `@api_contract` decorator) |
+| Transform API response | `frontend/src/adapters/aggregate/` |
+| Debug 500 error | Check server logs for `TypeError` in `strptime`/`int`/`float` |
+| Understand a page | `frontend/src/pages/{PageName}.jsx` |
+
+---
+
+## 2. Architecture Layers
+
+### Frontend Layers
+
+| Layer | Purpose | Key Files | Copy This |
+|-------|---------|-----------|-----------|
+| **Pages** | Business logic, data scope, sale type decisions | `MacroOverview.jsx`, `PrimaryMarket.jsx`, `DistrictDeepDive.jsx` | `MacroOverview.jsx` |
+| **Components** | Render props ONLY. No logic, no defaults, no state | `components/powerbi/*.jsx` | `TimeTrendChart.jsx` |
+| **Hooks** | Data fetching via React Query | `hooks/useAppQuery.js` | `useAppQuery.js` |
+| **Adapters** | Transform API → chart format | `adapters/aggregate/*.js` | `timeSeries.js` |
+| **Context** | Global state (filters, auth, subscription) | `context/PowerBIFilter/`, `AuthContext.jsx` | - |
+| **Constants** | Display strings, colors, enums | `constants/index.js`, `schemas/apiContract/enums.js` | - |
+
+### Backend Layers
+
+| Layer | Purpose | Key Files | Copy This |
+|-------|---------|-----------|-----------|
+| **Routes** | Parse params, validate, call service | `routes/analytics/aggregate.py` | `aggregate.py` |
+| **Services** | SQL queries, business logic, caching | `services/dashboard_service.py` | `dashboard_service.py` |
+| **Contracts** | Schema validation, `@api_contract` decorator | `api/contracts/contract_schema.py` | - |
+| **Models** | SQLAlchemy ORM definitions | `models/transaction.py` | - |
+| **Constants** | Districts, regions, mappings (SSOT) | `constants.py` | - |
+
+### Layer Rules
+
+```
+Pages decide → Components render → Hooks fetch → Adapters transform
+Routes parse → Services compute → DB executes
+```
+
+**Common Mistakes:**
+- Component hardcodes `sale_type='resale'` → **WRONG.** Page passes `saleType` prop
+- Route contains SQL → **WRONG.** Move to service
+- Adapter has business logic → **WRONG.** Adapters only transform shape
+
+---
+
+## 3. Data Flow Chain
+
+```
+User adjusts filter (sidebar)
+    │
+    ▼
+PowerBIFilterProvider updates state
+    │
+    ▼
+usePowerBIFilters() → deriveActiveFilters()
+    │
+    ▼
+buildApiParams() creates query params
+    │
+    ▼
+useAppQuery() triggers fetch (React Query)
+    │
+    ▼
+apiClient.get('/api/aggregate', { params })
+    │
+    ▼
+@api_contract decorator validates params
+    │
+    ▼
+dashboard_service.py executes SQL
+    │
+    ▼
+Response: { data: [...], meta: { elapsedMs, cacheHit } }
+    │
+    ▼
+Adapter transforms to chart format
+    │
+    ▼
+Chart renders with new data
+```
+
+### Filter Flow Details
+
+```
+Sidebar slicer → ALL charts
+Cross-filter   → ALL charts
+Fact filter    → Transaction table ONLY
+```
+
+---
+
+## 4. Critical Files
+
+### Backend (10 files that matter)
+
+| File | Purpose | Risk |
+|------|---------|------|
+| `services/dashboard_service.py` | Main SQL aggregation, CTEs, caching | HIGH - affects all charts |
+| `api/contracts/contract_schema.py` | Enums, field mappings, API shapes | HIGH - breaking changes |
+| `constants.py` | Districts→Regions, bedroom thresholds | HIGH - SSOT |
+| `routes/analytics/aggregate.py` | Main endpoint, param validation | MEDIUM |
+| `routes/analytics/kpi_v2.py` | KPI cards endpoint | MEDIUM |
+| `services/classifier.py` | Bedroom classification logic | MEDIUM |
+| `routes/insights.py` | **v1 endpoints - NO CONTRACT VALIDATION** | HIGH RISK |
+| `api/contracts/wrapper.py` | `@api_contract` decorator | LOW |
+| `utils/normalize.py` | `to_int`, `to_date`, `to_list` helpers | LOW |
+| `models/transaction.py` | Transaction ORM model | LOW |
+
+### Frontend (10 files that matter)
+
+| File | Purpose | Risk |
+|------|---------|------|
+| `context/PowerBIFilter/PowerBIFilterProvider.jsx` | All filter state | HIGH - affects all pages |
+| `hooks/useAppQuery.js` | React Query wrapper | HIGH - all data fetching |
+| `components/powerbi/TimeTrendChart.jsx` | **Reference chart pattern** | REFERENCE |
+| `adapters/aggregate/timeSeries.js` | **Reference adapter pattern** | REFERENCE |
+| `adapters/aggregate/index.js` | Adapter exports | MEDIUM |
+| `constants/index.js` | Regions, colors, bedroom order | MEDIUM |
+| `schemas/apiContract/enums.js` | SaleType, Tenure enums | MEDIUM |
+| `api/client.js` | Axios instance, retry logic | MEDIUM |
+| `pages/MacroOverview.jsx` | **Reference page pattern** | REFERENCE |
+| `App.jsx` | Router, layout, providers | LOW |
+
+---
+
+## 5. Tech Debt Zones
+
+### Phase 2 Complete - Legacy Hooks Removed
+
+The following were deleted after React Query migration:
+- ~~`useQuery.js`~~ → Replaced by `useAppQuery.js`
+- ~~`useAbortableQuery.js`~~ → Replaced by `useAppQuery.js`
+- ~~`useStaleRequestGuard.js`~~ → Replaced by `useAppQuery.js`
+- ~~`useGatedAbortableQuery.js`~~ → Replaced by `useAppQuery.js`
+
+**Current standard:** Use `useAppQuery()` for ALL data fetching.
+
+### Phase 3 Pending - Zustand Migration
+
+**Still tech debt (scheduled for replacement):**
+```
+frontend/src/context/PowerBIFilter/PowerBIFilterProvider.jsx  (300+ lines)
+```
+→ Will be replaced by Zustand store. **Do NOT extend this file with new features.**
+
+### V1 Endpoints (HIGH RISK - No Contract Validation)
+
+```
+/insights/district-psf        → No @api_contract, breaks silently
+/insights/district-liquidity  → No @api_contract, breaks silently
+```
+→ These should migrate to `/api/aggregate`. **Do NOT add features to these.**
+
+### Deprecated Routes
+
+```
+backend/routes/analytics/deprecated.py  → Contains removed endpoints
+```
+
+---
+
+## 6. Pattern References
+
+| Task | Copy This File Exactly |
+|------|------------------------|
+| New chart component | `components/powerbi/TimeTrendChart.jsx` |
+| New adapter | `adapters/aggregate/timeSeries.js` |
+| New service function | `services/dashboard_service.py:get_aggregated_data()` |
+| New route handler | `routes/analytics/aggregate.py` |
+| New page | `pages/MacroOverview.jsx` |
+| Add enum value | `api/contracts/contract_schema.py` + `schemas/apiContract/enums.js` |
+
+### Chart Component Template
+
+```jsx
+function MyChartBase({ height = 300, saleType = null }) {
+  const { buildApiParams, debouncedFilterKey } = usePowerBIFilters();
+
+  const { data, status, error } = useAppQuery(
+    async (signal) => {
+      const params = buildApiParams({
+        group_by: 'month',
+        ...(saleType && { sale_type: saleType })
+      });
+      const response = await getAggregate(params, { signal });
+      return transformTimeSeries(response.data);  // Always use adapter
+    },
+    [debouncedFilterKey, saleType],
+    { chartName: 'MyChart' }
+  );
+
+  if (status === 'pending') return <Skeleton />;
+  if (status === 'error') return <ErrorState error={error} />;
+  if (!data?.length) return <EmptyState />;
+  return <Chart data={data} />;
+}
+```
+
+---
+
+## 7. Anti-Patterns (Simplicity Anchors)
+
+### Bug Fixes
+
+| If you're doing this... | STOP. Do this instead. |
+|-------------------------|------------------------|
+| Adding a wrapper hook to fix a bug | Fix the bug directly in the source |
+| Creating a new context for one component | Pass props or use existing context |
+| Adding `if (specificEdgeCase)` hack | Fix the root cause |
+| Fix is >20 lines | Question if you're solving the right problem |
+
+### Refactoring
+
+| If you're doing this... | STOP. Do this instead. |
+|-------------------------|------------------------|
+| Creating a "better" abstraction | Match existing patterns exactly |
+| Improving code while fixing a bug | Just fix the bug |
+| Adding types/docs to unchanged code | Only touch what you're changing |
+| Generalizing for future needs | Solve today's problem only |
+
+### New Features
+
+| If you're doing this... | STOP. Do this instead. |
+|-------------------------|------------------------|
+| Creating new endpoint | Extend `/api/aggregate` with new `group_by` |
+| Writing custom hook >50 lines | Check if library exists (React Query, Zustand) |
+| Building new state management | Use existing PowerBIFilterContext (or wait for Zustand) |
+| Writing 3 similar lines of code | That's fine. Don't abstract yet. |
+
+### The Golden Rule
+
+> **When in doubt: find similar code, copy the pattern exactly, change only what's necessary.**
+
+---
+
+## 8. Directory Tree (Annotated)
+
+```
+sgpropertytrend/
+├── CLAUDE.md              # Rules (non-negotiable)
+├── REPO_MAP.md            # Navigation (this file)
+│
+├── backend/
+│   ├── app.py             # Flask entry point
+│   ├── constants.py       # Districts, regions (SSOT)
+│   ├── api/
+│   │   └── contracts/     # @api_contract, schemas
+│   ├── routes/
+│   │   ├── analytics/     # Main endpoints
+│   │   │   ├── aggregate.py   # THE endpoint
+│   │   │   └── kpi_v2.py      # KPI cards
+│   │   └── insights.py    # v1 (HIGH RISK)
+│   ├── services/
+│   │   ├── dashboard_service.py  # Main SQL
+│   │   └── classifier.py         # Bedroom logic
+│   └── models/            # SQLAlchemy ORM
+│
+├── frontend/
+│   └── src/
+│       ├── pages/         # Business logic lives here
+│       ├── components/
+│       │   └── powerbi/   # Chart components
+│       ├── hooks/
+│       │   └── useAppQuery.js    # Data fetching
+│       ├── adapters/
+│       │   └── aggregate/        # Response transforms
+│       ├── context/
+│       │   └── PowerBIFilter/    # Filter state (tech debt)
+│       ├── constants/     # Frontend constants
+│       └── schemas/
+│           └── apiContract/      # Enums
+│
+├── docs/                  # Architecture docs
+│   ├── architecture.md
+│   ├── backend.md
+│   ├── frontend.md
+│   └── BACKEND_CHART_DEPENDENCIES.md
+│
+└── .claude/
+    ├── skills/            # Guardrail skills
+    └── agents/            # Specialized agents
+```
+
+---
+
+## Quick Reference Links
+
+- **Rules & Invariants**: [CLAUDE.md](./CLAUDE.md)
+- **Backend Chart Dependencies**: [docs/BACKEND_CHART_DEPENDENCIES.md](./docs/BACKEND_CHART_DEPENDENCIES.md)
+- **Library-First Reference**: [docs/LIBRARY_FIRST_REFERENCE.md](./docs/LIBRARY_FIRST_REFERENCE.md)
+- **Architecture Overview**: [docs/architecture.md](./docs/architecture.md)

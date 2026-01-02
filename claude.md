@@ -37,6 +37,8 @@
 | `/exit-risk` | Exit Risk Analysis |
 | `/methodology` | Methodology |
 
+**Navigation:** [`REPO_MAP.md`](./REPO_MAP.md) (file locations, patterns, tech debt zones)
+
 **Docs:** `docs/architecture.md`, `docs/frontend.md`, `docs/backend.md`, `docs/BACKEND_CHART_DEPENDENCIES.md`, `docs/LIBRARY_FIRST_REFERENCE.md`
 
 ---
