@@ -278,7 +278,43 @@ jobs:
 
             **First**, answer any specific questions the user asked in their comment.
 
-            **Then**, provide the architecture review:
+            **Then**, provide the full review starting with these sections:
+
+            ---
+
+            ## 📋 Commit Summary
+
+            Summarize all commits in this PR in a concise bullet list:
+            - What changed (1-2 sentences per commit)
+            - Group related commits if applicable
+
+            ---
+
+            ## 🚦 Risk Assessment
+
+            Based on files changed, auto-classify risk using `.claude/review-rules.yml` risk_directories:
+
+            | Risk Level | Paths |
+            |------------|-------|
+            | 🔴 CRITICAL | `backend/api/contracts/`, `backend/services/`, `frontend/src/context/AuthContext`, `backend/routes/` |
+            | 🟠 HIGH | `frontend/src/hooks/`, `frontend/src/adapters/`, `frontend/src/schemas/`, `backend/utils/normalize.py` |
+            | 🟡 MEDIUM | `frontend/src/components/powerbi/`, `frontend/src/pages/`, `backend/tests/` |
+            | 🟢 LOW | All other paths |
+
+            **Determine the highest risk level based on files touched.**
+
+            Output format:
+            ```
+            **Risk Level:** 🔴 CRITICAL / 🟠 HIGH / 🟡 MEDIUM / 🟢 LOW
+
+            **Reason:** [Which critical/high/medium paths were touched]
+
+            **Suggested Reviewers:** [Based on human_review_tags in review-rules.yml]
+            ```
+
+            ---
+
+            ## Architecture Review
 
             ## 6-Point Quality Checklist
 
