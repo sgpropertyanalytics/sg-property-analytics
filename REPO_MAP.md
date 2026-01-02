@@ -359,6 +359,53 @@ const { data } = useQuery({
 - Zustand solves: global state (replacing large Context files)
 - **If you're writing >50 lines of infrastructure, STOP and find a library**
 
+### Silent Param Drop Incident (Jan 2, 2026)
+
+**What happened:** Frontend added `timeframe` param to `buildApiParamsFromState()`. Backend schema didn't have `timeframe` field. `normalize_params()` silently dropped unknown params.
+
+**Result:** Time filter selections were completely ignored. Charts always showed default Y1 data.
+
+**Why wasn't it detected?**
+- Frontend tests verified `buildApiParamsFromState()` outputs correctly (isolation)
+- Backend tests only checked some fields existed (additive-only)
+- **No cross-layer test** verified frontend→backend param acceptance
+
+**Fix:** Added `test_frontend_backend_alignment.py` that lists ALL params frontend sends and verifies backend schemas accept each one.
+
+**Lesson:** Test the integration boundary, not just each layer in isolation.
+
+### Subscription Caching Incident (Dec 30, 2025)
+
+**What happened:** When `/auth/subscription` API failed (network error, server timeout), code set subscription to 'free' AND cached it to localStorage.
+
+**Result:** Premium users permanently downgraded to free tier from temporary API failures.
+
+**Why wasn't it detected?** Happy path tests passed. No tests for API failure scenarios.
+
+**Fix:** On API failure, keep existing cached subscription. Only update cache on SUCCESSFUL response.
+
+**Lesson:** Test failure modes, not just success paths.
+
+### Endpoint Drift Incident (Dec 31, 2025)
+
+**What happened:** `/districts` endpoint was removed from backend. Frontend still called it. Silent 404s.
+
+**Why wasn't it detected?** No test verified frontend-expected endpoints exist in backend.
+
+**Fix:** Added `scripts/check_route_contract.py` + CI job that fails if frontend expects endpoints backend lacks.
+
+**Lesson:** Contract tests must be bidirectional (frontend↔backend).
+
+### Boot Deadlock Incident (Jan 1, 2026)
+
+**What happened:** Abort handling in custom hooks didn't reset `inFlight` state. Queries stuck in 'refreshing' forever. "Updating..." spinner never went away.
+
+**Why wasn't it detected?** Only tested complete request flows, not abort edge cases.
+
+**Fix:** Reset state on abort with multiple guards (mountedRef, activeRequestIdRef, isStale check).
+
+**Lesson:** Async code needs abort/cancel/timeout tests, not just success tests.
+
 ---
 
 ## Quick Reference Links
