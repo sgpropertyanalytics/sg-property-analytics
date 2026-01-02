@@ -1,10 +1,12 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React from 'react';
 // Phase 2: Using TanStack Query via useAppQuery wrapper
 import { useAppQuery } from '../../hooks';
+// Phase 3.4: Using standardized Zustand filters (same as Market Overview)
+import { useZustandFilters } from '../../stores';
 import { getAggregate } from '../../api/client';
 import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS } from '../../constants';
 import { DistrictMicroChart } from './DistrictMicroChart';
-import { isSaleType, getAggField, AggField } from '../../schemas/apiContract';
+import { isSaleType, getAggField, AggField, SaleType } from '../../schemas/apiContract';
 import { assertKnownVersion } from '../../adapters';
 import { ChartFrame } from '../common/ChartFrame';
 
@@ -19,52 +21,30 @@ const ALL_DISTRICTS = [...CCR_DISTRICTS, ...RCR_DISTRICTS, ...OCR_DISTRICTS];
  * - Median PSF trend (line, region-colored)
  * - Total transaction value (background bars)
  *
- * IMPORTANT: This component does NOT use PowerBIFilterContext.
- * It receives filters as props from the parent component (DistrictDeepDive).
- * This is intentional - PowerBIFilterContext only affects Market Pulse page.
+ * Phase 3.4: Uses standardized Zustand filters (same pattern as Market Overview charts).
+ * Filters are managed by page-level FilterBar, not passed as props.
  *
  * @param {{
- *  period?: string,
- *  bedroom?: string,
  *  saleType?: string,
  * }} props
  */
-export function MarketMomentumGrid({ period = 'Y1', bedroom = 'all', saleType = 'all' }) {
-  // Create a stable filter key for dependency tracking
-  const filterKey = useMemo(() => `${period}:${bedroom}:${saleType}`, [period, bedroom, saleType]);
+export function MarketMomentumGrid({ saleType = SaleType.RESALE }) {
+  // Phase 3.4: Using standardized Zustand filters (same pattern as Market Overview)
+  const { buildApiParams, debouncedFilterKey, filterKey } = useZustandFilters();
 
   // Track if filters are changing (for blur effect)
-  const [debouncedFilterKey, setDebouncedFilterKey] = useState(filterKey);
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedFilterKey(filterKey), 300);
-    return () => clearTimeout(timer);
-  }, [filterKey]);
   const isFiltering = filterKey !== debouncedFilterKey;
 
   // Data fetching with useAppQuery - gates on appReady via context
+  // Phase 3.4: Using buildApiParams for standardized filter→API conversion
   const { data, status, error, refetch } = useAppQuery(
     async (signal) => {
-      // Build API params from props (not PowerBIFilterContext)
-      const params = {
+      // Use standardized buildApiParams (same as Market Overview charts)
+      const params = buildApiParams({
         group_by: 'quarter,district',
         metrics: 'median_psf,total_value',
-      };
-
-      // Pass timeframe ID to backend - backend resolves dates via resolve_timeframe()
-      // Canonical pattern: Frontend sends ID, backend resolves to date bounds
-      if (period && period !== 'all') {
-        params.timeframe = period;  // M3, M6, Y1, Y3, Y5
-      }
-
-      // Add bedroom filter
-      if (bedroom && bedroom !== 'all') {
-        params.bedroom = bedroom;
-      }
-
-      // Add sale type filter
-      if (saleType && saleType !== 'all') {
-        params.sale_type = saleType;
-      }
+        sale_type: saleType,
+      });
 
       const response = await getAggregate(params, { signal });
 
@@ -100,7 +80,8 @@ export function MarketMomentumGrid({ period = 'Y1', bedroom = 'all', saleType = 
 
       return districtData;
     },
-    [filterKey],
+    // Use debouncedFilterKey for standardized query key (same as Market Overview)
+    [debouncedFilterKey, saleType, 'market-momentum'],
     { chartName: 'MarketMomentumGrid', initialData: null, keepPreviousData: true }
   );
 

@@ -1,27 +1,23 @@
 name: Claude Code
 
 on:
-  # CI Summary: triggers after Regression Suite completes
+  # CI Summary: triggers after Regression Suite fails
   workflow_run:
     workflows: ["Regression Suite"]
     types: [completed]
-  # Q&A: triggers on @claude mentions
+  # Claude Assistant: triggers on @claude mentions
   issue_comment:
     types: [created]
   pull_request_review_comment:
     types: [created]
-  # Auto PR Summary: triggers on PR opened/updated
-  pull_request:
-    types: [opened, synchronize]
 
 jobs:
   # =============================================================================
-  # CI Summary (after Regression Suite completes)
-  # Goal: Human-readable summary of CI results
+  # CI Summary - Only runs on failures, explains what broke and how to fix
   # =============================================================================
   ci-summary:
     name: "CI Summary"
-    if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion != 'skipped'
+    if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'failure'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -43,10 +39,7 @@ jobs:
               run_id: context.payload.workflow_run.id
             });
             const prs = run.data.pull_requests;
-            if (prs && prs.length > 0) {
-              return prs[0].number;
-            }
-            return null;
+            return prs && prs.length > 0 ? prs[0].number : null;
 
       - name: Get CI job results
         id: ci-results
@@ -71,7 +64,6 @@ jobs:
 
       - name: Get failure details
         id: failure-logs
-        if: github.event.workflow_run.conclusion == 'failure'
         uses: actions/github-script@v7
         with:
           script: |
@@ -81,10 +73,9 @@ jobs:
               run_id: context.payload.workflow_run.id
             });
 
-            // Get failed jobs with their failed steps
             const failedJobs = jobs.data.jobs
               .filter(j => j.conclusion === 'failure')
-              .slice(0, 3)  // Limit to 3 jobs to avoid token overflow
+              .slice(0, 5)
               .map(job => ({
                 name: job.name,
                 failed_steps: job.steps
@@ -102,406 +93,191 @@ jobs:
           claude_args: "--model claude-3-5-haiku-20241022"
           direct_prompt: true
           prompt: |
-            # CI Summary
+            # CI Failed - Diagnose and Fix
 
-            The Regression Suite just completed. Summarize results for the team.
-
-            ## CI Job Results
-
+            ## Job Results
             ```json
             ${{ steps.ci-results.outputs.result }}
             ```
 
-            Overall workflow conclusion: **${{ github.event.workflow_run.conclusion }}**
-
-            ## Failed Jobs Detail (if any)
-
+            ## Failed Jobs
             ```json
             ${{ steps.failure-logs.outputs.result }}
             ```
 
-            Use the failed steps to diagnose root causes. Common patterns:
-            - `contract-guard` + "drift detected" → Run `python backend/scripts/generate_contracts.py`
-            - `frontend-tests` + "lint" → Run `npm run lint:ci` locally
-            - `frontend-e2e` + timeout → Check for missing mocks or slow renders
-            - `integration-tests` + "snapshot" → Intentional data change? Run `--update-snapshots`
-
             ---
 
-            ## Your Task
+            ## Your Response Format
 
-            ### 1. Jobs Summary
+            ### What Failed
+            [List each failed job and its failed step]
 
-            | Job | Status | Duration | Purpose |
-            |-----|--------|----------|---------|
-            | (parse from JSON above) | | | (explain what each job checks) |
+            ### Root Cause
+            [Based on the job name and step, identify the likely cause]
 
-            Map each job to what it validates:
-            - `contract-guard` → Frontend/backend contracts in sync
-            - `frontend-import-guard` → No broken imports or deprecated endpoints
-            - `sql-safety` → SQL injection protection, proper bindings
-            - `data-guard` → CSV data integrity
-            - `route-contract` → All frontend routes exist in backend
-            - `smoke-tests` → API endpoints respond
-            - `unit-tests` → Backend logic correct
-            - `integration-tests` → Regression snapshots, API invariants
-            - `frontend-tests` → Lint, typecheck, unit tests, build
-            - `frontend-e2e` → Runtime smoke tests
-            - `security-audit` → Dependency vulnerabilities
+            Common patterns:
+            | Job | Likely Cause | Fix |
+            |-----|--------------|-----|
+            | contract-guard | Schema drift | `python backend/scripts/generate_contracts.py` |
+            | frontend-tests (lint) | ESLint errors | `npm run lint:ci` |
+            | frontend-tests (typecheck) | TypeScript errors | `npm run typecheck` |
+            | integration-tests | Snapshot drift | `pytest --update-snapshots` |
+            | sql-safety | SQL injection risk | Use `:param` bindings |
+            | frontend-e2e | Runtime error | Check browser console |
 
-            ### 2. Failures Analysis
+            ### Suggested Fix
+            [Specific command(s) to run locally]
 
-            If any jobs failed:
-
-            | Failed Job | Likely Root Cause | Suggested Fix |
-            |------------|-------------------|---------------|
-            | | | |
-
-            ### 3. Fix Order
-
-            If multiple failures, suggest order to fix (avoid whack-a-mole):
-
-            1. Fix X first because...
-            2. Then fix Y because...
-            3. Finally fix Z...
-
-            ### 4. Overall Verdict
-
-            **CI Result:** ✅ ALL PASSED / ⚠️ WARNINGS / ❌ FAILED
-
-            **Ready to Merge:** YES / NO / AFTER FIXES
+            ### Fix Order (if multiple failures)
+            1. Fix X first because Y depends on it
+            2. Then fix Z
 
   # =============================================================================
-  # PR Summary: Auto-summarize every PR with risk classification
+  # Claude Assistant - Handles @claude mentions on issues and PRs
+  # On issues: Implements features and creates PRs
+  # On PRs: Answers questions or makes requested changes
   # =============================================================================
-  pr-summary:
-    name: "PR Summary"
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
-      id-token: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Get PR diff and files
-        id: pr-context
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          PR_NUM="${{ github.event.pull_request.number }}"
-
-          # Get list of changed files
-          gh pr view "$PR_NUM" --json files --jq '.files[].path' > /tmp/files.txt
-
-          # Get PR diff (limit to 50KB for auto-summary)
-          gh pr diff "$PR_NUM" > /tmp/full_diff.txt
-          head -c 50000 /tmp/full_diff.txt > /tmp/diff.txt
-
-          echo "files<<EOFFILES" >> $GITHUB_OUTPUT
-          cat /tmp/files.txt >> $GITHUB_OUTPUT
-          echo "EOFFILES" >> $GITHUB_OUTPUT
-
-          echo "diff<<EOFDIFF" >> $GITHUB_OUTPUT
-          cat /tmp/diff.txt >> $GITHUB_OUTPUT
-          echo "EOFDIFF" >> $GITHUB_OUTPUT
-
-      - name: Auto PR Summary
-        uses: anthropics/claude-code-action@v1
-        with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          claude_args: "--model claude-3-5-haiku-20241022"
-          prompt: |
-            # Auto PR Summary
-
-            PR #${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }}
-
-            ## Files Changed
-            ```
-            ${{ steps.pr-context.outputs.files }}
-            ```
-
-            ## Diff (first 50KB)
-            ```diff
-            ${{ steps.pr-context.outputs.diff }}
-            ```
-
-            ---
-
-            Provide a BRIEF summary (keep it concise):
-
-            ## 📋 Commit Summary
-            - [One line per logical change]
-
-            ## 🚦 Risk Level
-            Based on `.claude/review-rules.yml`:
-            - 🔴 CRITICAL: backend/api/contracts/, backend/services/, backend/routes/, AuthContext
-            - 🟠 HIGH: hooks/, adapters/, schemas/, normalize.py
-            - 🟡 MEDIUM: components/powerbi/, pages/, tests/
-            - 🟢 LOW: All other
-
-            **Risk: [LEVEL] - [Brief reason]**
-
-            ## 👀 Suggested Reviewers
-            [Based on files changed, suggest from: needs-backend-owner, needs-auth-owner, needs-contract-review, needs-chart-review]
-
-  # =============================================================================
-  # Claude Review: Single job for all @claude mentions on PRs/Issues
-  # =============================================================================
-  claude-review:
-    name: "Claude Review"
+  claude-assistant:
+    name: "Claude Assistant"
     if: |
       (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude'))
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       pull-requests: write
       issues: write
-      actions: read
       id-token: write
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Get PR number
-        id: pr-number
+      - name: Determine context
+        id: context
         run: |
           if [ "${{ github.event_name }}" = "issue_comment" ]; then
-            echo "number=${{ github.event.issue.number }}" >> $GITHUB_OUTPUT
-          elif [ "${{ github.event_name }}" = "pull_request_review_comment" ]; then
-            echo "number=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+            # Check if this is a PR (issues API also returns PRs)
+            if [ -n "${{ github.event.issue.pull_request }}" ]; then
+              echo "type=pr" >> $GITHUB_OUTPUT
+              echo "number=${{ github.event.issue.number }}" >> $GITHUB_OUTPUT
+            else
+              echo "type=issue" >> $GITHUB_OUTPUT
+              echo "number=${{ github.event.issue.number }}" >> $GITHUB_OUTPUT
+            fi
           else
-            echo "number=" >> $GITHUB_OUTPUT
+            echo "type=pr" >> $GITHUB_OUTPUT
+            echo "number=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
           fi
 
-      - name: Get PR diff and files
-        id: pr-context
-        if: steps.pr-number.outputs.number != ''
-        continue-on-error: true
+      - name: Get issue details (for Issue -> PR)
+        id: issue-info
+        if: steps.context.outputs.type == 'issue'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          PR_NUM="${{ steps.pr-number.outputs.number }}"
+          ISSUE_NUM="${{ steps.context.outputs.number }}"
 
-          # Get list of changed files
-          echo "Getting changed files..."
+          # Get issue details
+          TITLE=$(gh issue view "$ISSUE_NUM" --json title --jq '.title')
+          BODY=$(gh issue view "$ISSUE_NUM" --json body --jq '.body // "No description"')
+          LABELS=$(gh issue view "$ISSUE_NUM" --json labels --jq '[.labels[].name] | join(", ")')
+
+          echo "title=$TITLE" >> $GITHUB_OUTPUT
+
+          echo "body<<EOF" >> $GITHUB_OUTPUT
+          echo "$BODY" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+          echo "labels=$LABELS" >> $GITHUB_OUTPUT
+
+      - name: Get PR diff (for PR Q&A)
+        id: pr-info
+        if: steps.context.outputs.type == 'pr'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PR_NUM="${{ steps.context.outputs.number }}"
+
+          # Get changed files
           gh pr view "$PR_NUM" --json files --jq '.files[].path' > /tmp/files.txt
 
-          # Get PR diff (limit to 100KB to avoid token overflow)
-          echo "Getting PR diff..."
-          gh pr diff "$PR_NUM" > /tmp/full_diff.txt
-          head -c 100000 /tmp/full_diff.txt > /tmp/diff.txt
+          # Get diff (limit 50KB for Q&A)
+          gh pr diff "$PR_NUM" | head -c 50000 > /tmp/diff.txt
 
-          # Get PR title and body
-          echo "Getting PR metadata..."
-          gh pr view "$PR_NUM" --json title,body --jq '"Title: \(.title)\n\nDescription: \(.body // \"No description\")"' > /tmp/pr_meta.txt
-
-          # Output using delimiter to handle multiline
-          echo "files<<EOFFILES" >> $GITHUB_OUTPUT
+          echo "files<<EOF" >> $GITHUB_OUTPUT
           cat /tmp/files.txt >> $GITHUB_OUTPUT
-          echo "EOFFILES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
-          echo "diff<<EOFDIFF" >> $GITHUB_OUTPUT
+          echo "diff<<EOF" >> $GITHUB_OUTPUT
           cat /tmp/diff.txt >> $GITHUB_OUTPUT
-          echo "EOFDIFF" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
-          echo "meta<<EOFMETA" >> $GITHUB_OUTPUT
-          cat /tmp/pr_meta.txt >> $GITHUB_OUTPUT
-          echo "EOFMETA" >> $GITHUB_OUTPUT
+      - name: Claude on Issue (Implement Feature)
+        if: steps.context.outputs.type == 'issue'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: "--model claude-sonnet-4-20250514"
+          prompt: |
+            # Implement Feature from Issue
 
-          # Check if diff was truncated
-          FULL_SIZE=$(wc -c < /tmp/full_diff.txt)
-          if [ "$FULL_SIZE" -gt 100000 ]; then
-            echo "truncated=true" >> $GITHUB_OUTPUT
-            echo "⚠️ Diff truncated from ${FULL_SIZE} bytes to 100KB"
-          else
-            echo "truncated=false" >> $GITHUB_OUTPUT
-          fi
+            ## Issue #${{ steps.context.outputs.number }}: ${{ steps.issue-info.outputs.title }}
 
-          # Mark as successful
-          echo "success=true" >> $GITHUB_OUTPUT
+            ### Description
+            ${{ steps.issue-info.outputs.body }}
 
-      - name: Claude Review
-        if: steps.pr-number.outputs.number != '' && steps.pr-context.outputs.success == 'true'
+            ### Labels
+            ${{ steps.issue-info.outputs.labels }}
+
+            ## User Request
+            ${{ github.event.comment.body }}
+
+            ---
+
+            ## Instructions
+
+            1. Read CLAUDE.md for codebase standards
+            2. Find reference implementations for similar features
+            3. Implement the requested feature following existing patterns
+            4. Create a PR with the implementation
+
+            **Important:**
+            - Follow layer responsibilities (Pages decide -> Components render)
+            - Use existing constants (SaleType, REGIONS, etc.)
+            - Match existing code patterns exactly
+            - Include appropriate error handling
+            - Run linting before committing
+
+      - name: Claude on PR (Answer/Assist)
+        if: steps.context.outputs.type == 'pr'
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: "--model claude-3-5-haiku-20241022"
           prompt: |
-            # Code Review
+            # PR Assistant
 
-            You are reviewing PR #${{ steps.pr-number.outputs.number }}.
-
-            ## PR Information
-            ${{ steps.pr-context.outputs.meta }}
+            PR #${{ steps.context.outputs.number }}
 
             ## Files Changed
             ```
-            ${{ steps.pr-context.outputs.files }}
+            ${{ steps.pr-info.outputs.files }}
             ```
 
-            ## Code Diff
-            ${{ steps.pr-context.outputs.truncated == 'true' && '⚠️ **Note: Diff truncated to 100KB**' || '' }}
+            ## Diff (first 50KB)
             ```diff
-            ${{ steps.pr-context.outputs.diff }}
+            ${{ steps.pr-info.outputs.diff }}
             ```
 
-            ## User Comment
+            ## User Question
             ${{ github.event.comment.body }}
 
             ---
 
-            Read CLAUDE.md and .claude/review-rules.yml for codebase standards.
+            Answer the user's question directly and concisely.
 
-            **First**, answer any specific questions the user asked in their comment.
+            If they're asking for a change, make it.
+            If they're asking a question, answer it.
 
-            **Then**, provide the full review starting with these sections:
-
-            ---
-
-            ## 📋 Commit Summary
-
-            Summarize all commits in this PR in a concise bullet list:
-            - What changed (1-2 sentences per commit)
-            - Group related commits if applicable
-
-            ---
-
-            ## 🚦 Risk Assessment
-
-            Based on files changed, auto-classify risk using `.claude/review-rules.yml` risk_directories:
-
-            | Risk Level | Paths |
-            |------------|-------|
-            | 🔴 CRITICAL | `backend/api/contracts/`, `backend/services/`, `frontend/src/context/AuthContext`, `backend/routes/` |
-            | 🟠 HIGH | `frontend/src/hooks/`, `frontend/src/adapters/`, `frontend/src/schemas/`, `backend/utils/normalize.py` |
-            | 🟡 MEDIUM | `frontend/src/components/powerbi/`, `frontend/src/pages/`, `backend/tests/` |
-            | 🟢 LOW | All other paths |
-
-            **Determine the highest risk level based on files touched.**
-
-            Output format:
-            ```
-            **Risk Level:** 🔴 CRITICAL / 🟠 HIGH / 🟡 MEDIUM / 🟢 LOW
-
-            **Reason:** [Which critical/high/medium paths were touched]
-
-            **Suggested Reviewers:** [Based on human_review_tags in review-rules.yml]
-            ```
-
-            ---
-
-            ## Architecture Review
-
-            ## 6-Point Quality Checklist
-
-            ### 1. Framework Alignment
-            **Question:** Is this aligned with the codebase's architectural patterns?
-
-            Check against:
-            - Layer responsibilities: Pages decide → Components render → Utils transform → Backend enforces
-            - Single source of truth: SaleType enum, constants.py, contract_schema.py
-            - Reference implementations: TimeTrendChart.jsx, analytics.py, dashboard_service.py
-
-            **Verdict:** ✅ ALIGNED / ⚠️ PARTIAL / ❌ VIOLATES
-
-            ### 2. Code Efficiency
-            **Question:** Is this clean, efficient code?
-
-            Check for:
-            - Minimal code to achieve the goal
-            - No unnecessary abstractions
-            - Clear data flow
-            - Appropriate use of existing utilities
-
-            **Verdict:** ✅ CLEAN / ⚠️ COULD SIMPLIFY / ❌ NEEDS REFACTOR
-
-            ### 3. Over-Engineering Detection
-            **Question:** Are there redundant complexity layers?
-
-            Red flags:
-            - New abstractions for single-use cases
-            - Premature optimization
-            - Feature flags for simple changes
-            - Custom infrastructure when libraries exist (React Query, Zustand)
-            - >50 lines of custom hooks
-
-            **Verdict:** ✅ APPROPRIATE / ⚠️ BORDERLINE / ❌ OVER-ENGINEERED
-
-            ### 4. Band-Aid Detection
-            **Question:** Is this a band-aid fix or root cause fix?
-
-            Red flags:
-            - `if (specificEdgeCase)` hacks
-            - Hardcoded values instead of constants
-            - `// TODO: fix later` comments
-            - Duplicating code "to be safe"
-            - Workarounds instead of root cause fixes
-
-            **Verdict:** ✅ ROOT CAUSE FIX / ⚠️ ACCEPTABLE WORKAROUND / ❌ BAND-AID
-
-            ### 5. Production-Grade Assessment
-            **Question:** Is this robust and regression-proof?
-
-            Check for:
-            - Works at 10x scale
-            - Handles edge cases gracefully
-            - Has appropriate error handling
-            - Includes necessary tests
-            - Matches how similar problems are solved in codebase
-
-            **Verdict:** ✅ PRODUCTION-GRADE / ⚠️ NEEDS HARDENING / ❌ NOT READY
-
-            ### 6. Canonical Standards
-            **Question:** Does this follow centralized patterns?
-
-            Check for:
-            - Uses existing constants (REGIONS, BEDROOM_ORDER, SaleType)
-            - Uses centralized API client (api/client.js)
-            - Uses existing adapters pattern
-            - SQL in services, not routes
-            - :param bindings, not f-strings
-
-            **Verdict:** ✅ CANONICAL / ⚠️ MINOR DEVIATIONS / ❌ NON-STANDARD
-
-            ---
-
-            ## Quick Compliance Checks (auto-fail if violated)
-
-            | Check | ✅/❌ | Details |
-            |-------|------|---------|
-            | Layer responsibilities | | Pages decide logic, Components only render props |
-            | No new abstractions | | Uses existing patterns, no reinventing |
-            | SQL param bindings | | Uses `:param` style, never f-strings |
-            | Outlier exclusion | | Queries include `COALESCE(is_outlier, false) = false` |
-            | Chart state handling | | Handles loading/error/empty/success states |
-
-            ---
-
-            ## Summary
-
-            | Criterion | Verdict | Notes |
-            |-----------|---------|-------|
-            | 1. Framework Alignment | | |
-            | 2. Code Efficiency | | |
-            | 3. Over-Engineering | | |
-            | 4. Band-Aid Detection | | |
-            | 5. Production-Grade | | |
-            | 6. Canonical Standards | | |
-
-            **Score:** X/6 passing
-
-            **Recommendation:** ✅ APPROVE / ⚠️ APPROVE WITH COMMENTS / 🔄 REQUEST CHANGES / ❌ BLOCK
-
-            ## Specific Issues
-
-            List specific files and line numbers that need attention.
-
-            ## Suggested Improvements
-
-            Concrete suggestions to improve the PR.
+            Keep responses focused - no lengthy reviews unless explicitly requested.

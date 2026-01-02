@@ -1,9 +1,12 @@
 import React, { useState, useMemo } from 'react';
 // Phase 2: Using TanStack Query via useAppQuery wrapper
 import { useAppQuery } from '../../hooks';
+// Phase 3.4: Using standardized Zustand filters (bedroom only - ignores time filter)
+import { useZustandFilters } from '../../stores';
 import { ChartFrame } from '../common/ChartFrame';
 import { getAggregate } from '../../api/client';
 import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS, DISTRICT_NAMES, getRegionForDistrict } from '../../constants';
+import { SaleType } from '../../schemas/apiContract';
 import { transformGrowthDumbbellSeries, logFetchDebug, assertKnownVersion } from '../../adapters';
 
 // All districts
@@ -47,41 +50,50 @@ const getGradientColor = (rankPercent) => {
  * A dumbbell/gap chart showing baseline vs latest quarter median PSF for each district,
  * with sortable columns and absolute PSF increment.
  *
- * IMPORTANT: This chart is NOT affected by date filters.
+ * IMPORTANT: This chart INTENTIONALLY ignores time filter.
  * It compares the earliest 3 completed months (baseline quarter) against
  * the latest 3 completed months (current quarter) across the FULL database.
+ * This is by design to show long-term growth trajectory.
+ *
+ * Phase 3.4: Uses Zustand for bedroom filter only, NOT time filter.
  *
  * @param {{
- *  bedroom?: string,
  *  saleType?: string,
  *  enabled?: boolean,
  * }} props
  */
-function GrowthDumbbellChartBase({ bedroom = 'all', saleType = 'all', enabled = true }) {
+function GrowthDumbbellChartBase({ saleType = SaleType.RESALE, enabled = true }) {
+  // Phase 3.4: Using standardized Zustand filters (bedroom only)
+  // INTENTIONAL: This chart ignores time filter - uses full DB range for growth comparison
+  const { filters } = useZustandFilters();
+
+  // Derive bedroom from Zustand (but NOT timeframe - intentionally ignored)
+  const bedroom = filters.bedroomTypes.length > 0
+    ? filters.bedroomTypes.join(',')
+    : '';
+
   // Create a stable filter key for dependency tracking (no period - fixed date range)
   const filterKey = useMemo(() => `fixed:${bedroom}:${saleType}`, [bedroom, saleType]);
   const [sortConfig, setSortConfig] = useState({ column: 'growth', order: 'desc' });
 
-  // Data fetching with useGatedAbortableQuery - gates on appReady
+  // Data fetching with useAppQuery - gates on appReady
   // enabled prop prevents fetching when component is hidden (e.g., in volume mode)
-  // isBootPending = true while waiting for app boot
   const { data, status, error, refetch } = useAppQuery(
     async (signal) => {
-      // Build API params - NO date filters, uses full database range
+      // Build API params - NO timeframe filter, uses full database range
+      // INTENTIONAL: This chart compares earliest vs latest quarters across all data
       const params = {
         group_by: 'quarter,district',
         metrics: 'median_psf',
+        sale_type: saleType,
       };
 
-      // Add bedroom filter
-      if (bedroom && bedroom !== 'all') {
+      // Add bedroom filter from Zustand
+      if (bedroom) {
         params.bedroom = bedroom;
       }
 
-      // Add sale type filter
-      if (saleType && saleType !== 'all') {
-        params.sale_type = saleType;
-      }
+      // NO timeframe - intentionally uses full DB range
 
       const response = await getAggregate(params, { signal });
 

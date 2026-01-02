@@ -1,6 +1,8 @@
-import { useState, useCallback, lazy, Suspense } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { ChartWatermark } from '../components/ui';
 import { MarketMomentumGrid, GrowthDumbbellChart } from '../components/powerbi';
+// Phase 3.4: Unified filter bar (same as Market Overview)
+import { FilterBar } from '../components/powerbi/FilterBar';
 import { SaleType } from '../schemas/apiContract';
 import { ChartSkeleton } from '../components/common/ChartSkeleton';
 
@@ -12,29 +14,25 @@ const MarketStrategyMap = lazy(() => import('../components/insights/MarketStrate
 /**
  * District Deep Dive Page
  *
+ * Phase 3.4: Uses standardized FilterBar (same as Market Overview).
+ * Filters are managed by Zustand store, not local state.
+ *
  * Single map view with Volume/Price toggle.
- * Filters persist across mode switches.
+ * Filters persist across mode switches (via Zustand session storage).
  *
  * Components:
  * - Volume mode: District Liquidity Map + Liquidity Ranking Table
  * - Price mode: Market Strategy Map + Market Momentum Grid + Growth Dumbbell Chart
+ *
+ * DATA SCOPE: Resale transactions ONLY
+ * All components receive saleType="Resale" from page level.
  */
 export function DistrictDeepDiveContent() {
   const [mapMode, setMapMode] = useState('volume'); // 'volume' | 'price'
 
-  // Shared filter state - persists across mode switches
-  // NOTE: saleType is fixed to SaleType.RESALE (page-level enforcement)
-  const [selectedPeriod, setSelectedPeriod] = useState('all');
-  const [selectedBed, setSelectedBed] = useState('all');
-
-  // Callback for filter changes from either map
-  const handleFilterChange = useCallback((filterType, value) => {
-    if (filterType === 'period') {
-      setSelectedPeriod(value);
-    } else if (filterType === 'bed') {
-      setSelectedBed(value);
-    }
-  }, []);
+  // Phase 3.4: Filter state is now managed by Zustand store (useZustandFilters)
+  // Components consume filters directly from Zustand - no prop drilling needed
+  // Filters persist across mode switches via page-namespaced sessionStorage
 
   return (
     <div className="h-full overflow-auto">
@@ -49,6 +47,10 @@ export function DistrictDeepDiveContent() {
           </p>
         </div>
 
+        {/* Filter Bar - Unified component (desktop: sticky horizontal, mobile: drawer) */}
+        {/* Same component as Market Overview - identical styling, behavior, theme */}
+        <FilterBar />
+
         {/* Main Content */}
         <div className="space-y-6 animate-fade-in">
           {/* Map - render active mode only to avoid background data fetches */}
@@ -57,19 +59,13 @@ export function DistrictDeepDiveContent() {
               {mapMode === 'volume' ? (
                 <DistrictLiquidityMap
                   saleType={SaleType.RESALE}
-                  selectedPeriod={selectedPeriod}
-                  selectedBed={selectedBed}
-                  onFilterChange={handleFilterChange}
                   mapMode={mapMode}
                   onModeChange={setMapMode}
                   enabled={mapMode === 'volume'}
                 />
               ) : (
                 <MarketStrategyMap
-                  selectedPeriod={selectedPeriod}
-                  selectedBed={selectedBed}
                   selectedSaleType={SaleType.RESALE}
-                  onFilterChange={handleFilterChange}
                   mapMode={mapMode}
                   onModeChange={setMapMode}
                   enabled={mapMode === 'price'}
@@ -83,15 +79,12 @@ export function DistrictDeepDiveContent() {
             <>
               <ChartWatermark>
                 <MarketMomentumGrid
-                  period={selectedPeriod}
-                  bedroom={selectedBed}
                   saleType={SaleType.RESALE}
                 />
               </ChartWatermark>
 
               <ChartWatermark>
                 <GrowthDumbbellChart
-                  bedroom={selectedBed}
                   saleType={SaleType.RESALE}
                   enabled={mapMode === 'price'}
                 />

@@ -20,6 +20,8 @@ import { DISTRICT_CENTROIDS } from '../../../data/districtCentroids';
 import { useSubscription } from '../../../context/SubscriptionContext';
 // Phase 2: Using TanStack Query via useAppQuery wrapper
 import { useAppQuery, QueryStatus } from '../../../hooks';
+// Phase 3.4: Using standardized Zustand filters (same as Market Overview)
+import { useZustandFilters } from '../../../stores';
 import { SaleType } from '../../../schemas/apiContract';
 import { assertKnownVersion } from '../../../adapters';
 
@@ -28,8 +30,6 @@ import {
   MAP_CONFIG,
   MAP_STYLE,
   LIQUIDITY_FILLS,
-  BEDROOM_OPTIONS,
-  PERIOD_OPTIONS,
 } from './constants';
 import { getLiquidityFill } from './utils';
 import {
@@ -46,9 +46,6 @@ import {
 /**
  * @param {{
  *  saleType?: string,
- *  selectedPeriod?: string,
- *  selectedBed?: string,
- *  onFilterChange?: (filterType: string, value: string) => void,
  *  mapMode?: string,
  *  onModeChange?: (value: string) => void,
  *  enabled?: boolean,
@@ -56,15 +53,24 @@ import {
  */
 function DistrictLiquidityMapBase({
   saleType = SaleType.RESALE,
-  selectedPeriod: controlledPeriod,
-  selectedBed: controlledBed,
-  onFilterChange,
   mapMode,
   onModeChange,
   enabled = true,
 }) {
   const { isPremium, isFreeResolved } = useSubscription();
   const [hoveredDistrict, setHoveredDistrict] = useState(null);
+
+  // Phase 3.4: Using standardized Zustand filters (same pattern as Market Overview charts)
+  // This replaces local filter state and controlled mode logic
+  const { buildApiParams, debouncedFilterKey, filters } = useZustandFilters();
+
+  // Derive filter values for display/passing to child components
+  const selectedBed = filters.bedroomTypes.length > 0
+    ? filters.bedroomTypes.join(',')
+    : 'all';
+  const selectedPeriod = filters.timeFilter?.type === 'preset'
+    ? filters.timeFilter.value
+    : 'Y1';
 
   // Lazy-load GeoJSON to reduce initial bundle size (~100KB savings)
   const [geoJSON, setGeoJSON] = useState(null);
@@ -74,41 +80,23 @@ function DistrictLiquidityMapBase({
     });
   }, []);
 
-  // Support both controlled and uncontrolled modes (like MarketStrategyMap)
-  const [internalBed, setInternalBed] = useState('all');
-  const [internalPeriod, setInternalPeriod] = useState('all');
-
-  // Use controlled values if provided, otherwise use internal state
-  const isControlled = onFilterChange !== undefined;
-  const selectedBed = isControlled ? controlledBed : internalBed;
-  const selectedPeriod = isControlled ? controlledPeriod : internalPeriod;
-
-  // Unified setters that work in both modes
-  const setSelectedBed = (value) => {
-    if (isControlled) {
-      onFilterChange('bed', value);
-    } else {
-      setInternalBed(value);
-    }
-  };
-
-  const setSelectedPeriod = (value) => {
-    if (isControlled) {
-      onFilterChange('period', value);
-    } else {
-      setInternalPeriod(value);
-    }
-  };
-
   // Fetch data with canonical hook (handles abort, stale, boot gating)
+  // Phase 3.4: Using buildApiParams + param adapter for standardized filter→API conversion
   const { data, status, error, refetch } = useAppQuery(
     async (signal) => {
+      // Use standardized buildApiParams (same as Market Overview charts)
+      const params = buildApiParams({ sale_type: saleType });
+
+      // Adapt param names for this endpoint (timeframe→period, bedroom→bed)
+      // Backend endpoint expects: period, bed, saleType
+      const adapted = {
+        period: params.timeframe || 'Y1',
+        bed: params.bedroom || '',
+        saleType: params.saleType || saleType,
+      };
+
       const response = await apiClient.get('/insights/district-liquidity', {
-        params: {
-          period: selectedPeriod,
-          bed: selectedBed,
-          saleType, // Use prop value (page-level enforcement)
-        },
+        params: adapted,
         signal,
       });
       // Contract validation - detect shape changes early
@@ -118,8 +106,8 @@ function DistrictLiquidityMapBase({
         meta: response.data.meta || {},
       };
     },
-    // Include endpoint identifier to avoid query key collision with MarketStrategyMap
-    [selectedPeriod, selectedBed, saleType, 'district-liquidity'],
+    // Use debouncedFilterKey for standardized query key (same as Market Overview)
+    [debouncedFilterKey, saleType, 'district-liquidity'],
     { chartName: 'DistrictLiquidityMap', enabled, initialData: { districts: [], meta: {} } }
   );
 
@@ -195,7 +183,8 @@ function DistrictLiquidityMapBase({
 
           {/* Toggle + Filter pills */}
           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-            {/* Color-Sync Liquid Toggle */}
+            {/* Volume/Price Mode Toggle - kept for view switching */}
+            {/* Filters (Bedroom, Time, Region) are now in the page-level FilterBar */}
             {onModeChange && (
               <div className="flex items-center gap-0.5 sm:gap-1 bg-[#EAE0CF]/50 rounded-lg p-0.5 sm:p-1">
                 <button
@@ -234,46 +223,6 @@ function DistrictLiquidityMapBase({
                 </button>
               </div>
             )}
-
-            {/* Bedroom filter */}
-            <div className="flex items-center gap-0.5 sm:gap-1 bg-[#EAE0CF]/50 rounded-lg p-0.5 sm:p-1">
-              {BEDROOM_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => setSelectedBed(option.value)}
-                  className={`
-                    min-h-[44px] px-3 sm:px-4 py-2 text-[10px] sm:text-xs font-medium rounded-md transition-all touch-manipulation
-                    ${
-                      selectedBed === option.value
-                        ? 'bg-white text-[#213448] shadow-sm'
-                        : 'text-[#547792] hover:text-[#213448]'
-                    }
-                  `}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Period filter */}
-            <div className="flex items-center gap-0.5 sm:gap-1 bg-[#EAE0CF]/50 rounded-lg p-0.5 sm:p-1">
-              {PERIOD_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => setSelectedPeriod(option.value)}
-                  className={`
-                    min-h-[44px] px-3 sm:px-4 py-2 text-[10px] sm:text-xs font-medium rounded-md transition-all touch-manipulation
-                    ${
-                      selectedPeriod === option.value
-                        ? 'bg-white text-[#213448] shadow-sm'
-                        : 'text-[#547792] hover:text-[#213448]'
-                    }
-                  `}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
           </div>
         </div>
       </div>

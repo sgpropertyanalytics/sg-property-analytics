@@ -20,10 +20,12 @@ import apiClient from '../../api/client';
 // Only SINGAPORE_CENTER is needed at import time for map config
 import { SINGAPORE_CENTER } from '../../data/singaporeDistrictsGeoJSON';
 import { DISTRICT_CENTROIDS } from '../../data/districtCentroids';
-import { REGIONS, CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS, getRegionBadgeClass, BEDROOM_FILTER_OPTIONS, PERIOD_FILTER_OPTIONS } from '../../constants';
+import { REGIONS, CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS, getRegionBadgeClass, PERIOD_FILTER_OPTIONS } from '../../constants';
 import { useSubscription } from '../../context/SubscriptionContext';
 // Phase 2: Using TanStack Query via useAppQuery wrapper
 import { useAppQuery, QueryStatus } from '../../hooks';
+// Phase 3.4: Using standardized Zustand filters (same as Market Overview)
+import { useZustandFilters } from '../../stores';
 import { SaleType } from '../../schemas/apiContract';
 import { getPercentile } from '../../utils/statistics';
 import { assertKnownVersion } from '../../adapters';
@@ -57,9 +59,7 @@ const VOLUME_GLOW = {
   mild: 'drop-shadow(0 0 8px rgba(250, 204, 21, 0.55))',   // Yellow - 20-30%
 };
 
-// Use centralized filter options
-const BEDROOM_OPTIONS = BEDROOM_FILTER_OPTIONS;
-const PERIOD_OPTIONS = PERIOD_FILTER_OPTIONS;
+// Filter options removed - now using standardized FilterBar at page level
 
 // Manual marker offsets for crowded central districts
 const MARKER_OFFSETS = {
@@ -434,31 +434,33 @@ function RegionSummaryBar({ districtData, selectedPeriod }) {
 /**
  * MarketStrategyMap Component
  *
- * Supports both controlled and uncontrolled modes:
- * - Controlled: Pass selectedPeriod, selectedBed, selectedSaleType, onFilterChange props
- * - Uncontrolled: Uses internal state (legacy behavior)
+ * Phase 3.4: Uses standardized Zustand filters (same pattern as Market Overview charts)
+ * Filters are managed by page-level FilterBar, not embedded in this component.
  *
  * @param {{
- *  selectedPeriod?: string,
- *  selectedBed?: string,
  *  selectedSaleType?: string,
- *  onFilterChange?: (filterType: string, value: string) => void,
  *  mapMode?: string,
  *  onModeChange?: (value: string) => void,
  *  enabled?: boolean,
  * }} props
  */
 function MarketStrategyMapBase({
-  selectedPeriod: controlledPeriod,
-  selectedBed: controlledBed,
   selectedSaleType = SaleType.RESALE,
-  onFilterChange,
   mapMode,
   onModeChange,
   enabled = true,
 }) {
   const { isPremium, isFreeResolved } = useSubscription();
   const [hoveredDistrict, setHoveredDistrict] = useState(null);
+
+  // Phase 3.4: Using standardized Zustand filters (same pattern as Market Overview charts)
+  // This replaces local filter state and controlled mode logic
+  const { buildApiParams, debouncedFilterKey, filters } = useZustandFilters();
+
+  // Derive filter values for display (used by RegionSummaryBar)
+  const selectedPeriod = filters.timeFilter?.type === 'preset'
+    ? filters.timeFilter.value
+    : 'Y1';
 
   // Lazy-load GeoJSON to reduce initial bundle size (~100KB savings)
   const [geoJSON, setGeoJSON] = useState(null);
@@ -468,45 +470,31 @@ function MarketStrategyMapBase({
     });
   }, []);
 
-  // Support both controlled and uncontrolled modes
-  const [internalBed, setInternalBed] = useState('all');
-  const [internalPeriod, setInternalPeriod] = useState('Y1');
-
-  // Use controlled values if provided, otherwise use internal state
-  const isControlled = onFilterChange !== undefined;
-  const selectedBed = isControlled ? controlledBed : internalBed;
-  const selectedPeriod = isControlled ? controlledPeriod : internalPeriod;
-
-  // Unified setter that works in both modes
-  const setSelectedBed = (value) => {
-    if (isControlled) {
-      onFilterChange('bed', value);
-    } else {
-      setInternalBed(value);
-    }
-  };
-
-  const setSelectedPeriod = (value) => {
-    if (isControlled) {
-      onFilterChange('period', value);
-    } else {
-      setInternalPeriod(value);
-    }
-  };
-
   // Fetch data with canonical hook (handles abort, stale, boot gating)
+  // Phase 3.4: Using buildApiParams + param adapter for standardized filter→API conversion
   const { data, status, error, refetch } = useAppQuery(
     async (signal) => {
+      // Use standardized buildApiParams (same as Market Overview charts)
+      const params = buildApiParams({ sale_type: selectedSaleType });
+
+      // Adapt param names for this endpoint (timeframe→period, bedroom→bed)
+      // Backend endpoint expects: period, bed, sale_type
+      const adapted = {
+        period: params.timeframe || 'Y1',
+        bed: params.bedroom || '',
+        sale_type: params.saleType || selectedSaleType,
+      };
+
       const response = await apiClient.get('/insights/district-psf', {
-        params: { period: selectedPeriod, bed: selectedBed, sale_type: selectedSaleType },
+        params: adapted,
         signal,
       });
       // Contract validation - detect shape changes early
       assertKnownVersion(response.data, '/api/insights/district-psf');
       return response.data.districts || [];
     },
-    // Include endpoint identifier to avoid query key collision with DistrictLiquidityMap
-    [selectedPeriod, selectedBed, selectedSaleType, 'district-psf'],
+    // Use debouncedFilterKey for standardized query key (same as Market Overview)
+    [debouncedFilterKey, selectedSaleType, 'district-psf'],
     { chartName: 'MarketStrategyMap', enabled, initialData: [] }
   );
 
@@ -577,7 +565,8 @@ function MarketStrategyMapBase({
 
           {/* Toggle + Filter pills */}
           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-            {/* Color-Sync Liquid Toggle */}
+            {/* Volume/Price Mode Toggle - kept for view switching */}
+            {/* Filters (Bedroom, Time, Region) are now in the page-level FilterBar */}
             {onModeChange && (
               <div className="flex items-center gap-0.5 sm:gap-1 bg-[#EAE0CF]/50 rounded-lg p-0.5 sm:p-1">
                 <button
@@ -616,44 +605,6 @@ function MarketStrategyMapBase({
                 </button>
               </div>
             )}
-
-            {/* Bedroom filter */}
-            <div className="flex items-center gap-0.5 sm:gap-1 bg-[#EAE0CF]/50 rounded-lg p-0.5 sm:p-1">
-              {BEDROOM_OPTIONS.map(option => (
-                <button
-                  key={option.value}
-                  onClick={() => setSelectedBed(option.value)}
-                  className={`
-                    min-h-[44px] px-3 sm:px-4 py-2 text-[10px] sm:text-xs font-medium rounded-md transition-all touch-manipulation
-                    ${selectedBed === option.value
-                      ? 'bg-white text-[#213448] shadow-sm'
-                      : 'text-[#547792] hover:text-[#213448]'
-                    }
-                  `}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Period filter */}
-            <div className="flex items-center gap-0.5 sm:gap-1 bg-[#EAE0CF]/50 rounded-lg p-0.5 sm:p-1">
-              {PERIOD_OPTIONS.map(option => (
-                <button
-                  key={option.value}
-                  onClick={() => setSelectedPeriod(option.value)}
-                  className={`
-                    min-h-[44px] px-3 sm:px-4 py-2 text-[10px] sm:text-xs font-medium rounded-md transition-all touch-manipulation
-                    ${selectedPeriod === option.value
-                      ? 'bg-white text-[#213448] shadow-sm'
-                      : 'text-[#547792] hover:text-[#213448]'
-                    }
-                  `}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
           </div>
         </div>
       </div>
