@@ -4,6 +4,8 @@
  * Simple tests that verify each page loads without crashing.
  * These catch React Context errors, missing providers, and white-page crashes.
  *
+ * Uses API mocks so tests don't depend on backend availability.
+ *
  * Success criteria:
  * - No React error boundary visible
  * - No console errors (excluding expected network failures)
@@ -13,6 +15,7 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { mockApiEndpoints } from './fixtures/api-mocks.js';
 
 // Critical pages to test (from CLAUDE.md routes)
 const CRITICAL_PAGES = [
@@ -24,8 +27,15 @@ const CRITICAL_PAGES = [
 ];
 
 test.describe('Smoke Tests - Critical Pages Load', () => {
+  // Mock API endpoints so tests don't depend on backend
+  test.beforeEach(async ({ page }) => {
+    await mockApiEndpoints(page);
+  });
+
   for (const page of CRITICAL_PAGES) {
     test(`${page.name} (${page.path}) loads without crash`, async ({ page: browserPage }) => {
+      // Re-apply mocks (beforeEach uses different page instance)
+      await mockApiEndpoints(browserPage);
       const consoleErrors = [];
 
       // Collect console errors
@@ -86,6 +96,9 @@ test.describe('Smoke Tests - Critical Pages Load', () => {
 
 test.describe('Smoke Tests - Filter Interaction', () => {
   test('filter selection does not crash page', async ({ page }) => {
+    // Mock API endpoints
+    await mockApiEndpoints(page);
+
     // Navigate to chart-heavy page
     await page.goto('/market-overview');
     await page.waitForLoadState('networkidle');
@@ -121,6 +134,9 @@ test.describe('Smoke Tests - Filter Interaction', () => {
 
 test.describe('Smoke Tests - Navigation', () => {
   test('can navigate between pages without crash', async ({ page }) => {
+    // Mock API endpoints
+    await mockApiEndpoints(page);
+
     // Start at landing
     await page.goto('/');
     await page.waitForLoadState('domcontentloaded');

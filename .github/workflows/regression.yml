@@ -416,11 +416,13 @@ jobs:
         run: cd frontend && npm run build
 
   # ============================================================
-  # Frontend E2E Tests - CATCHES RUNTIME CRASHES
+  # Frontend E2E Tests - CATCHES RUNTIME CRASHES (PR gate)
+  # Runs smoke tests only - fast and stable
   # ============================================================
   frontend-e2e:
-    name: Frontend E2E
+    name: Frontend E2E (Smoke)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: [changes, frontend-tests]
     if: ${{ needs.changes.outputs.frontend == 'true' }}
 
@@ -443,7 +445,7 @@ jobs:
       - name: Build frontend
         run: cd frontend && npm run build
 
-      - name: Run E2E tests
+      - name: Run E2E smoke tests
         run: cd frontend && npm run test:e2e
         env:
           CI: true
@@ -456,6 +458,50 @@ jobs:
           name: playwright-report
           path: frontend/playwright-report/
           retention-days: 7
+
+  # ============================================================
+  # Frontend Performance Tests - NIGHTLY ONLY
+  # Comprehensive but slow - don't run on every PR
+  # ============================================================
+  frontend-perf:
+    name: Frontend Performance (Nightly)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: ${{ github.event_name == 'schedule' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: cd frontend && npm ci
+
+      - name: Install Playwright browsers
+        run: cd frontend && npx playwright install --with-deps chromium
+
+      - name: Build frontend
+        run: cd frontend && npm run build
+
+      - name: Run full E2E tests
+        run: cd frontend && npm run test:e2e:full
+        env:
+          CI: true
+          BASE_URL: http://localhost:4173
+        continue-on-error: true
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-perf-report
+          path: frontend/playwright-report/
+          retention-days: 14
 
   # ============================================================
   # Security Audit - Nightly + PRs, warn only
