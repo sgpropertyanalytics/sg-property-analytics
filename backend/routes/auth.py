@@ -18,14 +18,27 @@ from api.contracts import api_contract
 auth_bp = Blueprint('auth', __name__)
 
 # Firebase Admin SDK (lazy initialization)
+# None = not attempted, False = failed, otherwise = app instance
 _firebase_app = None
 
 
 def get_firebase_app():
-    """Lazy initialize Firebase Admin SDK"""
+    """
+    Lazy initialize Firebase Admin SDK.
+
+    Returns the Firebase app instance, or None if initialization failed.
+    Uses a sentinel value (False) to cache failure state and avoid
+    retrying initialization on every request (which was causing slowdowns).
+    """
     global _firebase_app
-    if _firebase_app is not None:
+
+    # Already initialized successfully
+    if _firebase_app not in (None, False):
         return _firebase_app
+
+    # Previously failed - don't retry (prevents slow repeated initialization attempts)
+    if _firebase_app is False:
+        return None
 
     try:
         import firebase_admin
@@ -36,12 +49,16 @@ def get_firebase_app():
         if service_account_path and os.path.exists(service_account_path):
             cred = credentials.Certificate(service_account_path)
             _firebase_app = firebase_admin.initialize_app(cred)
+            print("[Auth] Firebase Admin SDK initialized with service account")
         else:
             # Try to initialize with default credentials (for Cloud Run, etc.)
             _firebase_app = firebase_admin.initialize_app()
+            print("[Auth] Firebase Admin SDK initialized with default credentials")
         return _firebase_app
     except Exception as e:
-        print(f"Firebase Admin SDK initialization failed: {e}")
+        # Cache the failure so we don't retry on every request
+        _firebase_app = False
+        print(f"[Auth] Firebase Admin SDK initialization failed (will use email-only sync): {e}")
         return None
 
 

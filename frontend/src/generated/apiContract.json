@@ -3189,6 +3189,15 @@
             "required": true,
             "type": "list"
           },
+          "marketSegments": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "marketSegments",
+            "nullable": true,
+            "required": true,
+            "type": "list"
+          },
           "projects": {
             "allowed_values": null,
             "default": null,
@@ -3223,7 +3232,7 @@
             "name": "regions",
             "nullable": true,
             "required": true,
-            "type": "dict"
+            "type": "list"
           },
           "saleTypes": {
             "allowed_values": null,
@@ -3255,11 +3264,29 @@
         },
         "data_is_list": false,
         "meta_fields": {
+          "apiContractVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiContractVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
           "apiVersion": {
             "allowed_values": null,
             "default": null,
             "description": "",
             "name": "apiVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "contractHash": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "contractHash",
             "nullable": true,
             "required": true,
             "type": "str"
@@ -3286,7 +3313,9 @@
         "required_meta": [
           "requestId",
           "elapsedMs",
-          "apiVersion"
+          "apiVersion",
+          "apiContractVersion",
+          "contractHash"
         ]
       },
       "service_schema": {

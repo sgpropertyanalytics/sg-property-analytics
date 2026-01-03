@@ -44,7 +44,7 @@ FILTER_OPTIONS_RESPONSE_SCHEMA = ResponseSchema(
     data_fields={
         # Response is a flat object, not data[]
         "districts": FieldSpec(name="districts", type=list, required=True),
-        "regions": FieldSpec(name="regions", type=dict, required=True),
+        "regions": FieldSpec(name="regions", type=list, required=True),
         "bedrooms": FieldSpec(name="bedrooms", type=list, required=True),
         "saleTypes": FieldSpec(name="saleTypes", type=list, required=True),
         "projects": FieldSpec(name="projects", type=list, required=True),
@@ -53,13 +53,18 @@ FILTER_OPTIONS_RESPONSE_SCHEMA = ResponseSchema(
         "sizeRange": FieldSpec(name="sizeRange", type=dict, required=True),
         "tenures": FieldSpec(name="tenures", type=list, required=True),
         "propertyAgeBuckets": FieldSpec(name="propertyAgeBuckets", type=list, required=True),
+        "marketSegments": FieldSpec(name="marketSegments", type=list, required=True),
     },
     meta_fields={
+        # Standard meta fields injected by @api_contract decorator
         "requestId": FieldSpec(name="requestId", type=str, required=True),
         "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
         "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
+        # Contract versioning fields (also injected by decorator)
+        "apiContractVersion": FieldSpec(name="apiContractVersion", type=str, required=True),
+        "contractHash": FieldSpec(name="contractHash", type=str, required=True),
     },
-    required_meta=["requestId", "elapsedMs", "apiVersion"],
+    required_meta=["requestId", "elapsedMs", "apiVersion", "apiContractVersion", "contractHash"],
     data_is_list=False,  # Response is flat object with filter options
 )
 

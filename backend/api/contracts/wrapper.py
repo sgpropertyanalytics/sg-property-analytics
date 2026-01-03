@@ -33,6 +33,7 @@ from .validate import (
     validate_response,
     ContractViolation,
 )
+from .contract_schema import API_CONTRACT_VERSION, get_schema_hash
 
 # Import ValidationError from utils.normalize if available
 try:
@@ -172,10 +173,15 @@ def api_contract(endpoint_name: str):
                 if 'meta' not in response_data:
                     response_data['meta'] = {}
 
+                # Inject ALL meta fields from decorator (single source of truth)
+                # This ensures serializers don't need to inject these fields
                 response_data['meta'].update({
                     'requestId': request_id,
                     'elapsedMs': round(elapsed_ms, 2),
                     'apiVersion': contract.version,
+                    # Contract versioning for frontend validation
+                    'apiContractVersion': API_CONTRACT_VERSION,
+                    'contractHash': get_schema_hash(endpoint_name),
                 })
 
             # 10. Validate response schema (only for successful responses)

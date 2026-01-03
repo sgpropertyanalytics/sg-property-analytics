@@ -6,6 +6,11 @@ Provides validation functions that check:
 - Type correctness
 - Allowed values
 - Nullability constraints
+- Undeclared fields (bidirectional validation)
+
+Bidirectional validation catches schema drift where serializers return
+fields that aren't declared in schemas. This prevents the "works in WARN
+mode but breaks in STRICT" problem.
 """
 
 from typing import Dict, Any, List, Optional
@@ -197,6 +202,17 @@ def validate_response(response: Dict[str, Any], schema: ResponseSchema) -> None:
                     "received": type(value).__name__
                 })
 
+    # Bidirectional: Check for undeclared meta fields
+    # This catches serializers injecting meta fields that schemas don't declare
+    declared_meta = set(schema.meta_fields.keys())
+    for field_name in meta.keys():
+        if field_name not in declared_meta:
+            violations.append({
+                "path": f"meta.{field_name}",
+                "error": "undeclared_meta_field",
+                "message": f"Meta field '{field_name}' not declared in schema"
+            })
+
     if violations:
         raise ContractViolation(
             message=f"{len(violations)} response schema violation(s)",
@@ -209,9 +225,19 @@ def _validate_data_item(
     field_specs: Dict[str, FieldSpec],
     path_prefix: str
 ) -> List[Dict[str, Any]]:
-    """Validate a single data item against field specs."""
+    """
+    Validate a single data item against field specs.
+
+    Performs BIDIRECTIONAL validation:
+    1. Schema → Response: All required schema fields must be in response
+    2. Response → Schema: All response fields must be declared in schema
+
+    This catches schema drift where serializers add fields that schemas
+    don't declare, preventing silent contract violations.
+    """
     violations = []
 
+    # Direction 1: Schema → Response (missing/invalid fields)
     for field_name, spec in field_specs.items():
         if field_name not in item:
             if spec.required:
@@ -235,6 +261,17 @@ def _validate_data_item(
                     "expected": spec.type.__name__,
                     "received": type(value).__name__
                 })
+
+    # Direction 2: Response → Schema (undeclared fields)
+    # This catches serializers returning fields that schemas don't declare
+    declared_fields = set(field_specs.keys())
+    for field_name in item.keys():
+        if field_name not in declared_fields:
+            violations.append({
+                "path": f"{path_prefix}.{field_name}",
+                "error": "undeclared_field",
+                "message": f"Field '{field_name}' not declared in schema (serializer-schema drift)"
+            })
 
     return violations
 
