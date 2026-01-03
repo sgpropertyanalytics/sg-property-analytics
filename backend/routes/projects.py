@@ -478,8 +478,8 @@ def get_hot_projects():
             "filters_applied": {
                 "limit": limit,
                 "market_segment": market_segment,
-                "district": district_param,
-                "bedroom": bedroom,
+                "district": districts,
+                "bedroom": bedrooms,
                 "price_min": price_min,
                 "price_max": price_max,
             },

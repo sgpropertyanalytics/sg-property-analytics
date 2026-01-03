@@ -258,35 +258,90 @@ prompt: |
 
 # STEP 4: RISK DETECTION
 
-**REQUIRED ACTION:** Use the Task tool with these EXACT parameters:
+**REQUIRED ACTION:** Use the Task tool with these EXACT parameters.
+
+**CRITICAL:** Include context from Steps 0.5-3 so risk-agent doesn't make false positives.
 
 ```
 Tool: Task
 subagent_type: "risk-agent"
 prompt: |
-  Perform critical code review on:
+  ## Context from Previous Review Steps
+
+  ### Engineering Principles (from Step 0.5)
+  [PASTE key principles from CLAUDE.md that were extracted]
+
+  ### Pattern Analysis Findings (from Step 1)
+  [PASTE the output from codebase-pattern-finder]
+  - What patterns are established in sibling files?
+  - What git history shows about these files?
+
+  ### Simplicity Check Findings (from Step 2)
+  [PASTE the output from simplicity-reviewer]
+  - Library-First violations found?
+  - Is this solving today's problem or hypothetical future?
+
+  ### Contract Check Findings (from Step 3)
+  [PASTE the output from fullstack-consistency-reviewer]
+  - Any contract drift detected?
+  - What's the current migration state?
+
+  ### Technology Context (CRITICAL for avoiding false positives)
+  - Storage type: [sessionStorage clears on close / localStorage persists]
+  - Migration state: [React Query X/Y migrated, mixed patterns EXPECTED]
+  - Framework facts:
+    - Tree-shaking removes unused imports (don't flag dead imports)
+    - import.meta.env.DEV code doesn't run in prod
+    - Zustand persist hydration is synchronous (no race possible)
+    - Page-namespaced stores are isolated (no cross-page leak)
+
+  ---
+
+  ## Files to Review
   [LIST THE CHANGED FILES FROM STEP 0]
 
-  Check all 21 failure mode categories:
-  1-14: Runtime bugs (null destructuring, race conditions, etc.)
-  15: Line-by-line code quality
-  16: Security scanning
-  17: Lint integration
-  18: Architectural review
-  19: Performance implications
-  20: Test coverage check
-  21: Documentation quality
+  ## Default Stance: SKEPTICAL
 
-  Use evidence from git history: git log -20 -- <files>
-  Apply reality check protocol.
+  Assume code has bugs until proven otherwise.
 
-  Output format:
-  ### 🔴 MUST FIX (Blocking)
-  ### 🟡 SHOULD FIX (Recommended)
-  ### 💡 CONSIDER (Optional)
-  ### ✅ LOOKS GOOD
+  1. Verify each change has test coverage
+  2. Check edge cases explicitly
+  3. Confirm patterns match codebase standards
+  4. Question complexity — is there a simpler way?
+  5. Only APPROVE when confident
 
-  Verdict: APPROVE | REQUEST CHANGES | NEEDS DISCUSSION
+  **One sentence:** A good reviewer finds the bugs the author missed, not confirms their assumptions.
+
+  ## Your Role
+  Be a senior code reviewer with a skeptical mindset. Look for:
+  1. Real bugs that will break in production
+  2. Inefficiencies that should be improved
+  3. Better ways to implement the same functionality
+  4. Security vulnerabilities
+  5. Performance issues
+
+  ## Reality Check Protocol (Prevents False Positives)
+  Before reporting ANY finding, verify:
+  1. READ the actual code (not just grep output)
+  2. Check 20 lines of context for guards
+  3. Verify the technology behaves as you assume (use the context provided)
+  4. Confirm it's not already addressed by previous step findings
+  5. Exclude comments, test files, and dead code from findings
+
+  ## Output Format (Simplified)
+
+  ### P0: Must Fix Before Merge
+  🔴 **file:line** — [issue]
+     Code: `[snippet]`
+     Fix: `[solution]`
+
+  ### P1: Should Fix
+  🟡 **file:line** — [issue]
+
+  ### Verified Not Issues (show your work)
+  - Checked [pattern] at file:line → [why it's OK]
+
+  ### Verdict: APPROVE | REQUEST CHANGES | NEEDS DISCUSSION
 ```
 
 **WAIT for agent to complete before proceeding to Step 5.**
