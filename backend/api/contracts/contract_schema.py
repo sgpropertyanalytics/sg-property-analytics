@@ -782,11 +782,8 @@ def serialize_aggregate_response(
     if 'elapsed_ms' in meta_v2 and 'elapsedMs' not in meta_v2:
         meta_v2['elapsedMs'] = meta_v2.pop('elapsed_ms')
 
-    # Add API contract version and schema hash to meta
-    meta_v2.update({
-        'apiContractVersion': API_CONTRACT_VERSION,
-        'contractHash': get_schema_hash('aggregate'),
-    })
+    # Note: apiContractVersion and contractHash are now injected by @api_contract decorator
+    # This keeps serializers as pure data transformers
 
     return {
         'data': serialized_data,
@@ -921,6 +918,7 @@ def serialize_filter_options(
     ]
 
     # Build v2 response
+    # Note: apiContractVersion and contractHash are now injected by @api_contract decorator
     return {
         FilterOptionsFields.SALE_TYPES: sale_types_v2,
         FilterOptionsFields.TENURES: tenures_v2,
@@ -933,8 +931,6 @@ def serialize_filter_options(
         FilterOptionsFields.PSF_RANGE: psf_range,
         FilterOptionsFields.SIZE_RANGE: size_range,
         'propertyAgeBuckets': property_age_buckets_v2,
-        'apiContractVersion': API_CONTRACT_VERSION,
-        'contractHash': get_schema_hash('filter_options'),
     }
 
 
@@ -1126,16 +1122,12 @@ def serialize_dashboard_response(
         for panel_name, panel_data in data.items()
     }
 
-    # Add API contract version and schema hash to meta
-    meta_v2 = {
-        **meta,
-        'apiContractVersion': API_CONTRACT_VERSION,
-        'contractHash': get_schema_hash('dashboard'),
-    }
+    # Note: apiContractVersion and contractHash are now injected by @api_contract decorator
+    # This keeps serializers as pure data transformers
 
     return {
         'data': serialized_data,
-        'meta': meta_v2,
+        'meta': meta,
     }
 
 
@@ -1492,10 +1484,8 @@ def serialize_price_bands_dual(result: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         Dict with v2 camelCase fields
     """
-    response = serialize_price_bands_v2(result)
-    response['apiContractVersion'] = API_CONTRACT_VERSION
-    response['contractHash'] = get_schema_hash('price_bands')
-    return response
+    # Note: apiContractVersion and contractHash are now injected by @api_contract decorator
+    return serialize_price_bands_v2(result)
 
 
 # =============================================================================
@@ -1642,14 +1632,13 @@ def serialize_psf_by_price_band(
     """
     serialized = [serialize_psf_by_price_band_row(row) for row in data]
 
+    # Note: apiContractVersion and contractHash are now injected by @api_contract decorator
     response_meta = {
         'kAnonymity': {
             'threshold': PSF_BY_PRICE_BAND_K_THRESHOLD,
             'level': 'price_band_bedroom',
             'message': 'Data aggregated to protect privacy. Groups with fewer than 15 observations are suppressed.'
         },
-        'apiContractVersion': API_CONTRACT_VERSION,
-        'contractHash': get_schema_hash('psf_by_price_band'),
     }
 
     if meta:
