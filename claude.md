@@ -5,21 +5,25 @@
 ### Skills
 | Skill | Trigger |
 |-------|---------|
+| `/review` | **Code review before merge (RECOMMENDED)** |
 | `/sql-guardrails` | SQL queries |
 | `/input-boundary-guardrails` | Route handlers |
 | `/contract-async-guardrails` | Frontend data fetching |
 | `/dashboard-guardrails` | Chart modifications |
 | `/data-standards` | Classifications/labels |
-| `/api-endpoint-guardrails` | New endpoints |
-| `/frontend-design` | Building UI components/pages |
+| `/api-guardrails` | New endpoints, 404 debugging |
+| `/design-system` | UI components, colors, typography |
 | `/backend-impact-guardrails` | **Backend changes (MANDATORY)** |
 | `/git-context-guardrails` | **ANY implementation (MANDATORY)** |
 | `/library-check` | **New infrastructure code (MANDATORY)** |
+| `/learn-mistake` | Record bad recommendations to Historical Incidents |
 
 ### Agents
 | Agent | Trigger |
 |-------|---------|
+| `simplicity-reviewer` | Part of `/review` workflow |
 | `eli5-guardian` | "explain to me", "complicated", "simplify" |
+| `risk-agent` | Bug detection, security, code quality |
 | `regression-snapshot-guard` | "verify no regressions", "before deploy" |
 | `fullstack-consistency-reviewer` | **MANDATORY before merge** |
 | `ingestion-orchestrator` | "scrape", "ingest", "upload CSV" |
@@ -588,3 +592,106 @@ frontend/src/
 ├── context/             # PowerBIFilterContext
 └── components/powerbi/  # Chart components
 ```
+
+---
+
+# 11. VERIFICATION (MANDATORY BEFORE TASK COMPLETION)
+
+Claude MUST run tests inline and iterate until green. Do NOT mark task complete if tests fail.
+
+## Test Tiers
+
+### Tier 1: Quick Checks (ALWAYS - 30s)
+Run after EVERY code change:
+```bash
+# Frontend
+cd frontend && npm run lint && npm run typecheck
+
+# Backend
+python -m py_compile backend/routes/*.py backend/services/*.py
+
+# Contract drift
+python backend/scripts/generate_contracts.py --check
+```
+
+### Tier 2: Core Tests (DEFAULT - 3 min)
+Run for most changes:
+```bash
+# Unit tests (no DB needed) - ALL in backend/tests/
+cd backend
+pytest tests/test_normalize.py tests/test_api_contract.py -v
+pytest tests/test_sql_guardrails.py tests/test_sql_safety.py -v
+pytest tests/test_property_age_bucket.py tests/test_param_coverage.py -v
+
+# Frontend unit tests
+cd frontend && npm run test:ci
+
+# Route contract
+python scripts/check_route_contract.py
+
+# Data guard
+python scripts/data_guard.py --ci
+```
+
+### Tier 3: Full Suite (COMPLEX - 8 min)
+Run for contract changes, multi-file changes, pre-merge:
+```bash
+# Integration tests (requires DATABASE_URL) - ALL in backend/tests/
+cd backend
+pytest tests/test_regression_snapshots.py tests/test_api_invariants.py -v
+pytest tests/test_smoke_endpoints.py tests/test_chart_dependencies.py -v
+pytest tests/test_kpi_guardrails.py -v
+
+# E2E smoke (if UI changed)
+cd frontend && npm run build && npm run e2e:smoke
+
+# Mock validation
+python scripts/validate_e2e_mocks.py || echo "Warning: E2E mocks may be stale"
+```
+
+### Tier 4: Full E2E Runtime (PRE-MERGE - 10 min)
+Run for major UI, filter, or chart changes:
+```bash
+# Full E2E performance suite (all 13 test files)
+cd frontend && npm run e2e:full
+```
+
+## Smart Failure Handling
+
+| Error Type | Action |
+|------------|--------|
+| Lint errors | Auto-fix, retry (up to 3x) |
+| Type errors | Auto-fix, retry (up to 3x) |
+| Unit test failures | Report, explain, ASK before fixing |
+| Integration failures | Report, explain, ASK before fixing |
+| Contract drift | Regenerate contracts, retry |
+
+## When to Run Which Tier
+
+| Change Scope | Tier |
+|--------------|------|
+| Single file, minor fix | Tier 1 |
+| Frontend component | Tier 1 + frontend tests |
+| Backend service/route | Tier 1 + Tier 2 |
+| Contract/schema change | Tier 3 (full) |
+| Multi-file refactor | Tier 3 (full) |
+| Pre-merge | Tier 3 (full) |
+| Major UI/filter/chart changes | Tier 4 (full E2E) |
+
+## The `/review` Workflow
+
+Use `/review` for comprehensive code review before merge:
+
+```
+/review (orchestrator)
+    │
+    ├── Step 1: Scope Detection (git diff)
+    ├── Step 2: Pattern Analysis (codebase-pattern-finder)
+    ├── Step 3: Simplicity Check (simplicity-reviewer)
+    ├── Step 4: Contract Check (fullstack-consistency-reviewer)
+    ├── Step 5: Risk Detection (risk-agent)
+    ├── Step 6: Inline Tests (Tier 1-4 based on scope)
+    └── Step 7: Final Report (READY TO PUSH / NEEDS WORK)
+```
+
+**Auto-formatting:** PostToolUse hooks run ESLint and Black after every write/edit.
