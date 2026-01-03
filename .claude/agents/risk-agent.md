@@ -416,6 +416,364 @@ if (expr.length === 1) return fallbackColor;  // Return literal, not ['case', fa
 
 ---
 
+### Mode 11: Library-First Violations (MEDIUM FREQUENCY)
+
+**What breaks:** Custom infrastructure code (>50 lines) that reinvents well-tested libraries. Leads to bugs, maintenance burden, and inconsistent behavior.
+
+**Detection:**
+```bash
+# Find custom data fetching patterns (should use React Query)
+grep -rn "useState.*null.*useEffect.*fetch" frontend/src/
+
+# Find manual AbortController (React Query handles this)
+grep -rn "new AbortController()" frontend/src/components/
+
+# Find manual stale request tracking
+grep -rn "requestIdRef.*current" frontend/src/
+
+# Find large context files (should use Zustand)
+find frontend/src/context -name "*.jsx" -exec wc -l {} \; | awk '$1 > 100'
+```
+
+**Reference:** CLAUDE.md §1.6 Library-First Principle
+
+---
+
+### Mode 12: SQL Injection Patterns (HIGH SEVERITY)
+
+**What breaks:** F-strings or string concatenation in SQL queries allow arbitrary SQL execution.
+
+**Detection:**
+```bash
+# F-string SQL (CRITICAL)
+grep -rn 'f".*SELECT\|f".*INSERT\|f".*UPDATE\|f".*DELETE' backend/
+
+# String concatenation SQL
+grep -rn '+ .*SELECT\|+ .*WHERE\|+ .*AND' backend/services/
+
+# %(param)s style (should use :param)
+grep -rn '%\(.*\)s' backend/services/
+```
+
+**The Bug Pattern:**
+```python
+# VULNERABLE
+db.execute(f"SELECT * FROM users WHERE id = {user_id}")
+
+# SAFE (use :param bindings)
+db.execute(text("SELECT * FROM users WHERE id = :id"), {"id": user_id})
+```
+
+---
+
+### Mode 13: Outlier Exclusion Missing (MEDIUM FREQUENCY)
+
+**What breaks:** Queries return outlier transactions, skewing aggregates and causing misleading charts.
+
+**Detection:**
+```bash
+# Find transaction queries missing outlier filter
+grep -rn "FROM.*transaction" backend/services/ | grep -v "is_outlier"
+```
+
+**Required Pattern:**
+```sql
+WHERE COALESCE(is_outlier, false) = false  -- EVERY transaction query
+```
+
+---
+
+### Mode 14: Date Bounds Inconsistency (MEDIUM FREQUENCY)
+
+**What breaks:** Inclusive vs exclusive date bounds cause off-by-one errors in time series.
+
+**Detection:**
+```bash
+# Find date comparisons
+grep -rn "transaction_date.*<\|transaction_date.*>" backend/services/
+```
+
+**Required Pattern:**
+```sql
+-- Exclusive upper bound (correct)
+WHERE transaction_date >= :min_date AND transaction_date < :max_date
+
+-- NOT inclusive (incorrect)
+WHERE transaction_date >= :min_date AND transaction_date <= :max_date
+```
+
+---
+
+## CODERABBIT-STYLE REVIEW MODES (15-21)
+
+These modes transform the risk-agent into a senior code reviewer that provides inline, actionable feedback.
+
+---
+
+### Mode 15: Line-by-Line Code Quality
+
+**Purpose:** Review code like a senior engineer, providing inline comments.
+
+**What to check (for each changed file):**
+1. **Readability** — Is this code self-explanatory?
+2. **Naming** — Are variables/functions named clearly?
+3. **Complexity** — Can this be simplified?
+4. **Edge cases** — What inputs could break this?
+5. **Error handling** — Are failures handled gracefully?
+
+**Output format:**
+```markdown
+📝 **Line 45:** `const data = response.data.results`
+   Consider destructuring: `const { results } = response.data ?? {}`
+   Prevents crash if response.data is undefined
+```
+
+**Detection approach:**
+1. Read the changed files
+2. For each significant block, ask: "Would I approve this in a PR?"
+3. Provide specific line references and concrete fixes
+
+---
+
+### Mode 16: Security Scanning
+
+**Purpose:** Catch security vulnerabilities before they reach production.
+
+**Detection commands:**
+```bash
+# Hardcoded secrets
+grep -rn "password.*=\|api_key.*=\|secret.*=" --include="*.py" --include="*.js" backend/ frontend/src/
+grep -rn "sk-\|pk_\|Bearer " --include="*.py" --include="*.js" backend/ frontend/src/
+
+# SQL injection (covered in Mode 12, but double-check)
+grep -rn 'f".*SELECT' backend/
+
+# Exposed endpoints without auth
+grep -B5 "@.*route\|@app\." backend/routes/ | grep -v "@login_required\|@require_auth\|@jwt_required"
+
+# Sensitive data in logs
+grep -rn "print.*password\|logging.*password\|console.log.*password" backend/ frontend/src/
+```
+
+**Output format:**
+```markdown
+🔐 **Security Issue (line 23):** Hardcoded API key detected
+   **Severity:** Critical
+   **Fix:** Move to environment variable: `os.environ.get('API_KEY')`
+```
+
+---
+
+### Mode 17: Lint Integration
+
+**Purpose:** Run linters and report findings as review comments.
+
+**Commands to run:**
+```bash
+# Frontend lint
+cd frontend && npm run lint 2>&1 | grep -E "error|warning" | head -20
+
+# Backend lint (if flake8 available)
+python -m flake8 --select=E,W,F --max-line-length=120 backend/routes/ backend/services/ 2>/dev/null | head -20
+
+# TypeScript errors
+cd frontend && npm run typecheck 2>&1 | grep -E "error TS" | head -20
+```
+
+**Output format:**
+```markdown
+🔴 **ESLint Error (line 23):** 'useState' is defined but never used
+🟡 **Flake8 Warning (line 45):** E501 Line too long (145 > 120 characters)
+```
+
+---
+
+### Mode 18: Architectural Review
+
+**Purpose:** Ensure changes follow established architecture patterns.
+
+**What to check:**
+1. **Layer violations** — Business logic in components? SQL in routes?
+2. **Coupling** — Is this component too dependent on others?
+3. **Cohesion** — Does this function do ONE thing?
+4. **DRY violations** — Is this duplicated elsewhere?
+5. **Pattern conformance** — Does this match sibling implementations?
+
+**Detection:**
+```bash
+# SQL in routes (should be in services)
+grep -rn "db\.session\|execute(" backend/routes/
+
+# Business logic in components (look for complex conditionals)
+grep -rn "if.*&&.*&&\|switch.*case.*case.*case" frontend/src/components/
+
+# Find similar implementations
+ls frontend/src/components/powerbi/*.jsx | head -5
+```
+
+**Output format:**
+```markdown
+🏗️ **Architectural Concern (line 78):** This component fetches data AND renders UI
+   **Pattern:** Split into DataContainer + PureComponent
+   **Reference:** frontend/src/components/powerbi/TimeTrendChart.jsx (line 45-60)
+```
+
+---
+
+### Mode 19: Performance Implications
+
+**Purpose:** Identify code that could cause performance issues.
+
+**Detection commands:**
+```bash
+# N+1 query patterns
+grep -rn "for.*:.*\n.*db\.\|for.*:.*\n.*execute" backend/services/
+
+# Expensive operations in render
+grep -rn "\.map(.*\.map(\|\.filter(.*\.filter(" frontend/src/components/
+
+# Missing memoization in heavy components
+grep -L "useMemo\|useCallback" frontend/src/components/powerbi/*.jsx
+
+# Large array operations without pagination
+grep -rn "\.fetchall()" backend/ | grep -v "LIMIT"
+```
+
+**Output format:**
+```markdown
+⚡ **Performance (line 78):** Nested .map() creates O(n²) complexity
+   **Impact:** Slow render with large datasets
+   **Fix:** Pre-compute lookup map: `const lookup = Object.fromEntries(data.map(d => [d.id, d]))`
+```
+
+---
+
+### Mode 20: Test Coverage Check
+
+**Purpose:** Ensure changed code has corresponding tests.
+
+**Detection:**
+```bash
+# For each changed Python file, check if test exists
+for file in $(git diff --name-only HEAD~1 | grep "\.py$"); do
+  base=$(basename "$file" .py)
+  if ! find . -name "test_${base}.py" -o -name "${base}_test.py" | grep -q .; then
+    echo "Missing test: $file"
+  fi
+done
+
+# For each changed component, check if test exists
+for file in $(git diff --name-only HEAD~1 | grep "components.*\.jsx$"); do
+  base=$(basename "$file" .jsx)
+  if ! find frontend -name "${base}.test.jsx" -o -name "${base}.spec.jsx" | grep -q .; then
+    echo "Missing test: $file"
+  fi
+done
+```
+
+**Output format:**
+```markdown
+🧪 **Missing Tests:** backend/services/new_feature.py has no test file
+   **Expected:** backend/tests/test_new_feature.py or tests/test_new_feature.py
+   **Action:** Add unit tests before merge
+```
+
+---
+
+### Mode 21: Documentation Quality
+
+**Purpose:** Ensure complex functions are documented.
+
+**Detection:**
+```bash
+# Find Python functions >30 lines without docstrings
+grep -B1 "^def " backend/services/*.py | grep -v '"""' | grep "def "
+
+# Find JSDoc-less exported functions
+grep -B1 "^export function\|^export const.*=" frontend/src/utils/*.js | grep -v "/\*\*"
+```
+
+**Output format:**
+```markdown
+📚 **Missing Docs (line 45):** `get_aggregated_data()` is 50+ lines without docstring
+   **Add:** Purpose, parameters, return type, example usage
+   **Template:**
+   ```python
+   def get_aggregated_data(district: str = None, date_from: date = None) -> List[dict]:
+       """
+       Aggregate transaction data with optional filters.
+
+       Args:
+           district: Filter by district code (e.g., 'D01')
+           date_from: Include transactions from this date
+
+       Returns:
+           List of aggregated records with district, count, median_psf
+       """
+   ```
+```
+
+---
+
+## CODERABBIT OUTPUT FORMAT
+
+When running as a CodeRabbit-style reviewer, use this output structure:
+
+```markdown
+## Critical Code Review
+
+### 🔴 MUST FIX (Blocking)
+Issues that will cause bugs or security problems.
+
+**[Category] File:Line — [Issue Title]**
+```code snippet```
+**Problem:** [What's wrong]
+**Fix:** [Concrete code fix]
+**Severity:** Critical | High
+
+---
+
+### 🟡 SHOULD FIX (Recommended)
+Issues that affect code quality but won't break production.
+
+**[Category] File:Line — [Issue Title]**
+**Current:** [What the code does]
+**Better:** [What it should do]
+**Benefit:** [Why this matters]
+
+---
+
+### 💡 CONSIDER (Optional)
+Best practice suggestions and minor improvements.
+
+**[Category] File:Line — [Suggestion]**
+**Rationale:** [Why this is better]
+
+---
+
+### ✅ LOOKS GOOD
+Positive callouts for well-written code.
+
+✅ **File:Line** — Good use of [pattern/practice]
+✅ **File:Line** — Clean implementation of [feature]
+
+---
+
+### 📊 Summary
+
+| Metric | Count |
+|--------|-------|
+| Critical issues | X |
+| Recommended fixes | X |
+| Suggestions | X |
+| Files reviewed | X |
+| Lines changed | X |
+
+**Verdict:** APPROVE | REQUEST CHANGES | NEEDS DISCUSSION
+```
+
+---
+
 ## PREVENTION MODE: RISKY PATTERNS
 
 Also warn about these patterns even if they haven't crashed yet:

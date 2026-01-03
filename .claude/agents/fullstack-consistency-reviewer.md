@@ -231,15 +231,15 @@ This agent runs in three phases. Phase execution is **conditional** based on PR 
 
 ### Conditional Phase Execution
 
-| PR Type | Phase 1 (Consistency) | Phase 2 (Chart Impact) | Phase 3 (Per-Chart) |
-|---------|----------------------|------------------------|---------------------|
-| Backend analytics routes/schemas | MANDATORY | MANDATORY | SKIP |
-| Frontend UI/layout only | MANDATORY + UI overflow checks | SKIP | SKIP |
-| Frontend chart components changed | MANDATORY | SKIP | MANDATORY |
-| Backend non-chart endpoints | MANDATORY | SKIP | SKIP |
-| Multi-file feature (both layers) | MANDATORY | MANDATORY | IF charts touched |
-| User requests "per-chart audit" | MANDATORY | SKIP | MANDATORY (all charts) |
-| User requests "full review" | MANDATORY | MANDATORY | MANDATORY |
+| PR Type | Phase 1 (Consistency) | Phase 2 (Chart Impact) | Phase 3 (Per-Chart) | Phase 4 (Inline Tests) |
+|---------|----------------------|------------------------|---------------------|------------------------|
+| Backend analytics routes/schemas | MANDATORY | MANDATORY | SKIP | MANDATORY |
+| Frontend UI/layout only | MANDATORY + UI overflow checks | SKIP | SKIP | Tier 1 only |
+| Frontend chart components changed | MANDATORY | SKIP | MANDATORY | Tier 1+2 |
+| Backend non-chart endpoints | MANDATORY | SKIP | SKIP | MANDATORY |
+| Multi-file feature (both layers) | MANDATORY | MANDATORY | IF charts touched | MANDATORY (Tier 3) |
+| User requests "per-chart audit" | MANDATORY | SKIP | MANDATORY (all charts) | MANDATORY |
+| User requests "full review" | MANDATORY | MANDATORY | MANDATORY | MANDATORY (all tiers) |
 
 ---
 
@@ -1052,13 +1052,81 @@ print('✅ timeframe field exists in all required schemas')
 
 ---
 
+## PHASE 4: INLINE VERIFICATION (Integration with /review)
+
+**Purpose:** After contract checks pass, run inline tests to verify correctness before push.
+
+This phase integrates the fullstack-consistency-reviewer with the `/review` workflow.
+
+### 4.1 Contract Verification Tests
+
+**REQUIRED ACTION:** Run these tests and report actual output:
+
+```bash
+# Route contract check
+python scripts/check_route_contract.py
+
+# Contract generation/drift check
+python backend/scripts/generate_contracts.py --check
+
+# API contract tests
+pytest tests/test_api_contract.py -v
+
+# Frontend-backend alignment
+pytest backend/tests/contracts/test_frontend_backend_alignment.py -v
+```
+
+### 4.2 Regression Snapshot Tests
+
+**Run if backend analytics changed:**
+
+```bash
+# Regression snapshots (requires DATABASE_URL)
+pytest backend/tests/test_regression_snapshots.py -v
+
+# API invariants
+pytest backend/tests/test_api_invariants.py -v
+```
+
+### 4.3 Iterate on Failures
+
+| Test Failure | Action |
+|--------------|--------|
+| Contract drift | Run `python backend/scripts/generate_contracts.py` to regenerate, re-run tests |
+| Route contract fail | Fix endpoint registration, re-run |
+| Snapshot mismatch | If intentional change, run with `--update-snapshots`; if not, investigate |
+| Alignment fail | Fix param mapping in adapter or schema, re-run |
+
+### 4.4 Phase 4 Output
+
+```markdown
+## Phase 4: Inline Verification
+
+### Contract Tests
+- Route contract: [PASS/FAIL]
+- Contract drift: [PASS/FAIL]
+- API contract: [PASS/FAIL]
+- Frontend-backend alignment: [PASS/FAIL]
+
+### Regression Tests (if applicable)
+- Snapshots: [PASS/FAIL/SKIPPED - no DB]
+- API invariants: [PASS/FAIL/SKIPPED - no DB]
+
+### Iteration Log
+- Attempt 1: [PASS / FAIL - reason]
+- Attempt 2: [PASS / FAIL - reason]
+- Final: [PASS / BLOCKED]
+```
+
+---
+
 ## OUTPUT FORMAT (MANDATORY)
 
 ```markdown
 # Fullstack Consistency Review
 
 **PR Scope:** [backend-analytics | frontend-only | frontend-charts | both | backend-non-chart]
-**Phases Run:** [Phase 0 (always) + Phase 1 | + Phase 2 | + Phase 3]
+**Phases Run:** [Phase 0 (always) + Phase 1 | + Phase 2 | + Phase 3 | + Phase 4]
 **Timestamp:** [ISO 8601]
 
 ## Phase 0) Git State & Evidence Verification
