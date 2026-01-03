@@ -84,10 +84,17 @@ vi.mock('../../../adapters', () => ({
   transformTimeSeries: vi.fn((data) =>
     data.map((d) => ({
       period: d.period,
+      periodGrain: 'month',
+      newSaleCount: d.newSaleCount || 0,
+      resaleCount: d.resaleCount || 0,
+      newSaleValue: d.newSaleValue || 0,
+      resaleValue: d.resaleValue || 0,
       totalCount: d.totalCount,
       totalValue: d.totalValue,
     }))
   ),
+  // Mock aggregateTimeSeriesByGrain - used by useTimeSeriesQuery for client-side grain toggle
+  aggregateTimeSeriesByGrain: vi.fn((data, _grain) => data), // Pass through for tests
   logFetchDebug: vi.fn(),
   assertKnownVersion: vi.fn(),
   validateResponseGrain: vi.fn(),
@@ -279,14 +286,15 @@ describe('TimeTrendChart', () => {
       });
     });
 
-    it('refetches when timeGrouping changes', async () => {
+    it('does NOT refetch when timeGrouping changes (client-side aggregation)', async () => {
       const { rerender, queryClient } = renderWithProviders(<TimeTrendChart />);
 
       await waitFor(() => {
         expect(mockState.fetchCallCount).toBe(1);
       });
 
-      // Change time grouping
+      // Change time grouping - should NOT trigger new API call
+      // useTimeSeriesQuery handles aggregation client-side
       mockTimeGrouping = 'quarter';
 
       rerender(
@@ -295,9 +303,13 @@ describe('TimeTrendChart', () => {
         </QueryClientProvider>
       );
 
-      await waitFor(() => {
-        expect(mockState.fetchCallCount).toBe(2);
+      // Wait to ensure no extra fetch happens
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 100));
       });
+
+      // Should still be just 1 fetch - aggregation happens client-side
+      expect(mockState.fetchCallCount).toBe(1);
     });
 
     it('passes correct params to API based on filters', async () => {

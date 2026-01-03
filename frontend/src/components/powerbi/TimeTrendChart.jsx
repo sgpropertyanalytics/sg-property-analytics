@@ -16,9 +16,11 @@ import { niceMax } from '../../utils/niceAxisMax';
 /**
  * Time Trend Chart - Line + Bar Combo
  *
- * X-axis: Month (drillable up to Quarter/Year)
+ * X-axis: Month (drillable up to Quarter/Year via client-side aggregation)
  * Y1 (bars): Transaction Count
- * Y2 (line): Median PSF
+ * Y2 (line): Total Transaction Value
+ *
+ * Uses useTimeSeriesQuery for instant grain toggle without API calls.
  */
 // Time level labels for display
 const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
