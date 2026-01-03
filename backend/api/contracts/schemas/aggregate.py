@@ -17,6 +17,8 @@ from ..registry import (
     ResponseSchema,
     FieldSpec,
     register_contract,
+    make_meta_fields,
+    make_required_meta,
 )
 
 
@@ -247,17 +249,15 @@ AGGREGATE_RESPONSE_SCHEMA = ResponseSchema(
         "propertyAgeYears": FieldSpec(name="propertyAgeYears", type=int, nullable=True),
         "ageBand": FieldSpec(name="ageBand", type=str, nullable=True),
     },
-    meta_fields={
-        "requestId": FieldSpec(name="requestId", type=str, required=True),
-        "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
-        "cacheHit": FieldSpec(name="cacheHit", type=bool, required=False),
-        "filtersApplied": FieldSpec(name="filtersApplied", type=dict, required=True),
-        "totalRecords": FieldSpec(name="totalRecords", type=int, required=False),
-        "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
-        "schemaVersion": FieldSpec(name="schemaVersion", type=str, required=False),
-        "warnings": FieldSpec(name="warnings", type=list, required=False, description="Diagnostic warnings about normalization or data quality"),
-    },
-    required_meta=["requestId", "elapsedMs", "filtersApplied", "apiVersion"],
+    # Use make_meta_fields() for base meta + endpoint-specific fields
+    meta_fields=make_meta_fields(
+        FieldSpec(name="cacheHit", type=bool, required=False),
+        FieldSpec(name="filtersApplied", type=dict, required=True),
+        FieldSpec(name="totalRecords", type=int, required=False),
+        FieldSpec(name="schemaVersion", type=str, required=False),
+        FieldSpec(name="warnings", type=list, required=False, description="Diagnostic warnings about normalization or data quality"),
+    ),
+    required_meta=make_required_meta("filtersApplied"),
     data_is_list=True,
 )
 

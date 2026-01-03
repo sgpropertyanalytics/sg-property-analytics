@@ -15,6 +15,8 @@ from ..registry import (
     ResponseSchema,
     FieldSpec,
     register_contract,
+    make_meta_fields,
+    make_required_meta,
 )
 
 
@@ -145,12 +147,8 @@ NEW_LAUNCH_ABSORPTION_RESPONSE_SCHEMA = ResponseSchema(
         ),
     },
     # Standard meta fields injected by @api_contract wrapper
-    meta_fields={
-        "requestId": FieldSpec(name="requestId", type=str, required=True),
-        "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
-        "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
-    },
-    required_meta=["requestId", "elapsedMs", "apiVersion"],
+    meta_fields=make_meta_fields(),
+    required_meta=make_required_meta(),
     data_is_list=True,
 )
 

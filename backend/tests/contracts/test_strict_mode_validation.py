@@ -14,7 +14,15 @@ from unittest.mock import patch
 import os
 
 from api.contracts.validate import validate_response, ContractViolation
-from api.contracts.registry import SchemaMode, ResponseSchema, FieldSpec
+from api.contracts.registry import (
+    SchemaMode,
+    ResponseSchema,
+    FieldSpec,
+    BASE_META_FIELDS,
+    BASE_REQUIRED_META,
+    make_meta_fields,
+    make_required_meta,
+)
 from api.contracts.contract_schema import (
     API_CONTRACT_VERSION,
     CONTRACT_SCHEMA_HASHES,
@@ -138,6 +146,41 @@ class TestMetaFieldInjection:
 
     These fields are required for frontend contract validation and debugging.
     """
+
+    def test_base_meta_fields_defined(self):
+        """BASE_META_FIELDS should contain all required base meta fields."""
+        expected_fields = ["requestId", "elapsedMs", "apiVersion", "apiContractVersion", "contractHash"]
+        for field in expected_fields:
+            assert field in BASE_META_FIELDS, f"BASE_META_FIELDS missing '{field}'"
+
+    def test_base_required_meta_complete(self):
+        """BASE_REQUIRED_META should list all required meta fields."""
+        expected = ["requestId", "elapsedMs", "apiVersion", "apiContractVersion", "contractHash"]
+        assert BASE_REQUIRED_META == expected, f"BASE_REQUIRED_META mismatch: {BASE_REQUIRED_META}"
+
+    def test_make_meta_fields_includes_base(self):
+        """make_meta_fields() should include all base meta fields."""
+        result = make_meta_fields()
+        for field in BASE_META_FIELDS:
+            assert field in result, f"make_meta_fields() missing '{field}'"
+
+    def test_make_meta_fields_with_extras(self):
+        """make_meta_fields() should include base + extra fields."""
+        extra = FieldSpec(name="customField", type=dict, required=True)
+        result = make_meta_fields(extra)
+        assert "customField" in result
+        assert "requestId" in result  # Base field still present
+
+    def test_make_required_meta_includes_base(self):
+        """make_required_meta() should include all base required meta."""
+        result = make_required_meta()
+        assert result == BASE_REQUIRED_META
+
+    def test_make_required_meta_with_extras(self):
+        """make_required_meta() should include base + extra requirements."""
+        result = make_required_meta("filtersApplied")
+        assert "filtersApplied" in result
+        assert "requestId" in result  # Base field still present
 
     def test_api_contract_version_is_defined(self):
         """API_CONTRACT_VERSION constant must be defined."""

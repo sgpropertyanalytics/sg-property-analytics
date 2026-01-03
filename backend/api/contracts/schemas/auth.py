@@ -19,6 +19,8 @@ from ..registry import (
     ResponseSchema,
     FieldSpec,
     register_contract,
+    make_meta_fields,
+    make_required_meta,
 )
 
 
@@ -57,12 +59,8 @@ REGISTER_RESPONSE_SCHEMA = ResponseSchema(
         "user": FieldSpec(name="user", type=dict, required=True),
         "token": FieldSpec(name="token", type=str, required=True),
     },
-    meta_fields={
-        "requestId": FieldSpec(name="requestId", type=str, required=True),
-        "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
-        "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
-    },
-    required_meta=["requestId", "elapsedMs", "apiVersion"],
+    meta_fields=make_meta_fields(),
+    required_meta=make_required_meta(),
     data_is_list=False,
 )
 
@@ -112,12 +110,8 @@ LOGIN_RESPONSE_SCHEMA = ResponseSchema(
         "user": FieldSpec(name="user", type=dict, required=True),
         "token": FieldSpec(name="token", type=str, required=True),
     },
-    meta_fields={
-        "requestId": FieldSpec(name="requestId", type=str, required=True),
-        "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
-        "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
-    },
-    required_meta=["requestId", "elapsedMs", "apiVersion"],
+    meta_fields=make_meta_fields(),
+    required_meta=make_required_meta(),
     data_is_list=False,
 )
 
@@ -149,12 +143,8 @@ ME_RESPONSE_SCHEMA = ResponseSchema(
     data_fields={
         "user": FieldSpec(name="user", type=dict, required=True),
     },
-    meta_fields={
-        "requestId": FieldSpec(name="requestId", type=str, required=True),
-        "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
-        "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
-    },
-    required_meta=["requestId", "elapsedMs", "apiVersion"],
+    meta_fields=make_meta_fields(),
+    required_meta=make_required_meta(),
     data_is_list=False,
 )
 
@@ -219,12 +209,8 @@ FIREBASE_SYNC_RESPONSE_SCHEMA = ResponseSchema(
         "user": FieldSpec(name="user", type=dict, required=True),
         "subscription": FieldSpec(name="subscription", type=dict, required=True),
     },
-    meta_fields={
-        "requestId": FieldSpec(name="requestId", type=str, required=True),
-        "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
-        "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
-    },
-    required_meta=["requestId", "elapsedMs", "apiVersion"],
+    meta_fields=make_meta_fields(),
+    required_meta=make_required_meta(),
     data_is_list=False,
 )
 
@@ -261,12 +247,8 @@ SUBSCRIPTION_RESPONSE_SCHEMA = ResponseSchema(
         "access_expires_at": FieldSpec(name="access_expires_at", type=str, nullable=True),
         "ends_at": FieldSpec(name="ends_at", type=str, nullable=True),
     },
-    meta_fields={
-        "requestId": FieldSpec(name="requestId", type=str, required=True),
-        "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
-        "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
-    },
-    required_meta=["requestId", "elapsedMs", "apiVersion"],
+    meta_fields=make_meta_fields(),
+    required_meta=make_required_meta(),
     data_is_list=False,
 )
 
@@ -298,12 +280,8 @@ DELETE_ACCOUNT_RESPONSE_SCHEMA = ResponseSchema(
     data_fields={
         "message": FieldSpec(name="message", type=str, required=True),
     },
-    meta_fields={
-        "requestId": FieldSpec(name="requestId", type=str, required=True),
-        "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
-        "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
-    },
-    required_meta=["requestId", "elapsedMs", "apiVersion"],
+    meta_fields=make_meta_fields(),
+    required_meta=make_required_meta(),
     data_is_list=False,
 )
 

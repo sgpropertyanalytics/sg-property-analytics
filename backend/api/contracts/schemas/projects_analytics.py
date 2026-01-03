@@ -18,6 +18,8 @@ from ..registry import (
     FieldSpec,
     register_contract,
     SchemaMode,
+    make_meta_fields,
+    make_required_meta,
 )
 
 
@@ -55,12 +57,8 @@ PROJECT_INVENTORY_RESPONSE_SCHEMA = ResponseSchema(
         "data_source": FieldSpec(name="data_source", type=str, required=False),
         "message": FieldSpec(name="message", type=str, required=False),
     },
-    meta_fields={
-        "requestId": FieldSpec(name="requestId", type=str, required=True),
-        "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
-        "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
-    },
-    required_meta=["requestId", "elapsedMs", "apiVersion"],
+    meta_fields=make_meta_fields(),
+    required_meta=make_required_meta(),
     data_is_list=False,
 )
 
@@ -124,12 +122,8 @@ PROJECT_PRICE_BANDS_RESPONSE_SCHEMA = ResponseSchema(
         "error": FieldSpec(name="error", type=str, required=False),
         "apiContractVersion": FieldSpec(name="apiContractVersion", type=str, required=False),
     },
-    meta_fields={
-        "requestId": FieldSpec(name="requestId", type=str, required=True),
-        "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
-        "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
-    },
-    required_meta=["requestId", "elapsedMs", "apiVersion"],
+    meta_fields=make_meta_fields(),
+    required_meta=make_required_meta(),
     data_is_list=False,
 )
 
@@ -160,12 +154,8 @@ RESALE_PROJECTS_SERVICE_SCHEMA = ServiceBoundarySchema(
 
 RESALE_PROJECTS_RESPONSE_SCHEMA = ResponseSchema(
     data_fields={},
-    meta_fields={
-        "requestId": FieldSpec(name="requestId", type=str, required=True),
-        "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
-        "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
-    },
-    required_meta=["requestId", "elapsedMs", "apiVersion"],
+    meta_fields=make_meta_fields(),
+    required_meta=make_required_meta(),
     data_is_list=False,
 )
 
@@ -212,12 +202,8 @@ PROJECT_EXIT_QUEUE_RESPONSE_SCHEMA = ResponseSchema(
         "riskAssessment": FieldSpec(name="riskAssessment", type=dict, required=False),
         "gatingFlags": FieldSpec(name="gatingFlags", type=dict, required=False),
     },
-    meta_fields={
-        "requestId": FieldSpec(name="requestId", type=str, required=True),
-        "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
-        "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
-    },
-    required_meta=["requestId", "elapsedMs", "apiVersion"],
+    meta_fields=make_meta_fields(),
+    required_meta=make_required_meta(),
     data_is_list=False,
 )
 

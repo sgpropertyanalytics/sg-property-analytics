@@ -14,6 +14,8 @@ from ..registry import (
     FieldSpec,
     register_contract,
     SchemaMode,
+    make_meta_fields,
+    make_required_meta,
 )
 
 
@@ -55,16 +57,9 @@ FILTER_OPTIONS_RESPONSE_SCHEMA = ResponseSchema(
         "propertyAgeBuckets": FieldSpec(name="propertyAgeBuckets", type=list, required=True),
         "marketSegments": FieldSpec(name="marketSegments", type=list, required=True),
     },
-    meta_fields={
-        # Standard meta fields injected by @api_contract decorator
-        "requestId": FieldSpec(name="requestId", type=str, required=True),
-        "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
-        "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
-        # Contract versioning fields (also injected by decorator)
-        "apiContractVersion": FieldSpec(name="apiContractVersion", type=str, required=True),
-        "contractHash": FieldSpec(name="contractHash", type=str, required=True),
-    },
-    required_meta=["requestId", "elapsedMs", "apiVersion", "apiContractVersion", "contractHash"],
+    # Use make_meta_fields() for base meta (includes apiContractVersion, contractHash)
+    meta_fields=make_meta_fields(),
+    required_meta=make_required_meta(),
     data_is_list=False,  # Response is flat object with filter options
 )
 

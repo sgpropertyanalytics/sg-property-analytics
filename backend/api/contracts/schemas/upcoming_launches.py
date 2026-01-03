@@ -13,6 +13,8 @@ from ..registry import (
     ResponseSchema,
     FieldSpec,
     register_contract,
+    make_meta_fields,
+    make_required_meta,
 )
 
 
@@ -85,12 +87,8 @@ UPCOMING_ALL_RESPONSE_SCHEMA = ResponseSchema(
         "meta": FieldSpec(name="meta", type=dict, required=False),
         "data": FieldSpec(name="data", type=list, required=True),
     },
-    meta_fields={
-        "requestId": FieldSpec(name="requestId", type=str, required=True),
-        "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
-        "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
-    },
-    required_meta=["requestId", "elapsedMs", "apiVersion"],
+    meta_fields=make_meta_fields(),
+    required_meta=make_required_meta(),
     data_is_list=False,
 )
 
@@ -123,12 +121,8 @@ UPCOMING_NEEDS_REVIEW_RESPONSE_SCHEMA = ResponseSchema(
         "count": FieldSpec(name="count", type=int, required=True),
         "data": FieldSpec(name="data", type=list, required=True),
     },
-    meta_fields={
-        "requestId": FieldSpec(name="requestId", type=str, required=True),
-        "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
-        "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
-    },
-    required_meta=["requestId", "elapsedMs", "apiVersion"],
+    meta_fields=make_meta_fields(),
+    required_meta=make_required_meta(),
     data_is_list=False,
 )
 

@@ -19,6 +19,8 @@ from ..registry import (
     FieldSpec,
     register_contract,
     SchemaMode,
+    make_meta_fields,
+    make_required_meta,
 )
 
 
@@ -129,16 +131,13 @@ PRICE_GROWTH_RESPONSE_SCHEMA = ResponseSchema(
         "daysSincePrevious": FieldSpec(name="daysSincePrevious", type=int, nullable=True),
         "annualizedGrowthPct": FieldSpec(name="annualizedGrowthPct", type=float, nullable=True),
     },
-    meta_fields={
-        "requestId": FieldSpec(name="requestId", type=str, required=True),
-        "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
-        "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
-        "page": FieldSpec(name="page", type=int, required=False),
-        "perPage": FieldSpec(name="perPage", type=int, required=False),
-        "totalRecords": FieldSpec(name="totalRecords", type=int, required=False),
-        "totalPages": FieldSpec(name="totalPages", type=int, required=False),
-    },
-    required_meta=["requestId", "elapsedMs", "apiVersion"],
+    meta_fields=make_meta_fields(
+        FieldSpec(name="page", type=int, required=False),
+        FieldSpec(name="perPage", type=int, required=False),
+        FieldSpec(name="totalRecords", type=int, required=False),
+        FieldSpec(name="totalPages", type=int, required=False),
+    ),
+    required_meta=make_required_meta(),
     data_is_list=True,
 )
 
@@ -204,12 +203,8 @@ SEGMENTS_RESPONSE_SCHEMA = ResponseSchema(
         "avgCumulativeGrowthPct": FieldSpec(name="avgCumulativeGrowthPct", type=float, nullable=True),
         "avgAnnualizedGrowthPct": FieldSpec(name="avgAnnualizedGrowthPct", type=float, nullable=True),
     },
-    meta_fields={
-        "requestId": FieldSpec(name="requestId", type=str, required=True),
-        "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
-        "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
-    },
-    required_meta=["requestId", "elapsedMs", "apiVersion"],
+    meta_fields=make_meta_fields(),
+    required_meta=make_required_meta(),
     data_is_list=True,
 )
 

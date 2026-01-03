@@ -20,6 +20,8 @@ from ..registry import (
     FieldSpec,
     register_contract,
     SchemaMode,
+    make_meta_fields,
+    make_required_meta,
 )
 
 
@@ -61,12 +63,8 @@ PROJECTS_BY_DISTRICT_SERVICE_SCHEMA = ServiceBoundarySchema(
 
 PROJECTS_BY_DISTRICT_RESPONSE_SCHEMA = ResponseSchema(
     data_fields={},
-    meta_fields={
-        "requestId": FieldSpec(name="requestId", type=str, required=True),
-        "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
-        "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
-    },
-    required_meta=["requestId", "elapsedMs", "apiVersion"],
+    meta_fields=make_meta_fields(),
+    required_meta=make_required_meta(),
     data_is_list=False,
 )
 
@@ -120,12 +118,8 @@ PRICE_PROJECTS_BY_DISTRICT_SERVICE_SCHEMA = ServiceBoundarySchema(
 
 PRICE_PROJECTS_BY_DISTRICT_RESPONSE_SCHEMA = ResponseSchema(
     data_fields={},
-    meta_fields={
-        "requestId": FieldSpec(name="requestId", type=str, required=True),
-        "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
-        "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
-    },
-    required_meta=["requestId", "elapsedMs", "apiVersion"],
+    meta_fields=make_meta_fields(),
+    required_meta=make_required_meta(),
     data_is_list=False,
 )
 
@@ -214,21 +208,18 @@ FLOOR_LIQUIDITY_HEATMAP_RESPONSE_SCHEMA = ResponseSchema(
         "projects": FieldSpec(name="projects", type=list, required=False),
         "floor_zone_order": FieldSpec(name="floor_zone_order", type=list, required=False),
     },
-    meta_fields={
-        "requestId": FieldSpec(name="requestId", type=str, required=True),
-        "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
-        "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
-        "window_months": FieldSpec(name="window_months", type=int),
-        "filters_applied": FieldSpec(name="filters_applied", type=dict),
-        "filtersApplied": FieldSpec(name="filtersApplied", type=dict),
-        "total_projects": FieldSpec(name="total_projects", type=int),
-        "projects_returned": FieldSpec(name="projects_returned", type=int),
-        "exclusions": FieldSpec(name="exclusions", type=dict),
-        "cache_hit": FieldSpec(name="cache_hit", type=bool),
-        "cacheHit": FieldSpec(name="cacheHit", type=bool),
-        "elapsed_ms": FieldSpec(name="elapsed_ms", type=int),
-    },
-    required_meta=["requestId", "elapsedMs", "apiVersion"],
+    meta_fields=make_meta_fields(
+        FieldSpec(name="window_months", type=int),
+        FieldSpec(name="filters_applied", type=dict),
+        FieldSpec(name="filtersApplied", type=dict),
+        FieldSpec(name="total_projects", type=int),
+        FieldSpec(name="projects_returned", type=int),
+        FieldSpec(name="exclusions", type=dict),
+        FieldSpec(name="cache_hit", type=bool),
+        FieldSpec(name="cacheHit", type=bool),
+        FieldSpec(name="elapsed_ms", type=int),
+    ),
+    required_meta=make_required_meta(),
     data_is_list=False,
 )
 
@@ -302,13 +293,10 @@ PSF_BY_PRICE_BAND_SERVICE_SCHEMA = ServiceBoundarySchema(
 
 PSF_BY_PRICE_BAND_RESPONSE_SCHEMA = ResponseSchema(
     data_fields={},
-    meta_fields={
-        "requestId": FieldSpec(name="requestId", type=str, required=True),
-        "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
-        "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
-        "kAnonymity": FieldSpec(name="kAnonymity", type=dict),
-    },
-    required_meta=["requestId", "elapsedMs", "apiVersion"],
+    meta_fields=make_meta_fields(
+        FieldSpec(name="kAnonymity", type=dict),
+    ),
+    required_meta=make_required_meta(),
     data_is_list=False,
 )
 
@@ -403,18 +391,15 @@ BUDGET_HEATMAP_RESPONSE_SCHEMA = ResponseSchema(
         "insight": FieldSpec(name="insight", type=str, required=False),
         "meta": FieldSpec(name="meta", type=dict, required=False),
     },
-    meta_fields={
-        "requestId": FieldSpec(name="requestId", type=str, required=True),
-        "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
-        "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
+    meta_fields=make_meta_fields(
         # v2 meta fields (camelCase)
-        "budget": FieldSpec(name="budget", type=int),
-        "tolerance": FieldSpec(name="tolerance", type=int),
-        "priceRange": FieldSpec(name="priceRange", type=dict),
-        "monthsLookback": FieldSpec(name="monthsLookback", type=int),
-        "ageIsApprox": FieldSpec(name="ageIsApprox", type=bool),
-    },
-    required_meta=["requestId", "elapsedMs", "apiVersion"],
+        FieldSpec(name="budget", type=int),
+        FieldSpec(name="tolerance", type=int),
+        FieldSpec(name="priceRange", type=dict),
+        FieldSpec(name="monthsLookback", type=int),
+        FieldSpec(name="ageIsApprox", type=bool),
+    ),
+    required_meta=make_required_meta(),
     data_is_list=False,
 )
 

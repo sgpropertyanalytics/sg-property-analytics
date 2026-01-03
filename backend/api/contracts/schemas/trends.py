@@ -15,6 +15,8 @@ from ..registry import (
     FieldSpec,
     register_contract,
     SchemaMode,
+    make_meta_fields,
+    make_required_meta,
 )
 
 
@@ -97,12 +99,8 @@ NEW_VS_RESALE_RESPONSE_SCHEMA = ResponseSchema(
         "summary": FieldSpec(name="summary", type=dict, required=False),
         "appliedFilters": FieldSpec(name="appliedFilters", type=dict, required=False),
     },
-    meta_fields={
-        "requestId": FieldSpec(name="requestId", type=str, required=True),
-        "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
-        "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
-    },
-    required_meta=["requestId", "elapsedMs", "apiVersion"],
+    meta_fields=make_meta_fields(),
+    required_meta=make_required_meta(),
     data_is_list=False,
 )
 
