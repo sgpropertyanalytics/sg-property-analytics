@@ -1,13 +1,13 @@
 ---
 name: data-standards
-description: Data classification and naming standards guardrail. ALWAYS activate before creating ANY new chart, filter, or data display. Enforces consistent use of centralized constants for regions, bedrooms, floor levels, sale types, tenures, and age bands. Prevents hardcoded strings.
+description: Data classification, naming standards, and enum integrity guardrail. ALWAYS activate before creating ANY new chart, filter, or data display. Enforces consistent use of centralized constants for regions, bedrooms, floor levels, sale types, tenures, and age bands. Prevents hardcoded strings and enum drift. Merged from data-standards and enum-integrity-guardrails.
 ---
 
 # Data Standards Guardrail
 
 ## Purpose
 
-Ensure all data classifications, labels, and naming conventions are consistent across backend and frontend. All new features MUST use centralized constants.
+Ensure all data classifications, labels, and naming conventions are consistent across backend and frontend. All new features MUST use centralized constants. Prevent taxonomy/enum drift.
 
 ---
 
@@ -522,4 +522,115 @@ ADDING NEW CLASSIFICATION:
 2. Add to frontend/src/constants/index.js
 3. Add to contract_schema.py if enum
 4. Update this skill document
+```
+
+---
+
+# PART 2: ENUM INTEGRITY (Merged from enum-integrity-guardrails)
+
+**Trigger:** Before modifying age bands, sale types, regions, or any categorical bucket keys.
+
+## Core Rule
+
+All categorical "bucket" keys (age bands, sale type, region, labels, etc.) MUST come from the canonical enums in:
+- `backend/api/contracts/contract_schema.py`
+
+No other file (SQL, routes, frontend, utils) may invent, rename, or extend bucket keys.
+
+---
+
+## Enum Single Source of Truth
+
+**Canonical:** `PropertyAgeBucket` (and other enums) in `backend/api/contracts/contract_schema.py`
+
+**Allowed:**
+- Backend computes `age_band` using the canonical enum keys
+- API returns `age_band` values that are exactly one of the enum keys
+
+**Forbidden:**
+- Adding new bucket keys not present in the enum (e.g., `just_top`)
+- Duplicating bucket definitions in SQL or frontend
+- Hardcoding bucket strings outside `contract_schema.py`
+
+---
+
+## Classification Location (Backend Only)
+
+Age band classification MUST happen in backend code, using `PropertyAgeBucket.classify()`.
+
+**Required pattern:**
+```python
+# Use canonical classifier
+from api.contracts.contract_schema import PropertyAgeBucket
+
+age_band = PropertyAgeBucket.classify(
+    age=property_age,
+    sale_type=sale_type,
+    tenure=tenure
+)
+```
+
+**Forbidden patterns:**
+- SQL returns string bucket keys (e.g., `literal('recently_top')`)
+- Frontend computes or overrides `age_band`
+- Duplicating classification logic in multiple places
+
+---
+
+## Dynamic SQL from Enums
+
+When SQL needs to GROUP BY bucket, build the CASE dynamically from `PropertyAgeBucket`:
+
+```python
+# Build CASE conditions from PropertyAgeBucket.AGE_RANGES
+age_conditions = [
+    (func.lower(Transaction.sale_type) == 'new sale', literal(PropertyAgeBucket.NEW_SALE)),
+    (Transaction.tenure.ilike('%freehold%'), literal(PropertyAgeBucket.FREEHOLD)),
+    (Transaction.lease_start_year.is_(None), literal('unknown')),
+]
+
+for bucket, (min_age, max_age) in PropertyAgeBucket.AGE_RANGES.items():
+    if max_age is None:
+        condition = property_age >= min_age
+    else:
+        condition = and_(property_age >= min_age, property_age < max_age)
+    age_conditions.append((condition, literal(bucket)))
+
+age_band_case = case(*age_conditions, else_=literal('unknown'))
+```
+
+---
+
+## Enum Integrity Contract Tests
+
+Tests in `tests/test_contract_schema.py` enforce:
+
+- `test_classify_returns_valid_keys_only` - classify() only returns valid keys
+- `test_enum_key_snapshot` - enum keys don't change without intent
+- `test_age_band_boundaries` - exact age range behavior
+
+If enum keys change, tests fail immediately.
+
+---
+
+## Enum Integrity Checklist (Before Merge)
+
+```
+[ ] No new bucket strings added outside `contract_schema.py`
+[ ] SQL uses PropertyAgeBucket constants (not hardcoded strings)
+[ ] Backend is the only place mapping age → age_band
+[ ] All tests in TestPropertyAgeBucket pass
+[ ] Frontend AGE_BAND_LABELS_* match PropertyAgeBucket.LABELS
+```
+
+---
+
+## Mental Model
+
+```
+Enums define reality.
+Backend classifies.
+SQL provides numbers (or uses enum constants).
+Frontend displays.
+No one invents categories.
 ```
