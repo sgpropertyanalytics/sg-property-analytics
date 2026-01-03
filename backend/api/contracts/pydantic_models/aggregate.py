@@ -52,6 +52,7 @@ class AggregateParams(BaseParamsModel):
     # === Grouping and Metrics ===
     group_by: CommaList = Field(
         default=['month'],
+        validation_alias='groupBy',
         description="Comma-separated grouping dimensions"
     )
     metrics: CommaList = Field(
