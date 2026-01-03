@@ -37,7 +37,7 @@ from .contract_schema import API_CONTRACT_VERSION, get_schema_hash
 
 # Import feature flags for Pydantic migration
 try:
-    from config.feature_flags import USE_PYDANTIC_VALIDATION, PYDANTIC_PARALLEL_MODE
+    from .feature_flags import USE_PYDANTIC_VALIDATION, PYDANTIC_PARALLEL_MODE
 except ImportError:
     USE_PYDANTIC_VALIDATION = False
     PYDANTIC_PARALLEL_MODE = False

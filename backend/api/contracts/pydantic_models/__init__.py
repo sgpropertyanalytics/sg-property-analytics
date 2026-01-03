@@ -23,6 +23,7 @@ Usage:
 from .base import BaseParamsModel
 from .aggregate import AggregateParams
 from .dashboard import DashboardParams
+from .filter_options import FilterOptionsParams
 from .kpi_summary import KPISummaryParams, KPISingleParams, KPISummaryLegacyParams
 from .transactions import PriceGrowthParams, SegmentsParams
 from .insights import DistrictPsfParams, DistrictLiquidityParams
@@ -31,6 +32,7 @@ __all__ = [
     'BaseParamsModel',
     'AggregateParams',
     'DashboardParams',
+    'FilterOptionsParams',
     'KPISummaryParams',
     'KPISingleParams',
     'KPISummaryLegacyParams',

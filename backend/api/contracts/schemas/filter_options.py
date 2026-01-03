@@ -18,6 +18,12 @@ from ..registry import (
     make_required_meta,
 )
 
+# Import Pydantic model for parallel validation
+try:
+    from ..pydantic_models.filter_options import FilterOptionsParams
+except ImportError:
+    FilterOptionsParams = None
+
 
 # =============================================================================
 # PARAM SCHEMA - What frontend sends
@@ -77,6 +83,7 @@ FILTER_OPTIONS_CONTRACT = EndpointContract(
     compat_map=None,
     serializer=None,
     mode=SchemaMode.WARN,
+    pydantic_model=FilterOptionsParams,
 )
 
 # Register on import

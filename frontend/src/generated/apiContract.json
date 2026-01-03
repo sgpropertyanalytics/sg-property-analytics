@@ -454,6 +454,15 @@
         },
         "data_is_list": true,
         "meta_fields": {
+          "apiContractVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiContractVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
           "apiVersion": {
             "allowed_values": null,
             "default": null,
@@ -471,6 +480,15 @@
             "nullable": true,
             "required": false,
             "type": "bool"
+          },
+          "contractHash": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "contractHash",
+            "nullable": true,
+            "required": true,
+            "type": "str"
           },
           "elapsedMs": {
             "allowed_values": null,
@@ -530,8 +548,10 @@
         "required_meta": [
           "requestId",
           "elapsedMs",
-          "filtersApplied",
-          "apiVersion"
+          "apiVersion",
+          "apiContractVersion",
+          "contractHash",
+          "filtersApplied"
         ]
       },
       "service_schema": {
@@ -718,11 +738,29 @@
         },
         "data_is_list": false,
         "meta_fields": {
+          "apiContractVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiContractVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
           "apiVersion": {
             "allowed_values": null,
             "default": null,
             "description": "",
             "name": "apiVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "contractHash": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "contractHash",
             "nullable": true,
             "required": true,
             "type": "str"
@@ -749,7 +787,9 @@
         "required_meta": [
           "requestId",
           "elapsedMs",
-          "apiVersion"
+          "apiVersion",
+          "apiContractVersion",
+          "contractHash"
         ]
       },
       "service_schema": {
@@ -846,11 +886,29 @@
         },
         "data_is_list": false,
         "meta_fields": {
+          "apiContractVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiContractVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
           "apiVersion": {
             "allowed_values": null,
             "default": null,
             "description": "",
             "name": "apiVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "contractHash": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "contractHash",
             "nullable": true,
             "required": true,
             "type": "str"
@@ -877,7 +935,9 @@
         "required_meta": [
           "requestId",
           "elapsedMs",
-          "apiVersion"
+          "apiVersion",
+          "apiContractVersion",
+          "contractHash"
         ]
       },
       "service_schema": {
@@ -984,11 +1044,29 @@
         },
         "data_is_list": false,
         "meta_fields": {
+          "apiContractVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiContractVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
           "apiVersion": {
             "allowed_values": null,
             "default": null,
             "description": "",
             "name": "apiVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "contractHash": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "contractHash",
             "nullable": true,
             "required": true,
             "type": "str"
@@ -1015,7 +1093,9 @@
         "required_meta": [
           "requestId",
           "elapsedMs",
-          "apiVersion"
+          "apiVersion",
+          "apiContractVersion",
+          "contractHash"
         ]
       },
       "service_schema": {
@@ -1067,11 +1147,29 @@
         },
         "data_is_list": false,
         "meta_fields": {
+          "apiContractVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiContractVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
           "apiVersion": {
             "allowed_values": null,
             "default": null,
             "description": "",
             "name": "apiVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "contractHash": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "contractHash",
             "nullable": true,
             "required": true,
             "type": "str"
@@ -1098,7 +1196,9 @@
         "required_meta": [
           "requestId",
           "elapsedMs",
-          "apiVersion"
+          "apiVersion",
+          "apiContractVersion",
+          "contractHash"
         ]
       },
       "service_schema": {
@@ -1168,11 +1268,29 @@
         },
         "data_is_list": false,
         "meta_fields": {
+          "apiContractVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiContractVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
           "apiVersion": {
             "allowed_values": null,
             "default": null,
             "description": "",
             "name": "apiVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "contractHash": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "contractHash",
             "nullable": true,
             "required": true,
             "type": "str"
@@ -1199,7 +1317,9 @@
         "required_meta": [
           "requestId",
           "elapsedMs",
-          "apiVersion"
+          "apiVersion",
+          "apiContractVersion",
+          "contractHash"
         ]
       },
       "service_schema": {
@@ -1296,11 +1416,29 @@
         },
         "data_is_list": false,
         "meta_fields": {
+          "apiContractVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiContractVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
           "apiVersion": {
             "allowed_values": null,
             "default": null,
             "description": "",
             "name": "apiVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "contractHash": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "contractHash",
             "nullable": true,
             "required": true,
             "type": "str"
@@ -1327,7 +1465,9 @@
         "required_meta": [
           "requestId",
           "elapsedMs",
-          "apiVersion"
+          "apiVersion",
+          "apiContractVersion",
+          "contractHash"
         ]
       },
       "service_schema": {
@@ -1495,6 +1635,15 @@
             "required": false,
             "type": "bool"
           },
+          "apiContractVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiContractVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
           "apiVersion": {
             "allowed_values": null,
             "default": null,
@@ -1512,6 +1661,15 @@
             "nullable": true,
             "required": false,
             "type": "int"
+          },
+          "contractHash": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "contractHash",
+            "nullable": true,
+            "required": true,
+            "type": "str"
           },
           "elapsedMs": {
             "allowed_values": null,
@@ -1562,7 +1720,9 @@
         "required_meta": [
           "requestId",
           "elapsedMs",
-          "apiVersion"
+          "apiVersion",
+          "apiContractVersion",
+          "contractHash"
         ]
       },
       "service_schema": {
@@ -1754,6 +1914,15 @@
         },
         "data_is_list": false,
         "meta_fields": {
+          "apiContractVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiContractVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
           "apiVersion": {
             "allowed_values": null,
             "default": null,
@@ -1780,6 +1949,15 @@
             "nullable": true,
             "required": false,
             "type": "bool"
+          },
+          "contractHash": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "contractHash",
+            "nullable": true,
+            "required": true,
+            "type": "str"
           },
           "elapsedMs": {
             "allowed_values": null,
@@ -1866,7 +2044,9 @@
         "required_meta": [
           "requestId",
           "elapsedMs",
-          "apiVersion"
+          "apiVersion",
+          "apiContractVersion",
+          "contractHash"
         ]
       },
       "service_schema": {
@@ -1981,11 +2161,29 @@
         "data_fields": {},
         "data_is_list": false,
         "meta_fields": {
+          "apiContractVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiContractVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
           "apiVersion": {
             "allowed_values": null,
             "default": null,
             "description": "",
             "name": "apiVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "contractHash": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "contractHash",
             "nullable": true,
             "required": true,
             "type": "str"
@@ -2012,7 +2210,9 @@
         "required_meta": [
           "requestId",
           "elapsedMs",
-          "apiVersion"
+          "apiVersion",
+          "apiContractVersion",
+          "contractHash"
         ]
       },
       "service_schema": {
@@ -2099,11 +2299,29 @@
         "data_fields": {},
         "data_is_list": false,
         "meta_fields": {
+          "apiContractVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiContractVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
           "apiVersion": {
             "allowed_values": null,
             "default": null,
             "description": "",
             "name": "apiVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "contractHash": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "contractHash",
             "nullable": true,
             "required": true,
             "type": "str"
@@ -2130,7 +2348,9 @@
         "required_meta": [
           "requestId",
           "elapsedMs",
-          "apiVersion"
+          "apiVersion",
+          "apiContractVersion",
+          "contractHash"
         ]
       },
       "service_schema": {
@@ -2251,11 +2471,29 @@
         "data_fields": {},
         "data_is_list": false,
         "meta_fields": {
+          "apiContractVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiContractVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
           "apiVersion": {
             "allowed_values": null,
             "default": null,
             "description": "",
             "name": "apiVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "contractHash": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "contractHash",
             "nullable": true,
             "required": true,
             "type": "str"
@@ -2291,7 +2529,9 @@
         "required_meta": [
           "requestId",
           "elapsedMs",
-          "apiVersion"
+          "apiVersion",
+          "apiContractVersion",
+          "contractHash"
         ]
       },
       "service_schema": {
@@ -2628,6 +2868,15 @@
         "data_fields": {},
         "data_is_list": false,
         "meta_fields": {
+          "apiContractVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiContractVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
           "apiVersion": {
             "allowed_values": null,
             "default": null,
@@ -2645,6 +2894,15 @@
             "nullable": true,
             "required": false,
             "type": "bool"
+          },
+          "contractHash": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "contractHash",
+            "nullable": true,
+            "required": true,
+            "type": "str"
           },
           "data_masked": {
             "allowed_values": null,
@@ -2695,7 +2953,9 @@
         "required_meta": [
           "requestId",
           "elapsedMs",
-          "apiVersion"
+          "apiVersion",
+          "apiContractVersion",
+          "contractHash"
         ]
       },
       "service_schema": {
@@ -3000,11 +3260,29 @@
         },
         "data_is_list": false,
         "meta_fields": {
+          "apiContractVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiContractVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
           "apiVersion": {
             "allowed_values": null,
             "default": null,
             "description": "",
             "name": "apiVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "contractHash": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "contractHash",
             "nullable": true,
             "required": true,
             "type": "str"
@@ -3031,7 +3309,9 @@
         "required_meta": [
           "requestId",
           "elapsedMs",
-          "apiVersion"
+          "apiVersion",
+          "apiContractVersion",
+          "contractHash"
         ]
       },
       "service_schema": {
@@ -3110,11 +3390,29 @@
         },
         "data_is_list": false,
         "meta_fields": {
+          "apiContractVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiContractVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
           "apiVersion": {
             "allowed_values": null,
             "default": null,
             "description": "",
             "name": "apiVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "contractHash": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "contractHash",
             "nullable": true,
             "required": true,
             "type": "str"
@@ -3141,7 +3439,9 @@
         "required_meta": [
           "requestId",
           "elapsedMs",
-          "apiVersion"
+          "apiVersion",
+          "apiContractVersion",
+          "contractHash"
         ]
       },
       "service_schema": {
@@ -3431,11 +3731,29 @@
         },
         "data_is_list": false,
         "meta_fields": {
+          "apiContractVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiContractVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
           "apiVersion": {
             "allowed_values": null,
             "default": null,
             "description": "",
             "name": "apiVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "contractHash": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "contractHash",
             "nullable": true,
             "required": true,
             "type": "str"
@@ -3462,7 +3780,9 @@
         "required_meta": [
           "requestId",
           "elapsedMs",
-          "apiVersion"
+          "apiVersion",
+          "apiContractVersion",
+          "contractHash"
         ]
       },
       "service_schema": {
@@ -3559,11 +3879,29 @@
         },
         "data_is_list": false,
         "meta_fields": {
+          "apiContractVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiContractVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
           "apiVersion": {
             "allowed_values": null,
             "default": null,
             "description": "",
             "name": "apiVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "contractHash": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "contractHash",
             "nullable": true,
             "required": true,
             "type": "str"
@@ -3590,7 +3928,9 @@
         "required_meta": [
           "requestId",
           "elapsedMs",
-          "apiVersion"
+          "apiVersion",
+          "apiContractVersion",
+          "contractHash"
         ]
       },
       "service_schema": {
@@ -3682,11 +4022,29 @@
         "data_fields": {},
         "data_is_list": false,
         "meta_fields": {
+          "apiContractVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiContractVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
           "apiVersion": {
             "allowed_values": null,
             "default": null,
             "description": "",
             "name": "apiVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "contractHash": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "contractHash",
             "nullable": true,
             "required": true,
             "type": "str"
@@ -3749,7 +4107,9 @@
         "required_meta": [
           "requestId",
           "elapsedMs",
-          "apiVersion"
+          "apiVersion",
+          "apiContractVersion",
+          "contractHash"
         ]
       },
       "service_schema": {
@@ -3888,6 +4248,15 @@
         "data_fields": {},
         "data_is_list": false,
         "meta_fields": {
+          "apiContractVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiContractVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
           "apiVersion": {
             "allowed_values": null,
             "default": null,
@@ -3904,6 +4273,15 @@
             "name": "bed_filter",
             "nullable": true,
             "required": false,
+            "type": "str"
+          },
+          "contractHash": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "contractHash",
+            "nullable": true,
+            "required": true,
             "type": "str"
           },
           "districts_with_data": {
@@ -3955,7 +4333,9 @@
         "required_meta": [
           "requestId",
           "elapsedMs",
-          "apiVersion"
+          "apiVersion",
+          "apiContractVersion",
+          "contractHash"
         ]
       },
       "service_schema": {
@@ -4047,11 +4427,29 @@
         "data_fields": {},
         "data_is_list": false,
         "meta_fields": {
+          "apiContractVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiContractVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
           "apiVersion": {
             "allowed_values": null,
             "default": null,
             "description": "",
             "name": "apiVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "contractHash": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "contractHash",
             "nullable": true,
             "required": true,
             "type": "str"
@@ -4078,7 +4476,9 @@
         "required_meta": [
           "requestId",
           "elapsedMs",
-          "apiVersion"
+          "apiVersion",
+          "apiContractVersion",
+          "contractHash"
         ]
       },
       "service_schema": {
@@ -4245,11 +4645,29 @@
         },
         "data_is_list": true,
         "meta_fields": {
+          "apiContractVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiContractVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
           "apiVersion": {
             "allowed_values": null,
             "default": null,
             "description": "",
             "name": "apiVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "contractHash": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "contractHash",
             "nullable": true,
             "required": true,
             "type": "str"
@@ -4285,7 +4703,10 @@
         "required_meta": [
           "requestId",
           "elapsedMs",
-          "apiVersion"
+          "apiVersion",
+          "apiContractVersion",
+          "contractHash",
+          "filtersApplied"
         ]
       },
       "service_schema": {
@@ -4377,11 +4798,29 @@
         "data_fields": {},
         "data_is_list": false,
         "meta_fields": {
+          "apiContractVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiContractVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
           "apiVersion": {
             "allowed_values": null,
             "default": null,
             "description": "",
             "name": "apiVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "contractHash": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "contractHash",
             "nullable": true,
             "required": true,
             "type": "str"
@@ -4408,7 +4847,9 @@
         "required_meta": [
           "requestId",
           "elapsedMs",
-          "apiVersion"
+          "apiVersion",
+          "apiContractVersion",
+          "contractHash"
         ]
       },
       "service_schema": {
@@ -4607,11 +5048,29 @@
         },
         "data_is_list": true,
         "meta_fields": {
+          "apiContractVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiContractVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
           "apiVersion": {
             "allowed_values": null,
             "default": null,
             "description": "",
             "name": "apiVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "contractHash": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "contractHash",
             "nullable": true,
             "required": true,
             "type": "str"
@@ -4638,7 +5097,9 @@
         "required_meta": [
           "requestId",
           "elapsedMs",
-          "apiVersion"
+          "apiVersion",
+          "apiContractVersion",
+          "contractHash"
         ]
       },
       "service_schema": {
@@ -4834,11 +5295,29 @@
         },
         "data_is_list": true,
         "meta_fields": {
+          "apiContractVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiContractVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
           "apiVersion": {
             "allowed_values": null,
             "default": null,
             "description": "",
             "name": "apiVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "contractHash": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "contractHash",
             "nullable": true,
             "required": true,
             "type": "str"
@@ -4865,7 +5344,9 @@
         "required_meta": [
           "requestId",
           "elapsedMs",
-          "apiVersion"
+          "apiVersion",
+          "apiContractVersion",
+          "contractHash"
         ]
       },
       "service_schema": {
@@ -5008,11 +5489,29 @@
         },
         "data_is_list": false,
         "meta_fields": {
+          "apiContractVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiContractVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
           "apiVersion": {
             "allowed_values": null,
             "default": null,
             "description": "",
             "name": "apiVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "contractHash": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "contractHash",
             "nullable": true,
             "required": true,
             "type": "str"
@@ -5039,7 +5538,9 @@
         "required_meta": [
           "requestId",
           "elapsedMs",
-          "apiVersion"
+          "apiVersion",
+          "apiContractVersion",
+          "contractHash"
         ]
       },
       "service_schema": {
@@ -5192,11 +5693,29 @@
         },
         "data_is_list": false,
         "meta_fields": {
+          "apiContractVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiContractVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
           "apiVersion": {
             "allowed_values": null,
             "default": null,
             "description": "",
             "name": "apiVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "contractHash": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "contractHash",
             "nullable": true,
             "required": true,
             "type": "str"
@@ -5223,7 +5742,9 @@
         "required_meta": [
           "requestId",
           "elapsedMs",
-          "apiVersion"
+          "apiVersion",
+          "apiContractVersion",
+          "contractHash"
         ]
       },
       "service_schema": {
@@ -5393,11 +5914,29 @@
         },
         "data_is_list": false,
         "meta_fields": {
+          "apiContractVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiContractVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
           "apiVersion": {
             "allowed_values": null,
             "default": null,
             "description": "",
             "name": "apiVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "contractHash": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "contractHash",
             "nullable": true,
             "required": true,
             "type": "str"
@@ -5424,7 +5963,9 @@
         "required_meta": [
           "requestId",
           "elapsedMs",
-          "apiVersion"
+          "apiVersion",
+          "apiContractVersion",
+          "contractHash"
         ]
       },
       "service_schema": {
@@ -5457,11 +5998,29 @@
         "data_fields": {},
         "data_is_list": false,
         "meta_fields": {
+          "apiContractVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiContractVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
           "apiVersion": {
             "allowed_values": null,
             "default": null,
             "description": "",
             "name": "apiVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "contractHash": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "contractHash",
             "nullable": true,
             "required": true,
             "type": "str"
@@ -5488,7 +6047,9 @@
         "required_meta": [
           "requestId",
           "elapsedMs",
-          "apiVersion"
+          "apiVersion",
+          "apiContractVersion",
+          "contractHash"
         ]
       },
       "service_schema": {
@@ -5607,11 +6168,29 @@
         },
         "data_is_list": false,
         "meta_fields": {
+          "apiContractVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiContractVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
           "apiVersion": {
             "allowed_values": null,
             "default": null,
             "description": "",
             "name": "apiVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "contractHash": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "contractHash",
             "nullable": true,
             "required": true,
             "type": "str"
@@ -5638,7 +6217,9 @@
         "required_meta": [
           "requestId",
           "elapsedMs",
-          "apiVersion"
+          "apiVersion",
+          "apiContractVersion",
+          "contractHash"
         ]
       },
       "service_schema": {
@@ -5844,11 +6425,29 @@
         },
         "data_is_list": false,
         "meta_fields": {
+          "apiContractVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiContractVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
           "apiVersion": {
             "allowed_values": null,
             "default": null,
             "description": "",
             "name": "apiVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "contractHash": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "contractHash",
             "nullable": true,
             "required": true,
             "type": "str"
@@ -5875,7 +6474,9 @@
         "required_meta": [
           "requestId",
           "elapsedMs",
-          "apiVersion"
+          "apiVersion",
+          "apiContractVersion",
+          "contractHash"
         ]
       },
       "service_schema": {
@@ -5926,11 +6527,29 @@
         "data_fields": {},
         "data_is_list": false,
         "meta_fields": {
+          "apiContractVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiContractVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
           "apiVersion": {
             "allowed_values": null,
             "default": null,
             "description": "",
             "name": "apiVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "contractHash": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "contractHash",
             "nullable": true,
             "required": true,
             "type": "str"
@@ -5957,7 +6576,9 @@
         "required_meta": [
           "requestId",
           "elapsedMs",
-          "apiVersion"
+          "apiVersion",
+          "apiContractVersion",
+          "contractHash"
         ]
       },
       "service_schema": {
@@ -6039,6 +6660,15 @@
         },
         "data_is_list": false,
         "meta_fields": {
+          "apiContractVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiContractVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
           "apiVersion": {
             "allowed_values": null,
             "default": null,
@@ -6064,6 +6694,15 @@
             "name": "computedAs",
             "nullable": true,
             "required": false,
+            "type": "str"
+          },
+          "contractHash": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "contractHash",
+            "nullable": true,
+            "required": true,
             "type": "str"
           },
           "elapsedMs": {
@@ -6115,7 +6754,9 @@
         "required_meta": [
           "requestId",
           "elapsedMs",
-          "apiVersion"
+          "apiVersion",
+          "apiContractVersion",
+          "contractHash"
         ]
       },
       "service_schema": {
@@ -6357,11 +6998,29 @@
         },
         "data_is_list": true,
         "meta_fields": {
+          "apiContractVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiContractVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
           "apiVersion": {
             "allowed_values": null,
             "default": null,
             "description": "",
             "name": "apiVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "contractHash": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "contractHash",
             "nullable": true,
             "required": true,
             "type": "str"
@@ -6424,7 +7083,9 @@
         "required_meta": [
           "requestId",
           "elapsedMs",
-          "apiVersion"
+          "apiVersion",
+          "apiContractVersion",
+          "contractHash"
         ]
       },
       "service_schema": {
@@ -6618,11 +7279,29 @@
         },
         "data_is_list": true,
         "meta_fields": {
+          "apiContractVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiContractVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
           "apiVersion": {
             "allowed_values": null,
             "default": null,
             "description": "",
             "name": "apiVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "contractHash": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "contractHash",
             "nullable": true,
             "required": true,
             "type": "str"
@@ -6649,7 +7328,9 @@
         "required_meta": [
           "requestId",
           "elapsedMs",
-          "apiVersion"
+          "apiVersion",
+          "apiContractVersion",
+          "contractHash"
         ]
       },
       "service_schema": {
@@ -6818,11 +7499,29 @@
         },
         "data_is_list": false,
         "meta_fields": {
+          "apiContractVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiContractVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
           "apiVersion": {
             "allowed_values": null,
             "default": null,
             "description": "",
             "name": "apiVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "contractHash": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "contractHash",
             "nullable": true,
             "required": true,
             "type": "str"
@@ -6849,7 +7548,9 @@
         "required_meta": [
           "requestId",
           "elapsedMs",
-          "apiVersion"
+          "apiVersion",
+          "apiContractVersion",
+          "contractHash"
         ]
       },
       "service_schema": {
@@ -7035,11 +7736,29 @@
         },
         "data_is_list": false,
         "meta_fields": {
+          "apiContractVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiContractVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
           "apiVersion": {
             "allowed_values": null,
             "default": null,
             "description": "",
             "name": "apiVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "contractHash": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "contractHash",
             "nullable": true,
             "required": true,
             "type": "str"
@@ -7066,7 +7785,9 @@
         "required_meta": [
           "requestId",
           "elapsedMs",
-          "apiVersion"
+          "apiVersion",
+          "apiContractVersion",
+          "contractHash"
         ]
       },
       "service_schema": {
@@ -7172,11 +7893,29 @@
         },
         "data_is_list": false,
         "meta_fields": {
+          "apiContractVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiContractVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
           "apiVersion": {
             "allowed_values": null,
             "default": null,
             "description": "",
             "name": "apiVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "contractHash": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "contractHash",
             "nullable": true,
             "required": true,
             "type": "str"
@@ -7203,7 +7942,9 @@
         "required_meta": [
           "requestId",
           "elapsedMs",
-          "apiVersion"
+          "apiVersion",
+          "apiContractVersion",
+          "contractHash"
         ]
       },
       "service_schema": {
