@@ -105,7 +105,7 @@ params.sale_type = 'resale';
 
 **Reference files:**
 - Charts: `frontend/src/components/powerbi/TimeTrendChart.jsx`
-- Routes: `backend/routes/analytics.py`
+- Routes: `backend/routes/analytics/aggregate.py`
 - Services: `backend/services/dashboard_service.py`
 
 **Before implementing:** `git log -20 -- <target_files>` to understand patterns.
