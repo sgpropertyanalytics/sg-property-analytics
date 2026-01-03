@@ -241,6 +241,8 @@ prompt: |
   - Response fields handled (BE → FE)?
   - Enum values match?
   - Adapters handle all fields?
+  - Identity drift check: same concept uses ONE name across all layers?
+    (grep for synonyms, check cache keys match query params)
 
   Phase 2: Chart impact (if backend changed)
   - What endpoints affected?
