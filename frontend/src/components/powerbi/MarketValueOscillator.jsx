@@ -51,7 +51,7 @@ const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
  *  sharedStatus?: string,
  * }} props
  */
-export function MarketValueOscillator({ height = 420, saleType = null, sharedRawData = null, sharedStatus = 'idle' }) {
+function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawData = null, sharedStatus = 'idle' }) {
   // Get GLOBAL filters and timeGrouping from context
   // filterKey updates immediately on filter change - used for instant overlay feedback
   const { buildApiParams, debouncedFilterKey, filterKey, timeGrouping } = useZustandFilters();
@@ -467,5 +467,7 @@ function ZScoreSignalCard({ label, zScore, spread, avgSpread }) {
     />
   );
 }
+
+export const MarketValueOscillator = React.memo(MarketValueOscillatorBase);
 
 export default MarketValueOscillator;
