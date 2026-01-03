@@ -3,7 +3,7 @@
     "PostToolUse": [
       {
         "matcher": {
-          "tools": ["Edit", "Write"]
+          "tools": ["EditTool", "WriteTool"]
         },
         "hooks": [
           {
