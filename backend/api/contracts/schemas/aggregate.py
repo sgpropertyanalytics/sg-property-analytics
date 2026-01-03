@@ -10,6 +10,12 @@ Endpoint: GET /api/aggregate
 from datetime import date
 from api.contracts.contract_schema import SaleType, Tenure
 
+# Import Pydantic model for parallel validation
+try:
+    from ..pydantic_models.aggregate import AggregateParams
+except ImportError:
+    AggregateParams = None
+
 from ..registry import (
     EndpointContract,
     ParamSchema,
@@ -273,6 +279,7 @@ AGGREGATE_CONTRACT = EndpointContract(
     service_schema=AGGREGATE_SERVICE_SCHEMA,
     response_schema=AGGREGATE_RESPONSE_SCHEMA,
     serializer=None,  # Uses existing serialize_aggregate_response in route
+    pydantic_model=AggregateParams,  # Pydantic model for parallel validation
 )
 
 # Register on import

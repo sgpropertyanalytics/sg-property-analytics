@@ -206,6 +206,7 @@ class EndpointContract:
     compat_map: Optional[CompatMap] = None
     serializer: Optional[Callable] = None
     mode: SchemaMode = field(default_factory=_get_default_mode)
+    pydantic_model: Optional[Any] = None  # Pydantic model for parallel validation
 
     def __post_init__(self):
         # Ensure compat_map exists
