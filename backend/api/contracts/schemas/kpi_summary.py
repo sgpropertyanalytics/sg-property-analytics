@@ -15,6 +15,8 @@ from ..registry import (
     ResponseSchema,
     FieldSpec,
     register_contract,
+    make_meta_fields,
+    make_required_meta,
 )
 
 
@@ -91,13 +93,10 @@ KPI_ITEM_FIELDS = {
 KPI_SUMMARY_RESPONSE_SCHEMA = ResponseSchema(
     # Note: data_fields here describe items in the "kpis" array
     data_fields=KPI_ITEM_FIELDS,
-    meta_fields={
-        "requestId": FieldSpec(name="requestId", type=str, required=True),
-        "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
-        "filtersApplied": FieldSpec(name="filtersApplied", type=dict, required=True),
-        "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
-    },
-    required_meta=["requestId", "elapsedMs", "apiVersion"],
+    meta_fields=make_meta_fields(
+        FieldSpec(name="filtersApplied", type=dict, required=True),
+    ),
+    required_meta=make_required_meta("filtersApplied"),
     data_is_list=True,
 )
 
@@ -223,12 +222,8 @@ KPI_SINGLE_SERVICE_SCHEMA = ServiceBoundarySchema(
 
 KPI_SINGLE_RESPONSE_SCHEMA = ResponseSchema(
     data_fields={},
-    meta_fields={
-        "requestId": FieldSpec(name="requestId", type=str, required=True),
-        "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
-        "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
-    },
-    required_meta=["requestId", "elapsedMs", "apiVersion"],
+    meta_fields=make_meta_fields(),
+    required_meta=make_required_meta(),
     data_is_list=False,
 )
 
@@ -282,12 +277,8 @@ KPI_SUMMARY_LEGACY_SERVICE_SCHEMA = ServiceBoundarySchema(
 
 KPI_SUMMARY_LEGACY_RESPONSE_SCHEMA = ResponseSchema(
     data_fields={},
-    meta_fields={
-        "requestId": FieldSpec(name="requestId", type=str, required=True),
-        "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
-        "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
-    },
-    required_meta=["requestId", "elapsedMs", "apiVersion"],
+    meta_fields=make_meta_fields(),
+    required_meta=make_required_meta(),
     data_is_list=False,
 )
 

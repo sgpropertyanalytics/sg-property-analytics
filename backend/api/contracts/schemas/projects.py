@@ -15,6 +15,8 @@ from ..registry import (
     FieldSpec,
     register_contract,
     SchemaMode,
+    make_meta_fields,
+    make_required_meta,
 )
 
 
@@ -58,12 +60,8 @@ PROJECTS_LOCATIONS_RESPONSE_SCHEMA = ResponseSchema(
         "pagination": FieldSpec(name="pagination", type=dict, required=True),
         "summary": FieldSpec(name="summary", type=dict, required=True),
     },
-    meta_fields={
-        "requestId": FieldSpec(name="requestId", type=str, required=True),
-        "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
-        "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
-    },
-    required_meta=["requestId", "elapsedMs", "apiVersion"],
+    meta_fields=make_meta_fields(),
+    required_meta=make_required_meta(),
     data_is_list=False,
 )
 
@@ -125,12 +123,8 @@ PROJECTS_HOT_RESPONSE_SCHEMA = ResponseSchema(
         "data_note": FieldSpec(name="data_note", type=str, required=False),
         "last_updated": FieldSpec(name="last_updated", type=str, required=True),
     },
-    meta_fields={
-        "requestId": FieldSpec(name="requestId", type=str, required=True),
-        "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
-        "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
-    },
-    required_meta=["requestId", "elapsedMs", "apiVersion"],
+    meta_fields=make_meta_fields(),
+    required_meta=make_required_meta(),
     data_is_list=False,
 )
 
@@ -161,12 +155,8 @@ PROJECTS_INVENTORY_STATUS_SERVICE_SCHEMA = ServiceBoundarySchema(
 
 PROJECTS_INVENTORY_STATUS_RESPONSE_SCHEMA = ResponseSchema(
     data_fields={},
-    meta_fields={
-        "requestId": FieldSpec(name="requestId", type=str, required=True),
-        "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
-        "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
-    },
-    required_meta=["requestId", "elapsedMs", "apiVersion"],
+    meta_fields=make_meta_fields(),
+    required_meta=make_required_meta(),
     data_is_list=False,
 )
 

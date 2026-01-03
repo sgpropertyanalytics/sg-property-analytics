@@ -124,6 +124,62 @@ class ResponseSchema:
     data_is_list: bool = True
 
 
+# =============================================================================
+# BASE META FIELDS - Single source of truth for meta fields
+# =============================================================================
+# All endpoints decorated with @api_contract receive these meta fields.
+# Schemas MUST declare these to pass bidirectional validation in STRICT mode.
+
+def _base_meta_field(name: str, field_type: Type = str, required: bool = True) -> FieldSpec:
+    """Helper to create a base meta field spec."""
+    return FieldSpec(name=name, type=field_type, required=required)
+
+
+# These are injected by the @api_contract decorator (wrapper.py)
+BASE_META_FIELDS: Dict[str, FieldSpec] = {
+    "requestId": _base_meta_field("requestId", str, required=True),
+    "elapsedMs": _base_meta_field("elapsedMs", float, required=True),
+    "apiVersion": _base_meta_field("apiVersion", str, required=True),
+    "apiContractVersion": _base_meta_field("apiContractVersion", str, required=True),
+    "contractHash": _base_meta_field("contractHash", str, required=True),
+}
+
+# List of required base meta field names
+BASE_REQUIRED_META: List[str] = ["requestId", "elapsedMs", "apiVersion", "apiContractVersion", "contractHash"]
+
+
+def make_meta_fields(*extra_fields: FieldSpec) -> Dict[str, FieldSpec]:
+    """
+    Create meta_fields dict with BASE_META_FIELDS plus any extra fields.
+
+    Usage:
+        meta_fields=make_meta_fields(
+            FieldSpec("filtersApplied", dict, required=True),
+            FieldSpec("cacheHit", bool, required=False),
+        )
+
+    Returns:
+        Dict with all base meta fields plus extras
+    """
+    result = dict(BASE_META_FIELDS)
+    for field_spec in extra_fields:
+        result[field_spec.name] = field_spec
+    return result
+
+
+def make_required_meta(*extra_required: str) -> List[str]:
+    """
+    Create required_meta list with BASE_REQUIRED_META plus any extra requirements.
+
+    Usage:
+        required_meta=make_required_meta("filtersApplied", "totalRecords")
+
+    Returns:
+        List with all base required meta plus extras
+    """
+    return list(BASE_REQUIRED_META) + list(extra_required)
+
+
 @dataclass
 class CompatMap:
     """Backwards compatibility mappings."""

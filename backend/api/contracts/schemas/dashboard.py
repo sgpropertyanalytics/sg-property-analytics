@@ -17,6 +17,8 @@ from ..registry import (
     FieldSpec,
     register_contract,
     SchemaMode,
+    make_meta_fields,
+    make_required_meta,
 )
 
 
@@ -258,16 +260,14 @@ DASHBOARD_RESPONSE_SCHEMA = ResponseSchema(
         # Each panel is optional - depends on panels param
         # We don't strictly validate panel contents
     },
-    meta_fields={
-        "requestId": FieldSpec(name="requestId", type=str, required=True),
-        "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
-        "cacheHit": FieldSpec(name="cacheHit", type=bool, required=False),
-        "filtersApplied": FieldSpec(name="filtersApplied", type=dict, required=True),
-        "totalRecordsMatched": FieldSpec(name="totalRecordsMatched", type=int, required=False),
-        "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
-        "data_masked": FieldSpec(name="data_masked", type=bool, required=False),
-    },
-    required_meta=["requestId", "elapsedMs", "apiVersion"],
+    # Use make_meta_fields() for base meta + endpoint-specific fields
+    meta_fields=make_meta_fields(
+        FieldSpec(name="cacheHit", type=bool, required=False),
+        FieldSpec(name="filtersApplied", type=dict, required=True),
+        FieldSpec(name="totalRecordsMatched", type=int, required=False),
+        FieldSpec(name="data_masked", type=bool, required=False),
+    ),
+    required_meta=make_required_meta(),
     data_is_list=False,  # Dashboard data is an object with panel keys
 )
 

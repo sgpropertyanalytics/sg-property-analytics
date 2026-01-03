@@ -15,6 +15,8 @@ from ..registry import (
     FieldSpec,
     register_contract,
     SchemaMode,
+    make_meta_fields,
+    make_required_meta,
 )
 
 
@@ -57,17 +59,14 @@ SUPPLY_SUMMARY_RESPONSE_SCHEMA = ResponseSchema(
         "totals": FieldSpec(name="totals", type=dict, required=False),
         "meta": FieldSpec(name="meta", type=dict, required=False),
     },
-    meta_fields={
-        "requestId": FieldSpec(name="requestId", type=str, required=True),
-        "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
-        "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
-        "launchYear": FieldSpec(name="launchYear", type=int, required=False),
-        "includeGls": FieldSpec(name="includeGls", type=bool, required=False),
-        "computedAs": FieldSpec(name="computedAs", type=str, required=False),
-        "asOfDate": FieldSpec(name="asOfDate", type=str, required=False),
-        "warnings": FieldSpec(name="warnings", type=list, required=False),
-    },
-    required_meta=["requestId", "elapsedMs", "apiVersion"],
+    meta_fields=make_meta_fields(
+        FieldSpec(name="launchYear", type=int, required=False),
+        FieldSpec(name="includeGls", type=bool, required=False),
+        FieldSpec(name="computedAs", type=str, required=False),
+        FieldSpec(name="asOfDate", type=str, required=False),
+        FieldSpec(name="warnings", type=list, required=False),
+    ),
+    required_meta=make_required_meta(),
     data_is_list=False,
 )
 

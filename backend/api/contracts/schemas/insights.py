@@ -16,6 +16,8 @@ from ..registry import (
     FieldSpec,
     register_contract,
     SchemaMode,
+    make_meta_fields,
+    make_required_meta,
 )
 
 
@@ -80,16 +82,13 @@ DISTRICT_PSF_RESPONSE_SCHEMA = ResponseSchema(
     data_fields={
         # Response has "districts" array, not "data"
     },
-    meta_fields={
-        "requestId": FieldSpec(name="requestId", type=str, required=True),
-        "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
-        "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
-        "period": FieldSpec(name="period", type=str, required=False),
-        "bed_filter": FieldSpec(name="bed_filter", type=str, required=False),
-        "total_districts": FieldSpec(name="total_districts", type=int, required=False),
-        "districts_with_data": FieldSpec(name="districts_with_data", type=int, required=False),
-    },
-    required_meta=["requestId", "elapsedMs", "apiVersion"],
+    meta_fields=make_meta_fields(
+        FieldSpec(name="period", type=str, required=False),
+        FieldSpec(name="bed_filter", type=str, required=False),
+        FieldSpec(name="total_districts", type=int, required=False),
+        FieldSpec(name="districts_with_data", type=int, required=False),
+    ),
+    required_meta=make_required_meta(),
     data_is_list=False,
 )
 
@@ -157,16 +156,13 @@ DISTRICT_LIQUIDITY_RESPONSE_SCHEMA = ResponseSchema(
     data_fields={
         # Response has "districts" array with liquidity_metrics
     },
-    meta_fields={
-        "requestId": FieldSpec(name="requestId", type=str, required=True),
-        "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
-        "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
-        "period": FieldSpec(name="period", type=str, required=False),
-        "months_in_period": FieldSpec(name="months_in_period", type=int, required=False),
-        "total_transactions": FieldSpec(name="total_transactions", type=int, required=False),
-        "mean_velocity": FieldSpec(name="mean_velocity", type=float, required=False),
-    },
-    required_meta=["requestId", "elapsedMs", "apiVersion"],
+    meta_fields=make_meta_fields(
+        FieldSpec(name="period", type=str, required=False),
+        FieldSpec(name="months_in_period", type=int, required=False),
+        FieldSpec(name="total_transactions", type=int, required=False),
+        FieldSpec(name="mean_velocity", type=float, required=False),
+    ),
+    required_meta=make_required_meta(),
     data_is_list=False,
 )
 

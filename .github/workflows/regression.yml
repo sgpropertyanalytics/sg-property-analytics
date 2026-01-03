@@ -48,6 +48,7 @@ jobs:
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       FLASK_ENV: testing
+      CONTRACT_MODE: strict  # Fail on schema violations in CI
 
     steps:
       - uses: actions/checkout@v4

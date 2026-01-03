@@ -16,6 +16,8 @@ from ..registry import (
     FieldSpec,
     register_contract,
     SchemaMode,
+    make_meta_fields,
+    make_required_meta,
 )
 
 
@@ -69,12 +71,8 @@ MULTI_SCOPE_RESPONSE_SCHEMA = ResponseSchema(
         "map_data": FieldSpec(name="map_data", type=dict, required=True),
         "meta": FieldSpec(name="meta", type=dict, required=False),
     },
-    meta_fields={
-        "requestId": FieldSpec(name="requestId", type=str, required=True),
-        "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
-        "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
-    },
-    required_meta=["requestId", "elapsedMs", "apiVersion"],
+    meta_fields=make_meta_fields(),
+    required_meta=make_required_meta(),
     data_is_list=False,
 )
 
@@ -108,12 +106,8 @@ PROJECT_NAMES_RESPONSE_SCHEMA = ResponseSchema(
         "projects": FieldSpec(name="projects", type=list, required=True),
         "count": FieldSpec(name="count", type=int, required=True),
     },
-    meta_fields={
-        "requestId": FieldSpec(name="requestId", type=str, required=True),
-        "elapsedMs": FieldSpec(name="elapsedMs", type=float, required=True),
-        "apiVersion": FieldSpec(name="apiVersion", type=str, required=True),
-    },
-    required_meta=["requestId", "elapsedMs", "apiVersion"],
+    meta_fields=make_meta_fields(),
+    required_meta=make_required_meta(),
     data_is_list=False,
 )
 
