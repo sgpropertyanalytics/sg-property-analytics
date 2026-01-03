@@ -9,6 +9,13 @@ Endpoint: GET/POST /api/dashboard
 from datetime import date
 
 from api.contracts.contract_schema import SaleType, Tenure
+
+# Import Pydantic model for parallel validation
+try:
+    from ..pydantic_models.dashboard import DashboardParams
+except ImportError:
+    DashboardParams = None
+
 from ..registry import (
     EndpointContract,
     ParamSchema,
@@ -284,6 +291,7 @@ DASHBOARD_CONTRACT = EndpointContract(
     response_schema=DASHBOARD_RESPONSE_SCHEMA,
     serializer=None,  # Uses existing serialize_dashboard_response in route
     mode=SchemaMode.WARN,  # Start in warn mode
+    pydantic_model=DashboardParams,
 )
 
 # Register on import

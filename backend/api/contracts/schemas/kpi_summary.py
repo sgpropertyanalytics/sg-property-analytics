@@ -8,6 +8,18 @@ Endpoint: GET /api/kpi-summary-v2
 
 from datetime import date
 
+# Import Pydantic models for parallel validation
+try:
+    from ..pydantic_models.kpi_summary import (
+        KPISummaryParams,
+        KPISingleParams,
+        KPISummaryLegacyParams,
+    )
+except ImportError:
+    KPISummaryParams = None
+    KPISingleParams = None
+    KPISummaryLegacyParams = None
+
 from ..registry import (
     EndpointContract,
     ParamSchema,
@@ -176,6 +188,7 @@ KPI_SUMMARY_CONTRACT = EndpointContract(
     service_schema=KPI_SUMMARY_SERVICE_SCHEMA,
     response_schema=KPI_SUMMARY_RESPONSE_SCHEMA,
     serializer=None,
+    pydantic_model=KPISummaryParams,
 )
 
 # Register on import
@@ -233,6 +246,7 @@ KPI_SINGLE_CONTRACT = EndpointContract(
     param_schema=KPI_SINGLE_PARAM_SCHEMA,
     service_schema=KPI_SINGLE_SERVICE_SCHEMA,
     response_schema=KPI_SINGLE_RESPONSE_SCHEMA,
+    pydantic_model=KPISingleParams,
 )
 
 register_contract(KPI_SINGLE_CONTRACT)
@@ -288,6 +302,7 @@ KPI_SUMMARY_LEGACY_CONTRACT = EndpointContract(
     param_schema=KPI_SUMMARY_LEGACY_PARAM_SCHEMA,
     service_schema=KPI_SUMMARY_LEGACY_SERVICE_SCHEMA,
     response_schema=KPI_SUMMARY_LEGACY_RESPONSE_SCHEMA,
+    pydantic_model=KPISummaryLegacyParams,
 )
 
 register_contract(KPI_SUMMARY_LEGACY_CONTRACT)
