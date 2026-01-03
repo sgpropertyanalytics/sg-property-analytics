@@ -443,15 +443,308 @@ python backend/scripts/generate_contracts.py
 **REQUIRED:** Output this EXACT format:
 
 ```markdown
-## Review Complete
+# 📋 Review Report
 
+**Branch:** [branch name]
 **Scope:** [frontend | backend | both | contracts | data]
 **Files Changed:** [count]
-**Commits Reviewed:** [list]
+**Commits Reviewed:** [list with short descriptions]
+**Date:** [ISO 8601]
 
 ---
 
-### Summary
+## 🎯 TL;DR — What's This About?
+
+### The Problem (ELI5)
+
+> **Restaurant Analogy:** [Choose appropriate analogy based on the issue type]
+>
+> Think of our app like a restaurant:
+> - **Frontend** = The dining room (what customers see)
+> - **Backend** = The kitchen (where orders are processed)
+> - **API Contract** = The order ticket (how waiter communicates with kitchen)
+> - **Database** = The pantry (where ingredients are stored)
+>
+> **What was broken:**
+> [Describe the issue using the analogy. Examples:]
+> - "The waiter was writing orders in French, but the kitchen only reads English"
+> - "The bouncer was letting everyone in without checking IDs"
+> - "The kitchen was sending out dishes the menu didn't list"
+>
+> **In technical terms:**
+> [1-2 sentence technical description]
+
+### Analogy Reference Guide
+
+| Issue Type | Analogy | Role |
+|------------|---------|------|
+| Contract mismatch | Order ticket | Waiter ↔ Kitchen communication |
+| Auth/Security | Bouncer | Checks IDs at the door |
+| Data validation | Quality inspector | Checks ingredients before cooking |
+| Caching | Prep station | Pre-made items for speed |
+| API response | Plated dish | What gets served to customer |
+| Frontend state | Table status | Reserved, occupied, ready to clear |
+| Database | Pantry/Inventory | Raw ingredients storage |
+| Services | Line cooks | Each handles specific dish types |
+| Routes | Order window | Where tickets come in |
+
+---
+
+## 🏗️ Architecture Impact
+
+### Data Flow Affected
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           FULL STACK FLOW                                │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐          │
+│  │  User    │───▶│ Frontend │───▶│   API    │───▶│ Backend  │          │
+│  │  Action  │    │   Page   │    │  Client  │    │  Route   │          │
+│  └──────────┘    └──────────┘    └──────────┘    └──────────┘          │
+│       │               │               │               │                  │
+│       │          [AFFECTED?]    [AFFECTED?]     [AFFECTED?]             │
+│       │           ✅/❌            ✅/❌           ✅/❌                 │
+│       │               │               │               │                  │
+│       │               ▼               ▼               ▼                  │
+│       │         ┌──────────┐    ┌──────────┐    ┌──────────┐          │
+│       │         │ Component│    │ Adapter  │    │ Service  │          │
+│       │         │  /Hook   │    │          │    │          │          │
+│       │         └──────────┘    └──────────┘    └──────────┘          │
+│       │               │               │               │                  │
+│       │          [AFFECTED?]    [AFFECTED?]     [AFFECTED?]             │
+│       │           ✅/❌            ✅/❌           ✅/❌                 │
+│       │               │               │               │                  │
+│       │               ▼               ▼               ▼                  │
+│       │         ┌──────────┐    ┌──────────┐    ┌──────────┐          │
+│       │         │  Chart   │    │ Contract │    │    DB    │          │
+│       │         │          │    │  Schema  │    │   Query  │          │
+│       │         └──────────┘    └──────────┘    └──────────┘          │
+│       │               │               │               │                  │
+│       │          [AFFECTED?]    [AFFECTED?]     [AFFECTED?]             │
+│       │           ✅/❌            ✅/❌           ✅/❌                 │
+│       │               │               │               │                  │
+│       └───────────────┴───────────────┴───────────────┘                  │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+
+LEGEND: ✅ = Changed in this PR | ❌ = Not affected | ⚠️ = Indirectly affected
+```
+
+### Affected Layers
+
+| Layer | Status | Files | Impact |
+|-------|--------|-------|--------|
+| **Pages** | ✅/❌/⚠️ | [list] | [what changed] |
+| **Components** | ✅/❌/⚠️ | [list] | [what changed] |
+| **Hooks** | ✅/❌/⚠️ | [list] | [what changed] |
+| **Adapters** | ✅/❌/⚠️ | [list] | [what changed] |
+| **API Client** | ✅/❌/⚠️ | [list] | [what changed] |
+| **Contracts** | ✅/❌/⚠️ | [list] | [what changed] |
+| **Routes** | ✅/❌/⚠️ | [list] | [what changed] |
+| **Services** | ✅/❌/⚠️ | [list] | [what changed] |
+| **Database** | ✅/❌/⚠️ | [list] | [what changed] |
+
+---
+
+## 📁 Files Changed
+
+### By Category
+
+```
+frontend/
+├── src/
+│   ├── pages/           [X files] ─────────────────── Page-level logic
+│   │   └── [file.jsx]   [+X/-Y lines] [brief description]
+│   │
+│   ├── components/      [X files] ─────────────────── UI components
+│   │   └── powerbi/
+│   │       └── [Chart.jsx] [+X/-Y lines] [brief description]
+│   │
+│   ├── adapters/        [X files] ─────────────────── API response transforms
+│   │   └── [adapter.js] [+X/-Y lines] [brief description]
+│   │
+│   ├── hooks/           [X files] ─────────────────── Data fetching
+│   │   └── [hook.js]    [+X/-Y lines] [brief description]
+│   │
+│   └── generated/       [X files] ─────────────────── Auto-generated contracts
+│       └── apiContract.json [+X/-Y lines] [regenerated]
+
+backend/
+├── routes/              [X files] ─────────────────── API endpoints
+│   └── [route.py]       [+X/-Y lines] [brief description]
+│
+├── services/            [X files] ─────────────────── Business logic
+│   └── [service.py]     [+X/-Y lines] [brief description]
+│
+├── api/contracts/       [X files] ─────────────────── Schema definitions
+│   └── schemas/
+│       └── [schema.py]  [+X/-Y lines] [brief description]
+│
+└── tests/               [X files] ─────────────────── Test files
+    └── [test.py]        [+X/-Y lines] [brief description]
+```
+
+### Files Summary Table
+
+| File | Lines Changed | Category | Risk |
+|------|---------------|----------|------|
+| `path/to/file.jsx` | +50/-20 | Component | 🟢 Low |
+| `path/to/file.py` | +30/-10 | Service | 🟡 Medium |
+| `path/to/schema.py` | +5/-2 | Contract | 🔴 High |
+
+---
+
+## 📝 Commit-by-Commit Breakdown
+
+### Commit 1: `[hash]` — [short message]
+
+```
+Author: [name]
+Date:   [date]
+
+[Full commit message]
+```
+
+**What Changed:**
+```
+[file1.jsx]  │ Component │ +20/-5  │ Added loading state
+[file2.py]   │ Service   │ +15/-3  │ Fixed date parsing
+```
+
+**The Issue:**
+> [ELI5 explanation of what was wrong before this commit]
+>
+> Like a waiter who was...
+
+**The Change:**
+> [What this commit specifically does]
+
+**The Improvement:**
+> [How things are better after this commit]
+
+**Diagram (if applicable):**
+```
+BEFORE:                          AFTER:
+┌──────────┐                     ┌──────────┐
+│ Frontend │──── null ────▶ 💥   │ Frontend │──── data ────▶ ✅
+└──────────┘                     └──────────┘
+     │                                │
+     ▼                                ▼
+No loading state                 Shows skeleton
+```
+
+---
+
+### Commit 2: `[hash]` — [short message]
+
+[Repeat structure for each commit...]
+
+---
+
+## 🔄 Before vs After
+
+### Issue → Change → Improvement
+
+| # | Issue (Before) | Change (What We Did) | Improvement (After) |
+|---|----------------|---------------------|---------------------|
+| 1 | [Problem description] | [Code change summary] | [Benefit/fix] |
+| 2 | [Problem description] | [Code change summary] | [Benefit/fix] |
+| 3 | [Problem description] | [Code change summary] | [Benefit/fix] |
+
+### Visual Comparison
+
+```
+═══════════════════════════════════════════════════════════════════════
+                              BEFORE
+═══════════════════════════════════════════════════════════════════════
+
+User clicks filter
+        │
+        ▼
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│    Frontend     │────▶│    API Call     │────▶│    Backend      │
+│  timeframe=M6   │     │  timeframe=M6   │     │  ??? (dropped)  │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+                                                        │
+                                                        ▼
+                                                 Defaults to Y1 ❌
+
+═══════════════════════════════════════════════════════════════════════
+                               AFTER
+═══════════════════════════════════════════════════════════════════════
+
+User clicks filter
+        │
+        ▼
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│    Frontend     │────▶│    API Call     │────▶│    Backend      │
+│  timeframe=M6   │     │  timeframe=M6   │     │  timeframe=M6   │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+                                                        │
+                                                        ▼
+                                                 Uses M6 filter ✅
+```
+
+---
+
+## 🧪 Component Interaction Map
+
+### What Talks to What
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        COMPONENT INTERACTIONS                        │
+└─────────────────────────────────────────────────────────────────────┘
+
+Pages (Business Logic Owner)
+│
+├── MarketOverview.jsx
+│   │
+│   ├──uses──▶ usePowerBIFilters() ──────────▶ PowerBIFilterContext
+│   │                                                   │
+│   ├──renders──▶ TimeTrendChart ◀──────────────────────┘
+│   │                  │                         (provides filters)
+│   │                  │
+│   │                  ├──calls──▶ useGatedAbortableQuery()
+│   │                  │                   │
+│   │                  │                   ├──▶ apiClient.get('/api/aggregate')
+│   │                  │                   │           │
+│   │                  │                   │           ▼
+│   │                  │                   │    ┌─────────────────┐
+│   │                  │                   │    │ Backend Route   │
+│   │                  │                   │    │ analytics.py    │
+│   │                  │                   │    └────────┬────────┘
+│   │                  │                   │             │
+│   │                  │                   │             ▼
+│   │                  │                   │    ┌─────────────────┐
+│   │                  │                   │    │ Service         │
+│   │                  │                   │    │ dashboard_svc   │
+│   │                  │                   │    └────────┬────────┘
+│   │                  │                   │             │
+│   │                  │                   │             ▼
+│   │                  │                   │    ┌─────────────────┐
+│   │                  │                   │    │ Database        │
+│   │                  │                   │    │ transactions    │
+│   │                  │                   │    └─────────────────┘
+│   │                  │                   │
+│   │                  │                   └──▶ transformTimeSeries() ◀── adapter
+│   │                  │
+│   │                  └──renders──▶ Chart.js <Line />
+│   │
+│   └── [other charts...]
+
+LEGEND:
+  ──uses──▶     Hook/Context usage
+  ──renders──▶  Component rendering
+  ──calls──▶    Function/API call
+  ◀────────     Data flows back
+```
+
+---
+
+## ✅ Review Checklist Summary
 
 | Check | Result | Details |
 |-------|--------|---------|
@@ -463,46 +756,141 @@ python backend/scripts/generate_contracts.py
 
 ---
 
-### Test Results
+## 🧪 Test Results
 
-**Tier 1 (Quick):**
-- [ ] Lint: PASS/FAIL
-- [ ] Typecheck: PASS/FAIL
-- [ ] Syntax: PASS/FAIL
-- [ ] Contract drift: PASS/FAIL
+### Tier 1 (Quick Checks) — ~30s
+| Test | Status | Output |
+|------|--------|--------|
+| Lint | ✅/❌ | [summary] |
+| Typecheck | ✅/❌ | [summary] |
+| Syntax | ✅/❌ | [summary] |
+| Contract drift | ✅/❌ | [summary] |
 
-**Tier 2 (Core):**
-- [ ] test_normalize.py: X passed
-- [ ] test_api_contract.py: X passed
-- [ ] ... [list all tests run]
+### Tier 2 (Core Tests) — ~3 min
+| Test File | Passed | Failed | Skipped |
+|-----------|--------|--------|---------|
+| test_normalize.py | X | 0 | 0 |
+| test_api_contract.py | X | 0 | 0 |
+| test_sql_guardrails.py | X | 0 | 0 |
+| ... | ... | ... | ... |
+| **Total** | **X** | **0** | **0** |
 
-**Tier 3 (Full):** [if run]
-- [ ] test_regression_snapshots.py: X passed
-- [ ] ... [list all tests run]
+### Tier 3 (Full Suite) — ~8 min [if run]
+| Test File | Passed | Failed | Skipped |
+|-----------|--------|--------|---------|
+| test_regression_snapshots.py | X | 0 | 0 |
+| test_api_invariants.py | X | 0 | 0 |
+| ... | ... | ... | ... |
+| **Total** | **X** | **0** | **0** |
+
+### Tier 4 (E2E Full) — ~10 min [if run]
+| Suite | Passed | Failed | Skipped |
+|-------|--------|--------|---------|
+| e2e:full | X | 0 | 0 |
 
 ---
 
-### Findings
+## 📊 Agent Findings
 
-#### From Pattern Analysis (Step 1):
-[Summary from codebase-pattern-finder]
+### From Pattern Analysis (Step 1)
+> **Verdict:** ALIGNED / DIVERGENT
+>
+> [Summary from codebase-pattern-finder]
+>
+> **Reference Patterns Found:**
+> - [pattern 1]
+> - [pattern 2]
+>
+> **Deviations (if any):**
+> - [deviation 1 with file:line]
 
-#### From Simplicity Check (Step 2):
-[Summary from simplicity-reviewer]
+### From Simplicity Check (Step 2)
+> **Verdict:** PASS / NEEDS SIMPLIFICATION / FLAGGED
+>
+> [Summary from simplicity-reviewer]
+>
+> | Metric | Value |
+> |--------|-------|
+> | Lines of code | X |
+> | Files touched | Y |
+> | Call depth | Z layers |
+>
+> **Library-First Check:** PASS / VIOLATION
 
-#### From Contract Check (Step 3):
-[Summary from fullstack-consistency-reviewer]
+### From Contract Check (Step 3)
+> **Verdict:** ALIGNED / DRIFT
+>
+> [Summary from fullstack-consistency-reviewer]
+>
+> **Param Coverage:**
+> | Frontend Param | Backend Schema | Status |
+> |----------------|----------------|--------|
+> | timeframe | AGGREGATE_PARAM_SCHEMA | ✅/❌ |
+> | district | AGGREGATE_PARAM_SCHEMA | ✅/❌ |
 
-#### From Risk Detection (Step 4):
-[Summary from risk-agent]
+### From Risk Detection (Step 4)
+> **Verdict:** APPROVE / REQUEST CHANGES / NEEDS DISCUSSION
+>
+> **🔴 MUST FIX (Blocking):**
+> - [issue with file:line]
+>
+> **🟡 SHOULD FIX (Recommended):**
+> - [issue with file:line]
+>
+> **💡 CONSIDER (Optional):**
+> - [suggestion]
+>
+> **✅ LOOKS GOOD:**
+> - [what's good about the code]
 
 ---
 
-### Verdict
+## 🎯 Final Verdict
 
-**[READY TO PUSH]** or **[NEEDS WORK]**
+### **[READY TO PUSH]** ✅
 
-[If NEEDS WORK, list specific items to address with file:line references]
+All checks pass. No P0 or P1 issues found.
+
+**OR**
+
+### **[MERGE WITH FOLLOW-UP]** ⚠️
+
+No P0 blockers, but P1 items need attention:
+- [ ] [P1 item 1 with file:line]
+- [ ] [P1 item 2 with file:line]
+
+**OR**
+
+### **[NEEDS WORK]** ❌
+
+P0 blockers found:
+- [ ] [P0 item 1 with file:line]
+- [ ] [P0 item 2 with file:line]
+
+**Action required before merge:**
+1. [Specific action 1]
+2. [Specific action 2]
+
+---
+
+## 📚 Quick Reference
+
+### Pages Affected
+- `/market-overview` — [affected/not affected]
+- `/district-overview` — [affected/not affected]
+- `/new-launch-market` — [affected/not affected]
+- `/supply-inventory` — [affected/not affected]
+- `/explore` — [affected/not affected]
+- `/value-check` — [affected/not affected]
+- `/exit-risk` — [affected/not affected]
+
+### Manual Verification Needed
+- [ ] [Page/Chart to manually check]
+- [ ] [Page/Chart to manually check]
+
+---
+
+*Generated by `/review` • [timestamp]*
 ```
 
 ---
