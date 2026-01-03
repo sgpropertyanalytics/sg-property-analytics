@@ -8,7 +8,6 @@ Endpoints:
 - /districts - DEPRECATED: Use /filter-options instead (returns same data)
 """
 
-import time
 from datetime import date
 from flask import request, jsonify
 from routes.analytics import analytics_bp
@@ -61,10 +60,8 @@ def filter_options():
     Get available filter options based on current data.
     Returns unique values for each filterable dimension.
 
-    Query params:
-        skip_cache (optional): If "true", bypass cache and fetch fresh data
-
     Response is cached for 10 minutes (reference data doesn't change often).
+    Cache status is indicated via X-Cache header (HIT/MISS).
     """
     from models.transaction import Transaction
     from models.database import db
@@ -72,20 +69,14 @@ def filter_options():
     from constants import get_region_for_district
     from api.contracts.contract_schema import serialize_filter_options, PropertyAgeBucket
 
-    start = time.time()
-    skip_cache = request.args.get("skip_cache", "").lower() == "true"
-
-    # Check cache first (unless skip_cache requested)
-    if not skip_cache:
-        cached = _dashboard_cache.get(FILTER_OPTIONS_CACHE_KEY)
-        if cached is not None:
-            elapsed = time.time() - start
-            # Add cache hit metadata
-            cached_response = dict(cached)
-            if "meta" in cached_response:
-                cached_response["meta"]["cacheHit"] = True
-                cached_response["meta"]["elapsedMs"] = int(elapsed * 1000)
-            return jsonify(cached_response)
+    # Check cache first - returns pre-wrapper data (decorator handles meta)
+    cached = _dashboard_cache.get(FILTER_OPTIONS_CACHE_KEY)
+    if cached is not None:
+        # Return cached data - decorator will wrap with meta
+        # Use header for cache status (don't mutate meta in route)
+        response = jsonify(cached)
+        response.headers['X-Cache'] = 'HIT'
+        return response
 
     try:
         # Base filter to exclude outliers
@@ -160,7 +151,10 @@ def filter_options():
         # Cache the result (10 min TTL - reference data doesn't change often)
         _dashboard_cache.set(FILTER_OPTIONS_CACHE_KEY, result)
 
-        return jsonify(result)
+        # Return with cache miss header
+        response = jsonify(result)
+        response.headers['X-Cache'] = 'MISS'
+        return response
     except Exception as e:
         print(f"GET /api/filter-options ERROR: {e}")
         return jsonify({"error": str(e)}), 500
