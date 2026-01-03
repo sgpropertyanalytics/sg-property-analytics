@@ -157,20 +157,20 @@ Every solution MUST be:
 | Caching | `flask-caching` | Custom cache wrappers |
 | Rate limiting | `flask-limiter` | Custom rate limit logic |
 
-### Known Tech Debt (Scheduled for Migration)
+### Tech Debt Resolved (Migration Complete)
 
-These files exist but violate Library-First. They are scheduled for replacement:
+These files have been **deleted** after successful migration:
 
-| File | Lines | Problem | Target Library |
-|------|-------|---------|----------------|
-| `useQuery.js` | ~100 | Custom data fetching | React Query |
-| `useAbortableQuery.js` | ~100 | Manual abort handling | React Query |
-| `useStaleRequestGuard.js` | ~100 | Manual stale detection | React Query |
-| `useGatedAbortableQuery.js` | ~100 | Combined patterns | React Query |
-| `generateFilterKey()` | ~20 | Manual cache keys | React Query auto-generates |
-| `PowerBIFilterContext.jsx` | ~300 | Large state context | Zustand |
+| Deleted File | Replaced By |
+|--------------|-------------|
+| ~~`useQuery.js`~~ | `useAppQuery.js` (TanStack Query wrapper) |
+| ~~`useAbortableQuery.js`~~ | `useAppQuery.js` |
+| ~~`useStaleRequestGuard.js`~~ | `useAppQuery.js` |
+| ~~`useGatedAbortableQuery.js`~~ | `useAppQuery.js` |
+| ~~`generateFilterKey()`~~ | TanStack Query auto-generates cache keys |
+| ~~`PowerBIFilterContext.jsx`~~ | `stores/filterStore.js` (Zustand) |
 
-**Rule:** Do NOT extend these files. New features must use target libraries.
+**Current standard:** Use `useAppQuery()` for data fetching, `useZustandFilters()` for filter state.
 
 ### Exceptions (Custom Code Allowed)
 
@@ -265,25 +265,28 @@ current_min = date(max_date.year, max_date.month - 2, 1)  # 3 months back
 
 ## 3.2 Frontend Async
 
-> **Note:** Current patterns (`useAbortableQuery`, `useStaleRequestGuard`) are tech debt scheduled for React Query migration. See Section 1.6.
-
-- Use `useAbortableQuery` or `useStaleRequestGuard` (until React Query migration)
-- Pass `signal` to ALL API calls
-- Check `isStale(requestId)` before setState
+**Current Stack (Migration Complete):**
+- **Data fetching:** `useAppQuery()` (TanStack Query wrapper)
+- **Filter state:** `useZustandFilters()` (Zustand store)
+- Signal passed automatically by TanStack Query
 - Response through adapter (never `response.data` directly)
 
-**Proactive Pattern Detection:**
-When you see these patterns in existing code, flag for migration:
-```bash
-# Detect custom async patterns (scheduled for React Query)
-grep -rn "useState.*null.*useEffect.*fetch" frontend/src/
-grep -rn "new AbortController()" frontend/src/components/
-grep -rn "requestIdRef.*current" frontend/src/
+**Usage Pattern:**
+```javascript
+const { data, status, error } = useAppQuery(
+  async (signal) => {
+    const params = buildApiParams({ group_by: 'month' });
+    const response = await getAggregate(params, { signal });
+    return transformTimeSeries(response.data);
+  },
+  [debouncedFilterKey, timeGrouping],
+  { chartName: 'MyChart', keepPreviousData: true }
+);
 ```
 
-**Query Keys:** Include ALL data-affecting state.
+**Query Keys:** Include ALL data-affecting state in deps array.
 ```js
-filterKey: `${debouncedFilterKey}:${timeGrouping}`  // Not just debouncedFilterKey
+[debouncedFilterKey, timeGrouping, saleType]  // All state that affects data
 ```
 
 **Visibility-Gated Fetching:** `containerRef` must be outside QueryState.
@@ -303,7 +306,7 @@ filterKey: `${debouncedFilterKey}:${timeGrouping}`  // Not just debouncedFilterK
 
 - `buildApiParams()` for ALL API calls
 - Time X-axis → `excludeHighlight: true`
-- `usePowerBIFilters()` → Market Overview page ONLY
+- `useZustandFilters()` for filter state access
 
 ## 3.4 API Contracts
 
@@ -341,14 +344,22 @@ Copy these patterns exactly. All new code must match these structures.
 
 ## Frontend Chart
 ```jsx
-const { data, loading, error } = useAbortableQuery(
-  (signal) => apiClient.get('/api/aggregate', {
-    params: buildApiParams({ group_by: 'month' }, { excludeHighlight: true }),
-    signal
-  }).then(r => adapter(r.data)),
-  [debouncedFilterKey, timeGrouping]
+const { buildApiParams, debouncedFilterKey, timeGrouping } = useZustandFilters();
+
+const { data, status, error } = useAppQuery(
+  async (signal) => {
+    const params = buildApiParams({ group_by: 'month' }, { excludeHighlight: true });
+    const response = await getAggregate(params, { signal });
+    return transformTimeSeries(response.data);
+  },
+  [debouncedFilterKey, timeGrouping],
+  { chartName: 'MyChart', keepPreviousData: true }
 );
-if (loading) return <Skeleton />; if (error) return <Error />; return <Chart data={data} />;
+
+if (status === 'pending') return <Skeleton />;
+if (status === 'error') return <ErrorState error={error} />;
+if (!data?.length) return <EmptyState />;
+return <Chart data={data} />;
 ```
 
 ## Backend Service
@@ -674,8 +685,8 @@ Run these before committing. If any box fails, stop and fix.
 ## New Chart
 - [ ] Answers ONE question
 - [ ] Pure chart + container split
-- [ ] Uses `useAbortableQuery` + adapters
-- [ ] Query key includes ALL data-affecting state
+- [ ] Uses `useAppQuery` + adapters
+- [ ] Query key (deps array) includes ALL data-affecting state
 - [ ] Accepts `saleType` as prop (never hardcodes)
 - [ ] Lazy import syntax matches export style
 
@@ -784,8 +795,9 @@ frontend/src/
 ├── constants/           # REGIONS, BEDROOM_ORDER
 ├── schemas/apiContract/ # Enums, isSaleType helpers
 ├── adapters/            # API response transformers
-├── hooks/               # useAbortableQuery
-├── context/             # PowerBIFilterContext
+├── hooks/               # useAppQuery (TanStack Query wrapper)
+├── stores/              # filterStore.js (Zustand)
+├── context/             # Auth, Subscription, AppReady
 └── components/powerbi/  # Chart components
 ```
 

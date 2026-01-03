@@ -50,7 +50,7 @@
 │                                                                                 │
 │   React Frontend                                                                │
 │   ┌──────────────────────────────────────────────────────────────────────────┐ │
-│   │ PowerBIFilterContext → buildApiParams() → useAbortableQuery()            │ │
+│   │ Zustand filterStore → buildApiParams() → useAppQuery()                   │ │
 │   │      │                                                                   │ │
 │   │      ▼                                                                   │ │
 │   │ API Client (axios) ──────────────────────────────────────────────────▶   │ │
@@ -96,11 +96,11 @@
 ```mermaid
 flowchart TB
     subgraph Frontend["Frontend (React/Vite)"]
-        FC[PowerBIFilterContext]
-        AQ[useAbortableQuery]
+        FS[Zustand filterStore]
+        AQ[useAppQuery]
         AD[Adapters]
         CH[Charts]
-        FC --> AQ --> AD --> CH
+        FS --> AQ --> AD --> CH
     end
 
     subgraph Backend["Backend (Flask)"]
@@ -431,7 +431,7 @@ WHERE COALESCE(is_outlier, false) = false;
 |-------|---------------|-----|----------|
 | Backend | In-memory dict + lock | 10 min | 1000 entries |
 | Database | PostgreSQL buffer pool | Managed | - |
-| Frontend | useAbortableQuery (implicit) | Per-mount | - |
+| Frontend | TanStack Query (useAppQuery) | 30s stale, 5min gc | - |
 
 ### Performance Targets
 
@@ -458,17 +458,17 @@ WHERE COALESCE(is_outlier, false) = false;
 
 | Nav Label | Page Component | Route | Data Scope |
 |-----------|---------------|-------|------------|
-| Market Overview | `MarketOverviewContent` | `/market-overview` | Resale ONLY |
-| District Overview | `DistrictOverviewContent` | `/district-overview` | All |
-| New Launch Market | `NewLaunchMarketContent` | `/new-launch-market` | New Sale + Resale |
-| Supply & Inventory | `SupplyInventoryContent` | `/supply-inventory` | All |
+| Market Overview | `MacroOverviewContent` | `/market-overview` | Resale ONLY |
+| District Overview | `DistrictDeepDiveContent` | `/district-overview` | All |
+| New Launch Market | `PrimaryMarketContent` | `/new-launch-market` | New Sale + Resale |
+| Supply & Inventory | `SupplyInsightsContent` | `/supply-inventory` | All |
 
 ### Project Tools
 
 | Nav Label | Page Component | Route | Data Scope |
 |-----------|---------------|-------|------------|
-| Explore | `ExploreContent` | `/explore` | All |
-| Value Check | `ValueCheckContent` | `/value-check` | All |
+| Explore | `ProjectDeepDiveContent` | `/explore` | All |
+| Value Check | `ValueParityPanel` | `/value-check` | All |
 | Exit Risk | `ExitRiskContent` | `/exit-risk` | All |
 | Methodology | `MethodologyContent` | `/methodology` | - |
 
@@ -525,9 +525,9 @@ sg-property-analyzer/
 │   │   ├── dashboard_service.py  # Core analytics
 │   │   ├── classifier.py         # Domain logic
 │   │   ├── etl/                  # ETL pipeline
-│   │   │   ├── orchestrator.py
-│   │   │   ├── loaders.py
-│   │   │   └── validators.py
+│   │   │   ├── fingerprint.py
+│   │   │   ├── run_context.py
+│   │   │   └── rule_registry.py
 │   │   └── ...
 │   │
 │   ├── models/
