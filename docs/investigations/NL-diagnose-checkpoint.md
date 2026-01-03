@@ -156,18 +156,44 @@ Render Decision:
 
 ---
 
+## Debug Logging Added (Commit ac9d8dd)
+
+Console logging has been added to `NewLaunchTimelineChart.jsx` to trace the data flow.
+
+**To diagnose on production:**
+1. Deploy the `NL-diagnose` branch to Vercel
+2. Open browser DevTools Console on `/new-launch-market` page
+3. Look for `[NewLaunchTimeline]` logs:
+
+```
+[NewLaunchTimeline] API params: {...}
+[NewLaunchTimeline] timelineRes.data: {...}
+[NewLaunchTimeline] absorptionRes.data: {...}
+[NewLaunchTimeline] timelinePayload: [...]
+[NewLaunchTimeline] absorptionPayload: [...]
+[NewLaunchTimeline] status: "success" | "loading" | etc
+[NewLaunchTimeline] shouldFetch: true | false
+[NewLaunchTimeline] data: [...] | null
+[NewLaunchTimeline] safeData.length: N
+[NewLaunchTimeline] filteredData.length: N
+[NewLaunchTimeline] hasData: true | false
+[NewLaunchTimeline] error: null | Error
+```
+
+**What to look for:**
+- If `shouldFetch: false` → IntersectionObserver issue
+- If `API params` missing `timeframe` → Filter state issue
+- If `timelineRes.data` empty → API issue (unlikely, we tested it works)
+- If `safeData.length: 0` but API returned data → Envelope unwrapping issue
+- If `filteredData.length: 0` but `safeData.length > 0` → 2020 filter issue
+- If `status: 'error'` → Check the error object
+
 ## Next Steps
 
-1. **Check browser console** for errors when chart loads
-2. **Add console.log** in `NewLaunchTimelineChart.jsx` to trace data flow:
-   ```js
-   console.log('timelineRes:', timelineRes);
-   console.log('timelinePayload:', timelinePayload);
-   console.log('timelineData:', timelineData);
-   console.log('hasData:', hasData);
-   ```
-3. **Verify Vercel deployment** has latest code from main
-4. **Check IntersectionObserver** - `shouldFetch` might be false if chart not visible
+1. **Deploy `NL-diagnose` branch** to Vercel preview
+2. **Check browser console** on the New Launch Market page
+3. **Analyze console output** to identify exact failure point
+4. **Apply fix** based on findings
 
 ---
 
