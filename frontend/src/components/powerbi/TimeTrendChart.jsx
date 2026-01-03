@@ -1,12 +1,11 @@
 import React, { useRef, useMemo } from 'react';
-// Phase 2: Using TanStack Query via useAppQuery wrapper
-import { useAppQuery, useDebugOverlay } from '../../hooks';
+// Phase 2: Using TanStack Query via useTimeSeriesQuery (auto grain aggregation)
+import { useTimeSeriesQuery, useDebugOverlay } from '../../hooks';
 import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
 import { Chart } from 'react-chartjs-2';
 // Phase 3.2: Migrated from usePowerBIFilters to useZustandFilters
 import { useZustandFilters } from '../../stores';
-import { TIME_GROUP_BY } from '../../context/PowerBIFilter';
 import { getAggregate } from '../../api/client';
 import { PreviewChartOverlay, ChartSlot } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
@@ -17,9 +16,11 @@ import { niceMax } from '../../utils/niceAxisMax';
 /**
  * Time Trend Chart - Line + Bar Combo
  *
- * X-axis: Month (drillable up to Quarter/Year)
+ * X-axis: Month (drillable up to Quarter/Year via client-side aggregation)
  * Y1 (bars): Transaction Count
- * Y2 (line): Median PSF
+ * Y2 (line): Total Transaction Value
+ *
+ * Uses useTimeSeriesQuery for instant grain toggle without API calls.
  */
 // Time level labels for display
 const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
@@ -32,67 +33,52 @@ const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
  * }} props
  */
 function TimeTrendChartBase({ height = 300, saleType = null, onDrillThrough: _onDrillThrough }) {
-  // Use global timeGrouping from context (controlled by toolbar toggle)
   // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
   // filterKey updates immediately on filter change - used for instant overlay feedback
-  // Phase 3.2: Now reading from Zustand store (synced with Context)
+  // timeGrouping used for display label (aggregation handled by useTimeSeriesQuery)
   const { buildApiParams, debouncedFilterKey, filterKey, timeGrouping } = useZustandFilters();
   const chartRef = useRef(null);
 
   // Debug overlay for API diagnostics (toggle with Ctrl+Shift+D)
   const { captureRequest, captureResponse, captureError, DebugOverlay } = useDebugOverlay('TimeTrendChart');
 
-  // Fetch and transform data using adapter pattern
-  // useAppQuery (Phase 2): TanStack Query wrapper with boot gating
-  // Provides: automatic caching, request deduplication, stale-while-revalidate
-  const { data, status, error, refetch } = useAppQuery(
-    async (signal) => {
-      // saleType is passed from page level - see CLAUDE.md "Business Logic Enforcement"
+  // useTimeSeriesQuery: fetches monthly data, aggregates client-side to current grain
+  // Enables instant toggle between month/quarter/year without new API calls
+  const { data: safeData, status, error, refetch } = useTimeSeriesQuery({
+    queryFn: async (signal) => {
+      // Always fetch month grain - hook handles aggregation to timeGrouping
       const params = buildApiParams({
-        group_by: TIME_GROUP_BY[timeGrouping],
+        group_by: 'month',
         metrics: 'count,total_value',
         ...(saleType && { sale_type: saleType }),
       });
 
-      // Capture request for debug overlay
       captureRequest('/api/aggregate', params);
 
       try {
         const response = await getAggregate(params, { signal, priority: 'high' });
-
-        // Validate API contract version (dev/test only)
         assertKnownVersion(response.data, '/api/aggregate');
 
         const rawData = response.data || [];
-
-        // Capture response for debug overlay
         captureResponse(response, rawData.length);
 
-        // Debug logging (dev only)
         logFetchDebug('TimeTrendChart', {
           endpoint: '/api/aggregate',
-          timeGrain: timeGrouping,
+          timeGrain: 'month',
           response: response.data,
           rowCount: rawData.length,
         });
 
-        // Validate grain at fetch boundary (dev-only, on success)
-        validateResponseGrain(rawData, timeGrouping, 'TimeTrendChart');
-
-        // Use adapter for transformation (schema-safe, sorted)
-        // Transform is grain-agnostic - trusts data's own periodGrain
+        validateResponseGrain(rawData, 'month', 'TimeTrendChart');
         return transformTimeSeries(rawData);
       } catch (err) {
         captureError(err);
         throw err;
       }
     },
-    [debouncedFilterKey, timeGrouping, saleType],
-    { chartName: 'TimeTrendChart', initialData: null, keepPreviousData: true }
-  );
-
-  // Default fallback for when data is null (initial load) - matches PriceDistributionChart pattern
-  const safeData = data ?? [];
+    deps: [debouncedFilterKey, saleType],
+    chartName: 'TimeTrendChart',
+  });
 
   // Market Core is Resale-only - single transaction count bar + total value line
   const labels = safeData.map(d => d.period ?? '');

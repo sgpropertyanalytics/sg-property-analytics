@@ -108,6 +108,12 @@ import {
   is2020Period,
 } from './newLaunchAbsorption';
 
+import {
+  aggregateTimeSeriesByGrain,
+  monthToQuarter,
+  monthToYear,
+} from './timeAggregation';
+
 // Named exports
 export {
   // Validation
@@ -169,6 +175,10 @@ export {
   // New Launch Absorption
   transformNewLaunchAbsorption,
   is2020Period,
+  // Client-side time aggregation (for instant grain toggle)
+  aggregateTimeSeriesByGrain,
+  monthToQuarter,
+  monthToYear,
 };
 
 // Default export for backwards compatibility
@@ -228,4 +238,8 @@ export default {
   // New Launch Absorption
   transformNewLaunchAbsorption,
   is2020Period,
+  // Client-side time aggregation
+  aggregateTimeSeriesByGrain,
+  monthToQuarter,
+  monthToYear,
 };
