@@ -133,7 +133,8 @@ file_path: claude.md (or CLAUDE.md)
 3. **§2 Hard Constraints** - Memory limits, data immutability
 4. **§5 Backend Change Protocol** - The 4 questions before any backend change
 5. **§7.2 API & Code Design** - 12 principles (single source of truth, fail fast, boring is good, etc.)
-6. **§9 Historical Incidents** - Check REPO_MAP.md for landmines
+6. **§7.3 Param & Data Flow Integrity** - 5 principles (parse once, canonicalize at edges, one name per concept, immutable after normalization)
+7. **§9 Historical Incidents** - Check REPO_MAP.md for landmines
 
 **Why this matters:** Reviews that don't reference these principles miss systemic issues.
 For example, a review might approve code that violates layer responsibilities or
@@ -155,6 +156,11 @@ recreates functionality that a library already provides.
 | Boring Is Good | Is this obvious code, or clever code? |
 | Delete Before Add | Can we remove something instead of adding? |
 | Explicit Dependencies | Are all inputs in the function signature? |
+| Parse Once | Is this param parsed at entry, or transformed through multiple layers? |
+| Canonicalize at Edges | Is data converted to final form at API boundary? |
+| One Name Per Concept | Can you grep ONE name to find all usages? No aliases? |
+| Immutable After Parse | Are params frozen after normalization, or mutated by layers? |
+| Cache Key = Query Key | Does cache key use same resolved values as the actual query? |
 
 ---
 
