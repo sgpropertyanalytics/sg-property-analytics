@@ -76,6 +76,35 @@
 - Deprecation warnings in dev mode
 - Clear migration path for version updates
 
+### ADR-007: Pydantic Param Validation
+
+**Decision:** Use Pydantic models for API parameter validation instead of custom `normalize_params()`.
+
+**Context:** Custom validation in `normalize_params()` was:
+- Error-prone with type coercion bugs
+- Difficult to maintain aliases and defaults
+- No IDE autocompletion or type hints
+- Cache key bugs when param identity drifted through transformations
+
+**Migration Status (Jan 2026):**
+- Phase 1: Created Pydantic models for all 10 endpoints ✓
+- Phase 2: 136 cache key parity tests pass ✓
+- Phase 3: `USE_PYDANTIC_VALIDATION=true` as default ✓
+- Phase 4: Parallel mode logging for edge case detection (ongoing)
+- Phase 5: Remove old `normalize_params()` (after stable)
+
+**Consequences:**
+- IDE autocompletion and type hints
+- Frozen models prevent param mutation
+- Built-in validation error messages
+- Easy alias handling with `validation_alias`
+- Parallel mode catches any edge cases
+
+**Files:**
+- `backend/api/contracts/pydantic_models/` - All Pydantic models
+- `backend/api/contracts/feature_flags.py` - Feature flags
+- `backend/tests/test_cache_key_parity.py` - 136 parity tests
+
 ---
 
 ## Technical Debt
