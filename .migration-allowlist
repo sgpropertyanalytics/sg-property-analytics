@@ -96,10 +96,14 @@ allowlist:
       - backend/scrapers/utils/hashing.py
       - backend/scripts/verify_units.py
       - backend/services/data_loader.py
+      - backend/api/contracts/pydantic_models/types.py
+      - backend/services/gls_scraper.py
     justification: >
       Various normalize_ helper functions exist across files for different purposes.
       utils/normalize.py is the canonical source for input normalization.
       api/contracts/normalize.py handles contract-level normalization.
+      pydantic_models/types.py has Pydantic validators (normalize_districts).
+      gls_scraper.py has GLS-specific location normalization.
       Others are domain-specific helpers (cache keys, filter building, scrapers).
       Review and consolidate where possible.
     expiry: "2026-03-15"
