@@ -4,7 +4,7 @@ Filter Options Endpoint
 Returns available filter values based on current data.
 
 Endpoints:
-- /filter-options - Available filter values for all dimensions
+- /filter-options - Available filter values for all dimensions (cached 10 min)
 - /districts - DEPRECATED: Use /filter-options instead (returns same data)
 """
 
@@ -12,6 +12,10 @@ from datetime import date
 from flask import request, jsonify
 from routes.analytics import analytics_bp
 from api.contracts import api_contract
+from services.dashboard_service import _dashboard_cache
+
+# Cache key for filter-options (no params, so static key)
+FILTER_OPTIONS_CACHE_KEY = "filter-options:all"
 
 
 def _get_districts_list():
@@ -56,7 +60,8 @@ def filter_options():
     Get available filter options based on current data.
     Returns unique values for each filterable dimension.
 
-    Query params: none
+    Response is cached for 10 minutes (reference data doesn't change often).
+    Cache status is indicated via X-Cache header (HIT/MISS).
     """
     from models.transaction import Transaction
     from models.database import db
@@ -64,7 +69,14 @@ def filter_options():
     from constants import get_region_for_district
     from api.contracts.contract_schema import serialize_filter_options, PropertyAgeBucket
 
-    # Schema version: v2 only (v1 deprecated fields removed)
+    # Check cache first - returns pre-wrapper data (decorator handles meta)
+    cached = _dashboard_cache.get(FILTER_OPTIONS_CACHE_KEY)
+    if cached is not None:
+        # Return cached data - decorator will wrap with meta
+        # Use header for cache status (don't mutate meta in route)
+        response = jsonify(cached)
+        response.headers['X-Cache'] = 'HIT'
+        return response
 
     try:
         # Base filter to exclude outliers
@@ -123,7 +135,7 @@ def filter_options():
             "max": size_stats[1] if size_stats else None
         }
 
-        return jsonify(serialize_filter_options(
+        result = serialize_filter_options(
             districts=districts,
             regions=regions,
             bedrooms=bedrooms,
@@ -134,7 +146,15 @@ def filter_options():
             size_range=size_range,
             tenures=tenures,
             property_age_buckets=PropertyAgeBucket.ALL
-        ))
+        )
+
+        # Cache the result (10 min TTL - reference data doesn't change often)
+        _dashboard_cache.set(FILTER_OPTIONS_CACHE_KEY, result)
+
+        # Return with cache miss header
+        response = jsonify(result)
+        response.headers['X-Cache'] = 'MISS'
+        return response
     except Exception as e:
         print(f"GET /api/filter-options ERROR: {e}")
         return jsonify({"error": str(e)}), 500
