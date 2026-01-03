@@ -8,6 +8,18 @@ Endpoint: GET /api/kpi-summary-v2
 
 from datetime import date
 
+# Import Pydantic models for parallel validation
+try:
+    from ..pydantic_models.kpi_summary import (
+        KPISummaryParams,
+        KPISingleParams,
+        KPISummaryLegacyParams,
+    )
+except ImportError:
+    KPISummaryParams = None
+    KPISingleParams = None
+    KPISummaryLegacyParams = None
+
 from ..registry import (
     EndpointContract,
     ParamSchema,
