@@ -60,26 +60,15 @@ function NewLaunchTimelineChartBase({ height = 300 }) {
         time_grain: TIME_GROUP_BY[timeGrouping],
       });
 
-      // DEBUG: Log params being sent
-      console.log('[NewLaunchTimeline] API params:', params);
-
       // Fetch both APIs in parallel
       const [timelineRes, absorptionRes] = await Promise.all([
         getNewLaunchTimeline(params, { signal }),
         getNewLaunchAbsorption(params, { signal }),
       ]);
 
-      // DEBUG: Log raw responses
-      console.log('[NewLaunchTimeline] timelineRes.data:', timelineRes.data);
-      console.log('[NewLaunchTimeline] absorptionRes.data:', absorptionRes.data);
-
       // Unwrap envelope (axios .data → response body → .data array)
       const timelinePayload = timelineRes.data?.data || timelineRes.data || [];
       const absorptionPayload = absorptionRes.data?.data || absorptionRes.data || [];
-
-      // DEBUG: Log payloads after unwrapping
-      console.log('[NewLaunchTimeline] timelinePayload:', timelinePayload);
-      console.log('[NewLaunchTimeline] absorptionPayload:', absorptionPayload);
 
       // Validate API contract versions (dev/test only)
       assertKnownVersion(timelineRes.data, '/api/new-launch-timeline');
@@ -305,15 +294,6 @@ function NewLaunchTimelineChartBase({ height = 300 }) {
 
   const hasData = filteredData.length > 0;
   const cardHeight = height + 160;
-
-  // DEBUG: Log final state
-  console.log('[NewLaunchTimeline] status:', status);
-  console.log('[NewLaunchTimeline] shouldFetch:', shouldFetch);
-  console.log('[NewLaunchTimeline] data:', data);
-  console.log('[NewLaunchTimeline] safeData.length:', safeData.length);
-  console.log('[NewLaunchTimeline] filteredData.length:', filteredData.length);
-  console.log('[NewLaunchTimeline] hasData:', hasData);
-  console.log('[NewLaunchTimeline] error:', error);
 
   return (
     <div ref={containerRef}>

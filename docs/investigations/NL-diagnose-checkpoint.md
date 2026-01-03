@@ -188,12 +188,59 @@ Console logging has been added to `NewLaunchTimelineChart.jsx` to trace the data
 - If `filteredData.length: 0` but `safeData.length > 0` → 2020 filter issue
 - If `status: 'error'` → Check the error object
 
+## Root Cause Found & Fixed
+
+### The Problem
+When Render's backend is cold (after 15 min inactivity on free tier), requests time out. Vercel's proxy returns the SPA's index.html as a fallback. The frontend received HTML instead of JSON, which:
+
+1. Axios interceptor tried to parse it
+2. `unwrapEnvelope` saw it wasn't a proper `{data, meta}` object
+3. Returned the HTML string as-is
+4. Component checked `Array.isArray(htmlString)` → false → `safeData = []`
+5. Showed "No data for selected filters" with **no error**
+
+This is why the user saw "no errors on the console log" but the chart showed no data.
+
+### The Fix (`frontend/src/api/client.js`)
+
+1. **HTML Detection**: Added check in `unwrapEnvelope()` to detect HTML responses:
+   ```js
+   if (typeof body === 'string' && (body.includes('<!DOCTYPE') || body.includes('<html'))) {
+     console.warn('[API] Received HTML instead of JSON - backend may be cold starting');
+     throw error with code 'HTML_RESPONSE';
+   }
+   ```
+
+2. **Retry Logic**: Added HTML_RESPONSE to retryable errors so it auto-retries:
+   ```js
+   if (error?.code === 'HTML_RESPONSE') {
+     return true; // Will retry after 1s delay
+   }
+   ```
+
+3. **User Message**: Added friendly error message:
+   ```
+   "Server is warming up. Please wait a moment and try again."
+   ```
+
+### Expected Behavior After Fix
+
+1. User loads page when Render is cold
+2. First request receives HTML → **detected** → throws error
+3. API client **retries** after 1s (Render now warming)
+4. Second request succeeds with JSON → chart renders
+5. If still fails after retry → shows error state with user message instead of confusing "No data"
+
+## Cleanup Done
+
+- Removed debug console.log statements from `NewLaunchTimelineChart.jsx`
+- Kept console.warn for HTML detection (ESLint allows warn/error)
+
 ## Next Steps
 
-1. **Deploy `NL-diagnose` branch** to Vercel preview
-2. **Check browser console** on the New Launch Market page
-3. **Analyze console output** to identify exact failure point
-4. **Apply fix** based on findings
+1. **Commit and push** to `NL-diagnose` branch
+2. **Test on production** - load page after Render sleeps
+3. **Verify** error message shows during cold start, then chart loads after retry
 
 ---
 

@@ -136,6 +136,11 @@ const isRetryableError = (error, config) => {
     return true;
   }
 
+  // Retry HTML response (Render cold start caused Vercel to return SPA)
+  if (error?.code === 'HTML_RESPONSE') {
+    return true;
+  }
+
   // Retry specific server errors (gateway issues)
   if (RETRY_CONFIG.retryableStatuses.includes(error?.response?.status)) {
     return true;
@@ -258,6 +263,9 @@ const normalizeError = (error) => {
     error.userMessage = 'Request timed out. Please retry.';
   } else if (error?.code === 'ERR_NETWORK' || !error?.response) {
     error.userMessage = 'Network error. Check your connection and retry.';
+  } else if (error?.code === 'HTML_RESPONSE') {
+    // Already set by unwrapEnvelope, but ensure it's present
+    error.userMessage = error.userMessage || 'Server is warming up. Please wait a moment and try again.';
   } else if (error?.name === 'CanceledError' || error?.name === 'AbortError') {
     // Abort errors are expected control flow, not user-facing errors
     error.userMessage = null;
@@ -277,8 +285,19 @@ const normalizeError = (error) => {
  *
  * @param {Object} body - The response body (axios response.data)
  * @returns {{ data: any, meta: any }} - Unwrapped data and meta
+ * @throws {Error} If body is HTML (indicates proxy fallback/timeout)
  */
 export function unwrapEnvelope(body) {
+  // Detect HTML response (Vercel SPA fallback when Render times out)
+  // This happens when the backend is cold starting and Vercel returns index.html
+  if (typeof body === 'string' && (body.includes('<!DOCTYPE') || body.includes('<html'))) {
+    console.warn('[API] Received HTML instead of JSON - backend may be cold starting');
+    const error = new Error('Backend unavailable - received HTML instead of JSON. Please retry.');
+    error.code = 'HTML_RESPONSE';
+    error.userMessage = 'Server is warming up. Please wait a moment and try again.';
+    throw error;
+  }
+
   if (body && typeof body === 'object' && 'data' in body && typeof body.data === 'object') {
     return { data: body.data, meta: body.meta };
   }
