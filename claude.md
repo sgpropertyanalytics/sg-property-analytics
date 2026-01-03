@@ -524,6 +524,138 @@ Design philosophy for this codebase. Apply these when making architectural decis
     - Good: Single config file, referenced everywhere
     - Requirements change. Make changing easy.
 
+## 7.3 Param & Data Flow Integrity
+
+> **Origin:** Jan 2026 - `timeframe=M6` was sent by frontend, converted to `period` by adapter, backend used `period` to compute dates, but cache key read `params.timeframe` which was never set → defaulted to Y1. The param flowed correctly through transformations but a downstream reader used the wrong name.
+
+These principles prevent "param identity drift" bugs where data enters the system under one name, gets transformed, and downstream consumers read the wrong name/value.
+
+### 13. Parse, Don't Transform in Transit
+
+```
+❌ Bad:  Input → Transform → Transform → Transform → Use
+✅ Good: Input → Parse once → Use everywhere
+```
+
+Every transformation is a chance for mismatch. Parse to final form immediately.
+
+```python
+# BAD: Transform at each layer
+def adapter(params):
+    params['period'] = params.get('timeframe')  # Transform 1
+def normalize(params):
+    params['date_range'] = resolve_period(params['period'])  # Transform 2
+def service(params):
+    dates = params.get('date_range') or default_dates()  # Transform 3 (implicit)
+
+# GOOD: Parse once at entry
+def parse_time_filter(raw_timeframe):
+    """Single place that converts 'M6' → { start: date, end: date }"""
+    return { 'start': computed_start, 'end': computed_end }
+# Everything downstream uses start/end directly
+```
+
+### 14. Canonicalize at the Edges
+
+```
+❌ Bad:  Transform data as it flows through the system
+✅ Good: Convert to final form immediately at API entry
+```
+
+```
+API boundary: timeframe='M6' → { startDate: '2025-01-01', endDate: '2025-06-30' }
+                                        ↓
+                Everything after this uses startDate/endDate only
+```
+
+The API boundary is the ONE place where `timeframe` → dates conversion happens. After that point, `timeframe` doesn't exist.
+
+### 15. Pass Specific Values, Not Intents
+
+```
+❌ Intent:   "M6" (what does this mean? 180 days? 6 calendar months? from when?)
+✅ Specific: "2025-01-01 to 2025-06-30" (unambiguous)
+```
+
+Convert fuzzy human intent to precise machine values as early as possible. Don't pass "M6" through 5 layers hoping each interprets it the same way.
+
+```python
+# BAD: Pass intent, let each layer interpret
+cache_key = f"data:{timeframe}"  # What does M6 mean here?
+query_dates = resolve_timeframe(timeframe)  # And here?
+
+# GOOD: Resolve once, pass resolved values
+resolved = resolve_timeframe(timeframe)  # { start: date, end: date }
+cache_key = f"data:{resolved['start']}:{resolved['end']}"
+query_dates = resolved
+```
+
+### 16. One Name Per Concept
+
+```
+❌ Bad:  timeframe, period, dateRange (all mean the same thing)
+✅ Good: period (everywhere, or resolved to start_date/end_date)
+```
+
+Multiple names for the same concept = multiple bugs waiting to happen.
+
+**The Test:** Can you grep for a concept and find ALL usages? If you need to grep for 3 different names, you have 3x the bug surface.
+
+```bash
+# BAD: Need to search multiple names
+grep -rn "timeframe\|period\|dateRange" backend/
+
+# GOOD: One canonical name
+grep -rn "date_from.*date_to" backend/
+```
+
+### 17. Immutable After Normalization
+
+```
+❌ Bad:  params object gets modified by different layers
+✅ Good: params object frozen after initial parsing
+```
+
+```python
+# BAD: Mutable params object
+def layer1(params):
+    params['period'] = params.get('timeframe')  # Mutates
+
+def layer2(params):
+    # Did layer1 run? Is 'period' set? Who knows!
+    period = params.get('period')  # Might be None
+
+def layer3(params):
+    # Now params has been modified by layer1 and layer2
+    # Good luck debugging which layer set what
+
+# GOOD: Immutable after parse
+@dataclass(frozen=True)
+class NormalizedParams:
+    start_date: date
+    end_date: date
+    districts: tuple[str, ...]
+
+def parse_params(raw: dict) -> NormalizedParams:
+    """Single parse point. After this, params are frozen."""
+    return NormalizedParams(
+        start_date=resolve_start(raw),
+        end_date=resolve_end(raw),
+        districts=tuple(raw.get('districts', []))
+    )
+# All downstream code receives NormalizedParams, can't modify it
+```
+
+### Param Flow Integrity Checklist
+
+Before merging param-related changes:
+
+- [ ] Param is parsed to final form at entry point (not transformed in transit)
+- [ ] All downstream code uses the SAME name for the concept
+- [ ] Cache keys use the SAME resolved values as queries
+- [ ] No layer modifies params after initial normalization
+- [ ] Grep for param name returns ALL usages (no aliases)
+
 ---
 
 # 8. CHECKLISTS
