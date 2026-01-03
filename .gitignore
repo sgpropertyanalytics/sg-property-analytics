@@ -44,6 +44,7 @@ coverage.xml
 *.cover
 .hypothesis/
 .pytest_cache/
+playwright-report/
 
 # Jupyter Notebook
 .ipynb_checkpoints

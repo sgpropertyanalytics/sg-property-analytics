@@ -79,6 +79,22 @@ export function MacroOverviewContent() {
   const compressionHeight = useChartHeight(380, MOBILE_CAPS.tall);        // 380px desktop, max 320px mobile
   const oscillatorHeight = useChartHeight(420, MOBILE_CAPS.tall);         // 420px desktop, max 320px mobile (full-width chart)
 
+  // Memoize KPI params to prevent object recreation on every render
+  // This avoids unnecessary re-fetches when unrelated state changes
+  const kpiParams = useMemo(() => {
+    const params = {};
+    if (filters.districts?.length > 0) {
+      params.district = filters.districts.join(',');
+    }
+    if (filters.bedroomTypes?.length > 0) {
+      params.bedroom = filters.bedroomTypes.join(',');
+    }
+    if (filters.segment) {
+      params.segment = filters.segment;
+    }
+    return params;
+  }, [filters.districts, filters.bedroomTypes, filters.segment]);
+
   // Summary KPIs - Deal detection metrics with trend indicators
   // Uses v2 standardized API format with useGatedAbortableQuery for stale request protection
   // Gates on appReady to prevent fetch before auth/subscription/filters ready
@@ -86,23 +102,11 @@ export function MacroOverviewContent() {
   // Ignores: Date range filters (always shows "current market" status)
   const { data: kpiData, loading: kpisLoading, isBootPending: kpiBootPending } = useAppQuery(
     async (signal) => {
-      // Build location/property filters (react to sidebar, but NOT date range)
-      const params = {};
-      if (filters.districts?.length > 0) {
-        params.district = filters.districts.join(',');
-      }
-      if (filters.bedroomTypes?.length > 0) {
-        params.bedroom = filters.bedroomTypes.join(',');
-      }
-      if (filters.segment) {
-        params.segment = filters.segment;
-      }
-
       // Single API call for all KPI metrics (v2 format)
-      const response = await getKpiSummaryV2(params, { signal });
+      const response = await getKpiSummaryV2(kpiParams, { signal });
       return response.data.kpis || [];
     },
-    [filters.districts, filters.bedroomTypes, filters.segment],
+    [kpiParams],
     { chartName: 'MacroOverview-KPI', initialData: [], keepPreviousData: true }
   );
 
