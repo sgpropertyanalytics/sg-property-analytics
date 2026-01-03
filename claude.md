@@ -16,6 +16,7 @@
 | `/backend-impact-guardrails` | **Backend changes (MANDATORY)** |
 | `/git-context-guardrails` | **ANY implementation (MANDATORY)** |
 | `/library-check` | **New infrastructure code (MANDATORY)** |
+| `/learn-mistake` | Record bad recommendations to Historical Incidents |
 
 ### Agents
 | Agent | Trigger |
