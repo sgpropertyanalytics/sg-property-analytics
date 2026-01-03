@@ -278,9 +278,24 @@ def _log_violation(
     stage: str = "params"
 ) -> None:
     """Log contract violation for observability."""
+    # Format violation details for readable logging
+    details_str = ""
+    if violation.details and "violations" in violation.details:
+        violations_list = violation.details["violations"]
+        if violations_list:
+            formatted = []
+            for v in violations_list[:5]:  # Limit to first 5 for log readability
+                path = v.get("path", "unknown")
+                error = v.get("error", "unknown")
+                msg = v.get("message", "")
+                formatted.append(f"{path}: {error} ({msg})")
+            details_str = " | violations=[" + ", ".join(formatted) + "]"
+            if len(violations_list) > 5:
+                details_str += f" (+{len(violations_list) - 5} more)"
+
     logger.warning(
         f"Contract violation: endpoint={endpoint} stage={stage} "
-        f"request_id={request_id} message={violation.message}",
+        f"request_id={request_id} message={violation.message}{details_str}",
         extra={
             "event": "contract_violation",
             "endpoint": endpoint,

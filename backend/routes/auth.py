@@ -352,9 +352,6 @@ def get_subscription():
             "entitlement_source": entitlement.get("entitlement_source"),
             "access_expires_at": access_expires_at.isoformat() if access_expires_at else None,
             "ends_at": access_expires_at.isoformat() if access_expires_at else None,
-            # Debug fields - remove after fixing
-            "_debug_user_id": user.id,
-            "_debug_email": user.email,
         }), 200
 
     except Exception as e:
