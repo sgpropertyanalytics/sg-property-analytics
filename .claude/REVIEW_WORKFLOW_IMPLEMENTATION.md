@@ -48,17 +48,23 @@ Proactive DRY enforcement with 12 checks:
 
 ### 3. Enhanced `risk-agent` (`.claude/agents/risk-agent.md`)
 
-Upgraded from 14 to 21 failure modes (CodeRabbit-style):
-- Modes 1-14: Runtime bugs (original)
-- Mode 15: Line-by-line code quality
-- Mode 16: Security scanning
-- Mode 17: Lint integration
-- Mode 18: Architectural review
-- Mode 19: Performance implications
-- Mode 20: Test coverage check
-- Mode 21: Documentation quality
+Upgraded from 10 to 21 failure modes (CodeRabbit-style):
+- Modes 1-10: Runtime bugs (original - null data, loading race, abort/stale, filter corruption, chart disappears, logic drift, API breaks, grain mismatch, missing imports, MapLibre)
+- Mode 11: Library-First violations (CLAUDE.md §1.6)
+- Mode 12: SQL Injection patterns (f-string SQL detection)
+- Mode 13: Outlier exclusion missing (COALESCE check)
+- Mode 14: Date bounds inconsistency (exclusive upper bound)
+- Mode 15: Line-by-line code quality (senior engineer review)
+- Mode 16: Security scanning (secrets, auth, SQL injection)
+- Mode 17: Lint integration (ESLint, Flake8, TypeScript errors)
+- Mode 18: Architectural review (layer violations, DRY, coupling)
+- Mode 19: Performance implications (N+1, O(n²), memoization)
+- Mode 20: Test coverage check (missing test files)
+- Mode 21: Documentation quality (docstrings, JSDoc)
 
 Output format: 🔴 MUST FIX | 🟡 SHOULD FIX | 💡 CONSIDER | ✅ LOOKS GOOD
+
+**Added:** Complete CodeRabbit output format with summary table and verdict (APPROVE/REQUEST CHANGES/NEEDS DISCUSSION)
 
 ### 4. Enhanced `codebase-pattern-finder` (`.claude/agents/codebase-pattern-finder.md`)
 
@@ -161,8 +167,9 @@ cc53391 feat: Implement inline code review + test verification system
 ## Files Modified
 
 ```
-.claude/agents/risk-agent.md                   - Added modes 15-21
+.claude/agents/risk-agent.md                   - Added modes 11-21 (CodeRabbit-style review)
 .claude/agents/codebase-pattern-finder.md      - Added git history + multi-sibling
+.claude/agents/fullstack-consistency-reviewer.md - Added Phase 4 (inline verification)
 .claude/skills/data-standards/SKILL.md         - Absorbed enum-integrity
 claude.md                                      - Added Section 11: VERIFICATION
 .github/workflows/regression.yml               - Simplified to 4 jobs
@@ -207,6 +214,35 @@ claude.md                                      - Added Section 11: VERIFICATION
 - Explicit "REQUIRED ACTION: Use [Tool] to run..."
 - Checklist at bottom for Claude to verify completion
 - Exact prompts for each agent call
+
+---
+
+## Gaps Filled (Jan 3, 2026 - Afternoon Session)
+
+After reviewing the original 45-minute planning session, these gaps were identified and filled:
+
+### 1. risk-agent modes 11-21 (ADDED)
+- **Mode 11:** Library-First violations detection
+- **Mode 12:** SQL Injection patterns (f-string SQL)
+- **Mode 13:** Outlier exclusion missing
+- **Mode 14:** Date bounds inconsistency
+- **Mode 15-21:** CodeRabbit-style review modes (line-by-line quality, security, lint, architecture, performance, test coverage, documentation)
+
+### 2. CodeRabbit Output Format (ADDED)
+- Full output structure with 🔴 MUST FIX | 🟡 SHOULD FIX | 💡 CONSIDER | ✅ LOOKS GOOD
+- Summary table with metrics
+- Verdict: APPROVE | REQUEST CHANGES | NEEDS DISCUSSION
+
+### 3. fullstack-consistency-reviewer Phase 4 (ADDED)
+- Inline verification phase integrated with /review workflow
+- Contract verification tests (route contract, drift check, API contract, alignment)
+- Regression snapshot tests (when backend changed)
+- Iteration loop for failures
+- Updated Conditional Phase Execution table with Phase 4 column
+
+### 4. Test Paths Verified
+- All test paths in /review skill verified to match actual file locations
+- Tests run from `cd backend && pytest tests/...` correctly find files in `backend/tests/`
 
 ---
 
