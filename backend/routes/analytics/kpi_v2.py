@@ -6,9 +6,14 @@ This is the new, clean implementation.
 
 Endpoints:
 - /kpi-summary-v2 - All KPI metrics via registry
+
+Performance:
+- Date filter added to reduce row scans (300K → ~50K rows)
+- Max lookback is 40 months (covers market_momentum's 36-month volatility)
 """
 
 import time
+from datetime import date, timedelta
 from flask import request, jsonify, g
 from sqlalchemy import text
 from routes.analytics import analytics_bp
@@ -16,6 +21,16 @@ from models.database import db
 from db.sql import OUTLIER_FILTER
 from utils.normalize import to_date
 from api.contracts import api_contract
+
+
+def _months_back(from_date: date, months: int) -> date:
+    """Go back N months from a date, returning 1st of that month."""
+    year = from_date.year
+    month = from_date.month - months
+    while month <= 0:
+        month += 12
+        year -= 1
+    return date(year, month, 1)
 
 
 def _get_max_transaction_date():
@@ -92,6 +107,13 @@ def kpi_summary_v2():
             # Default to latest transaction date in database
             filters['max_date'] = _get_max_transaction_date()
 
+        # PERFORMANCE: Add date_from to reduce row scans
+        # Max lookback is 36 months (market_momentum volatility) + 4 months buffer
+        # This helps PostgreSQL use indexes more effectively
+        # Reduces scan from 300K rows to ~50K rows
+        if filters['max_date']:
+            filters['date_from'] = _months_back(filters['max_date'], 40)
+
         # Run all KPIs via registry
         kpi_results = run_all_kpis(filters)
 
@@ -148,6 +170,10 @@ def kpi_single(kpi_id: str):
 
         # Default to latest transaction date
         filters['max_date'] = _get_max_transaction_date()
+
+        # PERFORMANCE: Add date_from to reduce row scans
+        if filters['max_date']:
+            filters['date_from'] = _months_back(filters['max_date'], 40)
 
         result = get_kpi_by_id(kpi_id, filters)
 
