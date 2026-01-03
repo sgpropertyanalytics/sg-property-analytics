@@ -98,9 +98,8 @@ export function AuthProvider({ children }) {
   const [error, setError] = useState(null);
   const [initialized, setInitialized] = useState(false);
 
-  // Separate UI loading state for Google button (5s max)
-  // This allows the button to become enabled even if Firebase is slow
-  // Cleared by: 1) onAuthStateChanged callback, or 2) 5s timeout fallback
+  // UI loading state for Google button
+  // Cleared when onAuthStateChanged fires (Firebase auth state is known)
   const [authUiLoading, setAuthUiLoading] = useState(true);
 
   // Token status state machine - initialize based on localStorage
@@ -134,21 +133,6 @@ export function AuthProvider({ children }) {
   bootstrapSubscriptionRef.current = bootstrapSubscription;
   const tokenStatusRef = useRef(tokenStatus);
   tokenStatusRef.current = tokenStatus;
-
-  // 5s safety net for authUiLoading - enables Google button even if Firebase is slow
-  useEffect(() => {
-    if (!authUiLoading) return; // Already cleared
-
-    const uiLoadingTimeout = setTimeout(() => {
-      if (authUiLoading) {
-        console.warn('[Auth] UI loading timeout (5s) - enabling Google button');
-        setAuthUiLoading(false);
-        // NOTE: Does NOT set initialized - that's a separate contract
-      }
-    }, 5000);
-
-    return () => clearTimeout(uiLoadingTimeout);
-  }, [authUiLoading]);
 
   // Legacy alias for backwards compatibility (used by syncWithBackend)
   const { startRequest, isStale, getSignal } = authStateGuard;
