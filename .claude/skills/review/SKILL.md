@@ -38,6 +38,13 @@ USER INVOKES: "/review" or "review this" or "check my changes"
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
+│ STEP 0.5: LOAD ENGINEERING CONTEXT                              │
+│ Use Read tool: claude.md                                        │
+│ Extract: Core Invariants, Library-First, Hard Constraints       │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
 │ STEP 1: PATTERN ANALYSIS                                        │
 │ Use Task tool: subagent_type="codebase-pattern-finder"          │
 └─────────────────────────────────────────────────────────────────┘
@@ -107,6 +114,47 @@ git diff --name-only --cached
 | `both` | Frontend + backend files changed |
 
 **Store the scope** - you will use it in Step 5 to select the test tier.
+
+---
+
+# STEP 0.5: LOAD ENGINEERING CONTEXT
+
+**REQUIRED ACTION:** Read the core engineering principles BEFORE reviewing code.
+
+```
+Tool: Read
+file_path: claude.md (or CLAUDE.md)
+```
+
+**Extract and remember these sections:**
+
+1. **§1 Core Invariants** - Non-negotiable rules (layer responsibilities, single source of truth)
+2. **§1.6 Library-First** - Check if custom code could use a library
+3. **§2 Hard Constraints** - Memory limits, data immutability
+4. **§5 Backend Change Protocol** - The 4 questions before any backend change
+5. **§7.2 API & Code Design** - 12 principles (single source of truth, fail fast, boring is good, etc.)
+6. **§9 Historical Incidents** - Check REPO_MAP.md for landmines
+
+**Why this matters:** Reviews that don't reference these principles miss systemic issues.
+For example, a review might approve code that violates layer responsibilities or
+recreates functionality that a library already provides.
+
+**Key questions to keep in mind during review:**
+
+| Principle | Question to Ask |
+|-----------|-----------------|
+| Layer Responsibilities | Does this component own logic it shouldn't? |
+| Single Source of Truth | Is this data duplicated elsewhere? One canonical source? |
+| Reuse-First | Does this match existing patterns in sibling files? |
+| Library-First | Is this >50 lines of infrastructure that a library solves? |
+| Production-Grade | Is this a band-aid fix or a proper solution? |
+| Data Correctness | Are invariants computed before filters? Joins on IDs not names? |
+| Don't Ship Unused | Is this actually used today, or "might be useful someday"? |
+| One Job | Does this component do exactly one thing? |
+| Fail Fast | Does this log-and-continue, or throw on errors? |
+| Boring Is Good | Is this obvious code, or clever code? |
+| Delete Before Add | Can we remove something instead of adding? |
+| Explicit Dependencies | Are all inputs in the function signature? |
 
 ---
 
@@ -264,7 +312,7 @@ cd frontend && npm run lint && npm run typecheck
 ```
 
 ```bash
-# Backend syntax check
+# Backend syntax check (catches syntax errors, NOT runtime errors like NameError)
 python -m py_compile backend/routes/*.py backend/services/*.py
 ```
 
@@ -273,7 +321,15 @@ python -m py_compile backend/routes/*.py backend/services/*.py
 python backend/scripts/generate_contracts.py --check
 ```
 
+```bash
+# Historical landmine check - warns if changes touch files from past incidents
+python backend/scripts/check_landmines.py
+```
+
 **Record pass/fail for each command.**
+
+**NOTE:** `py_compile` only catches **syntax errors**. Runtime errors like NameError, TypeError
+are caught by endpoint smoke tests in Tier 2.
 
 ---
 
@@ -294,10 +350,52 @@ cd backend && pytest tests/test_sql_guardrails.py tests/test_sql_safety.py -v
 cd backend && pytest tests/test_property_age_bucket.py tests/test_param_coverage.py -v
 ```
 
+### Contract STRICT Mode (if routes/schemas changed):
+```bash
+# Validates ALL contracted endpoints return schema-compliant responses
+# Catches undeclared fields that slip through in WARN mode
+cd backend && CONTRACT_MODE=strict pytest tests/contracts/test_all_endpoints_strict.py -v --tb=short
+```
+
+**Why this matters:** On Jan 3, 2026, `/api/auth/subscription` was returning undeclared
+`_debug_*` fields. The decorator logged warnings but nothing failed. This test catches
+that class of bug by running all endpoints in STRICT mode.
+
+### Endpoint Smoke Test (if routes changed):
+```bash
+# Catches runtime errors (NameError, TypeError, AttributeError) that py_compile misses
+# Actually CALLS every endpoint - static analysis can't catch these
+cd backend && pytest tests/contracts/test_endpoint_smoke.py -v --tb=short
+```
+
+**Why this matters:** On Jan 3, 2026, `/api/projects/hot` had `NameError: district_param`.
+`py_compile` passed because it only checks syntax. This test actually calls the endpoint.
+
+### Route Coverage Check (if new routes added):
+```bash
+# Ensures new routes have @api_contract decorator (or documented exemption)
+cd backend && pytest tests/contracts/test_route_coverage.py -v
+```
+
+**Why this matters:** Prevents new endpoints from bypassing contract validation.
+
 ### Frontend Tests (if frontend changed):
 ```bash
+# Unit tests (adapter transforms, filter logic, etc.)
 cd frontend && npm run test:ci
 ```
+
+```bash
+# Quick E2E smoke - catches React crashes, context errors, white-screen
+# Runs critical pages with mocked API, checks for console errors
+cd frontend && npm run build && npm run test:e2e:smoke
+```
+
+**Why E2E smoke in Tier 2:** Unit tests don't catch React context errors, missing providers,
+or "white page" crashes. The smoke test actually renders pages and checks for:
+- React error boundaries
+- Console errors (`Cannot read properties of`, `is not a function`)
+- White-screen (body has no content)
 
 ### Scripts:
 ```bash
@@ -363,23 +461,61 @@ cd frontend && npm run e2e:full
 
 ---
 
+## Bug Detection Matrix
+
+What each test/check catches:
+
+| Bug Type | Static Analysis | Test That Catches It |
+|----------|-----------------|----------------------|
+| **BACKEND** | | |
+| **Syntax errors** | `py_compile` ✅ | - |
+| **Import errors** | `py_compile` ✅ | - |
+| **NameError** (undefined var) | ❌ Misses | `test_endpoint_smoke.py` |
+| **TypeError** (wrong args) | ❌ Misses | `test_endpoint_smoke.py` |
+| **AttributeError** | ❌ Misses | `test_endpoint_smoke.py` |
+| **KeyError** | ❌ Misses | `test_endpoint_smoke.py` |
+| **Undeclared response fields** | ❌ Misses | `test_all_endpoints_strict.py` |
+| **Missing contract decorator** | ❌ Misses | `test_route_coverage.py` |
+| **SQL injection** | ❌ Misses | `test_sql_safety.py` |
+| **FRONTEND** | | |
+| **Lint violations** | `npm run lint` ✅ | - |
+| **Type errors (TS)** | `npm run typecheck` ✅ | - |
+| **React context errors** | ❌ Misses | `e2e/smoke.spec.js` |
+| **White-screen crashes** | ❌ Misses | `e2e/smoke.spec.js` |
+| **Missing providers** | ❌ Misses | `e2e/smoke.spec.js` |
+| **Console errors** | ❌ Misses | `e2e/smoke.spec.js` |
+| **CROSS-CUTTING** | | |
+| **Schema drift** | ❌ Misses | `generate_contracts.py --check` |
+| **Param mismatch FE↔BE** | ❌ Misses | `check_route_contract.py` |
+| **Data regression** | ❌ Misses | `test_regression_snapshots.py` |
+| **Historical landmines** | ❌ Misses | `check_landmines.py` |
+| **Security issues** | ❌ Misses | `risk-agent` (Step 4) |
+
+**Key insight:** Static analysis (`py_compile`, `ast.parse`) only catches syntax errors.
+Runtime errors require actually calling the endpoints (smoke tests).
+
+---
+
 ## Complete Backend Test Inventory
 
 All tests are in `backend/tests/`. Run based on what changed:
 
-| Test File | When to Run |
-|-----------|-------------|
-| `test_normalize.py` | Always (Tier 2) |
-| `test_api_contract.py` | Always (Tier 2) |
-| `test_property_age_bucket.py` | Always (Tier 2) |
-| `test_sql_guardrails.py` | Always (Tier 2) |
-| `test_sql_safety.py` | Always (Tier 2) |
-| `test_param_coverage.py` | Always (Tier 2) |
-| `test_regression_snapshots.py` | Tier 3 |
-| `test_api_invariants.py` | Tier 3 |
-| `test_smoke_endpoints.py` | Tier 3 |
-| `test_chart_dependencies.py` | Tier 3 |
-| `test_kpi_guardrails.py` | Tier 3 |
+| Test File | When to Run | What It Catches |
+|-----------|-------------|-----------------|
+| `contracts/test_all_endpoints_strict.py` | If routes/schemas changed | Undeclared response fields |
+| `contracts/test_endpoint_smoke.py` | If routes changed | Runtime errors (NameError, TypeError) |
+| `contracts/test_route_coverage.py` | If new routes added | Missing @api_contract decorator |
+| `test_normalize.py` | Always (Tier 2) | Param normalization bugs |
+| `test_api_contract.py` | Always (Tier 2) | Contract infrastructure |
+| `test_property_age_bucket.py` | Always (Tier 2) | Age classification bugs |
+| `test_sql_guardrails.py` | Always (Tier 2) | SQL pattern violations |
+| `test_sql_safety.py` | Always (Tier 2) | SQL injection risks |
+| `test_param_coverage.py` | Always (Tier 2) | Missing param declarations |
+| `test_regression_snapshots.py` | Tier 3 | Data value regressions |
+| `test_api_invariants.py` | Tier 3 | API behavior changes |
+| `test_smoke_endpoints.py` | Tier 3 | Endpoint reachability |
+| `test_chart_dependencies.py` | Tier 3 | Chart↔backend coupling |
+| `test_kpi_guardrails.py` | Tier 3 | KPI calculation bugs |
 | `test_etl_validation.py` | If data changed |
 | `test_aggregate_median.py` | If aggregate changed |
 | `test_filter_builder.py` | If filters changed |
@@ -900,6 +1036,7 @@ P0 blockers found:
 | Step | Tool | subagent_type | Purpose |
 |------|------|---------------|---------|
 | 0 | Bash | - | `git diff` scope detection |
+| 0.5 | Read | - | Load `claude.md` engineering principles |
 | 1 | Task | `codebase-pattern-finder` | Find sibling patterns |
 | 2 | Task | `simplicity-reviewer` | Proactive simplicity check |
 | 3 | Task | `fullstack-consistency-reviewer` | Contract validation |
@@ -939,6 +1076,7 @@ This workflow covers ALL blocking CI checks:
 Before marking review complete, verify:
 
 - [ ] Step 0: Ran `git diff` and determined scope
+- [ ] Step 0.5: Read `claude.md` and extracted core principles (invariants, library-first, etc.)
 - [ ] Step 1: Called `codebase-pattern-finder` agent via Task tool
 - [ ] Step 2: Called `simplicity-reviewer` agent via Task tool
 - [ ] Step 3: Called `fullstack-consistency-reviewer` agent via Task tool
