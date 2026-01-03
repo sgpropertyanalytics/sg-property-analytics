@@ -251,12 +251,17 @@ class AggregateParams(BaseParamsModel):
                 object.__setattr__(self, 'date_to_exclusive', aligned)
 
     def _singular_to_plural(self) -> None:
-        """Convert singular params to plural lists."""
-        # tenure -> tenures
+        """Convert singular params to plural lists and clear singular."""
+        # tenure -> tenures (then clear tenure to match old behavior)
         if self.tenure and not self.tenures:
             object.__setattr__(self, 'tenures', [self.tenure])
+            object.__setattr__(self, 'tenure', None)
 
     def _resolve_region_alias(self) -> None:
-        """Handle region as alias for segments."""
-        if self.region and not self.segments:
-            object.__setattr__(self, 'segments', [self.region])
+        """Region alias handling - kept for compatibility but not converted.
+
+        Note: Old normalize_params does NOT convert region to segments.
+        Region is passed through as-is. SQL handles it directly.
+        """
+        # Don't convert - old behavior passes region through unchanged
+        pass
