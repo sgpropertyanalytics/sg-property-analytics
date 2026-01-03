@@ -1,6 +1,6 @@
 ---
 name: review
-description: Unified code review orchestrator. Runs pattern analysis, simplicity checks, contract validation, risk detection, and inline tests. Use when you want a comprehensive review before pushing or merging.
+description: Unified code review orchestrator. Runs historical context discovery, plan validation, pattern analysis, simplicity checks, contract validation, risk detection, and inline tests. Use when you want a comprehensive review before pushing or merging.
 ---
 
 # Code Review Orchestrator
@@ -8,6 +8,8 @@ description: Unified code review orchestrator. Runs pattern analysis, simplicity
 Comprehensive code review workflow that catches issues BEFORE pushing.
 
 **Trigger:** `/review`, "review this", "check my changes"
+
+**Enhanced with:** `thoughts-locator` for historical context, `thoughts-analyzer` for plan validation, improved risk detection with incident awareness.
 
 ---
 
@@ -38,8 +40,22 @@ USER INVOKES: "/review" or "review this" or "check my changes"
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
+│ STEP 0.1: HISTORICAL CONTEXT DISCOVERY (NEW)                    │
+│ Use Task tool: subagent_type="thoughts-locator"                 │
+│ Find: Related docs, historical incidents, relevant guardrails   │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ STEP 0.2: CHECK FOR RELATED PLAN (NEW)                          │
+│ Use Bash/Glob: Look for docs/plans/ files related to changes    │
+│ If found: Use Task with thoughts-analyzer to extract key points │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
 │ STEP 0.5: LOAD ENGINEERING CONTEXT                              │
-│ Use Read tool: claude.md                                        │
+│ Use Read tool: claude.md + insights from Step 0.1/0.2           │
 │ Extract: Core Invariants, Library-First, Hard Constraints       │
 └─────────────────────────────────────────────────────────────────┘
                               │
@@ -117,9 +133,79 @@ git diff --name-only --cached
 
 ---
 
+# STEP 0.1: HISTORICAL CONTEXT DISCOVERY (NEW)
+
+**PURPOSE:** Before reviewing code, discover relevant documentation and historical incidents that might inform the review.
+
+**REQUIRED ACTION:** Use the Task tool with these parameters:
+
+```
+Tool: Task
+subagent_type: "thoughts-locator"
+prompt: |
+  Find documentation relevant to these changed files:
+  [LIST THE CHANGED FILES FROM STEP 0]
+
+  Search for:
+  1. Historical Incidents (REPO_MAP.md Section 9) related to these files/areas
+  2. Architecture documentation in docs/ that covers these components
+  3. Relevant guardrail skills in .claude/skills/ for this type of change
+  4. Recent investigation checkpoints in git history
+
+  Return:
+  - Relevant document paths with brief descriptions
+  - Specific historical incidents to watch for
+  - Guardrails that should be checked
+```
+
+**WAIT for agent to complete.**
+
+**Store findings** - you will reference these in Step 0.5 and Step 4 (risk detection).
+
+---
+
+# STEP 0.2: CHECK FOR RELATED PLAN (NEW)
+
+**PURPOSE:** If implementation follows a documented plan, verify alignment.
+
+**REQUIRED ACTION:** Use Bash tool to check for related plans:
+
+```bash
+# Check if docs/plans/ exists and list recent plans
+ls -lt docs/plans/ 2>/dev/null | head -10
+
+# Search for plans mentioning changed files
+grep -l "[changed_file_pattern]" docs/plans/*.md 2>/dev/null
+```
+
+**IF a related plan is found:**
+
+Use the Task tool to analyze it:
+
+```
+Tool: Task
+subagent_type: "thoughts-analyzer"
+prompt: |
+  Analyze this implementation plan for review context:
+  [PLAN_FILE_PATH]
+
+  Extract:
+  1. Key decisions that were made
+  2. Success criteria defined
+  3. Anti-patterns to avoid
+  4. Files that should have been changed
+  5. Historical incidents addressed
+
+  Return: Concise summary of what to verify in the review
+```
+
+**Store findings** - compare actual changes against plan expectations in Step 7.
+
+---
+
 # STEP 0.5: LOAD ENGINEERING CONTEXT
 
-**REQUIRED ACTION:** Read the core engineering principles BEFORE reviewing code.
+**REQUIRED ACTION:** Read the core engineering principles AND integrate context from Steps 0.1/0.2.
 
 ```
 Tool: Read
@@ -136,9 +222,22 @@ file_path: claude.md (or CLAUDE.md)
 6. **§7.3 Param & Data Flow Integrity** - 5 principles (parse once, canonicalize at edges, one name per concept, immutable after normalization)
 7. **§9 Historical Incidents** - Check REPO_MAP.md for landmines
 
+**Integrate findings from Steps 0.1 and 0.2:**
+
+| Source | What to Remember |
+|--------|------------------|
+| Step 0.1 (thoughts-locator) | Historical incidents to watch for, guardrails to check |
+| Step 0.2 (thoughts-analyzer) | Plan decisions, success criteria, expected file changes |
+
 **Why this matters:** Reviews that don't reference these principles miss systemic issues.
 For example, a review might approve code that violates layer responsibilities or
 recreates functionality that a library already provides.
+
+**Context Checklist (from preceding steps):**
+- [ ] Historical incidents identified from thoughts-locator
+- [ ] Relevant guardrails noted (sql-guardrails, contract-async-guardrails, etc.)
+- [ ] Plan expectations extracted (if plan exists)
+- [ ] Engineering principles loaded from claude.md
 
 **Key questions to keep in mind during review:**
 
@@ -1042,6 +1141,26 @@ LEGEND:
 > **✅ LOOKS GOOD:**
 > - [what's good about the code]
 
+### From Historical Context (Step 0.1)
+> **Relevant Historical Incidents:**
+> - [Incident from REPO_MAP.md Section 9]
+> - Verification: ✅ Avoided / ⚠️ Potentially Violated
+>
+> **Relevant Guardrails:**
+> - [Guardrail from .claude/skills/] — [Checked/Not Applicable]
+
+### From Plan Validation (Step 0.2) — *if plan exists*
+> **Plan:** `docs/plans/[filename].md`
+>
+> **Plan Expectations vs Actual:**
+> | Expected (from plan) | Actual | Status |
+> |---------------------|--------|--------|
+> | [File should change] | [Did/Didn't change] | ✅/❌ |
+> | [Success criterion] | [Met/Not met] | ✅/❌ |
+>
+> **Deviations from Plan:**
+> - [Any unexpected changes or missing changes]
+
 ---
 
 ## 🎯 Final Verdict
@@ -1099,14 +1218,16 @@ P0 blockers found:
 | Step | Tool | subagent_type | Purpose |
 |------|------|---------------|---------|
 | 0 | Bash | - | `git diff` scope detection |
-| 0.5 | Read | - | Load `claude.md` engineering principles |
+| 0.1 | Task | `thoughts-locator` | Find relevant docs, incidents, guardrails |
+| 0.2 | Bash + Task | `thoughts-analyzer` | Check for related plans, extract key decisions |
+| 0.5 | Read | - | Load `claude.md` + integrate 0.1/0.2 context |
 | 1 | Task | `codebase-pattern-finder` | Find sibling patterns |
 | 2 | Task | `simplicity-reviewer` | Proactive simplicity check |
 | 3 | Task | `fullstack-consistency-reviewer` | Contract validation |
-| 4 | Task | `risk-agent` | Bug detection (21 modes) |
+| 4 | Task | `risk-agent` | Bug detection (with context from 0.1/0.2) |
 | 5 | Bash | - | pytest, npm run lint/typecheck |
 | 6 | Bash | - | Auto-fix commands |
-| 7 | - | - | Generate report text |
+| 7 | - | - | Generate report with plan validation |
 
 ---
 
@@ -1139,13 +1260,49 @@ This workflow covers ALL blocking CI checks:
 Before marking review complete, verify:
 
 - [ ] Step 0: Ran `git diff` and determined scope
-- [ ] Step 0.5: Read `claude.md` and extracted core principles (invariants, library-first, etc.)
+- [ ] Step 0.1: Called `thoughts-locator` to find relevant docs/incidents/guardrails
+- [ ] Step 0.2: Checked for related plans in docs/plans/, analyzed with `thoughts-analyzer` if found
+- [ ] Step 0.5: Read `claude.md` AND integrated context from 0.1/0.2
 - [ ] Step 1: Called `codebase-pattern-finder` agent via Task tool
 - [ ] Step 2: Called `simplicity-reviewer` agent via Task tool
 - [ ] Step 3: Called `fullstack-consistency-reviewer` agent via Task tool
-- [ ] Step 4: Called `risk-agent` agent via Task tool
+- [ ] Step 4: Called `risk-agent` with historical incident context from Step 0.1
 - [ ] Step 5: Ran pytest/npm commands via Bash tool based on tier
 - [ ] Step 6: Auto-fixed any lint/type errors, asked user for logic failures
-- [ ] Step 7: Produced final report in exact format with verdict
+- [ ] Step 7: Produced final report with plan validation (if plan exists)
 
 **If any box is unchecked, the review is INCOMPLETE.**
+
+---
+
+# RELATED COMMANDS
+
+The `/review` skill works well with these other workflow commands:
+
+| Command | When to Use | Relationship to /review |
+|---------|-------------|------------------------|
+| `/create_plan` | Before implementing a feature | Creates plans that /review validates against |
+| `/implement_plan` | During implementation | Produces code that /review checks |
+| `/validate_plan` | After implementation | Deeper validation than /review for plan compliance |
+| `/local_review` | Reviewing someone else's PR | Set up environment, then run /review |
+| `/debug` | When tests fail during review | Debug issues found by /review |
+| `/create_handoff` | After /review identifies blockers | Hand off work if blocked |
+| `/research_codebase` | Need more context for review | Deep dive before running /review |
+
+## Recommended Workflow
+
+```
+/create_plan     →  Design the implementation
+       ↓
+/implement_plan  →  Execute the plan
+       ↓
+/review          →  Verify implementation (includes plan validation)
+       ↓
+  ┌─────┴─────┐
+  │           │
+PASS        FAIL
+  │           │
+  ↓           ↓
+Push       /debug or fix issues
+           then re-run /review
+```
