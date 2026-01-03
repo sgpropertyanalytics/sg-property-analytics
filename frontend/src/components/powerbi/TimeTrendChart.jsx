@@ -11,7 +11,7 @@ import { getAggregate } from '../../api/client';
 import { PreviewChartOverlay, ChartSlot } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 // SaleType imports removed - Market Core is Resale-only
-import { transformTimeSeries, logFetchDebug, assertKnownVersion, validateResponseGrain } from '../../adapters';
+import { transformTimeSeries, logFetchDebug, assertKnownVersion, validateResponseGrain, aggregateTimeSeriesByGrain } from '../../adapters';
 import { niceMax } from '../../utils/niceAxisMax';
 
 /**
@@ -48,8 +48,10 @@ function TimeTrendChartBase({ height = 300, saleType = null, onDrillThrough: _on
   const { data, status, error, refetch } = useAppQuery(
     async (signal) => {
       // saleType is passed from page level - see CLAUDE.md "Business Logic Enforcement"
+      // Always fetch at month grain (most granular) for client-side aggregation
+      // This enables instant toggle between month/quarter/year without new API calls
       const params = buildApiParams({
-        group_by: TIME_GROUP_BY[timeGrouping],
+        group_by: 'month',
         metrics: 'count,total_value',
         ...(saleType && { sale_type: saleType }),
       });
@@ -71,13 +73,14 @@ function TimeTrendChartBase({ height = 300, saleType = null, onDrillThrough: _on
         // Debug logging (dev only)
         logFetchDebug('TimeTrendChart', {
           endpoint: '/api/aggregate',
-          timeGrain: timeGrouping,
+          timeGrain: 'month', // Always fetch monthly for client-side aggregation
           response: response.data,
           rowCount: rawData.length,
         });
 
         // Validate grain at fetch boundary (dev-only, on success)
-        validateResponseGrain(rawData, timeGrouping, 'TimeTrendChart');
+        // Always expects 'month' grain since we do client-side aggregation
+        validateResponseGrain(rawData, 'month', 'TimeTrendChart');
 
         // Use adapter for transformation (schema-safe, sorted)
         // Transform is grain-agnostic - trusts data's own periodGrain
@@ -87,12 +90,22 @@ function TimeTrendChartBase({ height = 300, saleType = null, onDrillThrough: _on
         throw err;
       }
     },
-    [debouncedFilterKey, timeGrouping, saleType],
+    // timeGrouping removed from deps - client-side aggregation handles grain toggle
+    // No new API call when switching between month/quarter/year
+    [debouncedFilterKey, saleType],
     { chartName: 'TimeTrendChart', initialData: null, keepPreviousData: true }
   );
 
   // Default fallback for when data is null (initial load) - matches PriceDistributionChart pattern
-  const safeData = data ?? [];
+  const rawMonthlyData = data ?? [];
+
+  // Client-side aggregation: aggregate monthly data to selected grain (month/quarter/year)
+  // This enables instant toggle without new API calls - purely UI transformation
+  // useMemo ensures aggregation only runs when data or timeGrouping changes
+  const safeData = useMemo(() => {
+    if (!rawMonthlyData || rawMonthlyData.length === 0) return [];
+    return aggregateTimeSeriesByGrain(rawMonthlyData, timeGrouping);
+  }, [rawMonthlyData, timeGrouping]);
 
   // Market Core is Resale-only - single transaction count bar + total value line
   const labels = safeData.map(d => d.period ?? '');

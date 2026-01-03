@@ -67,4 +67,8 @@ export {
   // New Launch Absorption
   transformNewLaunchAbsorption,
   is2020Period,
+  // Client-side time aggregation (for instant grain toggle)
+  aggregateTimeSeriesByGrain,
+  monthToQuarter,
+  monthToYear,
 } from './aggregate';
