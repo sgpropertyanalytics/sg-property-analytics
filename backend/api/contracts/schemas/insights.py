@@ -8,6 +8,13 @@ Endpoints:
 - GET /api/insights/district-liquidity
 """
 
+# Import Pydantic models for parallel validation
+try:
+    from ..pydantic_models.insights import DistrictPsfParams, DistrictLiquidityParams
+except ImportError:
+    DistrictPsfParams = None
+    DistrictLiquidityParams = None
+
 from ..registry import (
     EndpointContract,
     ParamSchema,
@@ -99,6 +106,7 @@ DISTRICT_PSF_CONTRACT = EndpointContract(
     service_schema=DISTRICT_PSF_SERVICE_SCHEMA,
     response_schema=DISTRICT_PSF_RESPONSE_SCHEMA,
     mode=SchemaMode.WARN,
+    pydantic_model=DistrictPsfParams,
 )
 
 register_contract(DISTRICT_PSF_CONTRACT)
@@ -173,6 +181,7 @@ DISTRICT_LIQUIDITY_CONTRACT = EndpointContract(
     service_schema=DISTRICT_LIQUIDITY_SERVICE_SCHEMA,
     response_schema=DISTRICT_LIQUIDITY_RESPONSE_SCHEMA,
     mode=SchemaMode.WARN,
+    pydantic_model=DistrictLiquidityParams,
 )
 
 register_contract(DISTRICT_LIQUIDITY_CONTRACT)

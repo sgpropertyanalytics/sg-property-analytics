@@ -11,6 +11,14 @@ Endpoints:
 from datetime import date
 
 from api.contracts.contract_schema import SaleType, FloorLevel
+
+# Import Pydantic models for parallel validation
+try:
+    from ..pydantic_models.transactions import PriceGrowthParams, SegmentsParams
+except ImportError:
+    PriceGrowthParams = None
+    SegmentsParams = None
+
 from ..registry import (
     EndpointContract,
     ParamSchema,
@@ -150,6 +158,7 @@ PRICE_GROWTH_CONTRACT = EndpointContract(
     compat_map=None,
     serializer=None,
     mode=SchemaMode.WARN,
+    pydantic_model=PriceGrowthParams,
 )
 
 register_contract(PRICE_GROWTH_CONTRACT)
@@ -217,6 +226,7 @@ SEGMENTS_CONTRACT = EndpointContract(
     compat_map=None,
     serializer=None,
     mode=SchemaMode.WARN,
+    pydantic_model=SegmentsParams,
 )
 
 register_contract(SEGMENTS_CONTRACT)
