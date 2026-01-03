@@ -64,8 +64,10 @@ Make the dashboard feel instant by eliminating avoidable latency across the enti
 | Metric                       | Budget  | Severity |
 |-----------------------------|---------|----------|
 | Dashboard TTI                | ≤ 2.0s  | FAIL     |
+| First chart render           | ≤ 1.0s  | WARN     |
 | Chart time-to-data (p95)     | ≤ 800ms | FAIL     |
 | Filter change → update (p95) | ≤ 600ms | WARN     |
+| All charts rendered          | ≤ 2.5s  | WARN     |
 
 ### Backend/API Budgets
 | Metric                       | Budget  | Severity |
@@ -80,6 +82,16 @@ Make the dashboard feel instant by eliminating avoidable latency across the enti
 |-----------------------------|---------|----------|
 | KPI payload                  | < 50KB  | WARN     |
 | Chart payload                | < 120KB | WARN     |
+| Total page data transfer     | < 500KB | WARN     |
+
+### Endpoint & Cache Budgets
+| Metric                       | Budget  | Severity |
+|-----------------------------|---------|----------|
+| API calls per page load      | ≤ 6     | WARN     |
+| API calls per filter change  | ≤ 3     | WARN     |
+| HTTP cache hit rate          | ≥ 70%   | WARN     |
+| PostgreSQL buffer hit rate   | ≥ 95%   | WARN     |
+| Flask-Caching hit rate       | ≥ 80%   | WARN     |
 
 **Decision rule:** If anything breaches FAIL budgets, treat as release blocker unless documented exception.
 
@@ -91,10 +103,11 @@ Make the dashboard feel instant by eliminating avoidable latency across the enti
 
 | Layer | Specific Checks |
 |-------|-----------------|
-| **Frontend** | Rerenders, waterfalls, duplicate fetches, bundle size, memoization, abort handling |
-| **Network** | Request fanout, payload size, caching headers, parallel vs sequential |
-| **Backend** | Endpoint latency, service layer efficiency, response shaping |
-| **SQL/DB** | Query latency, row scans, index usage, unbounded queries, PERCENTILE_CONT cost |
+| **Frontend** | Rerenders, waterfalls, duplicate fetches, bundle size, memoization, abort handling, debouncing, first chart render |
+| **Network** | Request fanout, payload size, caching headers, parallel vs sequential, endpoint count per page, unused response fields |
+| **Backend** | Endpoint latency, service layer efficiency, response shaping, N+1 patterns, CTE opportunities |
+| **SQL/DB** | Query latency, row scans, index usage, unbounded queries, PERCENTILE_CONT cost, buffer hit rates |
+| **Caching** | PostgreSQL buffers, Flask-Caching, HTTP cache headers, static data pre-computation, cache invalidation |
 
 ### What This Agent Does NOT Validate
 
@@ -165,7 +178,19 @@ grep -rn "SELECT.*FROM transactions" backend/services/
 
 # Check for expensive operations
 grep -rn "PERCENTILE_CONT" backend/services/
+
+# Check for N+1 query patterns (CRITICAL)
+grep -rn "for.*:.*execute\|for.*:.*query\|for.*in.*:.*session\." backend/services/
+grep -rn "\.all\(\).*for\|for.*\.first\(\)" backend/services/
+
+# Check for sequential queries that could be CTEs
+grep -rn "execute.*execute\|fetchall.*execute" backend/services/
 ```
+
+**N+1 Detection Rules:**
+- Any `for` loop containing `session.execute()` or `db.execute()` → FAIL
+- Any pattern of `fetchall()` followed by loop with more queries → FAIL
+- Multiple sequential `execute()` calls on same table → suggest CTE
 
 ### Phase D — SQL Deep Dive (Dev Only)
 
@@ -218,10 +243,17 @@ You must output **exactly** these sections, in order:
 ```markdown
 ## Perf Findings
 
+| Issue | Layer | Current | Target | Fix | Effort | Impact |
+|-------|-------|---------|--------|-----|--------|--------|
+| KPI sequential queries | DB | 250ms | 80ms | Multi-CTE | M | HIGH |
+| Missing composite index | DB | 180ms | 30ms | Add index | S | HIGH |
+| Waterfall fetches | FE | 400ms | 150ms | Promise.all | S | MED |
+
 ### [FAIL/WARN] Issue Title
 - **Location:** file:line
 - **Impact:** X ms / X% of total
 - **Root Cause:** explanation
+- **Effort:** S/M/L (Small <1hr, Medium 1-4hr, Large 4hr+)
 ```
 
 ### (3) SQL QUERY REPORT (if SQL is bottleneck)
@@ -257,6 +289,47 @@ You must output **exactly** these sections, in order:
 | /api/aggregate | 400ms | 800ms | Xms | Xms | PASS/WARN/FAIL |
 | /api/kpi-summary-v2 | 400ms | 800ms | Xms | Xms | PASS/WARN/FAIL |
 | /api/dashboard | 400ms | 800ms | Xms | Xms | PASS/WARN/FAIL |
+```
+
+### (4.1) ENDPOINT CONSOLIDATION AUDIT
+```markdown
+## Endpoint Consolidation Audit
+
+### Per-Page Endpoint Count
+| Page | Endpoints Called | Budget (≤6) | Status | Consolidation Opportunity |
+|------|------------------|-------------|--------|---------------------------|
+| /market-overview | 8 | 6 | WARN | Combine KPI endpoints |
+| /district-overview | 5 | 6 | PASS | - |
+
+### Redundant Data Detection
+| Field | Endpoints Returning It | Recommendation |
+|-------|------------------------|----------------|
+| region_totals | /aggregate, /kpi-summary | Remove from /aggregate |
+| median_psf | /kpi-summary, /price-trend | Single source: /kpi-summary |
+
+### Unused Response Fields
+| Endpoint | Field | Frontend Usage | Action |
+|----------|-------|----------------|--------|
+| /aggregate | raw_records | Never read | Remove from response |
+```
+
+### (4.2) PRIORITIZED FIX ORDER
+```markdown
+## Implementation Priority
+
+Sort by: Impact (HIGH first) → Effort (S first) → Layer (DB → BE → FE)
+
+| Priority | Issue | Est. Savings | Effort | Dependencies |
+|----------|-------|--------------|--------|--------------|
+| P1 | Add composite index | ~150ms | S | None |
+| P2 | CTE for KPI queries | ~170ms | M | None |
+| P3 | Parallelize FE fetches | ~250ms | S | None |
+| P4 | Reduce payload size | ~50ms | S | P2 |
+| P5 | Add HTTP caching | ~100ms | M | P1, P2 |
+
+**Quick Wins (do first):** P1, P3 (high impact, low effort)
+**Foundational (do next):** P2 (enables P4, P5)
+**Polish (do last):** P4, P5 (diminishing returns)
 ```
 
 ### (5) SAFE FIX PLAN (minimal changes, no behavior change)
@@ -307,6 +380,26 @@ You must output **exactly** these sections, in order:
 - [ ] Stable memoized dataset transforms (no heavy work in render)
 - [ ] Chart components don't rerender due to unrelated state
 - [ ] Large libs are code-split and not on initial route
+- [ ] Rapid filter clicks debounced (≥150ms)
+- [ ] First chart renders within 1s budget
+
+### Debounce Audit
+
+```bash
+# Check for debounce usage in filter handlers
+grep -rn "useDebouncedValue\|useDebounce\|debounce" frontend/src/
+
+# Check filter context for debounce
+grep -rn "setTimeout.*filter\|clearTimeout" frontend/src/context/
+```
+
+**Debounce Requirements:**
+| Action | Min Debounce | Reason |
+|--------|--------------|--------|
+| Filter button click | 150ms | Prevent double-click spam |
+| Text input change | 300ms | Wait for typing to stop |
+| Slider drag | 100ms | Throttle during drag |
+| Dropdown select | 0ms | Immediate response expected |
 
 ---
 
@@ -404,6 +497,35 @@ SELECT ... [the query from codebase]
 - [ ] Index strategy matches filter patterns
 - [ ] No unbounded queries on transactions table
 - [ ] PERCENTILE_CONT queries have reasonable row counts
+- [ ] No N+1 query patterns (no loops with DB calls inside)
+- [ ] Sequential queries combined into CTEs where possible
+- [ ] No duplicate queries for same data
+
+### N+1 Query Pattern Detection
+
+**Definition:** N+1 occurs when code fetches a list (1 query), then loops to fetch related data (N queries).
+
+```python
+# ❌ N+1 PATTERN (FAIL)
+projects = db.execute("SELECT * FROM projects").fetchall()
+for project in projects:
+    units = db.execute("SELECT * FROM units WHERE project_id = :id", {"id": project.id})
+    # This runs N additional queries!
+
+# ✅ FIXED: Single query with JOIN or CTE
+results = db.execute("""
+    SELECT p.*, u.*
+    FROM projects p
+    LEFT JOIN units u ON u.project_id = p.id
+""").fetchall()
+```
+
+**Detection grep patterns:**
+```bash
+# Find loops with DB calls
+grep -rn "for.*:.*execute\|for.*:.*query" backend/services/
+grep -rn "for.*in.*fetchall\(\)" backend/services/
+```
 
 ---
 
@@ -425,6 +547,93 @@ PERCENTILE_CONT is computationally expensive (requires sorting all matching rows
    - Pre-compute in materialized view
    - Use approximate percentiles if acceptable
    - Reduce filter window
+
+---
+
+## 12.5 CACHE LAYER INVENTORY & AUDIT
+
+This section provides a systematic audit of all caching layers in the stack.
+
+### Cache Layer Stack
+
+| Layer | Technology | Location | TTL | Hit Rate Target |
+|-------|------------|----------|-----|-----------------|
+| **L1: PostgreSQL** | shared_buffers | DB server | N/A | ≥95% |
+| **L2: Flask-Caching** | SimpleCache/Redis | Backend memory | 5min default | ≥80% |
+| **L3: HTTP Cache** | Cache-Control | CDN/Browser | 60s typical | ≥70% |
+| **L4: React Query** | In-memory | Frontend | staleTime | ≥90% |
+
+### Cache Audit Workflow
+
+```bash
+# 1. Check PostgreSQL buffer hit rate
+psql -c "SELECT
+  round(100.0 * sum(heap_blks_hit) / nullif(sum(heap_blks_hit) + sum(heap_blks_read), 0), 2) as hit_ratio
+FROM pg_statio_user_tables;"
+# Target: ≥95%
+
+# 2. Check Flask-Caching stats (if enabled)
+curl -I "http://localhost:5000/api/aggregate?group_by=month"
+# Look for: X-Cache: HIT/MISS
+
+# 3. Check HTTP caching headers
+curl -I "http://localhost:5000/api/aggregate"
+# Look for: Cache-Control, ETag, Last-Modified
+
+# 4. Frontend: Check React Query cache (dev console)
+# window.__REACT_QUERY_DEVTOOLS__ or React Query DevTools
+```
+
+### What Should Be Cached vs Recalculated
+
+| Data Type | Cache? | TTL | Reason |
+|-----------|--------|-----|--------|
+| Filter options (districts, bedrooms) | ✅ YES | 24hr | Rarely changes |
+| Aggregate data (grouped by month) | ✅ YES | 5min | Expensive to compute |
+| KPI summary values | ✅ YES | 5min | Multiple queries |
+| Transaction list (paginated) | ⚠️ Conditional | 1min | Fresh data important |
+| User-specific data | ❌ NO | - | Personalized |
+| Real-time metrics | ❌ NO | - | Must be fresh |
+
+### Static Data Pre-computation Candidates
+
+| Data | Current | Recommendation |
+|------|---------|----------------|
+| District → Region mapping | Runtime lookup | Pre-load at startup |
+| Bedroom classification thresholds | Runtime | Constants file |
+| Historical aggregates (>1yr old) | On-demand | Materialized view |
+| Quartile boundaries | Per-request | Daily pre-compute |
+
+### Cache Invalidation Strategy
+
+| Trigger | Action |
+|---------|--------|
+| New transaction data ingested | Clear Flask cache for affected endpoints |
+| Filter options changed | Clear /filter-options cache |
+| Deploy | Clear all caches (cold start) |
+
+### Cache Debugging Commands
+
+```bash
+# Clear Flask cache (if SimpleCache)
+curl -X POST "http://localhost:5000/api/cache/clear"
+
+# Check cache key for specific params
+# In Python: flask_caching.cache.get(key)
+
+# Frontend: Clear React Query cache
+# queryClient.clear() in dev console
+```
+
+### Cache Checklist
+
+- [ ] PostgreSQL buffer hit rate ≥95%
+- [ ] Flask-Caching enabled for expensive endpoints
+- [ ] HTTP Cache-Control headers set appropriately
+- [ ] Static data pre-loaded or pre-computed
+- [ ] Cache keys include ALL filter params
+- [ ] TTL appropriate for data freshness requirements
+- [ ] Cache invalidation strategy documented
 
 ---
 
@@ -633,11 +842,16 @@ RECOMMENDATION:
 - [ ] Abort in-flight on filter changes
 - [ ] Memoized dataset transforms
 - [ ] Code-split heavy charts
+- [ ] Rapid filter clicks debounced (≥150ms)
+- [ ] First chart renders within 1s
 
 ### Network Checklist
 - [ ] Payload within budgets
 - [ ] Only required fields in response
 - [ ] No raw rows for charts
+- [ ] API calls per page ≤6
+- [ ] API calls per filter change ≤3
+- [ ] HTTP cache headers configured
 
 ### Backend/SQL Checklist
 - [ ] Endpoint latency within budget
@@ -645,6 +859,15 @@ RECOMMENDATION:
 - [ ] All queries have date OR segment filter
 - [ ] Index strategy matches filters
 - [ ] No PERCENTILE_CONT on >50K rows
+- [ ] No N+1 patterns (no loops with DB calls)
+- [ ] Sequential queries combined into CTEs
+
+### Cache Checklist
+- [ ] PostgreSQL buffer hit rate ≥95%
+- [ ] Flask-Caching hit rate ≥80%
+- [ ] HTTP cache hit rate ≥70%
+- [ ] Static data pre-computed where possible
+- [ ] Cache keys include ALL filter params
 
 ### After Performance Change
 - [ ] Run same scenario again
