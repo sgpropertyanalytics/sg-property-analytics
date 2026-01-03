@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from 'firebase/auth';
+import { signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from 'firebase/auth';
 import { getFirebaseAuth, getGoogleProvider, isFirebaseConfigured } from '../lib/firebase';
 import { queryClient } from '../lib/queryClient';
 import apiClient from '../api/client';
@@ -32,11 +32,6 @@ function useStaleRequestGuard() {
 
   return { startRequest, isStale, getSignal };
 }
-
-// Detect mobile browser
-const isMobile = () => {
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-};
 
 /**
  * Helper: Check if error is an abort/cancel (expected control flow, not a real error)
@@ -418,6 +413,11 @@ export function AuthProvider({ children }) {
   }, [startRequest, isStale, getSignal]);
 
   // Sign in with Google
+  // Uses signInWithRedirect for all platforms - more reliable than signInWithPopup
+  // which can fail with "fireauth is not defined" in production due to:
+  // - Third-party cookie restrictions in modern browsers
+  // - Popup blockers
+  // - Firebase's internal iframe communication issues
   const signInWithGoogle = useCallback(async () => {
     setError(null);
 
@@ -430,29 +430,18 @@ export function AuthProvider({ children }) {
       const auth = getFirebaseAuth();
       const provider = getGoogleProvider();
 
-      // Use redirect on mobile (popups don't work reliably)
-      if (isMobile()) {
-        await signInWithRedirect(auth, provider);
-        // Redirect will navigate away - result handled in useEffect
-        return null;
-      }
-
-      // Use popup on desktop
-      const result = await signInWithPopup(auth, provider);
-
-      // Sync with backend to get JWT and subscription status
-      const backendData = await syncWithBackend(result.user);
-
-      return {
-        firebaseUser: result.user,
-        backendData,
-      };
+      // Always use redirect - more reliable in production environments
+      // Popup-based auth has known issues with third-party cookie restrictions
+      // and can fail with "fireauth is not defined" error
+      await signInWithRedirect(auth, provider);
+      // Redirect will navigate away - result handled in useEffect (getRedirectResult)
+      return null;
     } catch (err) {
       console.error('Google sign-in error:', err);
       setError(getErrorMessage(err.code));
       throw err;
     }
-  }, [syncWithBackend]);
+  }, []);
 
   // Sign out
   const logout = useCallback(async () => {
