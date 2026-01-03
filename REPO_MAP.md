@@ -412,6 +412,28 @@ const { data } = useQuery({
 
 **Lesson:** Test the integration boundary, not just each layer in isolation.
 
+### Undeclared Response Fields Incident (Jan 3, 2026)
+
+**What happened:** `/api/auth/subscription` was returning `_debug_user_id` and `_debug_email` fields not declared in the schema. The `@api_contract` decorator logged warnings but tests didn't fail.
+
+**Result:** Frontend received unexpected fields. In STRICT mode, this would break validation. Production ran WARN mode which just logged.
+
+**Why wasn't it detected?**
+- Tests ran in WARN mode (default), not STRICT mode
+- Contract tests verified schema DEFINES fields, not that responses MATCH schemas
+- No test hit actual endpoints with STRICT validation
+
+**Fix:** Added `test_all_endpoints_strict.py` that runs ALL contracted endpoints with `CONTRACT_MODE=strict`. Undeclared fields cause test failures.
+
+**Immediate findings:** The test caught 5 violations:
+- `auth/subscription`: `_debug_user_id`, `_debug_email` undeclared
+- `aggregate`: `group_by`, `metrics`, `subscription` undeclared in meta
+- `kpi-summary-v2`: snake_case vs camelCase mismatch
+- `upcoming-launches/all`: `filters_applied`, `last_checked` undeclared
+- `projects/hot`: NameError bug (`district_param` undefined)
+
+**Lesson:** STRICT mode validation must run in CI, not just WARN mode.
+
 ### Subscription Caching Incident (Dec 30, 2025)
 
 **What happened:** When `/auth/subscription` API failed (network error, server timeout), code set subscription to 'free' AND cached it to localStorage.
