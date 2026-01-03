@@ -256,13 +256,8 @@ AGGREGATE_RESPONSE_SCHEMA = ResponseSchema(
         FieldSpec(name="totalRecords", type=int, required=False),
         FieldSpec(name="schemaVersion", type=str, required=False),
         FieldSpec(name="warnings", type=list, required=False, description="Diagnostic warnings about normalization or data quality"),
-        # Query echo fields
-        FieldSpec(name="group_by", type=list, required=True, description="Echoed group_by dimensions"),
-        FieldSpec(name="metrics", type=list, required=True, description="Echoed metrics requested"),
-        # Subscription status (for premium gating)
-        FieldSpec(name="subscription", type=dict, required=False, description="User subscription status"),
     ),
-    required_meta=make_required_meta("filtersApplied", "group_by", "metrics"),
+    required_meta=make_required_meta("filtersApplied"),
     data_is_list=True,
 )
 

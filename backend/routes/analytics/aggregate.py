@@ -165,11 +165,9 @@ def aggregate():
       {
         "data": [...aggregated results...],
         "meta": {
-          "total_records": N,
-          "filters_applied": {...},
-          "group_by": [...],
-          "metrics": [...],
-          "cache_hit": bool,
+          "totalRecords": N,
+          "filtersApplied": {...},
+          "cacheHit": bool,
           "requestId": "uuid",
           "elapsedMs": 45.2,
           "apiVersion": "v3"
@@ -370,8 +368,6 @@ def aggregate():
         empty_meta = {
             "totalRecords": 0,
             "filtersApplied": filters_applied,
-            "group_by": group_by,
-            "metrics": metrics,
             "elapsedMs": int(elapsed * 1000),
             "schemaVersion": schema_version,
             "warnings": warnings,
@@ -611,15 +607,9 @@ def aggregate():
     meta = {
         "totalRecords": total_records,
         "filtersApplied": filters_applied,
-        "group_by": group_by,
-        "metrics": metrics,
         "elapsedMs": int(elapsed * 1000),
         "cacheHit": False,
         "schemaVersion": schema_version,
-        "subscription": {
-            "is_premium": is_premium,
-            "time_restricted": False  # All data available, blur paywall instead of time restriction
-        }
     }
     # Only add warnings key if there are warnings
     if warnings:
