@@ -1,6 +1,6 @@
 ---
 name: contract-async-guardrails
-description: Frontend contract and async safety guardrails. ALWAYS activate before writing or modifying ANY React components that fetch data, use API responses, or handle enums. Enforces adapter pattern, abort/stale handling, contract versioning, and enum safety. Use before AND after any frontend data-fetching changes.
+description: Frontend contract and async safety guardrails. ALWAYS activate before writing or modifying ANY React components that fetch data, use API responses, or handle enums. Enforces adapter pattern, TanStack Query usage, contract versioning, and enum safety. Use before AND after any frontend data-fetching changes.
 ---
 
 # Contract & Async Safety Guardrails
@@ -28,11 +28,11 @@ Prevent silent data bugs, stale state issues, and race conditions in React compo
 ```
 EVERY DATA-FETCHING COMPONENT MUST:
 
-├── Async Safety
-│   ├── Use useAbortableQuery OR useStaleRequestGuard
-│   ├── Pass signal to ALL fetch calls
-│   ├── Check isStale() before setState
-│   └── Ignore AbortError/CanceledError
+├── Async Safety (via TanStack Query)
+│   ├── Use useAppQuery() for all data fetching
+│   ├── TanStack Query handles abort/stale automatically
+│   ├── Include ALL data-affecting state in deps array
+│   └── No manual AbortController or stale detection needed
 │
 ├── Adapter Pattern
 │   ├── Pass API response through adapter
@@ -55,10 +55,20 @@ EVERY DATA-FETCHING COMPONENT MUST:
 ### Immediately Reject Code That Contains:
 
 ```javascript
-// FORBIDDEN: Raw useEffect + fetch
+// FORBIDDEN: Raw useEffect + fetch (use useAppQuery instead)
 useEffect(() => {
   fetch(...).then(setData)
 }, [])
+
+// FORBIDDEN: Manual AbortController (TanStack Query handles this)
+const controller = new AbortController();
+useEffect(() => {
+  return () => controller.abort();
+}, [])
+
+// FORBIDDEN: Manual stale request tracking
+const requestIdRef = useRef(0);
+requestIdRef.current++;
 
 // FORBIDDEN: Direct API response access
 const data = response.data.map(...)
@@ -66,12 +76,6 @@ const data = response.data.map(...)
 // FORBIDDEN: Hardcoded enum strings
 if (row.sale_type === 'New Sale')
 if (tenure === 'Freehold')
-
-// FORBIDDEN: Missing abort handling
-.catch(err => setError(err))  // AbortError will show as error!
-
-// FORBIDDEN: Missing stale check
-.then(data => setData(data))  // Could be stale!
 
 // FORBIDDEN: Response shape assumptions
 row.quarter ?? row.month  // API shape leaking into component
@@ -81,65 +85,43 @@ row.quarter ?? row.month  // API shape leaking into component
 
 ## Part 3: Correct Patterns
 
-### Async Data Fetching (Simple Case)
+### Data Fetching with useAppQuery
 
 ```javascript
-import { useAbortableQuery } from '../hooks/useAbortableQuery';
-import { transformTimeSeries } from '../adapters/aggregateAdapter';
+import { useZustandFilters } from '../stores';
+import { useAppQuery } from '../hooks/useAppQuery';
+import { getAggregate } from '../api/analytics';
+import { transformTimeSeries } from '../adapters/aggregate/timeSeries';
 
-function MyChart({ filters }) {
-  const filterKey = JSON.stringify(filters);
+function MyChart({ saleType = null }) {
+  const { buildApiParams, debouncedFilterKey, timeGrouping } = useZustandFilters();
 
-  const { data, loading, error } = useAbortableQuery(
-    (signal) => apiClient.get('/api/aggregate', {
-      params: filters,
-      signal
-    }).then(r => transformTimeSeries(r.data)),
-    [filterKey]
+  const { data, status, error } = useAppQuery(
+    async (signal) => {
+      const params = buildApiParams({
+        group_by: 'month',
+        ...(saleType && { sale_type: saleType })
+      });
+      const response = await getAggregate(params, { signal });
+      return transformTimeSeries(response.data);  // Always use adapter
+    },
+    [debouncedFilterKey, timeGrouping, saleType],  // ALL data-affecting state
+    { chartName: 'MyChart', keepPreviousData: true }
   );
 
-  if (loading) return <Skeleton />;
-  if (error) return <ErrorBoundary error={error} />;
+  if (status === 'pending') return <Skeleton />;
+  if (status === 'error') return <ErrorState error={error} />;
+  if (!data?.length) return <EmptyState />;
   return <Chart data={data} />;
 }
 ```
 
-### Async Data Fetching (Complex Case)
+### Key Points About useAppQuery
 
-```javascript
-import { useStaleRequestGuard } from '../hooks/useStaleRequestGuard';
-
-function ComplexChart() {
-  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    const requestId = startRequest();
-    const signal = getSignal();
-    setLoading(true);
-    setError(null);
-
-    fetchData({ signal })
-      .then(response => {
-        if (isStale(requestId)) return;
-        setData(transformData(response.data));
-      })
-      .catch(err => {
-        if (err.name === 'AbortError') return;
-        if (err.name === 'CanceledError') return;
-        if (isStale(requestId)) return;
-        setError(err);
-      })
-      .finally(() => {
-        if (!isStale(requestId)) {
-          setLoading(false);
-        }
-      });
-  }, [dependencies]);
-}
-```
+- **Automatic abort handling**: TanStack Query cancels in-flight requests on unmount or dependency change
+- **Automatic stale detection**: Query keys determine data freshness
+- **No manual cleanup needed**: No `AbortController`, no `requestIdRef`, no `isStale()` checks
+- **Signal passed automatically**: The `signal` parameter in the fetch function enables abort
 
 ### Enum Handling
 
@@ -161,13 +143,11 @@ const psf = getTxnField(row, 'psf');
 
 ### Before Any Frontend Change, Verify:
 
-1. **Async Pattern**: Uses `useAbortableQuery` or `useStaleRequestGuard`
-2. **Signal Propagation**: All API calls receive `signal`
-3. **Stale Check**: `isStale(requestId)` before `setState`
-4. **AbortError**: Silently ignored, not shown as error
-5. **Adapter Usage**: Response passes through adapter before component
-6. **Enum Safety**: No hardcoded strings, uses `apiContract.js`
-7. **Version Check**: Adapter validates API contract version
+1. **Async Pattern**: Uses `useAppQuery()` (NOT raw useEffect + fetch)
+2. **Deps Array**: Includes ALL data-affecting state (filters, timeGrouping, saleType, etc.)
+3. **Adapter Usage**: Response passes through adapter before component
+4. **Enum Safety**: No hardcoded strings, uses `apiContract.js`
+5. **Version Check**: Adapter validates API contract version
 
 ---
 
@@ -278,13 +258,12 @@ Component uses: data.medianPsf (never data.median_psf)
 
 | Anti-Pattern | Symptom | Grep to Find | Fix |
 |--------------|---------|--------------|-----|
-| Raw useEffect + fetch | Race conditions, stale data | `grep -rn "useEffect.*fetch" frontend/src/` | Use `useAbortableQuery` |
-| Missing signal prop | Requests continue after unmount | `grep -rn "\.get(\|\.post(" frontend/src/ \| grep -v signal` | Pass `{ signal }` to all fetches |
-| AbortError shown as error | "Request aborted" toast on filter change | `grep -rn "setError(err)" frontend/src/` | Check `err.name === 'AbortError'` first |
+| Raw useEffect + fetch | Race conditions, stale data | `grep -rn "useEffect.*fetch" frontend/src/` | Use `useAppQuery` |
+| Manual AbortController | Unnecessary complexity | `grep -rn "new AbortController" frontend/src/` | TanStack Query handles abort |
 | Direct response.data access | v1/v2 breaks on API change | `grep -rn "response\.data\[" frontend/src/` | Pass through adapter |
 | Hardcoded enum strings | Filter mismatch | `grep -rn "'New Sale'\|'Resale'" frontend/src/components/` | Use `isSaleType.*()` |
 | containerRef inside QueryState | Visibility fetch never triggers | `grep -rn "ref={containerRef}" frontend/src/ -A5 \| grep QueryState` | Move ref OUTSIDE QueryState |
-| Missing query key state | Stale data on toggle | Compare `filterKey` to `useAbortableQuery` deps | Include ALL data-affecting state |
+| Missing deps array state | Stale data on toggle | Compare filter state usage to deps array | Include ALL data-affecting state |
 
 ### Quick Audit Commands
 
@@ -298,14 +277,11 @@ grep -rn "'New Sale'\|'Resale'\|'Freehold'" frontend/src/components/
 # Find direct response.data access
 grep -rn "response\.data\[" frontend/src/components/
 
-# Find missing signal in API calls
-grep -rn "getAggregate\|apiClient\.get" frontend/src/ | grep -v signal
+# Find manual AbortController (should use TanStack Query instead)
+grep -rn "new AbortController()" frontend/src/
 
 # Find containerRef inside conditional rendering
 grep -rn "ref={containerRef}" frontend/src/components/ -A10 | grep -E "QueryState|loading \?"
-
-# Full async safety audit
-bash frontend/scripts/audit-async-safety.sh
 ```
 
 ---
@@ -348,7 +324,7 @@ test('rapid filter changes work', async ({ page }) => {
 
 ### The Rule
 
-**If a value changes the data, it MUST be in the query key.**
+**If a value changes the data, it MUST be in the deps array.**
 
 ### Symptom of Violation
 
@@ -361,34 +337,31 @@ User toggles "Quarter" → "Month"
 ### Root Cause
 
 ```javascript
-// BUG: filterKey missing timeGrouping
-const { shouldFetch } = useDeferredFetch({
-  filterKey: debouncedFilterKey,  // ❌ Missing timeGrouping!
-});
-
-const { data } = useAbortableQuery(
+// BUG: deps array missing timeGrouping
+const { data } = useAppQuery(
   (signal) => fetchData(timeGrouping, signal),
-  [debouncedFilterKey, timeGrouping]  // ✅ Correct deps
+  [debouncedFilterKey]  // ❌ Missing timeGrouping!
 );
 ```
 
 ### Fix
 
 ```javascript
-// CORRECT: filterKey includes ALL data-affecting state
-const { shouldFetch } = useDeferredFetch({
-  filterKey: `${debouncedFilterKey}:${timeGrouping}`,  // ✅
-});
+// CORRECT: deps array includes ALL data-affecting state
+const { data } = useAppQuery(
+  (signal) => fetchData(timeGrouping, signal),
+  [debouncedFilterKey, timeGrouping]  // ✅
+);
 ```
 
 ### "Is It Data State?" Decision Tree
 
 ```
 Does changing this value change what the API returns?
-├── YES → Must be in query key / filterKey / deps
-│   Examples: timeGrouping, dateRange, segment, bedroom, drillLevel
+├── YES → Must be in deps array
+│   Examples: timeGrouping, dateRange, segment, bedroom, drillLevel, saleType
 │
-└── NO → UI-only state (exclude from query key)
+└── NO → UI-only state (exclude from deps)
     Examples: isExpanded, tooltipPosition, chartRef, isHovered
 ```
 
@@ -404,13 +377,13 @@ CORRECT MENTAL MODEL:
   These are DIFFERENT DATASETS.
 ```
 
-### Checklist for Deferred Fetch
+### Checklist for useAppQuery
 
 ```
-[ ] filterKey includes ALL data-affecting state
-[ ] useAbortableQuery deps match the concept in filterKey
-[ ] enabled prop respects shouldFetch from useDeferredFetch
-[ ] Label in header reflects current data, not just requested data
+[ ] Deps array includes ALL data-affecting state
+[ ] saleType prop included in deps if used
+[ ] timeGrouping included in deps if used
+[ ] Filter key derived from useZustandFilters() in deps
 ```
 
 ---
@@ -449,16 +422,15 @@ Skeleton/loading states render INSIDE the sentinel, not instead of it.
 ```
 CONTRACT & ASYNC CHECKLIST
 
-[ ] useAbortableQuery OR useStaleRequestGuard
-[ ] signal passed to fetch/axios
-[ ] isStale() check before setState
-[ ] AbortError silently ignored
-[ ] Response through adapter
+[ ] useAppQuery() for data fetching
+[ ] Deps array includes ALL data-affecting state
+[ ] Response passed through adapter
 [ ] Enum from apiContract.js
 [ ] No hardcoded enum strings
 [ ] assertKnownVersion() in adapter
-[ ] Query key includes ALL data-affecting state (Card 18)
-[ ] containerRef OUTSIDE conditional rendering (Part 8)
+[ ] containerRef OUTSIDE conditional rendering
+[ ] No raw useEffect + fetch patterns
+[ ] No manual AbortController
 ```
 
 ---
@@ -474,10 +446,10 @@ Before marking frontend work as complete:
 [Brief description]
 
 ### Async Safety
-- [x] Uses abort-safe pattern
-- [x] AbortError ignored
-- [x] Stale check before setState
-- [x] No loading flicker on rapid changes
+- [x] Uses useAppQuery pattern
+- [x] Deps array includes all data-affecting state
+- [x] No raw useEffect + fetch
+- [x] No manual AbortController
 
 ### Contract Compliance
 - [x] API response through adapter
@@ -486,7 +458,7 @@ Before marking frontend work as complete:
 - [x] Version check in adapter
 
 ### Testing
-- [x] audit-async-safety.sh passes
+- [x] Audit commands pass (Part 5)
 - [x] Rapid interaction test passes
 
 Verified by: [name]

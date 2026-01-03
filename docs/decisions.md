@@ -267,9 +267,21 @@ When v4 is needed:
 ### 2024-Q3
 
 - Migrated to SQL-only aggregation
-- Implemented useAbortableQuery pattern
 - Added API contract versioning
+
+### 2025-Q4
+
+- Migrated to TanStack Query (useAppQuery pattern)
+- Migrated filter state to Zustand (filterStore.js)
+- Removed PowerBIFilterProvider (~600 lines)
+- Deleted legacy custom hooks (useAbortableQuery, useStaleRequestGuard, etc.)
+
+### 2026-Q1
+
+- Completed Pydantic validation migration (Phase 5)
+- Disabled parallel validation mode
+- 136 cache key parity tests ensure correctness
 
 ---
 
-*Last updated: December 2024*
+*Last updated: January 2026*
