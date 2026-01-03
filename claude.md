@@ -617,8 +617,11 @@ python backend/scripts/generate_contracts.py --check
 ### Tier 2: Core Tests (DEFAULT - 3 min)
 Run for most changes:
 ```bash
-# Unit tests (no DB needed)
-pytest tests/test_normalize.py tests/test_api_contract.py tests/test_sql_guardrails.py -v
+# Unit tests (no DB needed) - ALL in backend/tests/
+cd backend
+pytest tests/test_normalize.py tests/test_api_contract.py -v
+pytest tests/test_sql_guardrails.py tests/test_sql_safety.py -v
+pytest tests/test_property_age_bucket.py tests/test_param_coverage.py -v
 
 # Frontend unit tests
 cd frontend && npm run test:ci
@@ -633,14 +636,17 @@ python scripts/data_guard.py --ci
 ### Tier 3: Full Suite (COMPLEX - 8 min)
 Run for contract changes, multi-file changes, pre-merge:
 ```bash
-# Integration tests (requires DATABASE_URL)
+# Integration tests (requires DATABASE_URL) - ALL in backend/tests/
+cd backend
 pytest tests/test_regression_snapshots.py tests/test_api_invariants.py -v
-
-# Smoke endpoints
-pytest backend/tests/test_smoke_endpoints.py -v
+pytest tests/test_smoke_endpoints.py tests/test_chart_dependencies.py -v
+pytest tests/test_kpi_guardrails.py -v
 
 # E2E smoke (if UI changed)
 cd frontend && npm run build && npm run e2e:smoke
+
+# Mock validation
+python scripts/validate_e2e_mocks.py || echo "Warning: E2E mocks may be stale"
 ```
 
 ### Tier 4: Full E2E Runtime (PRE-MERGE - 10 min)

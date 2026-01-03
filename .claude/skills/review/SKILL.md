@@ -128,29 +128,39 @@ Select tier based on scope:
 ### Tier 1: Quick Checks (ALWAYS - ~30s)
 
 ```bash
-# Frontend
+# Frontend lint + typecheck
 cd frontend && npm run lint && npm run typecheck
 
-# Backend
+# Backend syntax check
 python -m py_compile backend/routes/*.py backend/services/*.py
 
-# Contract drift
+# Contract drift (quick check)
 python backend/scripts/generate_contracts.py --check
 ```
 
 ### Tier 2: Core Tests (DEFAULT - ~3 min)
 
 ```bash
-# Unit tests (no DB)
+# ===== BACKEND UNIT TESTS (no DB needed) =====
+cd backend
+
+# Core validation
 pytest tests/test_normalize.py -v
 pytest tests/test_api_contract.py -v
-pytest tests/test_sql_guardrails.py -v
 pytest tests/test_property_age_bucket.py -v
 
-# Frontend unit tests
+# SQL safety (BOTH files - CI uses both)
+pytest tests/test_sql_guardrails.py -v
+pytest tests/test_sql_safety.py -v
+
+# Contract tests
+pytest tests/test_param_coverage.py -v
+
+# ===== FRONTEND UNIT TESTS =====
 cd frontend && npm run test:ci
 
-# Route contract
+# ===== SCRIPTS =====
+# Route contract validation
 python scripts/check_route_contract.py
 
 # Data guard
@@ -160,18 +170,56 @@ python scripts/data_guard.py --ci
 ### Tier 3: Full Suite (COMPLEX - ~8 min)
 
 ```bash
-# Integration tests (requires DATABASE_URL)
+# ===== INTEGRATION TESTS (requires DATABASE_URL) =====
+cd backend
+
+# Regression snapshots - CRITICAL for data correctness
 pytest tests/test_regression_snapshots.py -v
+
+# API invariants
 pytest tests/test_api_invariants.py -v
 
 # Smoke endpoints
-pytest backend/tests/test_smoke_endpoints.py -v
+pytest tests/test_smoke_endpoints.py -v
 
-# E2E smoke
-cd frontend && npm run build && npm run e2e:smoke
+# Chart dependencies - catches breaking changes
+pytest tests/test_chart_dependencies.py -v
+
+# KPI guardrails
+pytest tests/test_kpi_guardrails.py -v
 
 # ETL validation (if data files changed)
 pytest tests/test_etl_validation.py -v
+
+# ===== ADDITIONAL BACKEND TESTS =====
+# Run if relevant files changed:
+
+# If routes/services changed:
+pytest tests/test_aggregate_median.py -v
+pytest tests/test_filter_builder.py -v
+pytest tests/test_timeframe_resolution.py -v
+pytest tests/test_contract_timeframe_normalize.py -v
+
+# If subscription/auth changed:
+pytest tests/test_subscription_schema_guard.py -v
+pytest tests/test_user_entitlements.py -v
+
+# If data files changed:
+pytest tests/test_csv_diff_detection.py -v
+pytest tests/test_districts_superset.py -v
+
+# If specific features changed:
+pytest tests/test_supply_summary.py -v
+pytest tests/test_exit_queue.py -v
+pytest tests/test_price_bands.py -v
+pytest tests/test_resale_velocity_kpi.py -v
+pytest tests/test_new_launch_absorption.py -v
+
+# ===== E2E SMOKE =====
+cd frontend && npm run build && npm run e2e:smoke
+
+# ===== MOCK VALIDATION =====
+python scripts/validate_e2e_mocks.py || echo "Warning: E2E mocks may be stale"
 ```
 
 ### Tier 4: Full E2E Runtime (PRE-MERGE - ~10 min)
@@ -197,6 +245,24 @@ cd frontend && npm run e2e:full
 | Contract/schema change | Tier 3 (full) |
 | Multi-file refactor | Tier 3 (full) |
 | Pre-merge | Tier 3 + Tier 4 |
+
+### Root-Level Tests (Legacy - run if needed)
+
+These tests exist in the root `tests/` directory:
+
+```bash
+# Run from project root
+pytest tests/test_api_contract.py -v      # 67KB comprehensive contract tests
+pytest tests/test_dashboard_median.py -v
+pytest tests/test_duplicate_detection.py -v
+pytest tests/test_iqr_consistency.py -v
+pytest tests/test_startup_no_mutations.py -v
+pytest tests/test_tenure_filter.py -v
+pytest tests/test_csv_column_preservation.py -v
+pytest tests/test_floor_level_classification.py -v
+pytest tests/test_batch2_fixes.py -v
+pytest tests/test_data_loader_batch1.py -v
+```
 
 ---
 
@@ -276,13 +342,19 @@ python backend/scripts/generate_contracts.py
 cd frontend && npm run lint && npm run typecheck
 python -m py_compile backend/routes/*.py backend/services/*.py
 
-# Tier 2 (default)
-pytest tests/test_normalize.py tests/test_api_contract.py tests/test_sql_guardrails.py -v
-cd frontend && npm run test:ci
+# Tier 2 (default) - ALL paths are backend/tests/
+cd backend
+pytest tests/test_normalize.py tests/test_api_contract.py -v
+pytest tests/test_sql_guardrails.py tests/test_sql_safety.py -v
+pytest tests/test_property_age_bucket.py tests/test_param_coverage.py -v
+cd ../frontend && npm run test:ci
 
-# Tier 3 (complex)
+# Tier 3 (complex) - ALL paths are backend/tests/
+cd backend
 pytest tests/test_regression_snapshots.py tests/test_api_invariants.py -v
-cd frontend && npm run build && npm run e2e:smoke
+pytest tests/test_smoke_endpoints.py tests/test_chart_dependencies.py -v
+pytest tests/test_kpi_guardrails.py -v
+cd ../frontend && npm run build && npm run e2e:smoke
 
 # Tier 4 (pre-merge)
 cd frontend && npm run e2e:full
@@ -290,25 +362,69 @@ cd frontend && npm run e2e:full
 
 ---
 
+## Complete Backend Test Inventory
+
+All tests are in `backend/tests/`:
+
+| Test File | Category | When to Run |
+|-----------|----------|-------------|
+| `test_normalize.py` | Core | Always (Tier 2) |
+| `test_api_contract.py` | Core | Always (Tier 2) |
+| `test_property_age_bucket.py` | Core | Always (Tier 2) |
+| `test_sql_guardrails.py` | SQL | Always (Tier 2) |
+| `test_sql_safety.py` | SQL | Always (Tier 2) |
+| `test_param_coverage.py` | Contract | Always (Tier 2) |
+| `test_regression_snapshots.py` | Integration | Tier 3 |
+| `test_api_invariants.py` | Integration | Tier 3 |
+| `test_smoke_endpoints.py` | Integration | Tier 3 |
+| `test_chart_dependencies.py` | Integration | Tier 3 |
+| `test_kpi_guardrails.py` | Integration | Tier 3 |
+| `test_etl_validation.py` | Data | If data changed |
+| `test_aggregate_median.py` | Feature | If aggregate changed |
+| `test_filter_builder.py` | Feature | If filters changed |
+| `test_timeframe_resolution.py` | Feature | If timeframe changed |
+| `test_contract_timeframe_normalize.py` | Feature | If timeframe changed |
+| `test_subscription_schema_guard.py` | Auth | If auth changed |
+| `test_user_entitlements.py` | Auth | If auth changed |
+| `test_csv_diff_detection.py` | Data | If data changed |
+| `test_districts_superset.py` | Data | If districts changed |
+| `test_supply_summary.py` | Feature | If supply changed |
+| `test_exit_queue.py` | Feature | If exit queue changed |
+| `test_price_bands.py` | Feature | If price bands changed |
+| `test_resale_velocity_kpi.py` | Feature | If KPI changed |
+| `test_new_launch_absorption.py` | Feature | If absorption changed |
+| `test_compliance.py` | Compliance | If compliance changed |
+| `test_request_logging.py` | Infra | If logging changed |
+| `test_cache_key.py` | Infra | If caching changed |
+| `test_verification_service.py` | Infra | If verification changed |
+| `test_insights_timeframe_integration.py` | Feature | If insights changed |
+| `test_price_projects_by_district_query.py` | Feature | If district query changed |
+
+---
+
 ## CI Coverage
 
-This review workflow covers 14 of 17 CI checks (82%):
+This review workflow covers ALL CI regression checks:
 
-| CI Check | In Review | Tier |
-|----------|-----------|------|
-| Contract Guard | Yes | 2 |
-| Frontend Import Guard | Yes | 1 |
-| SQL Safety | Yes | 2 |
-| Data Guard | Yes | 2 |
-| Route Contract | Yes | 2 |
-| Unit Tests | Yes | 2 |
-| Lint + Typecheck | Yes | 1 |
-| Frontend Build | Yes | 3 |
-| Smoke Tests | Yes | 3 |
-| Integration Tests | Yes | 3 |
-| E2E Full Runtime | Yes | 4 |
-| Performance Tests | CI only | - |
-| Security Audit | CI only | - |
-| Dead Code | CI only | - |
+| CI Check | In Review | Tier | Test File |
+|----------|-----------|------|-----------|
+| Contract Guard | Yes | 1 | `generate_contracts.py --check` |
+| Frontend Import Guard | Yes | 1 | `npm run typecheck` |
+| SQL Safety | Yes | 2 | `test_sql_safety.py` + `test_sql_guardrails.py` |
+| Data Guard | Yes | 2 | `scripts/data_guard.py --ci` |
+| Route Contract | Yes | 2 | `scripts/check_route_contract.py` |
+| Unit Tests | Yes | 2 | Multiple test files |
+| Lint + Typecheck | Yes | 1 | `npm run lint && typecheck` |
+| Frontend Build | Yes | 3 | `npm run build` |
+| Smoke Tests | Yes | 3 | `test_smoke_endpoints.py` |
+| Integration Tests | Yes | 3 | `test_regression_snapshots.py` + `test_api_invariants.py` |
+| E2E Smoke | Yes | 3 | `npm run e2e:smoke` |
+| E2E Full | Yes | 4 | `npm run e2e:full` |
+| Mock Validation | Yes | 3 | `scripts/validate_e2e_mocks.py` |
+| Performance Tests | CI only | - | Nightly |
+| Security Audit | CI only | - | Nightly |
+| Dead Code | CI only | - | Advisory |
+
+**Coverage: 14/17 checks (82%)** - All blocking checks included.
 
 GitHub CI becomes a safety net, not the primary feedback loop.
