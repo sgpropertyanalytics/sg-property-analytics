@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from 'firebase/auth';
+import { signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from 'firebase/auth';
 import { getFirebaseAuth, getGoogleProvider, isFirebaseConfigured } from '../lib/firebase';
 import { queryClient } from '../lib/queryClient';
 import apiClient from '../api/client';
@@ -413,11 +413,7 @@ export function AuthProvider({ children }) {
   }, [startRequest, isStale, getSignal]);
 
   // Sign in with Google
-  // Uses signInWithRedirect for all platforms - more reliable than signInWithPopup
-  // which can fail with "fireauth is not defined" in production due to:
-  // - Third-party cookie restrictions in modern browsers
-  // - Popup blockers
-  // - Firebase's internal iframe communication issues
+  // Tries popup first (better UX), falls back to redirect if popup fails
   const signInWithGoogle = useCallback(async () => {
     setError(null);
 
@@ -426,22 +422,47 @@ export function AuthProvider({ children }) {
       throw new Error('Firebase not configured');
     }
 
-    try {
-      const auth = getFirebaseAuth();
-      const provider = getGoogleProvider();
+    const auth = getFirebaseAuth();
+    const provider = getGoogleProvider();
 
-      // Always use redirect - more reliable in production environments
-      // Popup-based auth has known issues with third-party cookie restrictions
-      // and can fail with "fireauth is not defined" error
-      await signInWithRedirect(auth, provider);
-      // Redirect will navigate away - result handled in useEffect (getRedirectResult)
-      return null;
+    try {
+      // Try popup first - better UX
+      const result = await signInWithPopup(auth, provider);
+
+      // Sync with backend to get JWT and subscription status
+      const backendData = await syncWithBackend(result.user);
+
+      return {
+        firebaseUser: result.user,
+        backendData,
+      };
     } catch (err) {
+      // Check if this is a popup-related error that should trigger fallback
+      const shouldFallbackToRedirect =
+        err.code === 'auth/popup-blocked' ||
+        err.code === 'auth/popup-closed-by-user' ||
+        err.code === 'auth/cancelled-popup-request' ||
+        err.message?.includes('fireauth') ||
+        err.message?.includes('Cross-Origin');
+
+      if (shouldFallbackToRedirect && err.code !== 'auth/popup-closed-by-user') {
+        // Fallback to redirect for popup failures (except user-initiated close)
+        console.warn('[Auth] Popup failed, falling back to redirect:', err.code || err.message);
+        try {
+          await signInWithRedirect(auth, provider);
+          return null; // Redirect navigates away
+        } catch (redirectErr) {
+          console.error('Google sign-in redirect error:', redirectErr);
+          setError(getErrorMessage(redirectErr.code));
+          throw redirectErr;
+        }
+      }
+
       console.error('Google sign-in error:', err);
       setError(getErrorMessage(err.code));
       throw err;
     }
-  }, []);
+  }, [syncWithBackend]);
 
   // Sign out
   const logout = useCallback(async () => {
