@@ -13,7 +13,7 @@ from pydantic import Field, model_validator
 
 from .base import BaseParamsModel
 from .types import (
-    WrapList,
+    IntList,
     DistrictList,
     CoercedDate,
     CoercedInt,
@@ -33,7 +33,7 @@ class PriceGrowthParams(BaseParamsModel):
         default=None,
         description="Project name (partial match)"
     )
-    bedrooms: WrapList = Field(
+    bedrooms: IntList = Field(
         default=None,
         validation_alias='bedroom',
         description="Bedroom filter"

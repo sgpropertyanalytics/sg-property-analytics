@@ -170,9 +170,46 @@ def wrap_in_list(v: Any) -> Optional[List[str]]:
     return [str(v).strip()]
 
 
+def wrap_int_in_list(v: Any) -> Optional[List[int]]:
+    """
+    Wrap value in a list, coercing to int.
+
+    This is for bedroom fields where the old normalize_params
+    preserves int type: bedroom=3 -> [3], not ["3"].
+
+    Examples:
+        3 -> [3]
+        "3" -> [3]
+        [3, 4] -> [3, 4]
+        None -> None
+    """
+    if v is None or v == '':
+        return None
+    if isinstance(v, list):
+        result = []
+        for item in v:
+            if item is None or item == '':
+                continue
+            if isinstance(item, int):
+                result.append(item)
+            else:
+                try:
+                    result.append(int(item))
+                except (ValueError, TypeError):
+                    result.append(item)  # Keep as-is if not convertible
+        return result if result else None
+    if isinstance(v, int):
+        return [v]
+    try:
+        return [int(v)]
+    except (ValueError, TypeError):
+        return [v]  # type: ignore
+
+
 # Annotated types for use in Pydantic models
 CommaList = Annotated[Optional[List[str]], BeforeValidator(split_comma_list)]
 WrapList = Annotated[Optional[List[str]], BeforeValidator(wrap_in_list)]  # Wraps without splitting
+IntList = Annotated[Optional[List[int]], BeforeValidator(wrap_int_in_list)]  # Wraps as int list
 DistrictList = Annotated[Optional[List[str]], BeforeValidator(normalize_districts)]
 CoercedDate = Annotated[Optional[date], BeforeValidator(coerce_date)]
 CoercedInt = Annotated[Optional[int], BeforeValidator(coerce_int)]
