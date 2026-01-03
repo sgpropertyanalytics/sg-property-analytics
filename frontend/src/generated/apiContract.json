@@ -3162,6 +3162,15 @@
       },
       "response_schema": {
         "data_fields": {
+          "apiContractVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiContractVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
           "bedrooms": {
             "allowed_values": null,
             "default": null,
@@ -3170,6 +3179,15 @@
             "nullable": true,
             "required": true,
             "type": "list"
+          },
+          "contractHash": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "contractHash",
+            "nullable": true,
+            "required": true,
+            "type": "str"
           },
           "dateRange": {
             "allowed_values": null,
@@ -3185,6 +3203,15 @@
             "default": null,
             "description": "",
             "name": "districts",
+            "nullable": true,
+            "required": true,
+            "type": "list"
+          },
+          "marketSegments": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "marketSegments",
             "nullable": true,
             "required": true,
             "type": "list"
@@ -3223,7 +3250,7 @@
             "name": "regions",
             "nullable": true,
             "required": true,
-            "type": "dict"
+            "type": "list"
           },
           "saleTypes": {
             "allowed_values": null,
