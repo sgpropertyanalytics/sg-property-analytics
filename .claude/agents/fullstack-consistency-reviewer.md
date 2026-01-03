@@ -572,6 +572,183 @@ def test_all_frontend_params_have_schema_fields():
 EOF
 ```
 
+### 1.6 Naming Consistency Check (Identity Drift Prevention)
+
+> **Origin:** Jan 2026 - A value entered the system as `timeframe`, got renamed to `period` mid-flow,
+> but a cache key still read `timeframe` (now empty) → silent bug. The data flowed correctly
+> through transformations but consumers disagreed on the name.
+
+#### The Problem: Identity Drift
+
+**Identity Drift** occurs when the same concept has multiple names across layers, and code in different places reads different names expecting the same value.
+
+**Affected identifiers (not just params):**
+
+| Category | Examples |
+|----------|----------|
+| API params | `timeframe` vs `period` vs `dateRange` |
+| Response fields | `median_psf` vs `medianPsf` vs `psf_median` |
+| State variables | `isLoading` vs `loading` vs `isInProgress` |
+| Event handlers | `onClick` vs `handleClick` vs `onPress` |
+| Database columns | `sale_type` vs `saleType` vs `type` |
+| Config keys | `maxRetries` vs `max_retries` vs `retryLimit` |
+| Constants | `RESALE` vs `resale` vs `Resale` |
+
+**The drift pattern:**
+
+```
+Layer A: Uses name X for concept
+    ↓
+Layer B: Renames X → Y (transform, adapter, or just different convention)
+    ↓
+Layer C: Reads X (expecting value, gets undefined/default)
+    ↓
+Layer D: Reads Y (gets correct value)
+    ↓
+Result: C and D disagree. Silent bugs, cache misses, wrong defaults.
+```
+
+#### Why This Is Hard to Catch
+
+1. **Each layer works in isolation** - Layer B's rename is "correct" locally
+2. **No single grep finds it** - You need to trace the concept across layers
+3. **Tests pass** - Unit tests mock the values, don't catch the mismatch
+4. **Fails silently** - Code uses defaults instead of erroring
+
+#### Detection Strategy
+
+**Step 1: Identify concepts that flow across layers**
+
+For any PR, ask: "What identifiers cross boundaries?"
+- Frontend → API (params, headers)
+- API → Backend (field names, keys)
+- Backend → Database (column names)
+- Component → Component (props, callbacks)
+- Cache key → Query (must match exactly)
+
+**Step 2: Grep for synonyms**
+
+```bash
+# Generic pattern: Find files where multiple names for same concept coexist
+# Replace SYNONYM1|SYNONYM2 with the actual names you're checking
+
+# Example: Time-related naming
+grep -rn "timeframe\|period\|dateRange\|date_range" --include="*.py" --include="*.js" --include="*.jsx" | \
+  awk -F: '{print $1}' | sort | uniq -c | sort -rn | head -20
+# Red flag: Same file has multiple synonyms
+
+# Example: Loading state naming
+grep -rn "isLoading\|loading\|isInProgress\|pending" frontend/src/ | \
+  awk -F: '{print $1}' | sort | uniq -c | sort -rn | head -20
+
+# Example: Sale type naming
+grep -rn "sale_type\|saleType\|SaleType\|sale-type" backend/ frontend/ | \
+  awk -F: '{print $1}' | sort | uniq -c | sort -rn | head -20
+```
+
+**Step 3: Trace across boundaries**
+
+```bash
+# Find where a value is WRITTEN vs READ with different names
+# Writer uses name A:
+grep -rn "\.nameA\s*=" --include="*.js" --include="*.py"
+# Reader expects name B:
+grep -rn "\.nameB\s*[^=]" --include="*.js" --include="*.py"
+
+# Find mid-flow renames (DANGEROUS)
+grep -rn "\[.*\]\s*=.*\[.*\]" --include="*.py"  # dict key reassignment
+grep -rn "\..*\s*=.*\.\w" --include="*.js"       # object property reassignment
+```
+
+**Step 4: Verify cache/query alignment**
+
+```bash
+# Cache keys and queries must use identical identifiers
+grep -B10 -A10 "cache_key\|cacheKey" backend/ frontend/ | grep -E "=|:"
+# Compare: Do cache key components match query/fetch parameters?
+```
+
+#### Checklist
+
+```markdown
+NAMING CONSISTENCY CHECK:
+
+[ ] Identify all concepts that cross layer boundaries in this PR
+    List them: _______________
+
+[ ] For each cross-boundary concept, verify ONE canonical name:
+    - Sender uses: X
+    - Receiver uses: X (not Y)
+    - Cache/memo key uses: X
+    - Logs use: X
+
+[ ] No mid-flow renames:
+    - data['newName'] = data['oldName'] ← FORBIDDEN mid-flow
+    - Renames only at system entry points (adapters, normalizers)
+
+[ ] If renaming, grep ENTIRE codebase:
+    - grep -rn "oldName" backend/ frontend/
+    - ALL usages updated in same PR (no partial migrations)
+
+[ ] Grep test: Can you find ALL usages with ONE search?
+    - If you need to search for 2+ synonyms, you have drift
+```
+
+#### Red Flags (P0/P1)
+
+| Pattern | Severity | Problem | Detection |
+|---------|----------|---------|-----------|
+| Same concept, 2+ names in same file | P1 | Confusion, wrong reads | `grep \| uniq -c` shows >1 name |
+| Mid-flow rename (`x.b = x.a`) | P0 | Downstream reads wrong name | Grep for key reassignment |
+| Partial rename (some files updated, some not) | P0 | Runtime mismatch | Grep finds both old and new names |
+| Cache key ≠ query identifier | P0 | Cache miss or stale data | Compare cache key construction to query |
+| camelCase/snake_case mismatch across boundary | P1 | Silent undefined | Check adapter transforms |
+| Log uses different name than code | P2 | Debugging confusion | Compare log statements to variable names |
+
+#### Common Drift Scenarios
+
+| Scenario | What Drifts | How to Catch |
+|----------|-------------|--------------|
+| Frontend→Backend | camelCase vs snake_case | Check adapter transforms both directions |
+| Config→Code | `MAX_RETRIES` vs `maxRetries` | Grep config keys, verify usage |
+| Props→State | `initialValue` vs `value` | Check component receives what parent sends |
+| Cache→Query | Key components vs query params | Side-by-side comparison |
+| DB→API | Column names vs response fields | Check serializer/model mapping |
+| Event→Handler | `onClick` vs `handleClick` | Verify event binding matches handler |
+
+#### Audit Output Format
+
+```markdown
+## 1.6 Identity Drift Check
+
+### Concepts Crossing Boundaries
+| Concept | Layers | Canonical Name | Status |
+|---------|--------|----------------|--------|
+| [what it represents] | FE→BE | [chosen name] | ✅ Consistent / ❌ Drifted |
+
+### Drift Violations Found
+| Location | Names Found | Expected | Issue |
+|----------|-------------|----------|-------|
+| `file.py:42` | period | timeframe | Mid-flow rename |
+| `adapter.js:15` | medianPsf | median_psf | Not transformed back |
+
+### Grep Test Results
+| Concept | Synonyms Searched | Files with Multiple | Status |
+|---------|-------------------|---------------------|--------|
+| time filter | timeframe, period | 3 files | ❌ Needs cleanup |
+| sale type | sale_type, saleType | 0 files | ✅ Consistent |
+```
+
+#### Integration with §7.3 Principles
+
+This check enforces CLAUDE.md §7.3:
+
+| Principle | What This Check Does |
+|-----------|---------------------|
+| 14. Canonicalize at Edges | Verifies renames only at entry/exit points |
+| 16. One Name Per Concept | Greps for synonyms, flags if multiple found |
+| 17. Immutable After Parse | Detects post-normalization mutations |
+
 ---
 
 ## PHASE 2: CHART IMPACT VALIDATION
