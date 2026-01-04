@@ -65,6 +65,7 @@ class BaseParamsModel(BaseModel):
 
         Accepts: 'new_sale', 'resale', 'sub_sale', 'all', or already-normalized DB values.
         Returns: DB format ('New Sale', 'Resale', 'Sub Sale') or None.
+        Raises: ValueError for invalid values.
         """
         if v is None:
             return None
@@ -78,7 +79,10 @@ class BaseParamsModel(BaseModel):
             # Already DB format -> pass through
             if key in SALE_TYPE_TO_DB.values():
                 return key
-        return v
+            # Invalid value - reject at boundary
+            valid = list(SALE_TYPE_TO_DB.keys()) + list(SALE_TYPE_TO_DB.values()) + ['all']
+            raise ValueError(f"Invalid sale_type: {v!r}. Valid values: {valid}")
+        raise ValueError(f"sale_type must be a string, got {type(v).__name__}")
 
     @field_validator('tenure', mode='before', check_fields=False)
     @classmethod
@@ -87,6 +91,7 @@ class BaseParamsModel(BaseModel):
 
         Accepts: 'freehold', '99_year', '999_year', or already-normalized DB values.
         Returns: DB format ('Freehold', '99-year', '999-year') or None.
+        Raises: ValueError for invalid values.
         """
         if v is None:
             return None
@@ -98,7 +103,10 @@ class BaseParamsModel(BaseModel):
                 return TENURE_TO_DB[key]
             if key in TENURE_TO_DB.values():
                 return key
-        return v
+            # Invalid value - reject at boundary
+            valid = list(TENURE_TO_DB.keys()) + list(TENURE_TO_DB.values()) + ['all']
+            raise ValueError(f"Invalid tenure: {v!r}. Valid values: {valid}")
+        raise ValueError(f"tenure must be a string, got {type(v).__name__}")
 
     @field_validator('floor_level', mode='before', check_fields=False)
     @classmethod
@@ -107,6 +115,7 @@ class BaseParamsModel(BaseModel):
 
         Accepts: 'low', 'mid_low', 'mid', etc., or already-normalized DB values.
         Returns: DB format ('Low', 'Mid-Low', 'Mid', etc.) or None.
+        Raises: ValueError for invalid values.
         """
         if v is None:
             return None
@@ -118,4 +127,7 @@ class BaseParamsModel(BaseModel):
                 return FLOOR_LEVEL_TO_DB[key]
             if key in FLOOR_LEVEL_TO_DB.values():
                 return key
-        return v
+            # Invalid value - reject at boundary
+            valid = list(FLOOR_LEVEL_TO_DB.keys()) + list(FLOOR_LEVEL_TO_DB.values()) + ['all']
+            raise ValueError(f"Invalid floor_level: {v!r}. Valid values: {valid}")
+        raise ValueError(f"floor_level must be a string, got {type(v).__name__}")
