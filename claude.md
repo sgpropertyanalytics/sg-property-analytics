@@ -56,7 +56,7 @@ Private condo analytics platform using URA transaction data. Resale-focused with
 
 ## Core Invariants (NON-NEGOTIABLE)
 
-These 10 rules apply to EVERY task. Violation = bug.
+These 11 rules apply to EVERY task. Violation = bug.
 
 ### 1. Understand Before Implementing
 Read target files, check `git log -20 -- <file>`, find reference implementations. The architecture is SETTLED.
@@ -122,6 +122,21 @@ if (status === 'error') return <ErrorState />;
 if (!data?.length) return <EmptyState />;
 return <Chart data={data} />;
 ```
+
+### 11. Fix Root Cause, Not Symptoms
+**STOP before fixing ANY bug.** Don't blindly patch. Don't add layers.
+
+Ask these questions FIRST:
+1. **Band-aid or long-term fix?** — If band-aid, find root cause instead
+2. **Am I adding complexity?** — New middleware, wrapper, helper = RED FLAG
+3. **Does a library already solve this?** — Check before writing custom code
+4. **Does existing code handle this?** — Search repo for patterns first
+5. **Should I redesign the flow?** — Sometimes the architecture is wrong
+
+**Priority:** Clean, simple, efficient code that is **aligned and consistent** with existing patterns.
+
+> If you're adding a layer to fix a bug, you're probably creating two bugs.
+> If unsure whether it's a proper fix → **ASK, don't guess.**
 
 ---
 
