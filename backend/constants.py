@@ -434,8 +434,20 @@ SALE_TYPE_NEW = "New Sale"
 SALE_TYPE_RESALE = "Resale"
 SALE_TYPE_SUB = "Sub Sale"
 
+# API format values (snake_case for JSON API)
+SALE_TYPE_API_NEW = 'new_sale'
+SALE_TYPE_API_RESALE = 'resale'
+SALE_TYPE_API_SUB = 'sub_sale'
+
 # Valid sale types from URA transaction data
 SALE_TYPES = [SALE_TYPE_NEW, SALE_TYPE_RESALE, SALE_TYPE_SUB]
+
+# API to DB mapping (for boundary normalization)
+SALE_TYPE_API_TO_DB = {
+    SALE_TYPE_API_NEW: SALE_TYPE_NEW,
+    SALE_TYPE_API_RESALE: SALE_TYPE_RESALE,
+    SALE_TYPE_API_SUB: SALE_TYPE_SUB,
+}
 
 SALE_TYPE_LABELS = {
     SALE_TYPE_NEW: 'New Sale',      # Initial sale from developer
@@ -489,6 +501,18 @@ TENURE_FREEHOLD = "Freehold"
 TENURE_99_YEAR = "99-year"
 TENURE_999_YEAR = "999-year"
 
+# API format values (snake_case for JSON API)
+TENURE_API_FREEHOLD = 'freehold'
+TENURE_API_99_YEAR = '99_year'
+TENURE_API_999_YEAR = '999_year'
+
+# API to DB mapping (for boundary normalization)
+TENURE_API_TO_DB = {
+    TENURE_API_FREEHOLD: TENURE_FREEHOLD,
+    TENURE_API_99_YEAR: TENURE_99_YEAR,
+    TENURE_API_999_YEAR: TENURE_999_YEAR,
+}
+
 
 # =============================================================================
 # FLOOR LEVEL CLASSIFICATION - SINGLE SOURCE OF TRUTH
@@ -502,6 +526,26 @@ FLOOR_LEVEL_MID_HIGH = "Mid-High"
 FLOOR_LEVEL_HIGH = "High"
 FLOOR_LEVEL_LUXURY = "Luxury"
 FLOOR_LEVEL_UNKNOWN = "Unknown"
+
+# API format values (snake_case for JSON API)
+FLOOR_LEVEL_API_LOW = 'low'
+FLOOR_LEVEL_API_MID_LOW = 'mid_low'
+FLOOR_LEVEL_API_MID = 'mid'
+FLOOR_LEVEL_API_MID_HIGH = 'mid_high'
+FLOOR_LEVEL_API_HIGH = 'high'
+FLOOR_LEVEL_API_LUXURY = 'luxury'
+FLOOR_LEVEL_API_UNKNOWN = 'unknown'
+
+# API to DB mapping (for boundary normalization)
+FLOOR_LEVEL_API_TO_DB = {
+    FLOOR_LEVEL_API_LOW: FLOOR_LEVEL_LOW,
+    FLOOR_LEVEL_API_MID_LOW: FLOOR_LEVEL_MID_LOW,
+    FLOOR_LEVEL_API_MID: FLOOR_LEVEL_MID,
+    FLOOR_LEVEL_API_MID_HIGH: FLOOR_LEVEL_MID_HIGH,
+    FLOOR_LEVEL_API_HIGH: FLOOR_LEVEL_HIGH,
+    FLOOR_LEVEL_API_LUXURY: FLOOR_LEVEL_LUXURY,
+    FLOOR_LEVEL_API_UNKNOWN: FLOOR_LEVEL_UNKNOWN,
+}
 
 # Valid floor levels
 FLOOR_LEVELS = [
