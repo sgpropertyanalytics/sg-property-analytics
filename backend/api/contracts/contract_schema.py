@@ -657,8 +657,11 @@ def serialize_aggregate_response(
     if 'elapsed_ms' in meta_v2 and 'elapsedMs' not in meta_v2:
         meta_v2['elapsedMs'] = meta_v2.pop('elapsed_ms')
 
-    # Note: apiContractVersion and contractHash are now injected by @api_contract decorator
-    # This keeps serializers as pure data transformers
+    # Include apiContractVersion for standalone testability
+    # The @api_contract decorator will also inject this (and other meta fields)
+    # via .update(), which is a no-op if the value is already set
+    if 'apiContractVersion' not in meta_v2:
+        meta_v2['apiContractVersion'] = API_CONTRACT_VERSION
 
     return {
         'data': serialized_data,
