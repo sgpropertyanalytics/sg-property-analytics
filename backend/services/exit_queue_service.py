@@ -116,14 +116,14 @@ class PropertyFundamentals:
 def query_basic_stats(db, text, project_name: str, twelve_months_ago: date, sale_type_db: str = None) -> Optional[BasicStats]:
     """
     Query basic transaction statistics for a project.
-    Uses COALESCE for is_outlier NULL safety and SaleType.to_db() for sale_type normalization.
+    Uses COALESCE for is_outlier NULL safety.
 
     Args:
-        sale_type_db: DB value for sale_type filter (default: 'Resale' via SaleType.to_db)
+        sale_type_db: DB value for sale_type filter (default: 'Resale')
     """
-    # Use SaleType enum mapping for case-insensitive DB value
+    from api.contracts.pydantic_models.base import DB_SALE_TYPE_RESALE
     if sale_type_db is None:
-        sale_type_db = SaleType.to_db(SaleType.RESALE)  # 'Resale'
+        sale_type_db = DB_SALE_TYPE_RESALE
 
     result = db.session.execute(text("""
         SELECT
@@ -160,8 +160,9 @@ def query_bedroom_diversity(db, text, project_name: str, sale_type_db: str = Non
     Count distinct bedroom types for unit-type-mixed flag.
     Uses COALESCE for NULL safety.
     """
+    from api.contracts.pydantic_models.base import DB_SALE_TYPE_RESALE
     if sale_type_db is None:
-        sale_type_db = SaleType.to_db(SaleType.RESALE)
+        sale_type_db = DB_SALE_TYPE_RESALE
 
     result = db.session.execute(text("""
         SELECT COUNT(DISTINCT COALESCE(bedroom_count, 0)) as bedroom_types

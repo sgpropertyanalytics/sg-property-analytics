@@ -11,29 +11,54 @@ Key features:
 from pydantic import BaseModel, ConfigDict, field_validator
 
 
+# =============================================================================
+# DB FORMAT CONSTANTS (use these directly in SQL queries)
+# =============================================================================
+
+# Sale type DB values
+DB_SALE_TYPE_NEW = 'New Sale'
+DB_SALE_TYPE_RESALE = 'Resale'
+DB_SALE_TYPE_SUB = 'Sub Sale'
+
+# Tenure DB values
+DB_TENURE_FREEHOLD = 'Freehold'
+DB_TENURE_99_YEAR = '99-year'
+DB_TENURE_999_YEAR = '999-year'
+
+# Floor level DB values
+DB_FLOOR_LOW = 'Low'
+DB_FLOOR_MID_LOW = 'Mid-Low'
+DB_FLOOR_MID = 'Mid'
+DB_FLOOR_MID_HIGH = 'Mid-High'
+DB_FLOOR_HIGH = 'High'
+DB_FLOOR_LUXURY = 'Luxury'
+DB_FLOOR_UNKNOWN = 'Unknown'
+
+# =============================================================================
 # API to DB mappings for boundary normalization
 # Invariant: After validation, these fields are ALWAYS in DB format (or None)
+# =============================================================================
 
 SALE_TYPE_TO_DB = {
-    'new_sale': 'New Sale',
-    'resale': 'Resale',
-    'sub_sale': 'Sub Sale',
+    'new_sale': DB_SALE_TYPE_NEW,
+    'resale': DB_SALE_TYPE_RESALE,
+    'sub_sale': DB_SALE_TYPE_SUB,
 }
 
 TENURE_TO_DB = {
-    'freehold': 'Freehold',
-    '99_year': '99-year',
-    '999_year': '999-year',
+    'freehold': DB_TENURE_FREEHOLD,
+    '99_year': DB_TENURE_99_YEAR,
+    '999_year': DB_TENURE_999_YEAR,
 }
 
 FLOOR_LEVEL_TO_DB = {
-    'low': 'Low',
-    'mid_low': 'Mid-Low',
-    'mid': 'Mid',
-    'mid_high': 'Mid-High',
-    'high': 'High',
-    'luxury': 'Luxury',
-    'unknown': 'Unknown',
+    'low': DB_FLOOR_LOW,
+    'mid_low': DB_FLOOR_MID_LOW,
+    'mid': DB_FLOOR_MID,
+    'mid_high': DB_FLOOR_MID_HIGH,
+    'high': DB_FLOOR_HIGH,
+    'luxury': DB_FLOOR_LUXURY,
+    'unknown': DB_FLOOR_UNKNOWN,
 }
 
 
