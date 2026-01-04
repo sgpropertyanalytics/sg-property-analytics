@@ -95,13 +95,6 @@ class SaleType:
         return cls.DB_TO_API.get(db_value, db_value)
 
     @classmethod
-    def to_db(cls, api_value: Optional[str]) -> Optional[str]:
-        """Convert API sale_type enum to DB value."""
-        if api_value is None:
-            return None
-        return cls.API_TO_DB.get(api_value, api_value)
-
-    @classmethod
     def is_valid(cls, value: str) -> bool:
         """Check if value is a valid API enum."""
         return value in cls.ALL
@@ -128,13 +121,6 @@ class Tenure:
         if db_value is None:
             return None
         return cls.DB_TO_API.get(db_value, db_value)
-
-    @classmethod
-    def to_db(cls, api_value: Optional[str]) -> Optional[str]:
-        """Convert API tenure enum to DB value."""
-        if api_value is None:
-            return None
-        return cls.API_TO_DB.get(api_value, api_value)
 
 
 class Region:
@@ -186,13 +172,6 @@ class FloorLevel:
         if db_value is None:
             return None
         return cls.DB_TO_API.get(db_value, db_value.lower().replace('-', '_') if db_value else None)
-
-    @classmethod
-    def to_db(cls, api_value: Optional[str]) -> Optional[str]:
-        """Convert API floor_level enum to DB value."""
-        if api_value is None:
-            return None
-        return cls.API_TO_DB.get(api_value, api_value)
 
 
 class PropertyAgeBucket:
@@ -507,6 +486,7 @@ def parse_filter_params(request_args: dict) -> Dict[str, Any]:
     params = {}
 
     # Sale type: accept v2 enum values only
+    from constants import normalize_sale_type_api, normalize_tenure_api
     sale_type = request_args.get('saleType') or request_args.get('sale_type')
     if sale_type:
         if sale_type not in SaleType.ALL:
@@ -515,7 +495,7 @@ def parse_filter_params(request_args: dict) -> Dict[str, Any]:
                 field="sale_type",
                 received_value=sale_type
             )
-        params['sale_type_db'] = SaleType.to_db(sale_type)
+        params['sale_type_db'] = normalize_sale_type_api(sale_type)
 
     # Tenure: accept v2 enum values only
     tenure = request_args.get('tenure')
@@ -526,7 +506,7 @@ def parse_filter_params(request_args: dict) -> Dict[str, Any]:
                 field="tenure",
                 received_value=tenure
             )
-        params['tenure_db'] = Tenure.to_db(tenure)
+        params['tenure_db'] = normalize_tenure_api(tenure)
 
     # Region/segment: accept both region (v2) and segment (v1)
     # Supports comma-separated values (e.g., "CCR,RCR" or "ccr,rcr")
