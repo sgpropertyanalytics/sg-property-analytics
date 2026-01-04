@@ -6,6 +6,7 @@ Endpoints:
 """
 
 from flask import Blueprint, jsonify, g
+from sqlalchemy import func
 import time
 from models.project_location import ProjectLocation
 from models.popular_school import PopularSchool
@@ -87,7 +88,7 @@ def get_project_locations():
         # Search filter
         search = params.get("search")
         if search:
-            query = query.filter(ProjectLocation.project_name.ilike(f"%{search}%"))
+            query = query.filter(ProjectLocation.project_name.ilike(func.concat("%", search, "%")))
 
         # Get total count
         total_count = query.count()
