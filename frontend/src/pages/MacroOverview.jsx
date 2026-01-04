@@ -119,7 +119,7 @@ export function MacroOverviewContent() {
   const kpis = { items: kpiData, loading: kpisLoading };
 
   // Helper to get KPI by ID from the array
-  const getKpi = (kpiId) => kpis.items.find(k => getKpiField(k, KpiField.KPI_ID) === kpiId);
+  const getKpi = (kpiId) => kpis.items?.find(k => getKpiField(k, KpiField.KPI_ID) === kpiId);
 
   // Defer below-the-fold chart data to reduce initial load fanout
   // fetchOnMount: true ensures queries start immediately (skeleton shown during boot)
