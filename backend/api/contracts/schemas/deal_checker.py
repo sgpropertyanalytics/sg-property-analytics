@@ -10,8 +10,6 @@ Endpoints:
 
 from ..registry import (
     EndpointContract,
-    ParamSchema,
-    ServiceBoundarySchema,
     ResponseSchema,
     FieldSpec,
     register_contract,
@@ -25,44 +23,6 @@ from ..pydantic_models import DealCheckerMultiScopeParams, ProjectNamesParams
 # =============================================================================
 # /deal-checker/multi-scope
 # =============================================================================
-
-MULTI_SCOPE_PARAM_SCHEMA = ParamSchema(
-    fields={
-        "project_name": FieldSpec(
-            name="project_name",
-            type=str,
-            required=True,
-            description="Name of the project"
-        ),
-        "bedroom": FieldSpec(
-            name="bedroom",
-            type=int,
-            required=True,
-            description="Bedroom count (1-5, where 5 means 5+)"
-        ),
-        "price": FieldSpec(
-            name="price",
-            type=float,
-            required=True,
-            description="Buyer's price paid"
-        ),
-        "sqft": FieldSpec(
-            name="sqft",
-            type=float,
-            description="Unit size in sqft for ±15% range filtering"
-        ),
-    },
-    aliases={}
-)
-
-MULTI_SCOPE_SERVICE_SCHEMA = ServiceBoundarySchema(
-    fields={
-        "project_name": FieldSpec(name="project_name", type=str, required=True),
-        "bedrooms": FieldSpec(name="bedrooms", type=list, required=True),
-        "price": FieldSpec(name="price", type=float, required=True),
-        "sqft": FieldSpec(name="sqft", type=float),
-    }
-)
 
 MULTI_SCOPE_RESPONSE_SCHEMA = ResponseSchema(
     data_fields={
@@ -80,8 +40,8 @@ MULTI_SCOPE_RESPONSE_SCHEMA = ResponseSchema(
 MULTI_SCOPE_CONTRACT = EndpointContract(
     endpoint="deal-checker/multi-scope",
     version="v3",
-    response_schema=MULTI_SCOPE_RESPONSE_SCHEMA,
     pydantic_model=DealCheckerMultiScopeParams,
+    response_schema=MULTI_SCOPE_RESPONSE_SCHEMA,
     mode=SchemaMode.WARN,
 )
 
@@ -91,15 +51,6 @@ register_contract(MULTI_SCOPE_CONTRACT)
 # =============================================================================
 # /projects/names
 # =============================================================================
-
-PROJECT_NAMES_PARAM_SCHEMA = ParamSchema(
-    fields={},  # No params
-    aliases={}
-)
-
-PROJECT_NAMES_SERVICE_SCHEMA = ServiceBoundarySchema(
-    fields={}
-)
 
 PROJECT_NAMES_RESPONSE_SCHEMA = ResponseSchema(
     data_fields={
@@ -114,8 +65,8 @@ PROJECT_NAMES_RESPONSE_SCHEMA = ResponseSchema(
 PROJECT_NAMES_CONTRACT = EndpointContract(
     endpoint="deal-checker/project-names",
     version="v3",
-    response_schema=PROJECT_NAMES_RESPONSE_SCHEMA,
     pydantic_model=ProjectNamesParams,
+    response_schema=PROJECT_NAMES_RESPONSE_SCHEMA,
     mode=SchemaMode.WARN,
 )
 

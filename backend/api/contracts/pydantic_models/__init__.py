@@ -53,6 +53,14 @@ from .supply import SupplySummaryParams
 from .gls import GlsAllParams, GlsNeedsReviewParams
 from .upcoming_launches import UpcomingLaunchesAllParams, UpcomingNeedsReviewParams
 from .deal_checker import DealCheckerMultiScopeParams, ProjectNamesParams
+from .auth import (
+    RegisterParams,
+    LoginParams,
+    MeParams,
+    FirebaseSyncParams,
+    SubscriptionParams,
+    DeleteAccountParams,
+)
 
 __all__ = [
     'BaseParamsModel',
@@ -90,4 +98,11 @@ __all__ = [
     'UpcomingNeedsReviewParams',
     'DealCheckerMultiScopeParams',
     'ProjectNamesParams',
+    # Auth endpoints
+    'RegisterParams',
+    'LoginParams',
+    'MeParams',
+    'FirebaseSyncParams',
+    'SubscriptionParams',
+    'DeleteAccountParams',
 ]

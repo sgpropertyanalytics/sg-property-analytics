@@ -7,14 +7,15 @@ Provides schema validation, param normalization, and the @api_contract decorator
 from .registry import (
     SchemaMode,
     FieldSpec,
-    ParamSchema,
-    ServiceBoundarySchema,
     ResponseSchema,
-    CompatMap,
     EndpointContract,
     register_contract,
     get_contract,
     CONTRACTS,
+    # Legacy exports (kept for test compatibility)
+    ParamSchema,
+    ServiceBoundarySchema,
+    CompatMap,
 )
 from .wrapper import api_contract
 from .validate import ContractViolation
@@ -22,14 +23,15 @@ from .validate import ContractViolation
 __all__ = [
     'SchemaMode',
     'FieldSpec',
-    'ParamSchema',
-    'ServiceBoundarySchema',
     'ResponseSchema',
-    'CompatMap',
     'EndpointContract',
     'register_contract',
     'get_contract',
     'CONTRACTS',
     'api_contract',
     'ContractViolation',
+    # Legacy exports (kept for test compatibility)
+    'ParamSchema',
+    'ServiceBoundarySchema',
+    'CompatMap',
 ]

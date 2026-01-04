@@ -6,83 +6,18 @@ Returns all KPI metrics via the registry pattern.
 Endpoint: GET /api/kpi-summary-v2
 """
 
-from datetime import date
-
-# Import Pydantic models for parallel validation
-try:
-    from ..pydantic_models.kpi_summary import (
-        KPISummaryParams,
-        KPISingleParams,
-        KPISummaryLegacyParams,
-    )
-except ImportError:
-    KPISummaryParams = None
-    KPISingleParams = None
-    KPISummaryLegacyParams = None
-
 from ..registry import (
     EndpointContract,
-    ParamSchema,
-    ServiceBoundarySchema,
     ResponseSchema,
     FieldSpec,
     register_contract,
     make_meta_fields,
     make_required_meta,
 )
-
-
-# =============================================================================
-# PARAM SCHEMA - What frontend sends
-# =============================================================================
-
-KPI_SUMMARY_PARAM_SCHEMA = ParamSchema(
-    fields={
-        # Filters
-        "district": FieldSpec(
-            name="district",
-            type=str,
-            nullable=True,
-            description="Comma-separated district codes (D01, D02, or just 1, 2)"
-        ),
-        "bedroom": FieldSpec(
-            name="bedroom",
-            type=str,
-            nullable=True,
-            description="Comma-separated bedroom counts (2, 3, 4)"
-        ),
-        "segment": FieldSpec(
-            name="segment",
-            type=str,
-            nullable=True,
-            allowed_values=["CCR", "RCR", "OCR"],
-            description="Market segment filter (CCR, RCR, OCR)"
-        ),
-        "max_date": FieldSpec(
-            name="max_date",
-            type=date,
-            nullable=True,
-            description="Reference date for KPI calculations (defaults to latest transaction date)"
-        ),
-    },
-    aliases={
-        # Accept camelCase from frontend
-        "maxDate": "max_date",
-    }
-)
-
-
-# =============================================================================
-# SERVICE BOUNDARY SCHEMA - What service receives after normalization
-# =============================================================================
-
-KPI_SUMMARY_SERVICE_SCHEMA = ServiceBoundarySchema(
-    fields={
-        "districts": FieldSpec(name="districts", type=str, nullable=True),  # Comma-separated
-        "bedrooms": FieldSpec(name="bedrooms", type=str, nullable=True),  # Comma-separated
-        "segment": FieldSpec(name="segment", type=str, nullable=True),
-        "max_date": FieldSpec(name="max_date", type=date, nullable=True),
-    }
+from ..pydantic_models.kpi_summary import (
+    KPISummaryParams,
+    KPISingleParams,
+    KPISummaryLegacyParams,
 )
 
 
@@ -178,7 +113,7 @@ def validate_kpi_response(response: dict) -> None:
 
 
 # =============================================================================
-# REGISTER CONTRACT
+# REGISTER CONTRACTS
 # =============================================================================
 
 KPI_SUMMARY_CONTRACT = EndpointContract(
@@ -188,48 +123,10 @@ KPI_SUMMARY_CONTRACT = EndpointContract(
     pydantic_model=KPISummaryParams,
 )
 
-# Register on import
 register_contract(KPI_SUMMARY_CONTRACT)
 
 
-# =============================================================================
-# KPI-SUMMARY-V2/<KPI_ID> ENDPOINT - Single KPI
-# =============================================================================
-
-KPI_SINGLE_PARAM_SCHEMA = ParamSchema(
-    fields={
-        "district": FieldSpec(
-            name="district",
-            type=str,
-            nullable=True,
-            description="Comma-separated district codes"
-        ),
-        "bedroom": FieldSpec(
-            name="bedroom",
-            type=str,
-            nullable=True,
-            description="Comma-separated bedroom counts"
-        ),
-        "segment": FieldSpec(
-            name="segment",
-            type=str,
-            nullable=True,
-            allowed_values=["CCR", "RCR", "OCR"],
-            description="Market segment filter"
-        ),
-    },
-    aliases={}
-)
-
-KPI_SINGLE_SERVICE_SCHEMA = ServiceBoundarySchema(
-    fields={
-        "kpi_id": FieldSpec(name="kpi_id", type=str, required=True),
-        "districts": FieldSpec(name="districts", type=str, nullable=True),
-        "bedrooms": FieldSpec(name="bedrooms", type=str, nullable=True),
-        "segment": FieldSpec(name="segment", type=str, nullable=True),
-    }
-)
-
+# KPI-SUMMARY-V2/<KPI_ID> - Single KPI endpoint
 KPI_SINGLE_RESPONSE_SCHEMA = ResponseSchema(
     data_fields={},
     meta_fields=make_meta_fields(),
@@ -247,43 +144,7 @@ KPI_SINGLE_CONTRACT = EndpointContract(
 register_contract(KPI_SINGLE_CONTRACT)
 
 
-# =============================================================================
-# KPI-SUMMARY (Legacy) ENDPOINT
-# =============================================================================
-
-KPI_SUMMARY_LEGACY_PARAM_SCHEMA = ParamSchema(
-    fields={
-        "district": FieldSpec(
-            name="district",
-            type=str,
-            nullable=True,
-            description="Comma-separated district codes"
-        ),
-        "bedroom": FieldSpec(
-            name="bedroom",
-            type=str,
-            nullable=True,
-            description="Comma-separated bedroom counts"
-        ),
-        "segment": FieldSpec(
-            name="segment",
-            type=str,
-            nullable=True,
-            allowed_values=["CCR", "RCR", "OCR"],
-            description="Market segment filter"
-        ),
-    },
-    aliases={}
-)
-
-KPI_SUMMARY_LEGACY_SERVICE_SCHEMA = ServiceBoundarySchema(
-    fields={
-        "districts": FieldSpec(name="districts", type=list, nullable=True),
-        "bedrooms": FieldSpec(name="bedrooms", type=list, nullable=True),
-        "segment": FieldSpec(name="segment", type=str, nullable=True),
-    }
-)
-
+# KPI-SUMMARY (Legacy) endpoint
 KPI_SUMMARY_LEGACY_RESPONSE_SCHEMA = ResponseSchema(
     data_fields={},
     meta_fields=make_meta_fields(),

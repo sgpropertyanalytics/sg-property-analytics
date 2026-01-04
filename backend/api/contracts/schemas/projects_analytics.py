@@ -12,8 +12,6 @@ Endpoints:
 
 from ..registry import (
     EndpointContract,
-    ParamSchema,
-    ServiceBoundarySchema,
     ResponseSchema,
     FieldSpec,
     register_contract,
@@ -32,24 +30,6 @@ from ..pydantic_models import (
 # =============================================================================
 # /projects/<project_name>/inventory
 # =============================================================================
-
-PROJECT_INVENTORY_PARAM_SCHEMA = ParamSchema(
-    fields={
-        "project_name": FieldSpec(
-            name="project_name",
-            type=str,
-            required=True,
-            description="Project name from URL path"
-        ),
-    },
-    aliases={}
-)
-
-PROJECT_INVENTORY_SERVICE_SCHEMA = ServiceBoundarySchema(
-    fields={
-        "project_name": FieldSpec(name="project_name", type=str, required=True),
-    }
-)
 
 PROJECT_INVENTORY_RESPONSE_SCHEMA = ResponseSchema(
     data_fields={
@@ -71,8 +51,8 @@ PROJECT_INVENTORY_RESPONSE_SCHEMA = ResponseSchema(
 PROJECT_INVENTORY_CONTRACT = EndpointContract(
     endpoint="projects/inventory",
     version="v3",
-    response_schema=PROJECT_INVENTORY_RESPONSE_SCHEMA,
     pydantic_model=ProjectInventoryParams,
+    response_schema=PROJECT_INVENTORY_RESPONSE_SCHEMA,
     mode=SchemaMode.WARN,
 )
 
@@ -82,37 +62,6 @@ register_contract(PROJECT_INVENTORY_CONTRACT)
 # =============================================================================
 # /projects/<project_name>/price-bands
 # =============================================================================
-
-PROJECT_PRICE_BANDS_PARAM_SCHEMA = ParamSchema(
-    fields={
-        "project_name": FieldSpec(
-            name="project_name",
-            type=str,
-            required=True,
-            description="Project name from URL path"
-        ),
-        "window_months": FieldSpec(
-            name="window_months",
-            type=int,
-            default=24,
-            description="Analysis window in months (6-60)"
-        ),
-        "unit_psf": FieldSpec(
-            name="unit_psf",
-            type=float,
-            description="User's unit PSF for verdict calculation (300-10000)"
-        ),
-    },
-    aliases={}
-)
-
-PROJECT_PRICE_BANDS_SERVICE_SCHEMA = ServiceBoundarySchema(
-    fields={
-        "project_name": FieldSpec(name="project_name", type=str, required=True),
-        "window_months": FieldSpec(name="window_months", type=int, default=24),
-        "unit_psf": FieldSpec(name="unit_psf", type=float),
-    }
-)
 
 PROJECT_PRICE_BANDS_RESPONSE_SCHEMA = ResponseSchema(
     data_fields={
@@ -135,8 +84,8 @@ PROJECT_PRICE_BANDS_RESPONSE_SCHEMA = ResponseSchema(
 PROJECT_PRICE_BANDS_CONTRACT = EndpointContract(
     endpoint="projects/price-bands",
     version="v3",
-    response_schema=PROJECT_PRICE_BANDS_RESPONSE_SCHEMA,
     pydantic_model=ProjectPriceBandsParams,
+    response_schema=PROJECT_PRICE_BANDS_RESPONSE_SCHEMA,
     mode=SchemaMode.WARN,
 )
 
@@ -146,15 +95,6 @@ register_contract(PROJECT_PRICE_BANDS_CONTRACT)
 # =============================================================================
 # /projects/resale-projects
 # =============================================================================
-
-RESALE_PROJECTS_PARAM_SCHEMA = ParamSchema(
-    fields={},  # No params
-    aliases={}
-)
-
-RESALE_PROJECTS_SERVICE_SCHEMA = ServiceBoundarySchema(
-    fields={}
-)
 
 RESALE_PROJECTS_RESPONSE_SCHEMA = ResponseSchema(
     data_fields={},
@@ -166,8 +106,8 @@ RESALE_PROJECTS_RESPONSE_SCHEMA = ResponseSchema(
 RESALE_PROJECTS_CONTRACT = EndpointContract(
     endpoint="projects/resale-projects",
     version="v3",
-    response_schema=RESALE_PROJECTS_RESPONSE_SCHEMA,
     pydantic_model=ResaleProjectsParams,
+    response_schema=RESALE_PROJECTS_RESPONSE_SCHEMA,
     mode=SchemaMode.WARN,
 )
 
@@ -177,24 +117,6 @@ register_contract(RESALE_PROJECTS_CONTRACT)
 # =============================================================================
 # /projects/<project_name>/exit-queue
 # =============================================================================
-
-PROJECT_EXIT_QUEUE_PARAM_SCHEMA = ParamSchema(
-    fields={
-        "project_name": FieldSpec(
-            name="project_name",
-            type=str,
-            required=True,
-            description="Project name from URL path"
-        ),
-    },
-    aliases={}
-)
-
-PROJECT_EXIT_QUEUE_SERVICE_SCHEMA = ServiceBoundarySchema(
-    fields={
-        "project_name": FieldSpec(name="project_name", type=str, required=True),
-    }
-)
 
 PROJECT_EXIT_QUEUE_RESPONSE_SCHEMA = ResponseSchema(
     data_fields={
@@ -213,8 +135,8 @@ PROJECT_EXIT_QUEUE_RESPONSE_SCHEMA = ResponseSchema(
 PROJECT_EXIT_QUEUE_CONTRACT = EndpointContract(
     endpoint="projects/exit-queue",
     version="v3",
-    response_schema=PROJECT_EXIT_QUEUE_RESPONSE_SCHEMA,
     pydantic_model=ProjectExitQueueParams,
+    response_schema=PROJECT_EXIT_QUEUE_RESPONSE_SCHEMA,
     mode=SchemaMode.WARN,
 )
 
