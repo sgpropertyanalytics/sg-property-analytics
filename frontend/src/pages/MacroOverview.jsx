@@ -107,7 +107,7 @@ export function MacroOverviewContent() {
       return response.data.kpis || [];
     },
     [kpiParams],
-    { chartName: 'MacroOverview-KPI', initialData: [], keepPreviousData: true }
+    { chartName: 'MacroOverview-KPI', initialData: null, keepPreviousData: true }
   );
 
   // Backwards-compatible kpis object for getKpi helper
@@ -146,7 +146,7 @@ export function MacroOverviewContent() {
       return response.data || [];
     },
     [debouncedFilterKey, timeGrouping],
-    { chartName: 'MacroOverview-Compression', initialData: [], keepPreviousData: true, enabled: shouldFetchCompression }
+    { chartName: 'MacroOverview-Compression', initialData: null, keepPreviousData: true, enabled: shouldFetchCompression }
   );
 
   // Transform raw data for compression charts (memoized to avoid re-transform on every render)

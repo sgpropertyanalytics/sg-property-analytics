@@ -108,7 +108,7 @@ function DistrictLiquidityMapBase({
     },
     // Use debouncedFilterKey for standardized query key (same as Market Overview)
     [debouncedFilterKey, saleType, 'district-liquidity'],
-    { chartName: 'DistrictLiquidityMap', enabled, initialData: { districts: [], meta: {} } }
+    { chartName: 'DistrictLiquidityMap', enabled, initialData: null }
   );
 
   const districtData = data?.districts || [];

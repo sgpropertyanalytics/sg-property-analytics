@@ -59,6 +59,8 @@ export function useDeferredFetch({
   const lastFilterKeyRef = useRef(filterKey);
   const isFirstMountRef = useRef(true);
   const deferTimeoutRef = useRef(null);
+  // Track if initial fetch has been triggered - don't disable until it completes
+  const initialFetchTriggeredRef = useRef(fetchOnMount);
 
   // Set up IntersectionObserver for visibility detection
   useEffect(() => {
@@ -107,15 +109,21 @@ export function useDeferredFetch({
       if (delay === 0) {
         setShouldFetch(true);
         lastFilterKeyRef.current = filterKey;
+        initialFetchTriggeredRef.current = false; // Initial fetch complete, future fetches can be deferred
       } else {
         deferTimeoutRef.current = setTimeout(() => {
           setShouldFetch(true);
           lastFilterKeyRef.current = filterKey;
+          initialFetchTriggeredRef.current = false; // Initial fetch complete
         }, delay);
       }
     } else {
-      // Not visible - mark as needing fetch when visible
-      setShouldFetch(false);
+      // Not visible - defer fetch ONLY if initial mount fetch has completed
+      // This prevents disabling the query while the first fetch is still in progress
+      if (!initialFetchTriggeredRef.current) {
+        setShouldFetch(false);
+      }
+      // If initialFetchTriggeredRef is true, keep shouldFetch=true to let initial fetch complete
     }
 
     return () => {
@@ -135,6 +143,7 @@ export function useDeferredFetch({
       deferTimeoutRef.current = setTimeout(() => {
         setShouldFetch(true);
         lastFilterKeyRef.current = filterKey;
+        initialFetchTriggeredRef.current = false; // Mark initial fetch as complete
       }, delay);
 
       return () => {
@@ -142,6 +151,11 @@ export function useDeferredFetch({
           clearTimeout(deferTimeoutRef.current);
         }
       };
+    }
+    // Also clear initial fetch flag when chart becomes visible with shouldFetch already true
+    // This handles the case where first fetch completed while not visible
+    if (isVisible && shouldFetch && initialFetchTriggeredRef.current) {
+      initialFetchTriggeredRef.current = false;
     }
   }, [isVisible, filterKey, priority, shouldFetch]);
 

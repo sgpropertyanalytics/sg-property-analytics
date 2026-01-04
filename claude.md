@@ -535,13 +535,18 @@ Design philosophy for this codebase. Apply these when making architectural decis
     - Good: Single config file, referenced everywhere
     - Requirements change. Make changing easy.
 
+13. **YAGNI: Don't optimize until you have a measured problem**
+    - Bad: Add caching "because it might be slow" → Complex code, no benefit
+    - Good: Measure first, optimize only if needed → Simple code until proven otherwise
+    - Premature optimization adds complexity without evidence of value. The useDeferredFetch bug (Jan 2026) was caused by optimization for "cascade load reduction" that disabled queries mid-flight.
+
 ## 7.3 Param & Data Flow Integrity
 
 > **Origin:** Jan 2026 - `timeframe=M6` was sent by frontend, converted to `period` by adapter, backend used `period` to compute dates, but cache key read `params.timeframe` which was never set → defaulted to Y1. The param flowed correctly through transformations but a downstream reader used the wrong name.
 
 These principles prevent "param identity drift" bugs where data enters the system under one name, gets transformed, and downstream consumers read the wrong name/value.
 
-### 13. Parse, Don't Transform in Transit
+### 14. Parse, Don't Transform in Transit
 
 ```
 ❌ Bad:  Input → Transform → Transform → Transform → Use
@@ -566,7 +571,7 @@ def parse_time_filter(raw_timeframe):
 # Everything downstream uses start/end directly
 ```
 
-### 14. Canonicalize at the Edges
+### 15. Canonicalize at the Edges
 
 ```
 ❌ Bad:  Transform data as it flows through the system
@@ -581,7 +586,7 @@ API boundary: timeframe='M6' → { startDate: '2025-01-01', endDate: '2025-06-30
 
 The API boundary is the ONE place where `timeframe` → dates conversion happens. After that point, `timeframe` doesn't exist.
 
-### 15. Pass Specific Values, Not Intents
+### 16. Pass Specific Values, Not Intents
 
 ```
 ❌ Intent:   "M6" (what does this mean? 180 days? 6 calendar months? from when?)
@@ -601,7 +606,7 @@ cache_key = f"data:{resolved['start']}:{resolved['end']}"
 query_dates = resolved
 ```
 
-### 16. One Name Per Concept
+### 17. One Name Per Concept
 
 ```
 ❌ Bad:  timeframe, period, dateRange (all mean the same thing)
@@ -620,7 +625,7 @@ grep -rn "timeframe\|period\|dateRange" backend/
 grep -rn "date_from.*date_to" backend/
 ```
 
-### 17. Immutable After Normalization
+### 18. Immutable After Normalization
 
 ```
 ❌ Bad:  params object gets modified by different layers

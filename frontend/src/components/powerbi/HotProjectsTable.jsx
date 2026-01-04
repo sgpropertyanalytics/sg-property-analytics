@@ -85,7 +85,7 @@ export function HotProjectsTable({
     [filtersKey, refreshTrigger],
     {
       chartName: 'HotProjectsTable',
-      initialData: [],
+      initialData: null,
       onSuccess: (projects) => {
         if (onDataLoad) onDataLoad(projects.length);
       }

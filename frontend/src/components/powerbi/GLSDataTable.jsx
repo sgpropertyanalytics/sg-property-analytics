@@ -81,7 +81,7 @@ export function GLSDataTable({ height = 400 }) {
     {
       chartName: 'GLSDataTable',
       enabled: shouldFetch,
-      initialData: [],
+      initialData: null,
     }
   );
 
