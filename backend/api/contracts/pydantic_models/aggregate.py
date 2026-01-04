@@ -16,7 +16,7 @@ from typing import Optional, List, Literal
 
 from pydantic import Field, model_validator
 
-from .base import BaseParamsModel
+from api.contracts.contract_schema import BaseParamsModel
 from .types import (
     CommaList,
     WrapList,
@@ -84,11 +84,11 @@ class AggregateParams(BaseParamsModel):
         description="Alias for segment filter"
     )
 
-    # Sale type (stays singular)
+    # Sale type (normalized to DB format by BaseParamsModel validator)
     sale_type: Optional[str] = Field(
         default=None,
         alias='saleType',
-        description="Sale type filter (new_sale, resale, sub_sale)"
+        description="Sale type filter (normalized to DB format: 'New Sale', 'Resale', 'Sub Sale')"
     )
 
     # Tenure (singular -> plural in model_validator)

@@ -276,10 +276,10 @@ def _compute_monthly_percentiles(
     conditions = []
     params = {}
 
-    # Sale type: Use API contract for DB value
-    resale_db_value = SaleType.to_db(SaleType.RESALE)
+    # Sale type: Use DB constant directly
+    from constants import SALE_TYPE_RESALE as DB_SALE_TYPE_RESALE
     conditions.append("sale_type = :sale_type")
-    params["sale_type"] = resale_db_value
+    params["sale_type"] = DB_SALE_TYPE_RESALE
 
     # Outlier exclusion: Use COALESCE for NULL handling
     conditions.append("COALESCE(is_outlier, false) = false")

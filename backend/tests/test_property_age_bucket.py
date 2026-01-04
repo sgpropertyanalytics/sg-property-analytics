@@ -104,51 +104,6 @@ class TestPropertyAgeBucketEnum:
         # 8 >= 8 and 8 < 15 is True, so age 8 IS young_resale
 
 
-class TestPropertyAgeBucketParsing:
-    """Test filter parameter parsing for property age bucket."""
-
-    def test_parse_v2_camelcase_param(self):
-        """v2 camelCase parameter name should be parsed."""
-        from api.contracts.contract_schema import parse_filter_params
-
-        args = {'propertyAgeBucket': 'recently_top'}
-        params = parse_filter_params(args)
-        assert params.get('property_age_bucket') == 'recently_top'
-
-    def test_parse_v1_snake_case_param(self):
-        """v1 snake_case parameter name should be parsed."""
-        from api.contracts.contract_schema import parse_filter_params
-
-        args = {'property_age_bucket': 'young_resale'}
-        params = parse_filter_params(args)
-        assert params.get('property_age_bucket') == 'young_resale'
-
-    def test_v2_takes_precedence_over_v1(self):
-        """v2 camelCase should take precedence if both provided."""
-        from api.contracts.contract_schema import parse_filter_params
-
-        args = {'propertyAgeBucket': 'resale', 'property_age_bucket': 'mature_resale'}
-        params = parse_filter_params(args)
-        assert params.get('property_age_bucket') == 'resale'
-
-    def test_invalid_bucket_ignored(self):
-        """Invalid bucket values should be ignored."""
-        from api.contracts.contract_schema import parse_filter_params
-
-        args = {'propertyAgeBucket': 'invalid_bucket'}
-        params = parse_filter_params(args)
-        assert 'property_age_bucket' not in params
-
-    def test_all_valid_buckets_parsed(self):
-        """All valid bucket values should be accepted."""
-        from api.contracts.contract_schema import parse_filter_params, PropertyAgeBucket
-
-        for bucket in PropertyAgeBucket.ALL:
-            args = {'propertyAgeBucket': bucket}
-            params = parse_filter_params(args)
-            assert params.get('property_age_bucket') == bucket
-
-
 class TestPropertyAgeBucketSerialization:
     """Test filter options serialization for property age buckets."""
 

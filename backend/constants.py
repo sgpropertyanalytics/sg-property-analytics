@@ -434,8 +434,20 @@ SALE_TYPE_NEW = "New Sale"
 SALE_TYPE_RESALE = "Resale"
 SALE_TYPE_SUB = "Sub Sale"
 
+# API format values (snake_case for JSON API)
+SALE_TYPE_API_NEW = 'new_sale'
+SALE_TYPE_API_RESALE = 'resale'
+SALE_TYPE_API_SUB = 'sub_sale'
+
 # Valid sale types from URA transaction data
 SALE_TYPES = [SALE_TYPE_NEW, SALE_TYPE_RESALE, SALE_TYPE_SUB]
+
+# API to DB mapping (for boundary normalization)
+SALE_TYPE_API_TO_DB = {
+    SALE_TYPE_API_NEW: SALE_TYPE_NEW,
+    SALE_TYPE_API_RESALE: SALE_TYPE_RESALE,
+    SALE_TYPE_API_SUB: SALE_TYPE_SUB,
+}
 
 SALE_TYPE_LABELS = {
     SALE_TYPE_NEW: 'New Sale',      # Initial sale from developer
@@ -489,8 +501,143 @@ TENURE_FREEHOLD = "Freehold"
 TENURE_99_YEAR = "99-year"
 TENURE_999_YEAR = "999-year"
 
+# API format values (snake_case for JSON API)
+TENURE_API_FREEHOLD = 'freehold'
+TENURE_API_99_YEAR = '99_year'
+TENURE_API_999_YEAR = '999_year'
+
+# API to DB mapping (for boundary normalization)
+TENURE_API_TO_DB = {
+    TENURE_API_FREEHOLD: TENURE_FREEHOLD,
+    TENURE_API_99_YEAR: TENURE_99_YEAR,
+    TENURE_API_999_YEAR: TENURE_999_YEAR,
+}
+
+
+# =============================================================================
+# FLOOR LEVEL CLASSIFICATION - SINGLE SOURCE OF TRUTH
+# =============================================================================
+
+# Individual floor level DB values (use these for comparisons)
+FLOOR_LEVEL_LOW = "Low"
+FLOOR_LEVEL_MID_LOW = "Mid-Low"
+FLOOR_LEVEL_MID = "Mid"
+FLOOR_LEVEL_MID_HIGH = "Mid-High"
+FLOOR_LEVEL_HIGH = "High"
+FLOOR_LEVEL_LUXURY = "Luxury"
+FLOOR_LEVEL_UNKNOWN = "Unknown"
+
+# API format values (snake_case for JSON API)
+FLOOR_LEVEL_API_LOW = 'low'
+FLOOR_LEVEL_API_MID_LOW = 'mid_low'
+FLOOR_LEVEL_API_MID = 'mid'
+FLOOR_LEVEL_API_MID_HIGH = 'mid_high'
+FLOOR_LEVEL_API_HIGH = 'high'
+FLOOR_LEVEL_API_LUXURY = 'luxury'
+FLOOR_LEVEL_API_UNKNOWN = 'unknown'
+
+# API to DB mapping (for boundary normalization)
+FLOOR_LEVEL_API_TO_DB = {
+    FLOOR_LEVEL_API_LOW: FLOOR_LEVEL_LOW,
+    FLOOR_LEVEL_API_MID_LOW: FLOOR_LEVEL_MID_LOW,
+    FLOOR_LEVEL_API_MID: FLOOR_LEVEL_MID,
+    FLOOR_LEVEL_API_MID_HIGH: FLOOR_LEVEL_MID_HIGH,
+    FLOOR_LEVEL_API_HIGH: FLOOR_LEVEL_HIGH,
+    FLOOR_LEVEL_API_LUXURY: FLOOR_LEVEL_LUXURY,
+    FLOOR_LEVEL_API_UNKNOWN: FLOOR_LEVEL_UNKNOWN,
+}
+
+# Valid floor levels
+FLOOR_LEVELS = [
+    FLOOR_LEVEL_LOW,
+    FLOOR_LEVEL_MID_LOW,
+    FLOOR_LEVEL_MID,
+    FLOOR_LEVEL_MID_HIGH,
+    FLOOR_LEVEL_HIGH,
+    FLOOR_LEVEL_LUXURY,
+]
+
 # Valid tenure types
 TENURE_TYPES = [TENURE_FREEHOLD, TENURE_99_YEAR, TENURE_999_YEAR]
+
+
+# =============================================================================
+# BOUNDARY NORMALIZATION FUNCTIONS
+# =============================================================================
+# These functions normalize API input to DB format at the validation boundary.
+# Used by Pydantic validators. They are fail-fast (raise ValueError for invalid input).
+
+
+def normalize_sale_type_api(v) -> str | None:
+    """
+    Normalize sale_type to DB format at API boundary.
+
+    Accepts: API format ('new_sale', 'resale', 'sub_sale'), DB format, 'all', or None.
+    Returns: DB format ('New Sale', 'Resale', 'Sub Sale') or None.
+    Raises: ValueError for invalid values.
+    """
+    if v is None:
+        return None
+    if isinstance(v, str):
+        key = v.strip()
+        if key == '' or key.lower() == 'all':
+            return None
+        # API format -> DB format
+        if key in SALE_TYPE_API_TO_DB:
+            return SALE_TYPE_API_TO_DB[key]
+        # Already DB format -> pass through
+        if key in SALE_TYPE_API_TO_DB.values():
+            return key
+        # Invalid
+        valid = list(SALE_TYPE_API_TO_DB.keys()) + list(SALE_TYPE_API_TO_DB.values()) + ['all']
+        raise ValueError(f"Invalid sale_type: {v!r}. Valid values: {valid}")
+    raise ValueError(f"sale_type must be a string, got {type(v).__name__}")
+
+
+def normalize_tenure_api(v) -> str | None:
+    """
+    Normalize tenure to DB format at API boundary.
+
+    Accepts: API format ('freehold', '99_year', '999_year'), DB format, 'all', or None.
+    Returns: DB format ('Freehold', '99-year', '999-year') or None.
+    Raises: ValueError for invalid values.
+    """
+    if v is None:
+        return None
+    if isinstance(v, str):
+        key = v.strip()
+        if key == '' or key.lower() == 'all':
+            return None
+        if key in TENURE_API_TO_DB:
+            return TENURE_API_TO_DB[key]
+        if key in TENURE_API_TO_DB.values():
+            return key
+        valid = list(TENURE_API_TO_DB.keys()) + list(TENURE_API_TO_DB.values()) + ['all']
+        raise ValueError(f"Invalid tenure: {v!r}. Valid values: {valid}")
+    raise ValueError(f"tenure must be a string, got {type(v).__name__}")
+
+
+def normalize_floor_level_api(v) -> str | None:
+    """
+    Normalize floor_level to DB format at API boundary.
+
+    Accepts: API format ('low', 'mid_low', etc.), DB format, 'all', or None.
+    Returns: DB format ('Low', 'Mid-Low', etc.) or None.
+    Raises: ValueError for invalid values.
+    """
+    if v is None:
+        return None
+    if isinstance(v, str):
+        key = v.strip()
+        if key == '' or key.lower() == 'all':
+            return None
+        if key in FLOOR_LEVEL_API_TO_DB:
+            return FLOOR_LEVEL_API_TO_DB[key]
+        if key in FLOOR_LEVEL_API_TO_DB.values():
+            return key
+        valid = list(FLOOR_LEVEL_API_TO_DB.keys()) + list(FLOOR_LEVEL_API_TO_DB.values()) + ['all']
+        raise ValueError(f"Invalid floor_level: {v!r}. Valid values: {valid}")
+    raise ValueError(f"floor_level must be a string, got {type(v).__name__}")
 
 TENURE_TYPE_LABELS = {
     TENURE_FREEHOLD: 'Freehold',

@@ -145,12 +145,13 @@ def check_internal_consistency(project_name, current_units):
     Check if transaction count is consistent with total units.
     Returns: {source, agrees, txn_count, note}
     """
+    from constants import SALE_TYPE_NEW as DB_SALE_TYPE_NEW
     txn_result = db.session.execute(text("""
         SELECT COUNT(*) as txn_count
         FROM transactions
         WHERE UPPER(project_name) LIKE UPPER(:project_pattern)
-          AND sale_type = 'New Sale'
-    """), {"project_pattern": f"%{project_name}%"}).fetchone()
+          AND sale_type = :sale_type
+    """), {"project_pattern": f"%{project_name}%", "sale_type": DB_SALE_TYPE_NEW}).fetchone()
 
     txn_count = txn_result.txn_count if txn_result else 0
 

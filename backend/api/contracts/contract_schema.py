@@ -14,7 +14,51 @@ Version History:
 
 from typing import Any, Dict, Optional
 from datetime import datetime
+from pydantic import BaseModel, ConfigDict, field_validator
 from utils.normalize import ValidationError
+from constants import (
+    normalize_sale_type_api,
+    normalize_tenure_api,
+    normalize_floor_level_api,
+)
+
+
+# =============================================================================
+# BASE PYDANTIC MODEL FOR API PARAMS
+# =============================================================================
+
+class BaseParamsModel(BaseModel):
+    """
+    Base model for all API param schemas.
+
+    - Frozen after creation (immutable)
+    - Whitespace stripped from strings
+    - Both alias and field name accepted
+    - Unknown fields ignored
+    - sale_type, tenure, floor_level normalized to DB format at boundary
+    """
+    model_config = ConfigDict(
+        frozen=True,
+        str_strip_whitespace=True,
+        populate_by_name=True,
+        extra='ignore',
+    )
+
+    @field_validator('sale_type', mode='before', check_fields=False)
+    @classmethod
+    def normalize_sale_type_to_db(cls, v):
+        return normalize_sale_type_api(v)
+
+    @field_validator('tenure', mode='before', check_fields=False)
+    @classmethod
+    def normalize_tenure_to_db(cls, v):
+        return normalize_tenure_api(v)
+
+    @field_validator('floor_level', mode='before', check_fields=False)
+    @classmethod
+    def normalize_floor_level_to_db(cls, v):
+        return normalize_floor_level_api(v)
+
 
 # =============================================================================
 # API CONTRACT VERSIONING
@@ -80,15 +124,12 @@ class SaleType:
 
     ALL = [NEW_SALE, RESALE, SUB_SALE]
 
-    # Mapping from DB values to API enum values
-    DB_TO_API = {
-        'New Sale': NEW_SALE,
-        'Resale': RESALE,
-        'Sub Sale': SUB_SALE,
-    }
+    # Import canonical mapping directly from constants.py (single source of truth)
+    from constants import SALE_TYPE_API_TO_DB as _API_TO_DB
 
-    # Reverse mapping from API enum values to DB values
-    API_TO_DB = {v: k for k, v in DB_TO_API.items()}
+    # Derive DB_TO_API from canonical mapping
+    DB_TO_API = {v: k for k, v in _API_TO_DB.items()}
+    API_TO_DB = _API_TO_DB
 
     @classmethod
     def from_db(cls, db_value: Optional[str]) -> Optional[str]:
@@ -96,13 +137,6 @@ class SaleType:
         if db_value is None:
             return None
         return cls.DB_TO_API.get(db_value, db_value)
-
-    @classmethod
-    def to_db(cls, api_value: Optional[str]) -> Optional[str]:
-        """Convert API sale_type enum to DB value."""
-        if api_value is None:
-            return None
-        return cls.API_TO_DB.get(api_value, api_value)
 
     @classmethod
     def is_valid(cls, value: str) -> bool:
@@ -118,13 +152,12 @@ class Tenure:
 
     ALL = [FREEHOLD, LEASEHOLD_99, LEASEHOLD_999]
 
-    DB_TO_API = {
-        'Freehold': FREEHOLD,
-        '99-year': LEASEHOLD_99,
-        '999-year': LEASEHOLD_999,
-    }
+    # Import canonical mapping directly from constants.py (single source of truth)
+    from constants import TENURE_API_TO_DB as _API_TO_DB
 
-    API_TO_DB = {v: k for k, v in DB_TO_API.items()}
+    # Derive DB_TO_API from canonical mapping
+    DB_TO_API = {v: k for k, v in _API_TO_DB.items()}
+    API_TO_DB = _API_TO_DB
 
     @classmethod
     def from_db(cls, db_value: Optional[str]) -> Optional[str]:
@@ -132,13 +165,6 @@ class Tenure:
         if db_value is None:
             return None
         return cls.DB_TO_API.get(db_value, db_value)
-
-    @classmethod
-    def to_db(cls, api_value: Optional[str]) -> Optional[str]:
-        """Convert API tenure enum to DB value."""
-        if api_value is None:
-            return None
-        return cls.API_TO_DB.get(api_value, api_value)
 
 
 class Region:
@@ -177,16 +203,12 @@ class FloorLevel:
 
     ALL = [LOW, MID_LOW, MID, MID_HIGH, HIGH, LUXURY]
 
-    DB_TO_API = {
-        'Low': LOW,
-        'Mid-Low': MID_LOW,
-        'Mid': MID,
-        'Mid-High': MID_HIGH,
-        'High': HIGH,
-        'Luxury': LUXURY,
-        'Unknown': UNKNOWN,
-    }
-    API_TO_DB = {v: k for k, v in DB_TO_API.items()}
+    # Import canonical mapping directly from constants.py (single source of truth)
+    from constants import FLOOR_LEVEL_API_TO_DB as _API_TO_DB
+
+    # Derive DB_TO_API from canonical mapping
+    DB_TO_API = {v: k for k, v in _API_TO_DB.items()}
+    API_TO_DB = _API_TO_DB
 
     @classmethod
     def from_db(cls, db_value: Optional[str]) -> Optional[str]:
@@ -194,13 +216,6 @@ class FloorLevel:
         if db_value is None:
             return None
         return cls.DB_TO_API.get(db_value, db_value.lower().replace('-', '_') if db_value else None)
-
-    @classmethod
-    def to_db(cls, api_value: Optional[str]) -> Optional[str]:
-        """Convert API floor_level enum to DB value."""
-        if api_value is None:
-            return None
-        return cls.API_TO_DB.get(api_value, api_value)
 
 
 class PropertyAgeBucket:
@@ -486,146 +501,6 @@ def _mask_psf(psf: Optional[float]) -> Optional[str]:
 
 
 # =============================================================================
-# FILTER PARAMETER PARSING
-# =============================================================================
-
-def parse_filter_params(request_args: dict) -> Dict[str, Any]:
-    """Parse and validate filter parameters (v2 enums only).
-
-    Canonicalizes all filter inputs at the API boundary.
-    Use the returned values for DB queries.
-
-    Args:
-        request_args: Flask request.args dict
-
-    Returns:
-        dict with normalized parameter values for DB queries:
-        - sale_type_db: DB-format sale type (e.g., 'New Sale')
-        - tenure_db: DB-format tenure (e.g., '99-year')
-        - segment_db: uppercase region (e.g., 'CCR')
-        - districts: list of normalized districts (e.g., ['D01', 'D02'])
-        - bedrooms: list of integers (e.g., [2, 3])
-        - date_from: Python date object (not string)
-        - date_to: Python date object (not string)
-        - psf_min, psf_max: floats
-        - size_min, size_max: floats
-        - project: string (partial match)
-        - project_exact: string (exact match)
-    """
-    params = {}
-
-    # Sale type: accept v2 enum values only
-    sale_type = request_args.get('saleType') or request_args.get('sale_type')
-    if sale_type:
-        if sale_type not in SaleType.ALL:
-            raise ValidationError(
-                f"Invalid sale_type: {sale_type!r}",
-                field="sale_type",
-                received_value=sale_type
-            )
-        params['sale_type_db'] = SaleType.to_db(sale_type)
-
-    # Tenure: accept v2 enum values only
-    tenure = request_args.get('tenure')
-    if tenure:
-        if tenure not in Tenure.ALL:
-            raise ValidationError(
-                f"Invalid tenure: {tenure!r}",
-                field="tenure",
-                received_value=tenure
-            )
-        params['tenure_db'] = Tenure.to_db(tenure)
-
-    # Region/segment: accept both region (v2) and segment (v1)
-    # Supports comma-separated values (e.g., "CCR,RCR" or "ccr,rcr")
-    region = request_args.get('region') or request_args.get('segment')
-    if region:
-        segments = [s.strip().upper() for s in region.split(',') if s.strip()]
-        valid_segments = [s for s in segments if s in ['CCR', 'RCR', 'OCR']]
-        if valid_segments:
-            params['segments_db'] = valid_segments
-
-    # District: normalize format to DXX
-    district = request_args.get('district')
-    if district:
-        districts = [d.strip().upper() for d in district.split(',') if d.strip()]
-        normalized = []
-        for d in districts:
-            if not d.startswith('D'):
-                d = f"D{d.zfill(2)}"
-            normalized.append(d)
-        if normalized:
-            params['districts'] = normalized
-
-    # Bedroom: parse comma-separated integers
-    bedroom = request_args.get('bedroom')
-    if bedroom:
-        try:
-            bedrooms = [int(b.strip()) for b in bedroom.split(',') if b.strip()]
-            if bedrooms:
-                params['bedrooms'] = bedrooms
-        except ValueError:
-            pass
-
-    # Date range - parse to Python date objects (not strings)
-    date_from = request_args.get('date_from')
-    date_to = request_args.get('date_to')
-    if date_from:
-        try:
-            params['date_from'] = datetime.strptime(date_from, "%Y-%m-%d").date()
-        except ValueError:
-            pass  # Invalid format, skip
-    if date_to:
-        try:
-            params['date_to'] = datetime.strptime(date_to, "%Y-%m-%d").date()
-        except ValueError:
-            pass  # Invalid format, skip
-
-    # PSF range
-    psf_min = request_args.get('psf_min')
-    psf_max = request_args.get('psf_max')
-    if psf_min:
-        try:
-            params['psf_min'] = float(psf_min)
-        except ValueError:
-            pass
-    if psf_max:
-        try:
-            params['psf_max'] = float(psf_max)
-        except ValueError:
-            pass
-
-    # Size range
-    size_min = request_args.get('size_min')
-    size_max = request_args.get('size_max')
-    if size_min:
-        try:
-            params['size_min'] = float(size_min)
-        except ValueError:
-            pass
-    if size_max:
-        try:
-            params['size_max'] = float(size_max)
-        except ValueError:
-            pass
-
-    # Project filter
-    project = request_args.get('project')
-    project_exact = request_args.get('project_exact')
-    if project_exact:
-        params['project_exact'] = project_exact
-    elif project:
-        params['project'] = project
-
-    # Property age bucket filter: accept both v2 camelCase and v1 snake_case
-    property_age_bucket = request_args.get('propertyAgeBucket') or request_args.get('property_age_bucket')
-    if property_age_bucket and PropertyAgeBucket.is_valid(property_age_bucket):
-        params['property_age_bucket'] = property_age_bucket
-
-    return params
-
-
-# =============================================================================
 # AGGREGATE RESPONSE SERIALIZATION
 # =============================================================================
 
@@ -782,8 +657,11 @@ def serialize_aggregate_response(
     if 'elapsed_ms' in meta_v2 and 'elapsedMs' not in meta_v2:
         meta_v2['elapsedMs'] = meta_v2.pop('elapsed_ms')
 
-    # Note: apiContractVersion and contractHash are now injected by @api_contract decorator
-    # This keeps serializers as pure data transformers
+    # Include apiContractVersion for standalone testability
+    # The @api_contract decorator will also inject this (and other meta fields)
+    # via .update(), which is a no-op if the value is already set
+    if 'apiContractVersion' not in meta_v2:
+        meta_v2['apiContractVersion'] = API_CONTRACT_VERSION
 
     return {
         'data': serialized_data,

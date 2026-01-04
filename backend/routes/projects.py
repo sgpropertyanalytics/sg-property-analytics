@@ -5,7 +5,7 @@ Endpoints:
 - GET /api/projects/locations - List all project locations with geocoding status
 """
 
-from flask import Blueprint, request, jsonify, g
+from flask import Blueprint, jsonify, g
 import time
 from models.project_location import ProjectLocation
 from models.popular_school import PopularSchool
@@ -38,7 +38,7 @@ def get_project_locations():
     """
     Get list of all project locations with geocoding status.
 
-    Query params:
+    Query params (normalized by Pydantic via @api_contract):
         - status: filter by geocode_status (pending, success, failed)
         - district: filter by district
         - segment: filter by market segment
@@ -57,49 +57,43 @@ def get_project_locations():
     start = time.time()
 
     try:
+        # Use normalized params from Pydantic (via @api_contract decorator)
+        params = g.normalized_params
+
         # Build query
         query = db.session.query(ProjectLocation)
 
         # Status filter
-        status = request.args.get("status")
+        status = params.get("status")
         if status:
             query = query.filter(ProjectLocation.geocode_status == status)
 
-        # District filter
-        districts_param = request.args.get("district")
-        if districts_param:
-            districts = [d.strip().upper() for d in districts_param.split(",") if d.strip()]
-            normalized = []
-            for d in districts:
-                if not d.startswith("D"):
-                    d = f"D{d.zfill(2)}"
-                normalized.append(d)
-            query = query.filter(ProjectLocation.district.in_(normalized))
+        # District filter (already normalized to list by Pydantic)
+        districts = params.get("districts") or []
+        if districts:
+            query = query.filter(ProjectLocation.district.in_(districts))
 
         # Segment filter
-        segment = request.args.get("segment")
+        segment = params.get("segment")
         if segment:
             query = query.filter(ProjectLocation.market_segment == segment.upper())
 
         # School filter
-        has_school = request.args.get("has_school")
-        if has_school:
-            if has_school.lower() == 'true':
-                query = query.filter(ProjectLocation.has_popular_school_1km == True)
-            elif has_school.lower() == 'false':
-                query = query.filter(ProjectLocation.has_popular_school_1km == False)
+        has_school = params.get("has_school")
+        if has_school is not None:
+            query = query.filter(ProjectLocation.has_popular_school_1km == has_school)
 
         # Search filter
-        search = request.args.get("search")
+        search = params.get("search")
         if search:
             query = query.filter(ProjectLocation.project_name.ilike(f"%{search}%"))
 
         # Get total count
         total_count = query.count()
 
-        # Pagination
-        limit = to_int(request.args.get("limit"), default=100, field="limit")
-        offset = to_int(request.args.get("offset"), default=0, field="offset")
+        # Pagination (already normalized by Pydantic)
+        limit = params.get("limit", 100)
+        offset = params.get("offset", 0)
 
         projects = query.order_by(ProjectLocation.project_name).offset(offset).limit(limit).all()
 

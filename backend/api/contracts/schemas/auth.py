@@ -14,8 +14,6 @@ Endpoints:
 
 from ..registry import (
     EndpointContract,
-    ParamSchema,
-    ServiceBoundarySchema,
     ResponseSchema,
     FieldSpec,
     register_contract,
@@ -23,35 +21,20 @@ from ..registry import (
     make_required_meta,
 )
 
+# Import Pydantic models
+from ..pydantic_models.auth import (
+    RegisterParams,
+    LoginParams,
+    MeParams,
+    FirebaseSyncParams,
+    SubscriptionParams,
+    DeleteAccountParams,
+)
+
 
 # =============================================================================
 # REGISTER ENDPOINT
 # =============================================================================
-
-REGISTER_PARAM_SCHEMA = ParamSchema(
-    fields={
-        "email": FieldSpec(
-            name="email",
-            type=str,
-            required=True,
-            description="User email address"
-        ),
-        "password": FieldSpec(
-            name="password",
-            type=str,
-            required=True,
-            description="User password (min 8 characters)"
-        ),
-    },
-    aliases={}
-)
-
-REGISTER_SERVICE_SCHEMA = ServiceBoundarySchema(
-    fields={
-        "email": FieldSpec(name="email", type=str, required=True),
-        "password": FieldSpec(name="password", type=str, required=True),
-    }
-)
 
 REGISTER_RESPONSE_SCHEMA = ResponseSchema(
     data_fields={
@@ -67,8 +50,7 @@ REGISTER_RESPONSE_SCHEMA = ResponseSchema(
 REGISTER_CONTRACT = EndpointContract(
     endpoint="auth/register",
     version="v3",
-    param_schema=REGISTER_PARAM_SCHEMA,
-    service_schema=REGISTER_SERVICE_SCHEMA,
+    pydantic_model=RegisterParams,
     response_schema=REGISTER_RESPONSE_SCHEMA,
 )
 
@@ -78,31 +60,6 @@ register_contract(REGISTER_CONTRACT)
 # =============================================================================
 # LOGIN ENDPOINT
 # =============================================================================
-
-LOGIN_PARAM_SCHEMA = ParamSchema(
-    fields={
-        "email": FieldSpec(
-            name="email",
-            type=str,
-            required=True,
-            description="User email address"
-        ),
-        "password": FieldSpec(
-            name="password",
-            type=str,
-            required=True,
-            description="User password"
-        ),
-    },
-    aliases={}
-)
-
-LOGIN_SERVICE_SCHEMA = ServiceBoundarySchema(
-    fields={
-        "email": FieldSpec(name="email", type=str, required=True),
-        "password": FieldSpec(name="password", type=str, required=True),
-    }
-)
 
 LOGIN_RESPONSE_SCHEMA = ResponseSchema(
     data_fields={
@@ -118,8 +75,7 @@ LOGIN_RESPONSE_SCHEMA = ResponseSchema(
 LOGIN_CONTRACT = EndpointContract(
     endpoint="auth/login",
     version="v3",
-    param_schema=LOGIN_PARAM_SCHEMA,
-    service_schema=LOGIN_SERVICE_SCHEMA,
+    pydantic_model=LoginParams,
     response_schema=LOGIN_RESPONSE_SCHEMA,
 )
 
@@ -129,15 +85,6 @@ register_contract(LOGIN_CONTRACT)
 # =============================================================================
 # GET CURRENT USER ENDPOINT
 # =============================================================================
-
-ME_PARAM_SCHEMA = ParamSchema(
-    fields={},  # No query params, uses Authorization header
-    aliases={}
-)
-
-ME_SERVICE_SCHEMA = ServiceBoundarySchema(
-    fields={}
-)
 
 ME_RESPONSE_SCHEMA = ResponseSchema(
     data_fields={
@@ -151,8 +98,7 @@ ME_RESPONSE_SCHEMA = ResponseSchema(
 ME_CONTRACT = EndpointContract(
     endpoint="auth/me",
     version="v3",
-    param_schema=ME_PARAM_SCHEMA,
-    service_schema=ME_SERVICE_SCHEMA,
+    pydantic_model=MeParams,
     response_schema=ME_RESPONSE_SCHEMA,
 )
 
@@ -162,45 +108,6 @@ register_contract(ME_CONTRACT)
 # =============================================================================
 # FIREBASE SYNC ENDPOINT
 # =============================================================================
-
-FIREBASE_SYNC_PARAM_SCHEMA = ParamSchema(
-    fields={
-        "idToken": FieldSpec(
-            name="idToken",
-            type=str,
-            required=True,
-            description="Firebase ID token from OAuth sign-in"
-        ),
-        "email": FieldSpec(
-            name="email",
-            type=str,
-            nullable=True,
-            description="User email (fallback if not in token)"
-        ),
-        "displayName": FieldSpec(
-            name="displayName",
-            type=str,
-            nullable=True,
-            description="User display name from OAuth"
-        ),
-        "photoURL": FieldSpec(
-            name="photoURL",
-            type=str,
-            nullable=True,
-            description="User avatar URL from OAuth"
-        ),
-    },
-    aliases={}
-)
-
-FIREBASE_SYNC_SERVICE_SCHEMA = ServiceBoundarySchema(
-    fields={
-        "idToken": FieldSpec(name="idToken", type=str, required=True),
-        "email": FieldSpec(name="email", type=str, nullable=True),
-        "displayName": FieldSpec(name="displayName", type=str, nullable=True),
-        "photoURL": FieldSpec(name="photoURL", type=str, nullable=True),
-    }
-)
 
 FIREBASE_SYNC_RESPONSE_SCHEMA = ResponseSchema(
     data_fields={
@@ -217,8 +124,7 @@ FIREBASE_SYNC_RESPONSE_SCHEMA = ResponseSchema(
 FIREBASE_SYNC_CONTRACT = EndpointContract(
     endpoint="auth/firebase-sync",
     version="v3",
-    param_schema=FIREBASE_SYNC_PARAM_SCHEMA,
-    service_schema=FIREBASE_SYNC_SERVICE_SCHEMA,
+    pydantic_model=FirebaseSyncParams,
     response_schema=FIREBASE_SYNC_RESPONSE_SCHEMA,
 )
 
@@ -228,15 +134,6 @@ register_contract(FIREBASE_SYNC_CONTRACT)
 # =============================================================================
 # SUBSCRIPTION ENDPOINT
 # =============================================================================
-
-SUBSCRIPTION_PARAM_SCHEMA = ParamSchema(
-    fields={},  # No query params, uses Authorization header
-    aliases={}
-)
-
-SUBSCRIPTION_SERVICE_SCHEMA = ServiceBoundarySchema(
-    fields={}
-)
 
 SUBSCRIPTION_RESPONSE_SCHEMA = ResponseSchema(
     data_fields={
@@ -255,8 +152,7 @@ SUBSCRIPTION_RESPONSE_SCHEMA = ResponseSchema(
 SUBSCRIPTION_CONTRACT = EndpointContract(
     endpoint="auth/subscription",
     version="v3",
-    param_schema=SUBSCRIPTION_PARAM_SCHEMA,
-    service_schema=SUBSCRIPTION_SERVICE_SCHEMA,
+    pydantic_model=SubscriptionParams,
     response_schema=SUBSCRIPTION_RESPONSE_SCHEMA,
 )
 
@@ -266,15 +162,6 @@ register_contract(SUBSCRIPTION_CONTRACT)
 # =============================================================================
 # DELETE ACCOUNT ENDPOINT
 # =============================================================================
-
-DELETE_ACCOUNT_PARAM_SCHEMA = ParamSchema(
-    fields={},  # No params, uses Authorization header
-    aliases={}
-)
-
-DELETE_ACCOUNT_SERVICE_SCHEMA = ServiceBoundarySchema(
-    fields={}
-)
 
 DELETE_ACCOUNT_RESPONSE_SCHEMA = ResponseSchema(
     data_fields={
@@ -288,8 +175,7 @@ DELETE_ACCOUNT_RESPONSE_SCHEMA = ResponseSchema(
 DELETE_ACCOUNT_CONTRACT = EndpointContract(
     endpoint="auth/delete-account",
     version="v3",
-    param_schema=DELETE_ACCOUNT_PARAM_SCHEMA,
-    service_schema=DELETE_ACCOUNT_SERVICE_SCHEMA,
+    pydantic_model=DeleteAccountParams,
     response_schema=DELETE_ACCOUNT_RESPONSE_SCHEMA,
 )
 

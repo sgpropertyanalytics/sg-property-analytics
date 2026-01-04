@@ -9,12 +9,12 @@ Usage:
         ...
 
 The decorator:
-1. Validates public params against ParamSchema
-2. Normalizes params (singulars->plurals, date bounds, etc.)
-3. Validates normalized params against ServiceBoundarySchema
-4. After handler, validates response against ResponseSchema
-5. Injects meta fields (requestId, elapsedMs, etc.)
-6. Applies compatibility adapters
+1. Validates and normalizes params via Pydantic model
+2. Injects normalized params into g.normalized_params
+3. Calls the handler
+4. Validates response against ResponseSchema
+5. Injects meta fields (requestId, elapsedMs, apiVersion, etc.)
+6. Applies serializer if defined
 """
 
 import functools
@@ -24,32 +24,12 @@ import uuid
 from typing import Callable, Any, Dict, Optional, Tuple, Union
 
 from flask import request, jsonify, g, Response
+from pydantic import ValidationError as PydanticValidationError
 
 from .registry import get_contract, SchemaMode, EndpointContract
-from .normalize import normalize_params
-from .validate import (
-    validate_public_params,
-    validate_service_params,
-    validate_response,
-    ContractViolation,
-)
+from .validate import validate_response, ContractViolation
 from .contract_schema import API_CONTRACT_VERSION, get_schema_hash
-
-# Import feature flags for Pydantic migration
-try:
-    from .feature_flags import USE_PYDANTIC_VALIDATION
-except ImportError:
-    USE_PYDANTIC_VALIDATION = True  # Default to Pydantic (migration complete)
-
-# Import ValidationError from utils.normalize if available
-try:
-    from utils.normalize import ValidationError
-except ImportError:
-    class ValidationError(ValueError):
-        def __init__(self, message: str, field: str = None, received_value=None):
-            super().__init__(message)
-            self.field = field
-            self.received_value = received_value
+from utils.normalize import ValidationError
 
 
 logger = logging.getLogger('api.contracts')
@@ -94,36 +74,25 @@ def api_contract(endpoint_name: str):
                 # 1. Collect raw params
                 raw_params = _collect_raw_params()
 
-                # 2. Validate public params
-                validate_public_params(raw_params, contract.param_schema)
+                # 2. Validate and normalize params via Pydantic
+                # All endpoints now have pydantic_model (migration complete Jan 2026)
+                if not contract.pydantic_model:
+                    raise ValueError(f"No pydantic_model for endpoint '{endpoint_name}' - all endpoints must have Pydantic models")
 
-                # 3. Normalize params
-                # Phase 7: Pydantic is now the primary path (migration complete)
-                if USE_PYDANTIC_VALIDATION and hasattr(contract, 'pydantic_model') and contract.pydantic_model:
-                    # Use Pydantic model directly (no fallback to old code)
-                    try:
-                        normalized = contract.pydantic_model(**raw_params).model_dump()
-                        logger.debug(f"Using Pydantic validation for {endpoint_name}")
-                    except Exception as e:
-                        # Pydantic failed - this is now a hard error (no fallback)
-                        logger.error(f"Pydantic validation failed for {endpoint_name}: {e}")
-                        raise ValidationError(
-                            message=f"Parameter validation failed: {e}",
-                            field=None,
-                            received_value=raw_params
-                        )
-                else:
-                    # Legacy fallback for endpoints without Pydantic models
-                    normalized = normalize_params(raw_params, contract.param_schema)
+                try:
+                    normalized = contract.pydantic_model(**raw_params).model_dump()
+                except PydanticValidationError as e:
+                    logger.exception(f"Pydantic validation failed for {endpoint_name}: {e}")
+                    raise ValidationError(
+                        message=f"Parameter validation failed: {e}",
+                        field=None,
+                        received_value=raw_params
+                    ) from e
 
-                # 4. Inject into request context BEFORE service validation
-                # This ensures params are available even if service validation fails in WARN mode
+                # 3. Inject into request context
                 g.normalized_params = normalized
                 g.contract = contract
                 g.filters_applied = _extract_filters_applied(normalized)
-
-                # 5. Validate service params (may raise ContractViolation)
-                validate_service_params(normalized, contract.service_schema)
 
             except ValidationError as e:
                 return _make_error_response(

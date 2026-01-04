@@ -60,14 +60,35 @@ def _serialize_field(field_spec):
 
 
 def _serialize_contract(contract):
-    param_fields = {
-        name: _serialize_field(spec)
-        for name, spec in contract.param_schema.fields.items()
-    }
-    service_fields = {
-        name: _serialize_field(spec)
-        for name, spec in contract.service_schema.fields.items()
-    }
+    # Use Pydantic model_json_schema() when available (preferred)
+    if contract.pydantic_model:
+        pydantic_schema = contract.pydantic_model.model_json_schema()
+        param_schema_data = {
+            "json_schema": pydantic_schema,
+            "model_name": contract.pydantic_model.__name__,
+        }
+    elif contract.param_schema:
+        # Legacy fallback for contracts without Pydantic
+        param_fields = {
+            name: _serialize_field(spec)
+            for name, spec in contract.param_schema.fields.items()
+        }
+        param_schema_data = {
+            "fields": param_fields,
+            "aliases": contract.param_schema.aliases,
+        }
+    else:
+        param_schema_data = {"fields": {}, "aliases": {}}
+
+    # Service schema (legacy, optional)
+    if contract.service_schema:
+        service_fields = {
+            name: _serialize_field(spec)
+            for name, spec in contract.service_schema.fields.items()
+        }
+    else:
+        service_fields = {}
+
     response_data_fields = {
         name: _serialize_field(spec)
         for name, spec in contract.response_schema.data_fields.items()
@@ -81,10 +102,7 @@ def _serialize_contract(contract):
         "endpoint": contract.endpoint,
         "version": contract.version,
         "mode": contract.mode.value,
-        "param_schema": {
-            "fields": param_fields,
-            "aliases": contract.param_schema.aliases,
-        },
+        "param_schema": param_schema_data,
         "service_schema": {
             "fields": service_fields,
         },

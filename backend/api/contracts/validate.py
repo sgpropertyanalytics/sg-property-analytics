@@ -1,23 +1,21 @@
 """
-Schema validation for params and responses.
+Schema validation for API responses.
 
-Provides validation functions that check:
+Provides response validation that checks:
 - Required fields
 - Type correctness
-- Allowed values
 - Nullability constraints
 - Undeclared fields (bidirectional validation)
 
 Bidirectional validation catches schema drift where serializers return
-fields that aren't declared in schemas. This prevents the "works in WARN
-mode but breaks in STRICT" problem.
+fields that aren't declared in schemas.
 """
 
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 from datetime import date
 
-from .registry import ParamSchema, ServiceBoundarySchema, ResponseSchema, FieldSpec
+from .registry import ResponseSchema, FieldSpec
 
 
 @dataclass
@@ -35,112 +33,6 @@ class ContractViolation(Exception):
             "message": self.message,
             "details": self.details,
         }
-
-
-def validate_public_params(params: Dict[str, Any], schema: ParamSchema) -> None:
-    """
-    Validate public params against ParamSchema.
-
-    Checks:
-    - Required fields are present
-    - Values are in allowed_values if specified
-
-    Args:
-        params: Raw params from request
-        schema: ParamSchema to validate against
-
-    Raises:
-        ContractViolation: If validation fails
-    """
-    violations = []
-
-    for field_name, spec in schema.fields.items():
-        value = params.get(field_name)
-
-        # Also check aliases
-        if value is None:
-            for alias, canonical in schema.aliases.items():
-                if canonical == field_name and alias in params:
-                    value = params[alias]
-                    break
-
-        # Check required
-        if spec.required and value is None:
-            violations.append({
-                "field": field_name,
-                "error": "required_field_missing",
-                "message": f"Field '{field_name}' is required"
-            })
-            continue
-
-        # Check allowed values
-        if value is not None and spec.allowed_values:
-            # Handle comma-separated values
-            if isinstance(value, str) and ',' in value:
-                values = [v.strip() for v in value.split(',')]
-            else:
-                values = [value]
-
-            for v in values:
-                if v not in spec.allowed_values:
-                    violations.append({
-                        "field": field_name,
-                        "error": "invalid_value",
-                        "message": f"'{v}' not in allowed values",
-                        "allowed": spec.allowed_values,
-                        "received": v
-                    })
-
-    if violations:
-        raise ContractViolation(
-            message=f"{len(violations)} param validation error(s)",
-            details={"violations": violations}
-        )
-
-
-def validate_service_params(params: Dict[str, Any], schema: ServiceBoundarySchema) -> None:
-    """
-    Validate normalized params before calling service.
-
-    Checks:
-    - Required fields are present
-    - Types match expected types
-
-    Args:
-        params: Normalized params
-        schema: ServiceBoundarySchema to validate against
-
-    Raises:
-        ContractViolation: If validation fails
-    """
-    violations = []
-
-    for field_name, spec in schema.fields.items():
-        value = params.get(field_name)
-
-        # Check required
-        if spec.required and value is None:
-            violations.append({
-                "field": field_name,
-                "error": "required_field_missing",
-                "message": f"Service requires '{field_name}'"
-            })
-            continue
-
-        # Check type
-        if value is not None and not _check_type(value, spec.type):
-            violations.append({
-                "field": field_name,
-                "error": "type_mismatch",
-                "expected": spec.type.__name__,
-                "received": type(value).__name__
-            })
-
-    if violations:
-        raise ContractViolation(
-            message=f"{len(violations)} service param error(s)",
-            details={"violations": violations}
-        )
 
 
 def validate_response(response: Dict[str, Any], schema: ResponseSchema) -> None:
@@ -203,7 +95,6 @@ def validate_response(response: Dict[str, Any], schema: ResponseSchema) -> None:
                 })
 
     # Bidirectional: Check for undeclared meta fields
-    # This catches serializers injecting meta fields that schemas don't declare
     declared_meta = set(schema.meta_fields.keys())
     for field_name in meta.keys():
         if field_name not in declared_meta:
@@ -229,15 +120,12 @@ def _validate_data_item(
     Validate a single data item against field specs.
 
     Performs BIDIRECTIONAL validation:
-    1. Schema → Response: All required schema fields must be in response
-    2. Response → Schema: All response fields must be declared in schema
-
-    This catches schema drift where serializers add fields that schemas
-    don't declare, preventing silent contract violations.
+    1. Schema -> Response: All required schema fields must be in response
+    2. Response -> Schema: All response fields must be declared in schema
     """
     violations = []
 
-    # Direction 1: Schema → Response (missing/invalid fields)
+    # Direction 1: Schema -> Response (missing/invalid fields)
     for field_name, spec in field_specs.items():
         if field_name not in item:
             if spec.required:
@@ -262,8 +150,7 @@ def _validate_data_item(
                     "received": type(value).__name__
                 })
 
-    # Direction 2: Response → Schema (undeclared fields)
-    # This catches serializers returning fields that schemas don't declare
+    # Direction 2: Response -> Schema (undeclared fields)
     declared_fields = set(field_specs.keys())
     for field_name in item.keys():
         if field_name not in declared_fields:
@@ -293,30 +180,6 @@ def _check_type(value: Any, expected_type: type) -> bool:
 
     # Allow string dates
     if expected_type == date and isinstance(value, str):
-        # Accept ISO date strings
         return True
 
     return False
-
-
-def validate_field_value(value: Any, spec: FieldSpec) -> Optional[str]:
-    """
-    Validate a single field value against its spec.
-
-    Returns:
-        Error message if validation fails, None if valid
-    """
-    if spec.required and value is None:
-        return f"Field '{spec.name}' is required"
-
-    if value is not None:
-        if not spec.nullable and value is None:
-            return f"Field '{spec.name}' cannot be null"
-
-        if spec.allowed_values and value not in spec.allowed_values:
-            return f"'{value}' not in allowed values: {spec.allowed_values}"
-
-        if not _check_type(value, spec.type):
-            return f"Expected {spec.type.__name__}, got {type(value).__name__}"
-
-    return None

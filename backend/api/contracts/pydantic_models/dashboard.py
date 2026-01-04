@@ -9,7 +9,7 @@ from typing import Optional, List
 
 from pydantic import Field, model_validator
 
-from .base import BaseParamsModel
+from api.contracts.contract_schema import BaseParamsModel
 from .types import (
     CommaList,
     WrapList,
@@ -73,10 +73,11 @@ class DashboardParams(BaseParamsModel):
         validation_alias='bedroom',
         description="Bedroom filter"
     )
+    # sale_type normalized to DB format by BaseParamsModel validator
     sale_type: Optional[str] = Field(
         default=None,
         alias='saleType',
-        description="Sale type filter"
+        description="Sale type filter (normalized to DB format)"
     )
     tenure: Optional[str] = Field(
         default=None,

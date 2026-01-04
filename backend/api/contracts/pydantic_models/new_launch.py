@@ -1,9 +1,9 @@
 """
-Pydantic models for /transactions/* endpoint params.
+Pydantic models for new launch endpoints.
 
-Covers:
-- /transactions/price-growth
-- /transactions/price-growth/segments
+Endpoints:
+- new-launch-timeline
+- new-launch-absorption
 """
 
 from datetime import date, timedelta
@@ -13,59 +13,55 @@ from pydantic import Field, model_validator
 
 from api.contracts.contract_schema import BaseParamsModel
 from .types import (
-    IntList,
     DistrictList,
+    WrapList,
     CoercedDate,
-    CoercedInt,
 )
 
-# Import resolve_timeframe for date resolution
 from constants import resolve_timeframe
 
 
-class PriceGrowthParams(BaseParamsModel):
-    """
-    Pydantic model for /transactions/price-growth endpoint params.
-    """
+class NewLaunchTimelineParams(BaseParamsModel):
+    """Params for /new-launch-timeline endpoint."""
 
-    # === Filters ===
-    project: Optional[str] = Field(
-        default=None,
-        description="Project name (partial match)"
+    time_grain: Optional[str] = Field(
+        default="quarter",
+        alias='timeGrain',
+        description="Time grouping (month, quarter, year)"
     )
-    bedrooms: IntList = Field(
+
+    timeframe: Optional[str] = Field(
+        default=None,
+        description="Timeframe preset (M3, M6, Y1, Y3, Y5, all)"
+    )
+
+    districts: DistrictList = Field(
+        default=None,
+        validation_alias='district',
+        description="Comma-separated district codes"
+    )
+    segments: WrapList = Field(
+        default=None,
+        validation_alias='segment',
+        description="Market segment filter"
+    )
+    bedrooms: WrapList = Field(
         default=None,
         validation_alias='bedroom',
         description="Bedroom filter"
     )
-    floor_level: Optional[str] = Field(
-        default=None,
-        alias='floorLevel',
-        description="Floor tier filter"
-    )
-    districts: DistrictList = Field(
-        default=None,
-        validation_alias='district',
-        description="District filter"
-    )
-    # sale_type normalized to DB format by BaseParamsModel validator
-    sale_type: Optional[str] = Field(
-        default=None,
-        alias='saleType',
-        description="Sale type filter (normalized to DB format)"
-    )
 
-    # === Date Filters ===
     date_from: CoercedDate = Field(
         default=None,
         alias='dateFrom',
-        description="Start date"
+        description="Start date (inclusive)"
     )
     date_to: CoercedDate = Field(
         default=None,
         alias='dateTo',
-        description="End date"
+        description="End date (inclusive)"
     )
+
     date_to_exclusive: Optional[date] = Field(
         default=None,
         description="Exclusive end date (computed)"
@@ -75,19 +71,8 @@ class PriceGrowthParams(BaseParamsModel):
         description="Months in period"
     )
 
-    # === Pagination ===
-    page: CoercedInt = Field(
-        default=1,
-        description="Page number"
-    )
-    per_page: CoercedInt = Field(
-        default=50,
-        alias='perPage',
-        description="Records per page"
-    )
-
     @model_validator(mode='after')
-    def apply_normalizations(self) -> 'PriceGrowthParams':
+    def apply_normalizations(self) -> 'NewLaunchTimelineParams':
         """Apply domain-specific normalizations."""
         self._resolve_timeframe()
         self._normalize_date_bounds()
@@ -95,19 +80,18 @@ class PriceGrowthParams(BaseParamsModel):
         return self
 
     def _resolve_timeframe(self) -> None:
-        """Resolve default timeframe to date bounds."""
+        """Resolve timeframe preset to date bounds."""
         if self.date_from and (self.date_to_exclusive or self.date_to):
             return
 
-        # Default to Y1 like other endpoints
-        bounds = resolve_timeframe(None)
+        bounds = resolve_timeframe(self.timeframe)
         if bounds['date_from'] is not None:
             object.__setattr__(self, 'date_from', bounds['date_from'])
             object.__setattr__(self, 'date_to_exclusive', bounds['date_to_exclusive'])
             object.__setattr__(self, 'months_in_period', bounds['months_in_period'])
 
     def _normalize_date_bounds(self) -> None:
-        """Convert date_to to date_to_exclusive and clear date_to."""
+        """Convert date_to to date_to_exclusive."""
         if self.date_to_exclusive:
             if self.date_to:
                 object.__setattr__(self, 'date_to', None)
@@ -118,7 +102,7 @@ class PriceGrowthParams(BaseParamsModel):
             object.__setattr__(self, 'date_to', None)
 
     def _align_month_boundaries(self) -> None:
-        """Align dates to month boundaries for URA data."""
+        """Align dates to month boundaries."""
         if self.date_from and isinstance(self.date_from, date):
             aligned = date(self.date_from.year, self.date_from.month, 1)
             if aligned != self.date_from:
@@ -133,39 +117,47 @@ class PriceGrowthParams(BaseParamsModel):
                 object.__setattr__(self, 'date_to_exclusive', aligned)
 
 
-class SegmentsParams(BaseParamsModel):
-    """
-    Pydantic model for /transactions/price-growth/segments endpoint params.
-    """
+class NewLaunchAbsorptionParams(BaseParamsModel):
+    """Params for /new-launch-absorption endpoint."""
 
-    # === Filters ===
-    project: Optional[str] = Field(
-        default=None,
-        description="Project name (partial match)"
+    time_grain: Optional[str] = Field(
+        default="quarter",
+        alias='timeGrain',
+        description="Time grouping (month, quarter, year)"
     )
+
+    timeframe: Optional[str] = Field(
+        default=None,
+        description="Timeframe preset (M3, M6, Y1, Y3, Y5, all)"
+    )
+
     districts: DistrictList = Field(
         default=None,
         validation_alias='district',
-        description="District filter"
+        description="Comma-separated district codes"
     )
-    # sale_type normalized to DB format by BaseParamsModel validator
-    sale_type: Optional[str] = Field(
+    segments: WrapList = Field(
         default=None,
-        alias='saleType',
-        description="Sale type filter (normalized to DB format)"
+        validation_alias='segment',
+        description="Market segment filter"
+    )
+    bedrooms: WrapList = Field(
+        default=None,
+        validation_alias='bedroom',
+        description="Bedroom filter"
     )
 
-    # === Date Filters ===
     date_from: CoercedDate = Field(
         default=None,
         alias='dateFrom',
-        description="Start date"
+        description="Start date (inclusive)"
     )
     date_to: CoercedDate = Field(
         default=None,
         alias='dateTo',
-        description="End date"
+        description="End date (inclusive)"
     )
+
     date_to_exclusive: Optional[date] = Field(
         default=None,
         description="Exclusive end date (computed)"
@@ -176,7 +168,7 @@ class SegmentsParams(BaseParamsModel):
     )
 
     @model_validator(mode='after')
-    def apply_normalizations(self) -> 'SegmentsParams':
+    def apply_normalizations(self) -> 'NewLaunchAbsorptionParams':
         """Apply domain-specific normalizations."""
         self._resolve_timeframe()
         self._normalize_date_bounds()
@@ -184,18 +176,18 @@ class SegmentsParams(BaseParamsModel):
         return self
 
     def _resolve_timeframe(self) -> None:
-        """Resolve default timeframe to date bounds."""
+        """Resolve timeframe preset to date bounds."""
         if self.date_from and (self.date_to_exclusive or self.date_to):
             return
 
-        bounds = resolve_timeframe(None)
+        bounds = resolve_timeframe(self.timeframe)
         if bounds['date_from'] is not None:
             object.__setattr__(self, 'date_from', bounds['date_from'])
             object.__setattr__(self, 'date_to_exclusive', bounds['date_to_exclusive'])
             object.__setattr__(self, 'months_in_period', bounds['months_in_period'])
 
     def _normalize_date_bounds(self) -> None:
-        """Convert date_to to date_to_exclusive and clear date_to."""
+        """Convert date_to to date_to_exclusive."""
         if self.date_to_exclusive:
             if self.date_to:
                 object.__setattr__(self, 'date_to', None)
@@ -206,7 +198,7 @@ class SegmentsParams(BaseParamsModel):
             object.__setattr__(self, 'date_to', None)
 
     def _align_month_boundaries(self) -> None:
-        """Align dates to month boundaries for URA data."""
+        """Align dates to month boundaries."""
         if self.date_from and isinstance(self.date_from, date):
             aligned = date(self.date_from.year, self.date_from.month, 1)
             if aligned != self.date_from:

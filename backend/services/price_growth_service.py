@@ -111,7 +111,8 @@ def get_transaction_price_growth(
         "district": district,
         "date_from": date_from,
         "date_to_exclusive": date_to + timedelta(days=1) if date_to else None,
-        "sale_type": SaleType.to_db(sale_type) if sale_type else None,
+        # sale_type already in DB format from Pydantic validation
+        "sale_type": sale_type,
     }
 
     # Execute main query
@@ -311,7 +312,8 @@ def get_segment_summary(
     params = {
         "project_name": f"%{project_name}%" if project_name else None,
         "district": district,
-        "sale_type": SaleType.to_db(sale_type) if sale_type else None,
+        # sale_type already in DB format from Pydantic validation
+        "sale_type": sale_type,
     }
 
     query = text("""

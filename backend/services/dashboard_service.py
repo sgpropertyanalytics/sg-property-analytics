@@ -375,14 +375,15 @@ def build_property_age_bucket_filter(bucket: str, txn_table=None):
         filter_expr = build_property_age_bucket_filter(PropertyAgeBucket.YOUNG_RESALE)
         query = query.filter(filter_expr)
     """
-    from api.contracts.contract_schema import PropertyAgeBucket, SaleType
+    from api.contracts.contract_schema import PropertyAgeBucket
+    from constants import SALE_TYPE_RESALE as DB_SALE_TYPE_RESALE
 
     T = txn_table if txn_table is not None else Transaction
     lease_age_expr = extract('year', T.transaction_date) - T.lease_start_year
 
     if bucket == PropertyAgeBucket.NEW_SALE:
         # CORRELATED SUBQUERY: project has 0 resale transactions (alias-safe)
-        resale_db_value = SaleType.to_db(SaleType.RESALE)
+        resale_db_value = DB_SALE_TYPE_RESALE
         t2 = aliased(Transaction)
         has_resale = exists().where(
             t2.project_name == T.project_name,
@@ -1008,7 +1009,7 @@ def query_psf_by_price_band(
     Uses SQL aggregation only (no pandas) for memory safety on 512MB Render.
 
     Args:
-        params: Parsed filter params from parse_filter_params():
+        params: Dict with normalized filter values:
             - date_from: Python date object
             - date_to: Python date object
             - sale_type_db: DB-format sale type (e.g., 'New Sale')

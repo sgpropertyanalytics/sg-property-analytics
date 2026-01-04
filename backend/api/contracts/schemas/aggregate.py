@@ -7,211 +7,15 @@ dynamic filtering.
 Endpoint: GET /api/aggregate
 """
 
-from datetime import date
-from api.contracts.contract_schema import SaleType, Tenure
-
-# Import Pydantic model for parallel validation
-try:
-    from ..pydantic_models.aggregate import AggregateParams
-except ImportError:
-    AggregateParams = None
-
 from ..registry import (
     EndpointContract,
-    ParamSchema,
-    ServiceBoundarySchema,
     ResponseSchema,
     FieldSpec,
     register_contract,
     make_meta_fields,
     make_required_meta,
 )
-
-
-# =============================================================================
-# PARAM SCHEMA - What frontend sends
-# =============================================================================
-
-AGGREGATE_PARAM_SCHEMA = ParamSchema(
-    fields={
-        # Grouping and metrics
-        "group_by": FieldSpec(
-            name="group_by",
-            type=str,
-            required=False,
-            default="month",
-            allowed_values=None,  # Comma-separated: month, quarter, year, district, bedroom, sale_type, project, region, floor_level
-            description="Comma-separated grouping dimensions"
-        ),
-        "metrics": FieldSpec(
-            name="metrics",
-            type=str,
-            required=False,
-            default="count,avg_psf",
-            description="Comma-separated metrics: count, median_psf, avg_psf, total_value, median_price, avg_price, min_psf, max_psf, etc."
-        ),
-
-        # Filters
-        "district": FieldSpec(
-            name="district",
-            type=str,
-            nullable=True,
-            description="Comma-separated district codes (D01, D02, or just 1, 2)"
-        ),
-        "bedroom": FieldSpec(
-            name="bedroom",
-            type=str,
-            nullable=True,
-            description="Comma-separated bedroom counts (2, 3, 4)"
-        ),
-        "segment": FieldSpec(
-            name="segment",
-            type=str,
-            nullable=True,
-            allowed_values=["CCR", "RCR", "OCR"],
-            description="Market segment filter (CCR, RCR, OCR)"
-        ),
-        "region": FieldSpec(
-            name="region",
-            type=str,
-            nullable=True,
-            allowed_values=["CCR", "RCR", "OCR"],
-            description="Alias for segment filter"
-        ),
-        "sale_type": FieldSpec(
-            name="sale_type",
-            type=str,
-            nullable=True,
-            allowed_values=SaleType.ALL,
-            description="Sale type filter (new_sale, resale, sub_sale)"
-        ),
-        "tenure": FieldSpec(
-            name="tenure",
-            type=str,
-            nullable=True,
-            allowed_values=Tenure.ALL,
-            description="Tenure filter (freehold, 99_year, 999_year)"
-        ),
-        "project": FieldSpec(
-            name="project",
-            type=str,
-            nullable=True,
-            description="Project name filter (partial match)"
-        ),
-        "project_exact": FieldSpec(
-            name="project_exact",
-            type=str,
-            nullable=True,
-            description="Project name filter (exact match for drill-through)"
-        ),
-
-        # Time filter (unified)
-        # Frontend sends timeframe ID; backend resolves to date bounds
-        # This takes precedence over explicit date_from/date_to
-        "timeframe": FieldSpec(
-            name="timeframe",
-            type=str,
-            nullable=True,
-            default=None,  # None = use date_from/date_to or default to Y1
-            allowed_values=["M3", "M6", "Y1", "Y3", "Y5", "all", "3m", "6m", "12m", "1y", "2y", "3y", "5y"],
-            description="Timeframe preset (M3, M6, Y1, Y3, Y5, all). Takes precedence over date_from/date_to."
-        ),
-
-        # Date range (explicit dates - used when timeframe not provided)
-        "date_from": FieldSpec(
-            name="date_from",
-            type=date,
-            nullable=True,
-            description="Start date (inclusive), YYYY-MM-DD. Ignored if timeframe is set."
-        ),
-        "date_to": FieldSpec(
-            name="date_to",
-            type=date,
-            nullable=True,
-            description="End date (inclusive), YYYY-MM-DD. Ignored if timeframe is set."
-        ),
-
-        # Value range filters
-        "psf_min": FieldSpec(
-            name="psf_min",
-            type=float,
-            nullable=True,
-            description="Minimum PSF filter"
-        ),
-        "psf_max": FieldSpec(
-            name="psf_max",
-            type=float,
-            nullable=True,
-            description="Maximum PSF filter"
-        ),
-        "size_min": FieldSpec(
-            name="size_min",
-            type=float,
-            nullable=True,
-            description="Minimum sqft filter"
-        ),
-        "size_max": FieldSpec(
-            name="size_max",
-            type=float,
-            nullable=True,
-            description="Maximum sqft filter"
-        ),
-
-        # Pagination and caching
-        "limit": FieldSpec(
-            name="limit",
-            type=int,
-            default=1000,
-            description="Max rows to return (1-10000)"
-        ),
-        "skip_cache": FieldSpec(
-            name="skip_cache",
-            type=bool,
-            default=False,
-            description="Bypass cache if true"
-        ),
-    },
-    aliases={
-        # Frontend may send camelCase
-        "saleType": "sale_type",
-        "dateFrom": "date_from",
-        "dateTo": "date_to",
-        "groupBy": "group_by",
-        "psfMin": "psf_min",
-        "psfMax": "psf_max",
-        "sizeMin": "size_min",
-        "sizeMax": "size_max",
-        "skipCache": "skip_cache",
-        "projectExact": "project_exact",
-    }
-)
-
-
-# =============================================================================
-# SERVICE BOUNDARY SCHEMA - What service receives after normalization
-# =============================================================================
-
-AGGREGATE_SERVICE_SCHEMA = ServiceBoundarySchema(
-    fields={
-        "group_by": FieldSpec(name="group_by", type=list, required=True),
-        "metrics": FieldSpec(name="metrics", type=list, required=True),
-        "districts": FieldSpec(name="districts", type=list, nullable=True),
-        "bedrooms": FieldSpec(name="bedrooms", type=list, nullable=True),
-        "segments": FieldSpec(name="segments", type=list, nullable=True),
-        "date_from": FieldSpec(name="date_from", type=date, nullable=True),
-        "date_to_exclusive": FieldSpec(name="date_to_exclusive", type=date, nullable=True),
-        "sale_type": FieldSpec(name="sale_type", type=str, nullable=True),
-        "tenure": FieldSpec(name="tenure", type=str, nullable=True),
-        "project": FieldSpec(name="project", type=str, nullable=True),
-        "project_exact": FieldSpec(name="project_exact", type=str, nullable=True),
-        "psf_min": FieldSpec(name="psf_min", type=float, nullable=True),
-        "psf_max": FieldSpec(name="psf_max", type=float, nullable=True),
-        "size_min": FieldSpec(name="size_min", type=float, nullable=True),
-        "size_max": FieldSpec(name="size_max", type=float, nullable=True),
-        "limit": FieldSpec(name="limit", type=int, default=1000),
-        "skip_cache": FieldSpec(name="skip_cache", type=bool, default=False),
-    }
-)
+from ..pydantic_models.aggregate import AggregateParams
 
 
 # =============================================================================
@@ -275,13 +79,10 @@ AGGREGATE_RESPONSE_SCHEMA = ResponseSchema(
 AGGREGATE_CONTRACT = EndpointContract(
     endpoint="aggregate",
     version="v3",
-    param_schema=AGGREGATE_PARAM_SCHEMA,
-    service_schema=AGGREGATE_SERVICE_SCHEMA,
     response_schema=AGGREGATE_RESPONSE_SCHEMA,
+    pydantic_model=AggregateParams,
     serializer=None,  # Uses existing serialize_aggregate_response in route
-    pydantic_model=AggregateParams,  # Pydantic model for parallel validation
 )
 
 # Register on import
 register_contract(AGGREGATE_CONTRACT)
-

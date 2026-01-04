@@ -77,13 +77,7 @@ def get_transaction_price_growth():
         floor_level = params.get("floor_level")
         sale_type = params.get("sale_type")
 
-        if floor_level:
-            from api.contracts.contract_schema import FloorLevel
-            floor_level = FloorLevel.to_db(floor_level)
-
-        if sale_type:
-            from api.contracts.contract_schema import SaleType
-            sale_type = SaleType.to_db(sale_type)
+        # floor_level and sale_type already normalized to DB format by Pydantic validator
 
         districts = params.get("districts") or []
         district = districts[0] if isinstance(districts, list) and districts else None
@@ -155,10 +149,8 @@ def get_price_growth_segments():
         params = getattr(g, "normalized_params", {}) or {}
 
         project_name = params.get("project")
+        # sale_type already normalized to DB format by Pydantic validator
         sale_type = params.get("sale_type")
-        if sale_type:
-            from api.contracts.contract_schema import SaleType
-            sale_type = SaleType.to_db(sale_type)
 
         districts = params.get("districts") or []
         district = districts[0] if isinstance(districts, list) and districts else None

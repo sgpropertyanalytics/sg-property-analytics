@@ -11,7 +11,7 @@ from typing import Optional, Literal
 
 from pydantic import Field, model_validator
 
-from .base import BaseParamsModel
+from api.contracts.contract_schema import BaseParamsModel
 from constants import resolve_timeframe
 
 
@@ -49,10 +49,12 @@ class DistrictPsfParams(BaseParamsModel):
         default="all",
         description="Property age filter (deprecated - use sale_type)"
     )
+    # sale_type normalized to DB format by BaseParamsModel validator
+    # "all" -> None, "new_sale" -> "New Sale", etc.
     sale_type: Optional[str] = Field(
-        default="all",
+        default=None,
         alias='saleType',
-        description="Sale type filter (all, new_sale, resale)"
+        description="Sale type filter (normalized to DB format)"
     )
 
     # === Resolved date bounds (computed from timeframe) ===
@@ -102,10 +104,11 @@ class DistrictLiquidityParams(BaseParamsModel):
         alias="bedroom",  # Frontend sends 'bedroom', backend uses 'bed'
         description="Bedroom filter (all, 1, 2, 3, 4, 5)"
     )
+    # sale_type normalized to DB format by BaseParamsModel validator
     sale_type: Optional[str] = Field(
-        default="all",
+        default=None,
         alias='saleType',
-        description="Sale type filter (all, new_sale, resale)"
+        description="Sale type filter (normalized to DB format)"
     )
 
     # === Resolved date bounds (computed from timeframe) ===

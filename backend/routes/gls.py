@@ -12,7 +12,7 @@ Admin endpoints:
 - /refresh-status
 - /trigger-refresh
 """
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, g
 import time
 from models.database import db
 from models.gls_tender import GLSTender
@@ -44,7 +44,7 @@ def get_all():
     """
     Get all GLS tenders (both launched and awarded).
 
-    Query params:
+    Query params (normalized by Pydantic via @api_contract):
         - market_segment: CCR, RCR, or OCR (optional)
         - status: 'launched' or 'awarded' (optional)
         - planning_area: Filter by planning area (optional)
@@ -57,12 +57,14 @@ def get_all():
     """
     start = time.time()
 
-    market_segment = request.args.get("market_segment")
-    status = request.args.get("status")
-    planning_area = request.args.get("planning_area")
-    limit = to_int(request.args.get("limit"), default=100, field="limit")
-    sort_by = request.args.get("sort", "release_date")
-    order = request.args.get("order", "desc")
+    # Use normalized params from Pydantic (via @api_contract decorator)
+    params = g.normalized_params
+    market_segment = params.get("market_segment")
+    status = params.get("status")
+    planning_area = params.get("planning_area")
+    limit = params.get("limit", 100)
+    sort_by = params.get("sort", "release_date")
+    order = params.get("order", "desc")
 
     try:
         # Only show 2025+ records (2024 used for backend linking only)
