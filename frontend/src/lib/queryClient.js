@@ -103,6 +103,10 @@ export const QueryStatus = {
  * This function maps TanStack's status model to our existing ChartFrame-compatible status.
  * Critical for backward compatibility during migration.
  *
+ * Edge case handled: When initialData is provided (e.g., {} or []), TanStack returns
+ * isSuccess=true immediately. We detect this via dataUpdatedAt===0 (no fetch completed)
+ * and return LOADING instead of SUCCESS to show skeleton, not "No data".
+ *
  * @param {Object} queryResult - Result from useQuery hook
  * @param {boolean} enabled - Whether query is enabled (for IDLE detection)
  * @param {boolean} hasData - Whether we have real data (not just initialData: [])
@@ -139,6 +143,14 @@ export function deriveQueryStatus(queryResult, enabled, hasData) {
   // Pending but not fetching (shouldn't happen normally)
   if (isPending) {
     return QueryStatus.PENDING;
+  }
+
+  // Success with no real data AND no fetch ever completed
+  // This handles the edge case where initialData: {} or [] was provided
+  // but no actual fetch has happened yet (dataUpdatedAt === 0).
+  // Without this, ChartFrame shows "No data" instead of skeleton.
+  if (isSuccess && !hasData && queryResult.dataUpdatedAt === 0) {
+    return QueryStatus.LOADING;
   }
 
   // Success

@@ -490,6 +490,30 @@ const { data } = useQuery({
 3. Ask about actual pain points (don't assume)
 4. Check if it's already battle-tested in production
 
+### TanStack initialData Success State Incident (Jan 4, 2026)
+
+**What happened:** BeadsChart and NewLaunchTimelineChart showed "No data for selected filters" flash on page load, then eventually loaded.
+
+**Root cause:** When `useAppQuery` receives `initialData: {}`, TanStack Query immediately returns `isSuccess: true` with empty data. The `deriveQueryStatus()` function didn't check if a fetch had ever completed (`dataUpdatedAt === 0`), so it returned `SUCCESS` status for queries that had only initialData.
+
+**Result:** ChartFrame received `status='success'` + `empty=true` → showed "No data" instead of skeleton.
+
+**Why wasn't it detected?**
+- Tests didn't cover the edge case where `isSuccess=true` but `dataUpdatedAt=0`
+- The flash was brief (hundreds of milliseconds), easy to miss during manual testing
+- Other charts using `initialData: null` worked correctly
+
+**Fix:**
+1. Changed `initialData: {}` to `initialData: null` in `MacroOverview.jsx`
+2. Added edge case in `deriveQueryStatus()`:
+   ```js
+   if (isSuccess && !hasData && queryResult.dataUpdatedAt === 0) {
+     return QueryStatus.LOADING;
+   }
+   ```
+
+**Lesson:** When using TanStack Query with `initialData`, always use `null` instead of empty objects/arrays. Empty objects make TanStack think the query "succeeded" before any fetch happens.
+
 ### Summary: The Over-Engineering Trap
 
 Most incidents above share a pattern: **solving problems that don't exist yet.**

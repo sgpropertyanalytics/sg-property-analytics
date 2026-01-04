@@ -37,16 +37,9 @@ from .contract_schema import API_CONTRACT_VERSION, get_schema_hash
 
 # Import feature flags for Pydantic migration
 try:
-    from .feature_flags import USE_PYDANTIC_VALIDATION, PYDANTIC_PARALLEL_MODE
+    from .feature_flags import USE_PYDANTIC_VALIDATION
 except ImportError:
-    USE_PYDANTIC_VALIDATION = False
-    PYDANTIC_PARALLEL_MODE = False
-
-# Import Pydantic comparison for parallel validation
-try:
-    from .pydantic_comparison import compare_and_log as pydantic_compare_and_log
-except ImportError:
-    pydantic_compare_and_log = None
+    USE_PYDANTIC_VALIDATION = True  # Default to Pydantic (migration complete)
 
 # Import ValidationError from utils.normalize if available
 try:
@@ -104,28 +97,24 @@ def api_contract(endpoint_name: str):
                 # 2. Validate public params
                 validate_public_params(raw_params, contract.param_schema)
 
-                # 3. Normalize params (old method - always run until migration complete)
-                normalized = normalize_params(raw_params, contract.param_schema)
-
-                # 3.5 Pydantic parallel validation (if enabled and model exists)
-                if hasattr(contract, 'pydantic_model') and contract.pydantic_model:
+                # 3. Normalize params
+                # Phase 7: Pydantic is now the primary path (migration complete)
+                if USE_PYDANTIC_VALIDATION and hasattr(contract, 'pydantic_model') and contract.pydantic_model:
+                    # Use Pydantic model directly (no fallback to old code)
                     try:
-                        # Run Pydantic validation
-                        pydantic_result = contract.pydantic_model(**raw_params).model_dump()
-
-                        # Parallel mode: compare results and log differences
-                        if PYDANTIC_PARALLEL_MODE and pydantic_compare_and_log:
-                            pydantic_compare_and_log(endpoint_name, normalized, pydantic_result)
-
-                        # Use Pydantic results if enabled
-                        if USE_PYDANTIC_VALIDATION:
-                            normalized = pydantic_result
-                            logger.debug(f"Using Pydantic validation for {endpoint_name}")
-
+                        normalized = contract.pydantic_model(**raw_params).model_dump()
+                        logger.debug(f"Using Pydantic validation for {endpoint_name}")
                     except Exception as e:
-                        # Pydantic failed - log and fallback to old result
+                        # Pydantic failed - this is now a hard error (no fallback)
                         logger.error(f"Pydantic validation failed for {endpoint_name}: {e}")
-                        # normalized stays as-is (from normalize_params)
+                        raise ValidationError(
+                            message=f"Parameter validation failed: {e}",
+                            field=None,
+                            received_value=raw_params
+                        )
+                else:
+                    # Legacy fallback for endpoints without Pydantic models
+                    normalized = normalize_params(raw_params, contract.param_schema)
 
                 # 4. Inject into request context BEFORE service validation
                 # This ensures params are available even if service validation fails in WARN mode
