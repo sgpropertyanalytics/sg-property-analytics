@@ -44,13 +44,6 @@ Private condo analytics platform using URA transaction data. Resale-focused with
 |------|-------|
 | File map, tech debt | [`REPO_MAP.md`](./REPO_MAP.md) |
 | Historical incidents | [`REPO_MAP.md#9`](./REPO_MAP.md#9-historical-incidents-landmines) |
-| Frontend patterns | [`docs/frontend.md`](./docs/frontend.md) |
-| Backend patterns | [`docs/backend.md`](./docs/backend.md) |
-| Architecture | [`docs/architecture.md`](./docs/architecture.md) |
-| Engineering principles | [`docs/ENGINEERING_PRINCIPLES.md`](./docs/ENGINEERING_PRINCIPLES.md) |
-| Code patterns | [`docs/CODE_PATTERNS.md`](./docs/CODE_PATTERNS.md) |
-| Testing guide | [`docs/TESTING.md`](./docs/TESTING.md) |
-| Checklists | [`docs/CHECKLISTS.md`](./docs/CHECKLISTS.md) |
 
 ---
 
@@ -204,8 +197,6 @@ pytest tests/test_regression_snapshots.py -v
 ```
 
 Use `/review` for comprehensive pre-merge review.
-
-See [`docs/TESTING.md`](./docs/TESTING.md) for full testing guide.
 
 ---
 
