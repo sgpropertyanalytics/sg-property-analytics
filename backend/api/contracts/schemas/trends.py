@@ -18,6 +18,7 @@ from ..registry import (
     make_meta_fields,
     make_required_meta,
 )
+from ..pydantic_models import NewVsResaleParams
 
 
 # =============================================================================
@@ -110,6 +111,7 @@ NEW_VS_RESALE_CONTRACT = EndpointContract(
     param_schema=NEW_VS_RESALE_PARAM_SCHEMA,
     service_schema=NEW_VS_RESALE_SERVICE_SCHEMA,
     response_schema=NEW_VS_RESALE_RESPONSE_SCHEMA,
+    pydantic_model=NewVsResaleParams,
     mode=SchemaMode.WARN,
 )
 

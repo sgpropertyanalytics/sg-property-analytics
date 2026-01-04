@@ -23,6 +23,13 @@ from ..registry import (
     make_meta_fields,
     make_required_meta,
 )
+from ..pydantic_models import (
+    ProjectsByDistrictParams,
+    PriceProjectsByDistrictParams,
+    FloorLiquidityHeatmapParams,
+    PsfByPriceBandParams,
+    BudgetHeatmapParams,
+)
 
 
 # =============================================================================
@@ -74,6 +81,7 @@ PROJECTS_BY_DISTRICT_CONTRACT = EndpointContract(
     param_schema=PROJECTS_BY_DISTRICT_PARAM_SCHEMA,
     service_schema=PROJECTS_BY_DISTRICT_SERVICE_SCHEMA,
     response_schema=PROJECTS_BY_DISTRICT_RESPONSE_SCHEMA,
+    pydantic_model=ProjectsByDistrictParams,
     mode=SchemaMode.WARN,
 )
 
@@ -129,6 +137,7 @@ PRICE_PROJECTS_BY_DISTRICT_CONTRACT = EndpointContract(
     param_schema=PRICE_PROJECTS_BY_DISTRICT_PARAM_SCHEMA,
     service_schema=PRICE_PROJECTS_BY_DISTRICT_SERVICE_SCHEMA,
     response_schema=PRICE_PROJECTS_BY_DISTRICT_RESPONSE_SCHEMA,
+    pydantic_model=PriceProjectsByDistrictParams,
     mode=SchemaMode.WARN,
 )
 
@@ -229,6 +238,7 @@ FLOOR_LIQUIDITY_HEATMAP_CONTRACT = EndpointContract(
     param_schema=FLOOR_LIQUIDITY_HEATMAP_PARAM_SCHEMA,
     service_schema=FLOOR_LIQUIDITY_HEATMAP_SERVICE_SCHEMA,
     response_schema=FLOOR_LIQUIDITY_HEATMAP_RESPONSE_SCHEMA,
+    pydantic_model=FloorLiquidityHeatmapParams,
     mode=SchemaMode.WARN,
 )
 
@@ -306,6 +316,7 @@ PSF_BY_PRICE_BAND_CONTRACT = EndpointContract(
     param_schema=PSF_BY_PRICE_BAND_PARAM_SCHEMA,
     service_schema=PSF_BY_PRICE_BAND_SERVICE_SCHEMA,
     response_schema=PSF_BY_PRICE_BAND_RESPONSE_SCHEMA,
+    pydantic_model=PsfByPriceBandParams,
     mode=SchemaMode.WARN,
 )
 
@@ -409,6 +420,7 @@ BUDGET_HEATMAP_CONTRACT = EndpointContract(
     param_schema=BUDGET_HEATMAP_PARAM_SCHEMA,
     service_schema=BUDGET_HEATMAP_SERVICE_SCHEMA,
     response_schema=BUDGET_HEATMAP_RESPONSE_SCHEMA,
+    pydantic_model=BudgetHeatmapParams,
     mode=SchemaMode.WARN,
 )
 

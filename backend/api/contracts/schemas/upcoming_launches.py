@@ -16,6 +16,7 @@ from ..registry import (
     make_meta_fields,
     make_required_meta,
 )
+from ..pydantic_models import UpcomingLaunchesAllParams, UpcomingNeedsReviewParams
 
 
 # =============================================================================
@@ -98,6 +99,7 @@ UPCOMING_ALL_CONTRACT = EndpointContract(
     param_schema=UPCOMING_ALL_PARAM_SCHEMA,
     service_schema=UPCOMING_ALL_SERVICE_SCHEMA,
     response_schema=UPCOMING_ALL_RESPONSE_SCHEMA,
+    pydantic_model=UpcomingLaunchesAllParams,
 )
 
 register_contract(UPCOMING_ALL_CONTRACT)
@@ -132,6 +134,7 @@ UPCOMING_NEEDS_REVIEW_CONTRACT = EndpointContract(
     param_schema=UPCOMING_NEEDS_REVIEW_PARAM_SCHEMA,
     service_schema=UPCOMING_NEEDS_REVIEW_SERVICE_SCHEMA,
     response_schema=UPCOMING_NEEDS_REVIEW_RESPONSE_SCHEMA,
+    pydantic_model=UpcomingNeedsReviewParams,
 )
 
 register_contract(UPCOMING_NEEDS_REVIEW_CONTRACT)

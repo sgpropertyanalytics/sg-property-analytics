@@ -21,6 +21,12 @@ from ..registry import (
     make_meta_fields,
     make_required_meta,
 )
+from ..pydantic_models import (
+    ProjectInventoryParams,
+    ProjectPriceBandsParams,
+    ResaleProjectsParams,
+    ProjectExitQueueParams,
+)
 
 
 # =============================================================================
@@ -68,6 +74,7 @@ PROJECT_INVENTORY_CONTRACT = EndpointContract(
     param_schema=PROJECT_INVENTORY_PARAM_SCHEMA,
     service_schema=PROJECT_INVENTORY_SERVICE_SCHEMA,
     response_schema=PROJECT_INVENTORY_RESPONSE_SCHEMA,
+    pydantic_model=ProjectInventoryParams,
     mode=SchemaMode.WARN,
 )
 
@@ -133,6 +140,7 @@ PROJECT_PRICE_BANDS_CONTRACT = EndpointContract(
     param_schema=PROJECT_PRICE_BANDS_PARAM_SCHEMA,
     service_schema=PROJECT_PRICE_BANDS_SERVICE_SCHEMA,
     response_schema=PROJECT_PRICE_BANDS_RESPONSE_SCHEMA,
+    pydantic_model=ProjectPriceBandsParams,
     mode=SchemaMode.WARN,
 )
 
@@ -165,6 +173,7 @@ RESALE_PROJECTS_CONTRACT = EndpointContract(
     param_schema=RESALE_PROJECTS_PARAM_SCHEMA,
     service_schema=RESALE_PROJECTS_SERVICE_SCHEMA,
     response_schema=RESALE_PROJECTS_RESPONSE_SCHEMA,
+    pydantic_model=ResaleProjectsParams,
     mode=SchemaMode.WARN,
 )
 
@@ -213,6 +222,7 @@ PROJECT_EXIT_QUEUE_CONTRACT = EndpointContract(
     param_schema=PROJECT_EXIT_QUEUE_PARAM_SCHEMA,
     service_schema=PROJECT_EXIT_QUEUE_SERVICE_SCHEMA,
     response_schema=PROJECT_EXIT_QUEUE_RESPONSE_SCHEMA,
+    pydantic_model=ProjectExitQueueParams,
     mode=SchemaMode.WARN,
 )
 

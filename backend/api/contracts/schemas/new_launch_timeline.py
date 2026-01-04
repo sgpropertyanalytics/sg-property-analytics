@@ -18,6 +18,7 @@ from ..registry import (
     make_meta_fields,
     make_required_meta,
 )
+from ..pydantic_models import NewLaunchTimelineParams
 
 
 # =============================================================================
@@ -154,6 +155,7 @@ NEW_LAUNCH_TIMELINE_CONTRACT = EndpointContract(
     param_schema=NEW_LAUNCH_TIMELINE_PARAM_SCHEMA,
     service_schema=NEW_LAUNCH_TIMELINE_SERVICE_SCHEMA,
     response_schema=NEW_LAUNCH_TIMELINE_RESPONSE_SCHEMA,
+    pydantic_model=NewLaunchTimelineParams,
 )
 
 # Register on import

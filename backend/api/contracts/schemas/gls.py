@@ -16,6 +16,7 @@ from ..registry import (
     make_meta_fields,
     make_required_meta,
 )
+from ..pydantic_models import GlsAllParams, GlsNeedsReviewParams
 
 
 # =============================================================================
@@ -95,6 +96,7 @@ GLS_ALL_CONTRACT = EndpointContract(
     param_schema=GLS_ALL_PARAM_SCHEMA,
     service_schema=GLS_ALL_SERVICE_SCHEMA,
     response_schema=GLS_ALL_RESPONSE_SCHEMA,
+    pydantic_model=GlsAllParams,
 )
 
 register_contract(GLS_ALL_CONTRACT)
@@ -129,6 +131,7 @@ GLS_NEEDS_REVIEW_CONTRACT = EndpointContract(
     param_schema=GLS_NEEDS_REVIEW_PARAM_SCHEMA,
     service_schema=GLS_NEEDS_REVIEW_SERVICE_SCHEMA,
     response_schema=GLS_NEEDS_REVIEW_RESPONSE_SCHEMA,
+    pydantic_model=GlsNeedsReviewParams,
 )
 
 register_contract(GLS_NEEDS_REVIEW_CONTRACT)

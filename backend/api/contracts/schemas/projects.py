@@ -18,6 +18,11 @@ from ..registry import (
     make_meta_fields,
     make_required_meta,
 )
+from ..pydantic_models import (
+    ProjectsLocationsParams,
+    ProjectsHotParams,
+    ProjectsInventoryStatusParams,
+)
 
 
 # =============================================================================
@@ -71,6 +76,7 @@ PROJECTS_LOCATIONS_CONTRACT = EndpointContract(
     param_schema=PROJECTS_LOCATIONS_PARAM_SCHEMA,
     service_schema=PROJECTS_LOCATIONS_SERVICE_SCHEMA,
     response_schema=PROJECTS_LOCATIONS_RESPONSE_SCHEMA,
+    pydantic_model=ProjectsLocationsParams,
     mode=SchemaMode.WARN,
 )
 
@@ -134,6 +140,7 @@ PROJECTS_HOT_CONTRACT = EndpointContract(
     param_schema=PROJECTS_HOT_PARAM_SCHEMA,
     service_schema=PROJECTS_HOT_SERVICE_SCHEMA,
     response_schema=PROJECTS_HOT_RESPONSE_SCHEMA,
+    pydantic_model=ProjectsHotParams,
     mode=SchemaMode.WARN,
 )
 
@@ -166,6 +173,7 @@ PROJECTS_INVENTORY_STATUS_CONTRACT = EndpointContract(
     param_schema=PROJECTS_INVENTORY_STATUS_PARAM_SCHEMA,
     service_schema=PROJECTS_INVENTORY_STATUS_SERVICE_SCHEMA,
     response_schema=PROJECTS_INVENTORY_STATUS_RESPONSE_SCHEMA,
+    pydantic_model=ProjectsInventoryStatusParams,
     mode=SchemaMode.WARN,
 )
 

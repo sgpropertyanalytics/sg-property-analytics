@@ -18,6 +18,7 @@ from ..registry import (
     make_meta_fields,
     make_required_meta,
 )
+from ..pydantic_models import SupplySummaryParams
 
 
 # =============================================================================
@@ -76,6 +77,7 @@ SUPPLY_SUMMARY_CONTRACT = EndpointContract(
     param_schema=SUPPLY_SUMMARY_PARAM_SCHEMA,
     service_schema=SUPPLY_SUMMARY_SERVICE_SCHEMA,
     response_schema=SUPPLY_SUMMARY_RESPONSE_SCHEMA,
+    pydantic_model=SupplySummaryParams,
     mode=SchemaMode.WARN,
 )
 

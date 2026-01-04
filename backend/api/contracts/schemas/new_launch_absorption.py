@@ -18,6 +18,7 @@ from ..registry import (
     make_meta_fields,
     make_required_meta,
 )
+from ..pydantic_models import NewLaunchAbsorptionParams
 
 
 # =============================================================================
@@ -163,6 +164,7 @@ NEW_LAUNCH_ABSORPTION_CONTRACT = EndpointContract(
     param_schema=NEW_LAUNCH_ABSORPTION_PARAM_SCHEMA,
     service_schema=NEW_LAUNCH_ABSORPTION_SERVICE_SCHEMA,
     response_schema=NEW_LAUNCH_ABSORPTION_RESPONSE_SCHEMA,
+    pydantic_model=NewLaunchAbsorptionParams,
 )
 
 register_contract(NEW_LAUNCH_ABSORPTION_CONTRACT)

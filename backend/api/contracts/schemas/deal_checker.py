@@ -19,6 +19,7 @@ from ..registry import (
     make_meta_fields,
     make_required_meta,
 )
+from ..pydantic_models import DealCheckerMultiScopeParams, ProjectNamesParams
 
 
 # =============================================================================
@@ -82,6 +83,7 @@ MULTI_SCOPE_CONTRACT = EndpointContract(
     param_schema=MULTI_SCOPE_PARAM_SCHEMA,
     service_schema=MULTI_SCOPE_SERVICE_SCHEMA,
     response_schema=MULTI_SCOPE_RESPONSE_SCHEMA,
+    pydantic_model=DealCheckerMultiScopeParams,
     mode=SchemaMode.WARN,
 )
 
@@ -117,6 +119,7 @@ PROJECT_NAMES_CONTRACT = EndpointContract(
     param_schema=PROJECT_NAMES_PARAM_SCHEMA,
     service_schema=PROJECT_NAMES_SERVICE_SCHEMA,
     response_schema=PROJECT_NAMES_RESPONSE_SCHEMA,
+    pydantic_model=ProjectNamesParams,
     mode=SchemaMode.WARN,
 )
 
