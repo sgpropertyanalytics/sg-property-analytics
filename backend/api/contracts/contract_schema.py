@@ -80,8 +80,8 @@ class SaleType:
 
     ALL = [NEW_SALE, RESALE, SUB_SALE]
 
-    # Import canonical mapping from base.py (single source of truth)
-    from api.contracts.pydantic_models.base import SALE_TYPE_TO_DB as _API_TO_DB
+    # Import canonical mapping directly from constants.py (single source of truth)
+    from constants import SALE_TYPE_API_TO_DB as _API_TO_DB
 
     # Derive DB_TO_API from canonical mapping
     DB_TO_API = {v: k for k, v in _API_TO_DB.items()}
@@ -115,8 +115,8 @@ class Tenure:
 
     ALL = [FREEHOLD, LEASEHOLD_99, LEASEHOLD_999]
 
-    # Import canonical mapping from base.py (single source of truth)
-    from api.contracts.pydantic_models.base import TENURE_TO_DB as _API_TO_DB
+    # Import canonical mapping directly from constants.py (single source of truth)
+    from constants import TENURE_API_TO_DB as _API_TO_DB
 
     # Derive DB_TO_API from canonical mapping
     DB_TO_API = {v: k for k, v in _API_TO_DB.items()}
@@ -173,8 +173,8 @@ class FloorLevel:
 
     ALL = [LOW, MID_LOW, MID, MID_HIGH, HIGH, LUXURY]
 
-    # Import canonical mapping from base.py (single source of truth)
-    from api.contracts.pydantic_models.base import FLOOR_LEVEL_TO_DB as _API_TO_DB
+    # Import canonical mapping directly from constants.py (single source of truth)
+    from constants import FLOOR_LEVEL_API_TO_DB as _API_TO_DB
 
     # Derive DB_TO_API from canonical mapping
     DB_TO_API = {v: k for k, v in _API_TO_DB.items()}
