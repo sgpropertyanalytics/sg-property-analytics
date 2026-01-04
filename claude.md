@@ -16,6 +16,7 @@
 | `/backend-impact-guardrails` | **Backend changes (MANDATORY)** |
 | `/git-context-guardrails` | **ANY implementation (MANDATORY)** |
 | `/library-check` | **New infrastructure code (MANDATORY)** |
+| `/simplicity-check` | **Before adding abstractions/helpers/layers (MANDATORY)** |
 | `/learn-mistake` | Record bad recommendations to Historical Incidents |
 
 ### Agents
@@ -191,6 +192,55 @@ Custom code is acceptable ONLY for:
 | `JSON.stringify` for cache keys | Use React Query |
 | Context file >100 lines | Consider Zustand |
 | Custom form validation | Use react-hook-form + zod |
+
+## 1.7 Anti-Over-Engineering Principle (MANDATORY)
+
+> **Origin:** On Jan 4, 2026, we discovered the filter-to-API flow had grown to 7 layers when 3 would suffice. This caused the useDeferredFetch bug and made debugging require tracing through 5 files. See [REPO_MAP.md Historical Incidents](./REPO_MAP.md#9-historical-incidents-landmines).
+
+### The 5 Questions (Before Adding ANY Abstraction)
+
+Before creating a new file, function, hook, or layer, Claude MUST answer these:
+
+| Question | If NO → |
+|----------|---------|
+| **1. Is there a bug RIGHT NOW?** (not hypothetical) | Don't add the layer |
+| **2. Does the library already handle this?** | Use the library feature |
+| **3. Can I delete this layer and still work?** | Delete it |
+| **4. Would a new developer understand this in 5 minutes?** | Too complex, simplify |
+| **5. Am I adding a layer to rename 3 fields?** | Fix naming at source instead |
+
+### Claude's Over-Engineering Triggers (Self-Awareness)
+
+Claude tends to over-engineer when:
+
+| Trigger | What Claude Does | What Claude Should Do |
+|---------|------------------|----------------------|
+| Sees "filter state" | Applies enterprise Redux patterns | Use Zustand directly |
+| Sees duplicate code | Extracts helper immediately | Wait until 3rd occurrence |
+| Sees library | Wraps it "in case we swap later" | Use library directly |
+| Sees edge case | Builds abstraction to handle it | Handle inline if rare |
+| Hears "might need later" | Builds for hypothetical | Solve today's problem only |
+
+### The Diagram Test
+
+> **Rule:** If explaining the data flow requires a diagram, it's probably too complex.
+
+```
+# TOO COMPLEX (7 layers)
+User → Zustand → getActiveFilters → getFilterKey → debounce → useAppQuery → buildApiParams → adapter → Backend
+
+# CORRECT (3 layers)
+User → Zustand → useQuery → Backend
+```
+
+### Simplicity Checklist (Before PR)
+
+- [ ] Can explain the data flow in ONE sentence
+- [ ] No helper function used only once
+- [ ] No abstraction for <3 occurrences
+- [ ] No layer that just renames fields
+- [ ] No debounce on single-click actions (dropdowns, buttons)
+- [ ] Using library features directly (not wrapped)
 
 ## 1.5 Data Correctness Invariants
 
@@ -539,6 +589,11 @@ Design philosophy for this codebase. Apply these when making architectural decis
     - Bad: Add caching "because it might be slow" → Complex code, no benefit
     - Good: Measure first, optimize only if needed → Simple code until proven otherwise
     - Premature optimization adds complexity without evidence of value. The useDeferredFetch bug (Jan 2026) was caused by optimization for "cascade load reduction" that disabled queries mid-flight.
+
+14. **Push complexity to the edges**
+    - Bad: Add middleware layer to transform/normalize data between frontend and backend
+    - Good: Backend provides aliases/computed fields, frontend consumes directly
+    - Middleware layers add indirection and hiding places for bugs. Keep the pipe clean.
 
 ## 7.3 Param & Data Flow Integrity
 
