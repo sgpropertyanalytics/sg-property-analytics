@@ -60,17 +60,19 @@ function DistrictLiquidityMapBase({
   const { isPremium, isFreeResolved } = useSubscription();
   const [hoveredDistrict, setHoveredDistrict] = useState(null);
 
-  // Phase 3.4: Using standardized Zustand filters (same pattern as Market Overview charts)
-  // This replaces local filter state and controlled mode logic
-  const { buildApiParams, debouncedFilterKey, filters } = useZustandFilters();
+  // Phase 4: Simplified filter access - read values directly from Zustand
+  // No buildApiParams abstraction, no debouncedFilterKey (TanStack handles cache keys)
+  const { filters } = useZustandFilters();
 
-  // Derive filter values for display/passing to child components
-  const selectedBed = filters.bedroomTypes.length > 0
-    ? filters.bedroomTypes.join(',')
-    : 'all';
-  const selectedPeriod = filters.timeFilter?.type === 'preset'
+  // Extract filter values directly (simple, explicit)
+  const timeframe = filters.timeFilter?.type === 'preset'
     ? filters.timeFilter.value
     : 'Y1';
+  const bedroom = filters.bedroomTypes?.join(',') || '';
+
+  // For display in child components
+  const selectedBed = bedroom || 'all';
+  const selectedPeriod = timeframe;
 
   // Lazy-load GeoJSON to reduce initial bundle size (~100KB savings)
   const [geoJSON, setGeoJSON] = useState(null);
@@ -80,23 +82,16 @@ function DistrictLiquidityMapBase({
     });
   }, []);
 
-  // Fetch data with canonical hook (handles abort, stale, boot gating)
-  // Phase 3.4: Using buildApiParams + param adapter for standardized filter→API conversion
+  // Phase 4: Simplified data fetching - no adapter layer, inline params
+  // Backend now accepts frontend param names directly (timeframe, bedroom)
   const { data, status, error, refetch } = useAppQuery(
     async (signal) => {
-      // Use standardized buildApiParams (same as Market Overview charts)
-      const params = buildApiParams({ sale_type: saleType });
-
-      // Adapt param names for this endpoint (timeframe→period, bedroom→bed)
-      // Backend endpoint expects: period, bed, saleType
-      const adapted = {
-        period: params.timeframe || 'Y1',
-        bed: params.bedroom || '',
-        saleType: params.saleType || saleType,
-      };
-
       const response = await apiClient.get('/insights/district-liquidity', {
-        params: adapted,
+        params: {
+          timeframe,  // Backend accepts 'timeframe' directly
+          bedroom,    // Backend accepts 'bedroom' directly (alias for 'bed')
+          saleType,
+        },
         signal,
       });
       // Contract validation - detect shape changes early
@@ -106,8 +101,8 @@ function DistrictLiquidityMapBase({
         meta: response.data.meta || {},
       };
     },
-    // Use debouncedFilterKey for standardized query key (same as Market Overview)
-    [debouncedFilterKey, saleType, 'district-liquidity'],
+    // Simple query key - TanStack Query handles cache deduplication automatically
+    ['district-liquidity', timeframe, bedroom, saleType],
     { chartName: 'DistrictLiquidityMap', enabled, initialData: null }
   );
 

@@ -52,21 +52,30 @@ function BeadsChartBase({
   sharedData = null,
   sharedStatus = 'idle',
 }) {
-  const { buildApiParams, debouncedFilterKey, filterKey } = useZustandFilters();
+  // Phase 4: Simplified filter access - read values directly from Zustand
+  const { filters } = useZustandFilters();
+
+  // Extract filter values directly (simple, explicit)
+  const timeframe = filters.timeFilter?.type === 'preset' ? filters.timeFilter.value : 'Y1';
+  const bedroom = filters.bedroomTypes?.join(',') || '';
+  const districts = filters.districts?.join(',') || '';
+
   const chartRef = useRef(null);
   const { wrapApiCall, DebugOverlay, debugInfo } = useDebugOverlay('BeadsChart');
 
   const useShared = sharedData != null;
 
-  // Data fetching with useGatedAbortableQuery - gates on appReady
+  // Phase 4: Simplified data fetching - inline params, explicit query key
   const { data: chartData, status, error, refetch } = useAppQuery(
     async (signal) => {
-      // saleType is passed from page level - see CLAUDE.md "Business Logic Enforcement"
-      // excludeOwnDimension: 'segment' - this chart shows all regions, so ignore segment filter
-      const params = buildApiParams(
-        { panels: 'beads_chart', ...(saleType && { sale_type: saleType }) },
-        { excludeLocationDrill: true, excludeOwnDimension: 'segment' }
-      );
+      // Inline params - no buildApiParams abstraction
+      // Note: This chart shows all regions, so we don't filter by district/segment
+      const params = {
+        panels: 'beads_chart',
+        timeframe,
+        // bedroom excluded - this chart shows ALL bedroom types as separate bubbles
+        ...(saleType && { sale_type: saleType }),
+      };
 
       const response = await wrapApiCall(
         '/api/dashboard?panels=beads_chart',
@@ -102,7 +111,8 @@ function BeadsChartBase({
 
       return transformed;
     },
-    [debouncedFilterKey, saleType],
+    // Explicit query key - TanStack handles cache deduplication
+    ['beads-chart', timeframe, saleType],
     {
       chartName: 'BeadsChart',
       initialData: null,
@@ -313,7 +323,7 @@ function BeadsChartBase({
   return (
     <ChartFrame
       status={resolvedStatus}
-      isFiltering={filterKey !== debouncedFilterKey}
+      isFiltering={false}
       error={error}
       onRetry={refetch}
       empty={!hasData}

@@ -42,6 +42,7 @@ class DistrictPsfParams(BaseParamsModel):
     # === Filters ===
     bed: Optional[str] = Field(
         default="all",
+        alias="bedroom",  # Frontend sends 'bedroom', backend uses 'bed'
         description="Bedroom filter (all, 1, 2, 3, 4, 4+, 5)"
     )
     age: Optional[str] = Field(
@@ -98,6 +99,7 @@ class DistrictLiquidityParams(BaseParamsModel):
     # === Filters ===
     bed: Optional[str] = Field(
         default="all",
+        alias="bedroom",  # Frontend sends 'bedroom', backend uses 'bed'
         description="Bedroom filter (all, 1, 2, 3, 4, 5)"
     )
     sale_type: Optional[str] = Field(

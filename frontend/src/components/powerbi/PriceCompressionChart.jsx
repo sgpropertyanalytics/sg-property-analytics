@@ -49,10 +49,13 @@ const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
  * }} props
  */
 function PriceCompressionChartBase({ height = 380, saleType = null, sharedData = null, sharedStatus = 'idle' }) {
-  // Get GLOBAL filters and timeGrouping from context
-  // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
-  // filterKey updates immediately on filter change - used for instant overlay feedback
-  const { buildApiParams, debouncedFilterKey, filterKey, timeGrouping } = useZustandFilters();
+  // Phase 4: Simplified filter access - read values directly from Zustand
+  const { filters, timeGrouping } = useZustandFilters();
+
+  // Extract filter values directly (simple, explicit)
+  const timeframe = filters.timeFilter?.type === 'preset' ? filters.timeFilter.value : 'Y1';
+  const bedroom = filters.bedroomTypes?.join(',') || '';
+  const districts = filters.districts?.join(',') || '';
   const { isPremium, isFreeResolved } = useSubscription();
 
   // UI state (not data state - that comes from useAbortableQuery)
@@ -63,10 +66,8 @@ function PriceCompressionChartBase({ height = 380, saleType = null, sharedData =
   const useSharedData = sharedData != null;
 
   // Defer fetch until chart is visible (low priority - below the fold)
-  // IMPORTANT: filterKey must include ALL state that affects the query data
-  // timeGrouping changes the aggregation, so it's part of the query key
   const { shouldFetch, containerRef } = useDeferredFetch({
-    filterKey: `${debouncedFilterKey}:${timeGrouping}`,
+    filterKey: `compression:${timeframe}:${bedroom}:${timeGrouping}`,
     priority: 'low',
     fetchOnMount: false,
   });
@@ -95,17 +96,19 @@ function PriceCompressionChartBase({ height = 380, saleType = null, sharedData =
   // Default fallback for baseline data (initial load) - matches main query pattern
   const safeBaselineData = baselineData ?? { min: 0, max: 1000 };
 
-  // Data fetching with useGatedAbortableQuery - gates on appReady
-  // Skip if parent provides sharedData (W4 fix: eliminates duplicate API call with AbsolutePsfChart)
+  // Data fetching - skip if parent provides sharedData
   const { data: internalData, status: internalStatus, error, refetch } = useAppQuery(
     async (signal) => {
-      // saleType is passed from page level - see CLAUDE.md "Business Logic Enforcement"
-      // Exclude segment filter - this chart always shows all regions for comparison
-      const params = buildApiParams({
+      // Phase 4: Inline params - no buildApiParams abstraction
+      // Note: This chart always shows all regions for comparison (no segment/district filter)
+      const params = {
         group_by: `${TIME_GROUP_BY[timeGrouping]},region`,
         metrics: 'median_psf,count',
+        timeframe,
+        bedroom,
+        // segment excluded - shows all regions for comparison
         ...(saleType && { sale_type: saleType }),
-      }, { excludeOwnDimension: 'segment' });
+      };
 
       const response = await getAggregate(params, { signal, priority: 'low' });
 
@@ -129,7 +132,8 @@ function PriceCompressionChartBase({ height = 380, saleType = null, sharedData =
       // Transform is grain-agnostic - trusts data's own periodGrain
       return transformCompressionSeries(rawData);
     },
-    [debouncedFilterKey, timeGrouping, saleType],
+    // Explicit query key - TanStack handles cache deduplication
+    ['price-compression', timeframe, bedroom, timeGrouping, saleType],
     { chartName: 'PriceCompressionChart', initialData: null, enabled: shouldFetch && !useSharedData, keepPreviousData: true }
   );
 
@@ -251,7 +255,7 @@ function PriceCompressionChartBase({ height = 380, saleType = null, sharedData =
     <div ref={containerRef}>
     <ChartFrame
       status={resolvedStatus}
-      isFiltering={filterKey !== debouncedFilterKey}
+      isFiltering={false}
       error={error}
       onRetry={refetch}
       empty={!data || data.length === 0}

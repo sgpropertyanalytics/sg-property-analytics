@@ -148,17 +148,19 @@ vi.mock('../../../hooks/useChartTiming', () => ({
 }));
 
 // Controllable filter state for filter change tests
-let mockFilterKey = 'filter-key-1';
-let mockDebouncedFilterKey = 'filter-key-1';
 let mockTimeGrouping = 'month';
-let mockBuildApiParams = vi.fn((extra) => ({ ...extra, region: 'all' }));
+let mockFilters = {
+  timeFilter: { type: 'preset', value: 'Y1' },
+  bedroomTypes: [],
+  districts: [],
+  segment: null,
+  saleType: null,
+};
 
-// Phase 3.2: Mock useZustandFilters instead of usePowerBIFilters
+// Phase 4: Mock useZustandFilters with simplified filters object
 vi.mock('../../../stores', () => ({
   useZustandFilters: () => ({
-    buildApiParams: mockBuildApiParams,
-    filterKey: mockFilterKey,
-    debouncedFilterKey: mockDebouncedFilterKey,
+    filters: mockFilters,
     timeGrouping: mockTimeGrouping,
   }),
 }));
@@ -209,9 +211,15 @@ describe('TimeTrendChart', () => {
     lastAbortSignal = null;
     // Reset other mocks
     mockAppReady = true;
-    mockFilterKey = 'filter-key-1';
-    mockDebouncedFilterKey = 'filter-key-1';
     mockTimeGrouping = 'month';
+    // Reset filters to default state
+    mockFilters = {
+      timeFilter: { type: 'preset', value: 'Y1' },
+      bedroomTypes: [],
+      districts: [],
+      segment: null,
+      saleType: null,
+    };
     vi.clearAllMocks();
   });
 
@@ -264,15 +272,18 @@ describe('TimeTrendChart', () => {
   // ===========================================================================
 
   describe('filter changes', () => {
-    it('refetches when debouncedFilterKey changes', async () => {
+    it('refetches when filter values change', async () => {
       const { rerender, queryClient } = renderWithProviders(<TimeTrendChart />);
 
       await waitFor(() => {
         expect(mockState.fetchCallCount).toBe(1);
       });
 
-      // Change filter key (simulates filter change after debounce)
-      mockDebouncedFilterKey = 'filter-key-2';
+      // Change filter values (simulates user changing timeframe)
+      mockFilters = {
+        ...mockFilters,
+        timeFilter: { type: 'preset', value: 'M6' }, // Changed from Y1 to M6
+      };
 
       // Need to re-render to pick up the new mock value
       rerender(
@@ -313,11 +324,14 @@ describe('TimeTrendChart', () => {
     });
 
     it('passes correct params to API based on filters', async () => {
-      mockBuildApiParams = vi.fn((extra) => ({
-        ...extra,
-        region: 'central',
-        bedrooms: '3',
-      }));
+      // Set specific filter values
+      mockFilters = {
+        timeFilter: { type: 'preset', value: 'M3' },
+        bedroomTypes: ['2', '3'],
+        districts: ['D01', 'D02'],
+        segment: null,
+        saleType: null,
+      };
 
       renderWithProviders(<TimeTrendChart />);
 
@@ -325,10 +339,13 @@ describe('TimeTrendChart', () => {
         expect(mockState.fetchCallCount).toBe(1);
       });
 
-      expect(mockBuildApiParams).toHaveBeenCalledWith(
+      // Verify API was called with expected params (inline, not via buildApiParams)
+      expect(mockState.lastFetchParams).toEqual(
         expect.objectContaining({
           group_by: 'month',
           metrics: 'count,total_value',
+          timeframe: 'M3',
+          bedroom: '2,3',
         })
       );
     });
@@ -367,8 +384,8 @@ describe('TimeTrendChart', () => {
 
       unmount();
 
-      // Change filter before second render
-      mockDebouncedFilterKey = 'filter-key-different';
+      // Change filter before second render (using mockFilters to trigger query key change)
+      mockFilters = { ...mockFilters, timeFilter: { type: 'preset', value: 'M6' } };
 
       renderWithProviders(<TimeTrendChart />, { queryClient });
 
@@ -533,8 +550,11 @@ describe('TimeTrendChart', () => {
 
       const firstSignal = mockState.lastAbortSignal;
 
-      // Change filter to trigger new fetch
-      mockDebouncedFilterKey = 'filter-key-2';
+      // Change filter values to trigger new fetch
+      mockFilters = {
+        ...mockFilters,
+        timeFilter: { type: 'preset', value: 'M6' },
+      };
       rerender(
         <QueryClientProvider client={queryClient}>
           <TimeTrendChart />
@@ -721,22 +741,22 @@ describe('TimeTrendChart', () => {
 
       const { rerender } = renderWithProviders(<TimeTrendChart />, { queryClient });
 
-      // Rapid filter changes
-      mockDebouncedFilterKey = 'filter-A';
+      // Rapid filter changes (using mockFilters to trigger query key changes)
+      mockFilters = { ...mockFilters, timeFilter: { type: 'preset', value: 'M3' } };
       rerender(
         <QueryClientProvider client={queryClient}>
           <TimeTrendChart />
         </QueryClientProvider>
       );
 
-      mockDebouncedFilterKey = 'filter-B';
+      mockFilters = { ...mockFilters, timeFilter: { type: 'preset', value: 'M6' } };
       rerender(
         <QueryClientProvider client={queryClient}>
           <TimeTrendChart />
         </QueryClientProvider>
       );
 
-      mockDebouncedFilterKey = 'filter-C';
+      mockFilters = { ...mockFilters, timeFilter: { type: 'preset', value: 'Y1' } };
       rerender(
         <QueryClientProvider client={queryClient}>
           <TimeTrendChart />

@@ -73,6 +73,7 @@ DISTRICT_PSF_PARAM_SCHEMA = ParamSchema(
     },
     aliases={
         "saleType": "sale_type",
+        "bedroom": "bed",  # Frontend sends 'bedroom', backend uses 'bed'
     }
 )
 
@@ -149,6 +150,7 @@ DISTRICT_LIQUIDITY_PARAM_SCHEMA = ParamSchema(
     },
     aliases={
         "saleType": "sale_type",
+        "bedroom": "bed",  # Frontend sends 'bedroom', backend uses 'bed'
     }
 )
 

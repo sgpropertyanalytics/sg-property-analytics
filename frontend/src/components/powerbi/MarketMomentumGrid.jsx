@@ -29,22 +29,26 @@ const ALL_DISTRICTS = [...CCR_DISTRICTS, ...RCR_DISTRICTS, ...OCR_DISTRICTS];
  * }} props
  */
 export function MarketMomentumGrid({ saleType = SaleType.RESALE }) {
-  // Phase 3.4: Using standardized Zustand filters (same pattern as Market Overview)
-  const { buildApiParams, debouncedFilterKey, filterKey } = useZustandFilters();
+  // Phase 4: Simplified filter access - read values directly from Zustand
+  const { filters } = useZustandFilters();
 
-  // Track if filters are changing (for blur effect)
-  const isFiltering = filterKey !== debouncedFilterKey;
+  // Extract filter values directly (simple, explicit)
+  const timeframe = filters.timeFilter?.type === 'preset' ? filters.timeFilter.value : 'Y1';
+  const bedroom = filters.bedroomTypes?.join(',') || '';
+  const districts = filters.districts?.join(',') || '';
 
-  // Data fetching with useAppQuery - gates on appReady via context
-  // Phase 3.4: Using buildApiParams for standardized filter→API conversion
+  // Phase 4: Simplified data fetching - inline params, explicit query key
   const { data, status, error, refetch } = useAppQuery(
     async (signal) => {
-      // Use standardized buildApiParams (same as Market Overview charts)
-      const params = buildApiParams({
+      // Inline params - no buildApiParams abstraction
+      const params = {
         group_by: 'quarter,district',
         metrics: 'median_psf,total_value',
+        timeframe,
+        bedroom,
+        district: districts,
         sale_type: saleType,
-      });
+      };
 
       const response = await getAggregate(params, { signal });
 
@@ -80,8 +84,8 @@ export function MarketMomentumGrid({ saleType = SaleType.RESALE }) {
 
       return districtData;
     },
-    // Use debouncedFilterKey for standardized query key (same as Market Overview)
-    [debouncedFilterKey, saleType, 'market-momentum'],
+    // Explicit query key - TanStack handles cache deduplication
+    ['market-momentum', timeframe, bedroom, districts, saleType],
     { chartName: 'MarketMomentumGrid', initialData: null, keepPreviousData: true }
   );
 
@@ -98,7 +102,7 @@ export function MarketMomentumGrid({ saleType = SaleType.RESALE }) {
   return (
     <ChartFrame
       status={status}
-      isFiltering={isFiltering}
+      isFiltering={false}
       error={error}
       onRetry={refetch}
       empty={!safeData || Object.keys(safeData).length === 0}

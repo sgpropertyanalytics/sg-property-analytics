@@ -48,29 +48,34 @@ function PriceDistributionChartBase({
   sharedStatus = 'idle',
   onDrillThrough: _onDrillThrough,
 }) {
-  // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
-  // filterKey updates immediately on filter change - used for instant overlay feedback
-  const { buildApiParams, debouncedFilterKey, filterKey } = useZustandFilters();
+  // Phase 4: Simplified filter access - read values directly from Zustand
+  const { filters } = useZustandFilters();
+
+  // Extract filter values directly (simple, explicit)
+  const timeframe = filters.timeFilter?.type === 'preset' ? filters.timeFilter.value : 'Y1';
+  const bedroom = filters.bedroomTypes?.join(',') || '';
+  const districts = filters.districts?.join(',') || '';
+
   const [showFullRange, setShowFullRange] = useState(false);
   const chartRef = useRef(null);
 
   const useShared = sharedData != null && !showFullRange;
 
-  // Data fetching with useGatedAbortableQuery - automatic abort/stale handling
-  // Gates fetching on appReady (auth + subscription + filters)
+  // Phase 4: Simplified data fetching - inline params, explicit query key
   const { data: histogramData, status, error, refetch } = useAppQuery(
     async (signal) => {
-      // Use dashboard endpoint with price_histogram panel
-      // excludeLocationDrill: true - Price Distribution should NOT be affected by
-      // location drill (Power BI best practice: Drill ≠ Filter, drill is visual-local)
-      // saleType is passed from page level - see CLAUDE.md "Business Logic Enforcement"
-      const params = buildApiParams({
+      // Inline params - no buildApiParams abstraction
+      // Note: This chart doesn't filter by location drill (visual-local)
+      const params = {
         panels: 'price_histogram',
         histogram_bins: numBins,
+        timeframe,
+        bedroom,
+        // district excluded - histogram shows overall distribution
         ...(saleType && { sale_type: saleType }),
         // Only send show_full_range when true (backend defaults to false)
-        ...(showFullRange && { show_full_range: 'true' })
-      }, { excludeLocationDrill: true });
+        ...(showFullRange && { show_full_range: 'true' }),
+      };
 
       // Skip cache when toggling to ensure fresh data
       const response = await getDashboard(params, { skipCache: showFullRange, signal, priority: 'medium' });
@@ -92,7 +97,8 @@ function PriceDistributionChartBase({
       // Use adapter for transformation - handles legacy vs new format
       return transformDistributionSeries(apiData.price_histogram);
     },
-    [debouncedFilterKey, numBins, showFullRange, saleType],
+    // Explicit query key - TanStack handles cache deduplication
+    ['price-distribution', timeframe, bedroom, numBins, showFullRange, saleType],
     { chartName: 'PriceDistributionChart', initialData: null, enabled: !useShared, keepPreviousData: true }
   );
 
@@ -255,7 +261,7 @@ function PriceDistributionChartBase({
   return (
     <ChartFrame
       status={resolvedStatus}
-      isFiltering={filterKey !== debouncedFilterKey}
+      isFiltering={false}
       error={error}
       onRetry={refetch}
       empty={!bins || bins.length === 0}

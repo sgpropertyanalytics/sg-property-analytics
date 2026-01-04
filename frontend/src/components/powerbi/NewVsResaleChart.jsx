@@ -78,10 +78,14 @@ if (typeof window !== 'undefined') {
  * @param {{ height?: number }} props
  */
 function NewVsResaleChartBase({ height = 350 }) {
-  // Get GLOBAL filters and timeGrouping from context
-  // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
-  // filterKey updates immediately on filter change - used for instant overlay feedback
-  const { buildApiParams, debouncedFilterKey, filterKey, filters, timeGrouping } = useZustandFilters();
+  // Phase 4: Simplified filter access - read values directly from Zustand
+  const { filters, timeGrouping } = useZustandFilters();
+
+  // Extract filter values directly (simple, explicit)
+  const timeframe = filters.timeFilter?.type === 'preset' ? filters.timeFilter.value : 'Y1';
+  const bedroom = filters.bedroomTypes?.join(',') || '';
+  const districts = filters.districts?.join(',') || '';
+  const segments = filters.segments?.join(',') || '';
 
   // DEBUG: Log on mount
   useEffect(() => {
@@ -98,17 +102,17 @@ function NewVsResaleChartBase({ height = 350 }) {
 
   const chartRef = useRef(null);
 
-  // Data fetching with useAppQuery - gates on appReady
-  // keepPreviousData: true prevents loading flash when filters change - chart stays visible
-  // and smoothly transitions to new data via Chart.js animations
-  // isFetching = true during background refetch (used for inline spinner)
+  // Phase 4: Simplified data fetching - inline params, explicit query key
   const { data, status, error, isFetching, refetch } = useAppQuery(
     async (signal) => {
-      // Use buildApiParams to include GLOBAL filters from sidebar
-      // Uses global timeGrouping via TIME_GROUP_BY mapping for consistent API values
-      const params = buildApiParams({
+      // Inline params - no buildApiParams abstraction
+      const params = {
         timeGrain: TIME_GROUP_BY[timeGrouping],
-      });
+        timeframe,
+        bedroom,
+        district: districts,
+        segment: segments,
+      };
 
       // DEBUG: Log params being sent to API
       debugLog('API_PARAMS', {
@@ -119,7 +123,6 @@ function NewVsResaleChartBase({ height = 350 }) {
           segments: filters?.segments,
           bedroomTypes: filters?.bedroomTypes,
         },
-        debouncedFilterKey: debouncedFilterKey?.slice(0, 100) + '...',
       });
 
       const response = await getNewVsResale(params, { signal });
@@ -173,7 +176,8 @@ function NewVsResaleChartBase({ height = 350 }) {
 
       return transformed;
     },
-    [debouncedFilterKey, timeGrouping],
+    // Explicit query key - TanStack handles cache deduplication
+    ['new-vs-resale', timeframe, bedroom, districts, segments, timeGrouping],
     {
       chartName: 'NewVsResaleChart',
       initialData: null,  // null so hasRealData() returns false → shows skeleton during initial load
@@ -441,7 +445,7 @@ function NewVsResaleChartBase({ height = 350 }) {
   return (
     <ChartFrame
       status={status}
-      isFiltering={filterKey !== debouncedFilterKey}
+      isFiltering={false}
       error={error}
       onRetry={refetch}
       empty={!hasData}
