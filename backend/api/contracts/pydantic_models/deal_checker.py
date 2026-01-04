@@ -21,15 +21,15 @@ class DealCheckerMultiScopeParams(BaseParamsModel):
         default=None,
         description="Name of the project"
     )
-    bedroom: CoercedInt = Field(
+    bedroom: Optional[CoercedInt] = Field(
         default=None,
         description="Bedroom count (1-5, where 5 means 5+)"
     )
-    price: CoercedFloat = Field(
+    price: Optional[CoercedFloat] = Field(
         default=None,
         description="Buyer's price paid"
     )
-    sqft: CoercedFloat = Field(
+    sqft: Optional[CoercedFloat] = Field(
         default=None,
         description="Unit size in sqft"
     )

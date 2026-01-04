@@ -92,7 +92,7 @@ allowlist:
       - backend/utils/filter_builder.py
       - backend/constants.py
       - backend/services/data_processor.py
-      - backend/api/contracts/normalize.py
+      - backend/api/contracts/contract_schema.py
       - backend/scrapers/utils/hashing.py
       - backend/scripts/verify_units.py
       - backend/services/data_loader.py
