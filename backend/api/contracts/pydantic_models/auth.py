@@ -16,13 +16,13 @@ from typing import Optional
 
 from pydantic import Field
 
-from api.contracts.contract_schema import BaseParamsModel
+from ..contract_schema import BaseParamsModel
 
 
 class RegisterParams(BaseParamsModel):
     """Pydantic model for /auth/register endpoint params."""
     email: str = Field(..., description="User email address")
-    password: str = Field(..., description="User password (min 8 characters)")
+    password: str = Field(..., min_length=8, description="User password (min 8 characters)")
 
 
 class LoginParams(BaseParamsModel):

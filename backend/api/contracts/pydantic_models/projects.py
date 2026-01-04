@@ -31,9 +31,9 @@ class ProjectsLocationsParams(BaseParamsModel):
         default=None,
         description="Market segment filter"
     )
-    has_school: Optional[str] = Field(
+    has_school: Optional[CoercedBool] = Field(
         default=None,
-        description="true/false"
+        description="Filter by school proximity (true/false)"
     )
     search: Optional[str] = Field(
         default=None,
@@ -54,7 +54,7 @@ class ProjectsHotParams(BaseParamsModel):
 
     market_segment: Optional[str] = Field(
         default=None,
-        alias='region',
+        validation_alias='region',
         description="Market segment filter"
     )
     districts: DistrictList = Field(

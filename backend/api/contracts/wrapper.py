@@ -24,6 +24,7 @@ import uuid
 from typing import Callable, Any, Dict, Optional, Tuple, Union
 
 from flask import request, jsonify, g, Response
+from pydantic import ValidationError as PydanticValidationError
 
 from .registry import get_contract, SchemaMode, EndpointContract
 from .validate import validate_response, ContractViolation
@@ -80,13 +81,13 @@ def api_contract(endpoint_name: str):
 
                 try:
                     normalized = contract.pydantic_model(**raw_params).model_dump()
-                except Exception as e:
-                    logger.error(f"Pydantic validation failed for {endpoint_name}: {e}")
+                except PydanticValidationError as e:
+                    logger.exception(f"Pydantic validation failed for {endpoint_name}: {e}")
                     raise ValidationError(
                         message=f"Parameter validation failed: {e}",
                         field=None,
                         received_value=raw_params
-                    )
+                    ) from e
 
                 # 3. Inject into request context
                 g.normalized_params = normalized
