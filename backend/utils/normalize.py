@@ -275,7 +275,7 @@ def to_str(
 
 
 def to_list(
-    value: Optional[str],
+    value: Optional[Union[str, list]],
     *,
     default: Optional[list] = None,
     separator: str = ",",
@@ -283,12 +283,16 @@ def to_list(
     field: str = None
 ) -> Optional[list]:
     """
-    Convert comma-separated string to list.
+    Convert comma-separated string OR list to typed list.
+
+    Handles inputs from both query strings (?bedrooms=1,2,3) and JSON body
+    ({"bedrooms": [1, 2, 3]}). Normalizes both to consistent Python list.
 
     Args:
-        value: Input string (e.g., "1,2,3" or "D01,D02,D03")
+        value: Input string (e.g., "1,2,3") OR list (e.g., [1, 2, 3])
+               List items with embedded separators are expanded automatically.
         default: Value to return if input is None or empty
-        separator: Separator character
+        separator: Separator character for string splitting
         item_type: Type to convert each item to (str, int, float)
         field: Field name for error messages
 
@@ -301,10 +305,27 @@ def to_list(
     if value is None or value == "":
         return default if default is not None else []
 
-    items = [item.strip() for item in value.split(separator) if item.strip()]
+    # Handle list input (from JSON body or multi-value query params)
+    if isinstance(value, list):
+        items = []
+        for item in value:
+            if isinstance(item, str):
+                # Strip whitespace and expand CSV strings
+                if separator in item:
+                    items.extend([p.strip() for p in item.split(separator) if p.strip()])
+                else:
+                    stripped = item.strip()
+                    if stripped:  # Skip empty strings
+                        items.append(stripped)
+            else:
+                # Non-string (int, float, etc) - keep as-is
+                items.append(item)
+    else:
+        # String input - split by separator
+        items = [item.strip() for item in value.split(separator) if item.strip()]
 
     if item_type == str:
-        return items
+        return [str(item) for item in items]
 
     try:
         if item_type == int:
