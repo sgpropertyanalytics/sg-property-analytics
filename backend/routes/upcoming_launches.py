@@ -61,9 +61,12 @@ def get_all():
     start = time.time()
 
     # Use normalized params from Pydantic (via @api_contract decorator)
+    # Pydantic normalizes singular → plural
     params = g.normalized_params
-    market_segment = params.get("market_segment")
-    district = params.get("district")
+    segments = params.get("segments")
+    market_segment = segments[0] if segments else None
+    districts = params.get("districts")
+    district = districts[0] if districts else None
     needs_review = params.get("needs_review", False)
     sort_by = params.get("sort", "project_name")
     order = params.get("order", "asc")

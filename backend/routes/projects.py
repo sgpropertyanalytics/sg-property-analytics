@@ -73,8 +73,9 @@ def get_project_locations():
         if districts:
             query = query.filter(ProjectLocation.district.in_(districts))
 
-        # Segment filter
-        segment = params.get("segment")
+        # Segment filter (Pydantic normalizes 'segment' → 'segments')
+        segments = params.get("segments")
+        segment = segments[0] if segments else None
         if segment:
             query = query.filter(ProjectLocation.market_segment == segment.upper())
 

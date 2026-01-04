@@ -68,8 +68,9 @@ class FloorLiquidityHeatmapParams(BaseParamsModel):
         default=12,
         description="Rolling window for velocity"
     )
-    segment: Optional[str] = Field(
+    segments: WrapList = Field(
         default=None,
+        validation_alias='segment',
         description="Market segment (CCR, RCR, OCR)"
     )
     districts: DistrictList = Field(

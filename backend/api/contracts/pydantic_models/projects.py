@@ -27,8 +27,9 @@ class ProjectsLocationsParams(BaseParamsModel):
         validation_alias='district',
         description="Comma-separated districts"
     )
-    segment: Optional[str] = Field(
+    segments: WrapList = Field(
         default=None,
+        validation_alias='segment',
         description="Market segment filter"
     )
     has_school: Optional[CoercedBool] = Field(

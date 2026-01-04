@@ -57,8 +57,9 @@ def new_vs_resale():
     except NormalizeValidationError as e:
         return validation_error_response(e)
 
-    # Pydantic stores as 'segment' (singular string, not list)
-    segment = params.get("segment")
+    # Pydantic normalizes 'segment' → 'segments' (list)
+    segments = params.get("segments")
+    segment = segments[0] if segments else None
 
     date_from = params.get("date_from")
     # Use date_to_exclusive from normalizer (timeframe resolution) if available
