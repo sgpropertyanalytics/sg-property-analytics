@@ -376,7 +376,7 @@ def build_property_age_bucket_filter(bucket: str, txn_table=None):
         query = query.filter(filter_expr)
     """
     from api.contracts.contract_schema import PropertyAgeBucket
-    from api.contracts.pydantic_models.base import DB_SALE_TYPE_RESALE
+    from constants import SALE_TYPE_RESALE as DB_SALE_TYPE_RESALE
 
     T = txn_table if txn_table is not None else Transaction
     lease_age_expr = extract('year', T.transaction_date) - T.lease_start_year

@@ -145,7 +145,7 @@ def check_internal_consistency(project_name, current_units):
     Check if transaction count is consistent with total units.
     Returns: {source, agrees, txn_count, note}
     """
-    from api.contracts.pydantic_models.base import DB_SALE_TYPE_NEW
+    from constants import SALE_TYPE_NEW as DB_SALE_TYPE_NEW
     txn_result = db.session.execute(text("""
         SELECT COUNT(*) as txn_count
         FROM transactions

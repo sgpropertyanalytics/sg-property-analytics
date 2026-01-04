@@ -277,7 +277,7 @@ def _compute_monthly_percentiles(
     params = {}
 
     # Sale type: Use DB constant directly
-    from api.contracts.pydantic_models.base import DB_SALE_TYPE_RESALE
+    from constants import SALE_TYPE_RESALE as DB_SALE_TYPE_RESALE
     conditions.append("sale_type = :sale_type")
     params["sale_type"] = DB_SALE_TYPE_RESALE
 

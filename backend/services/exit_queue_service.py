@@ -121,7 +121,7 @@ def query_basic_stats(db, text, project_name: str, twelve_months_ago: date, sale
     Args:
         sale_type_db: DB value for sale_type filter (default: 'Resale')
     """
-    from api.contracts.pydantic_models.base import DB_SALE_TYPE_RESALE
+    from constants import SALE_TYPE_RESALE as DB_SALE_TYPE_RESALE
     if sale_type_db is None:
         sale_type_db = DB_SALE_TYPE_RESALE
 
@@ -160,7 +160,7 @@ def query_bedroom_diversity(db, text, project_name: str, sale_type_db: str = Non
     Count distinct bedroom types for unit-type-mixed flag.
     Uses COALESCE for NULL safety.
     """
-    from api.contracts.pydantic_models.base import DB_SALE_TYPE_RESALE
+    from constants import SALE_TYPE_RESALE as DB_SALE_TYPE_RESALE
     if sale_type_db is None:
         sale_type_db = DB_SALE_TYPE_RESALE
 
