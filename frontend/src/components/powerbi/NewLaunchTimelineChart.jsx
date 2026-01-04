@@ -14,7 +14,7 @@
 import React, { useRef, useMemo, useState } from 'react';
 import { Chart } from 'react-chartjs-2';
 // Phase 2: Using TanStack Query via useAppQuery wrapper
-import { useAppQuery, useDeferredFetch } from '../../hooks';
+import { useAppQuery } from '../../hooks';
 import { ChartFrame } from '../common/ChartFrame';
 // Phase 3.2: Migrated from usePowerBIFilters to useZustandFilters
 import { useZustandFilters } from '../../stores';
@@ -44,13 +44,6 @@ function NewLaunchTimelineChartBase({ height = 300 }) {
   const [include2020, setInclude2020] = useState(false);
 
   const chartRef = useRef(null);
-
-  // Defer fetch until chart is visible
-  const { shouldFetch, containerRef } = useDeferredFetch({
-    filterKey: `${debouncedFilterKey}:${timeGrouping}`,
-    priority: 'low',
-    fetchOnMount: true,
-  });
 
   // Data fetching with useAppQuery - gates on appReady via context
   // isFetching = true during background refetch (used for inline spinner)
@@ -100,7 +93,6 @@ function NewLaunchTimelineChartBase({ height = 300 }) {
     {
       chartName: 'NewLaunchTimelineChart',
       initialData: null,  // null so hasRealData() returns false → shows skeleton during initial load
-      enabled: shouldFetch,
       keepPreviousData: true,
     }
   );
@@ -296,17 +288,16 @@ function NewLaunchTimelineChartBase({ height = 300 }) {
   const cardHeight = height + 160;
 
   return (
-    <div ref={containerRef}>
-      <ChartFrame
-        status={status}
-        isFiltering={filterKey !== debouncedFilterKey}
-        error={error}
-        onRetry={refetch}
-        empty={!hasData}
-        skeleton="bar"
-        height={height}
-      >
-        <div
+    <ChartFrame
+      status={status}
+      isFiltering={filterKey !== debouncedFilterKey}
+      error={error}
+      onRetry={refetch}
+      empty={!hasData}
+      skeleton="bar"
+      height={height}
+    >
+      <div
           className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
           style={{ height: cardHeight }}
         >
@@ -400,8 +391,7 @@ function NewLaunchTimelineChartBase({ height = 300 }) {
             </div>
           </div>
         </div>
-      </ChartFrame>
-    </div>
+    </ChartFrame>
   );
 }
 

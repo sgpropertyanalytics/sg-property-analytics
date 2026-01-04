@@ -1,6 +1,6 @@
 import React, { useRef, useMemo, useEffect } from 'react';
 // Phase 2: Using TanStack Query via useAppQuery wrapper
-import { useAppQuery, useDeferredFetch, QueryStatus } from '../../hooks';
+import { useAppQuery, QueryStatus } from '../../hooks';
 import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
 import { Line } from 'react-chartjs-2';
@@ -98,16 +98,7 @@ function NewVsResaleChartBase({ height = 350 }) {
 
   const chartRef = useRef(null);
 
-  // Defer fetch until chart is visible (low priority - below the fold)
-  // IMPORTANT: filterKey must include ALL state that affects the query data
-  // timeGrouping changes the aggregation, so it's part of the query key
-  const { shouldFetch, containerRef } = useDeferredFetch({
-    filterKey: `${debouncedFilterKey}:${timeGrouping}`,
-    priority: 'low',
-    fetchOnMount: true,
-  });
-
-  // Data fetching with useGatedAbortableQuery - gates on appReady
+  // Data fetching with useAppQuery - gates on appReady
   // keepPreviousData: true prevents loading flash when filters change - chart stays visible
   // and smoothly transitions to new data via Chart.js animations
   // isFetching = true during background refetch (used for inline spinner)
@@ -186,7 +177,6 @@ function NewVsResaleChartBase({ height = 350 }) {
     {
       chartName: 'NewVsResaleChart',
       initialData: null,  // null so hasRealData() returns false → shows skeleton during initial load
-      enabled: shouldFetch,
       keepPreviousData: true, // Instant filter updates - no loading flash
     }
   );
@@ -430,7 +420,6 @@ function NewVsResaleChartBase({ height = 350 }) {
     hasData,
     chartDataLength: chartData.length,
     isFetching,
-    shouldFetch,
     willShowEmptyState: status === QueryStatus.SUCCESS && !hasData,
     willShowChart: status === QueryStatus.SUCCESS && hasData && chartData.length > 0,
   });
@@ -449,10 +438,7 @@ function NewVsResaleChartBase({ height = 350 }) {
     warnings: isSeverelySparse ? ['Sparse resale data - some periods may be missing'] : [],
   }), [timeGrouping, filters, chartData?.length, isSeverelySparse]);
 
-  // CRITICAL: containerRef must be OUTSIDE ChartFrame for IntersectionObserver to work
-  // ChartFrame only renders children when not loading, so ref would be null during load
   return (
-    <div ref={containerRef}>
     <ChartFrame
       status={status}
       isFiltering={filterKey !== debouncedFilterKey}
@@ -577,7 +563,6 @@ function NewVsResaleChartBase({ height = 350 }) {
       </div>
       </div>
     </ChartFrame>
-    </div>
   );
 }
 
