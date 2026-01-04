@@ -94,13 +94,11 @@ def api_contract(endpoint_name: str):
                 # 1. Collect raw params
                 raw_params = _collect_raw_params()
 
-                # 2. Validate public params
-                validate_public_params(raw_params, contract.param_schema)
-
-                # 3. Normalize params
-                # Phase 7: Pydantic is now the primary path (migration complete)
+                # 2. Normalize and validate params
+                # Phase 8: Pydantic is the single validation path (migration complete)
                 if USE_PYDANTIC_VALIDATION and hasattr(contract, 'pydantic_model') and contract.pydantic_model:
-                    # Use Pydantic model directly (no fallback to old code)
+                    # Pydantic handles both validation AND normalization
+                    # No need for separate validate_public_params or validate_service_params
                     try:
                         normalized = contract.pydantic_model(**raw_params).model_dump()
                         logger.debug(f"Using Pydantic validation for {endpoint_name}")
@@ -114,16 +112,20 @@ def api_contract(endpoint_name: str):
                         )
                 else:
                     # Legacy fallback for endpoints without Pydantic models
+                    # Uses old param_schema + normalize_params + service_schema path
+                    if contract.param_schema:
+                        validate_public_params(raw_params, contract.param_schema)
                     normalized = normalize_params(raw_params, contract.param_schema)
 
-                # 4. Inject into request context BEFORE service validation
-                # This ensures params are available even if service validation fails in WARN mode
+                # 3. Inject into request context
                 g.normalized_params = normalized
                 g.contract = contract
                 g.filters_applied = _extract_filters_applied(normalized)
 
-                # 5. Validate service params (may raise ContractViolation)
-                validate_service_params(normalized, contract.service_schema)
+                # 4. Validate service params (only for legacy path without Pydantic)
+                if not (USE_PYDANTIC_VALIDATION and hasattr(contract, 'pydantic_model') and contract.pydantic_model):
+                    if contract.service_schema:
+                        validate_service_params(normalized, contract.service_schema)
 
             except ValidationError as e:
                 return _make_error_response(

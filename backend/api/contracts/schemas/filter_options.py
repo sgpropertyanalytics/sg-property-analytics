@@ -77,13 +77,9 @@ FILTER_OPTIONS_RESPONSE_SCHEMA = ResponseSchema(
 FILTER_OPTIONS_CONTRACT = EndpointContract(
     endpoint="filter-options",
     version="v3",
-    param_schema=FILTER_OPTIONS_PARAM_SCHEMA,
-    service_schema=FILTER_OPTIONS_SERVICE_SCHEMA,
     response_schema=FILTER_OPTIONS_RESPONSE_SCHEMA,
-    compat_map=None,
-    serializer=None,
-    mode=SchemaMode.WARN,
     pydantic_model=FilterOptionsParams,
+    mode=SchemaMode.WARN,
 )
 
 # Register on import

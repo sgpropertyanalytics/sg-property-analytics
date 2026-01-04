@@ -152,13 +152,9 @@ PRICE_GROWTH_RESPONSE_SCHEMA = ResponseSchema(
 PRICE_GROWTH_CONTRACT = EndpointContract(
     endpoint="transactions/price-growth",
     version="v3",
-    param_schema=PRICE_GROWTH_PARAM_SCHEMA,
-    service_schema=PRICE_GROWTH_SERVICE_SCHEMA,
     response_schema=PRICE_GROWTH_RESPONSE_SCHEMA,
-    compat_map=None,
-    serializer=None,
-    mode=SchemaMode.WARN,
     pydantic_model=PriceGrowthParams,
+    mode=SchemaMode.WARN,
 )
 
 register_contract(PRICE_GROWTH_CONTRACT)
@@ -220,13 +216,9 @@ SEGMENTS_RESPONSE_SCHEMA = ResponseSchema(
 SEGMENTS_CONTRACT = EndpointContract(
     endpoint="transactions/price-growth/segments",
     version="v3",
-    param_schema=SEGMENTS_PARAM_SCHEMA,
-    service_schema=SEGMENTS_SERVICE_SCHEMA,
     response_schema=SEGMENTS_RESPONSE_SCHEMA,
-    compat_map=None,
-    serializer=None,
-    mode=SchemaMode.WARN,
     pydantic_model=SegmentsParams,
+    mode=SchemaMode.WARN,
 )
 
 register_contract(SEGMENTS_CONTRACT)

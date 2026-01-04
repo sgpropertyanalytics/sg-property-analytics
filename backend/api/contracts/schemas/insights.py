@@ -103,11 +103,9 @@ DISTRICT_PSF_RESPONSE_SCHEMA = ResponseSchema(
 DISTRICT_PSF_CONTRACT = EndpointContract(
     endpoint="insights/district-psf",
     version="v3",
-    param_schema=DISTRICT_PSF_PARAM_SCHEMA,
-    service_schema=DISTRICT_PSF_SERVICE_SCHEMA,
     response_schema=DISTRICT_PSF_RESPONSE_SCHEMA,
-    mode=SchemaMode.WARN,
     pydantic_model=DistrictPsfParams,
+    mode=SchemaMode.WARN,
 )
 
 register_contract(DISTRICT_PSF_CONTRACT)
@@ -179,11 +177,9 @@ DISTRICT_LIQUIDITY_RESPONSE_SCHEMA = ResponseSchema(
 DISTRICT_LIQUIDITY_CONTRACT = EndpointContract(
     endpoint="insights/district-liquidity",
     version="v3",
-    param_schema=DISTRICT_LIQUIDITY_PARAM_SCHEMA,
-    service_schema=DISTRICT_LIQUIDITY_SERVICE_SCHEMA,
     response_schema=DISTRICT_LIQUIDITY_RESPONSE_SCHEMA,
-    mode=SchemaMode.WARN,
     pydantic_model=DistrictLiquidityParams,
+    mode=SchemaMode.WARN,
 )
 
 register_contract(DISTRICT_LIQUIDITY_CONTRACT)

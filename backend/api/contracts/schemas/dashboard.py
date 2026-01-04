@@ -286,12 +286,10 @@ DASHBOARD_RESPONSE_SCHEMA = ResponseSchema(
 DASHBOARD_CONTRACT = EndpointContract(
     endpoint="dashboard",
     version="v3",
-    param_schema=DASHBOARD_PARAM_SCHEMA,
-    service_schema=DASHBOARD_SERVICE_SCHEMA,
     response_schema=DASHBOARD_RESPONSE_SCHEMA,
-    serializer=None,  # Uses existing serialize_dashboard_response in route
-    mode=SchemaMode.WARN,  # Start in warn mode
     pydantic_model=DashboardParams,
+    serializer=None,  # Uses existing serialize_dashboard_response in route
+    mode=SchemaMode.WARN,
 )
 
 # Register on import

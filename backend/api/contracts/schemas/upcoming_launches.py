@@ -96,8 +96,6 @@ UPCOMING_ALL_RESPONSE_SCHEMA = ResponseSchema(
 UPCOMING_ALL_CONTRACT = EndpointContract(
     endpoint="upcoming-launches/all",
     version="v3",
-    param_schema=UPCOMING_ALL_PARAM_SCHEMA,
-    service_schema=UPCOMING_ALL_SERVICE_SCHEMA,
     response_schema=UPCOMING_ALL_RESPONSE_SCHEMA,
     pydantic_model=UpcomingLaunchesAllParams,
 )
@@ -131,8 +129,6 @@ UPCOMING_NEEDS_REVIEW_RESPONSE_SCHEMA = ResponseSchema(
 UPCOMING_NEEDS_REVIEW_CONTRACT = EndpointContract(
     endpoint="upcoming-launches/needs-review",
     version="v3",
-    param_schema=UPCOMING_NEEDS_REVIEW_PARAM_SCHEMA,
-    service_schema=UPCOMING_NEEDS_REVIEW_SERVICE_SCHEMA,
     response_schema=UPCOMING_NEEDS_REVIEW_RESPONSE_SCHEMA,
     pydantic_model=UpcomingNeedsReviewParams,
 )

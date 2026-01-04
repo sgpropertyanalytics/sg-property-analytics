@@ -93,8 +93,6 @@ GLS_ALL_RESPONSE_SCHEMA = ResponseSchema(
 GLS_ALL_CONTRACT = EndpointContract(
     endpoint="gls/all",
     version="v3",
-    param_schema=GLS_ALL_PARAM_SCHEMA,
-    service_schema=GLS_ALL_SERVICE_SCHEMA,
     response_schema=GLS_ALL_RESPONSE_SCHEMA,
     pydantic_model=GlsAllParams,
 )
@@ -128,8 +126,6 @@ GLS_NEEDS_REVIEW_RESPONSE_SCHEMA = ResponseSchema(
 GLS_NEEDS_REVIEW_CONTRACT = EndpointContract(
     endpoint="gls/needs-review",
     version="v3",
-    param_schema=GLS_NEEDS_REVIEW_PARAM_SCHEMA,
-    service_schema=GLS_NEEDS_REVIEW_SERVICE_SCHEMA,
     response_schema=GLS_NEEDS_REVIEW_RESPONSE_SCHEMA,
     pydantic_model=GlsNeedsReviewParams,
 )

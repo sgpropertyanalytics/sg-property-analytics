@@ -275,11 +275,9 @@ AGGREGATE_RESPONSE_SCHEMA = ResponseSchema(
 AGGREGATE_CONTRACT = EndpointContract(
     endpoint="aggregate",
     version="v3",
-    param_schema=AGGREGATE_PARAM_SCHEMA,
-    service_schema=AGGREGATE_SERVICE_SCHEMA,
     response_schema=AGGREGATE_RESPONSE_SCHEMA,
+    pydantic_model=AggregateParams,
     serializer=None,  # Uses existing serialize_aggregate_response in route
-    pydantic_model=AggregateParams,  # Pydantic model for parallel validation
 )
 
 # Register on import

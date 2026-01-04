@@ -197,16 +197,22 @@ class CompatMap:
 
 @dataclass
 class EndpointContract:
-    """Complete contract for an endpoint."""
-    endpoint: str                         # e.g., "aggregate"
-    version: str                          # e.g., "v3"
-    param_schema: ParamSchema
-    service_schema: ServiceBoundarySchema
-    response_schema: ResponseSchema
+    """
+    Complete contract for an endpoint.
+
+    Phase 8 migration: pydantic_model is now the primary validation path.
+    param_schema and service_schema are optional (legacy, for backwards compat).
+    When pydantic_model is set, param_schema and service_schema are ignored.
+    """
+    endpoint: str                                    # e.g., "aggregate"
+    version: str                                     # e.g., "v3"
+    response_schema: ResponseSchema                  # Output validation (always required)
+    pydantic_model: Optional[Any] = None             # PRIMARY: Pydantic model for validation
+    param_schema: Optional[ParamSchema] = None       # LEGACY: Manual param schema (deprecated)
+    service_schema: Optional[ServiceBoundarySchema] = None  # LEGACY: Service boundary (deprecated)
     compat_map: Optional[CompatMap] = None
     serializer: Optional[Callable] = None
     mode: SchemaMode = field(default_factory=_get_default_mode)
-    pydantic_model: Optional[Any] = None  # Pydantic model for parallel validation
 
     def __post_init__(self):
         # Ensure compat_map exists

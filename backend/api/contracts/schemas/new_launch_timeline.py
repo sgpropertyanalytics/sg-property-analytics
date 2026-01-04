@@ -152,8 +152,6 @@ NEW_LAUNCH_TIMELINE_RESPONSE_SCHEMA = ResponseSchema(
 NEW_LAUNCH_TIMELINE_CONTRACT = EndpointContract(
     endpoint="new-launch-timeline",
     version="v1",
-    param_schema=NEW_LAUNCH_TIMELINE_PARAM_SCHEMA,
-    service_schema=NEW_LAUNCH_TIMELINE_SERVICE_SCHEMA,
     response_schema=NEW_LAUNCH_TIMELINE_RESPONSE_SCHEMA,
     pydantic_model=NewLaunchTimelineParams,
 )

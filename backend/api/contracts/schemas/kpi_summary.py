@@ -184,10 +184,7 @@ def validate_kpi_response(response: dict) -> None:
 KPI_SUMMARY_CONTRACT = EndpointContract(
     endpoint="kpi-summary-v2",
     version="v3",
-    param_schema=KPI_SUMMARY_PARAM_SCHEMA,
-    service_schema=KPI_SUMMARY_SERVICE_SCHEMA,
     response_schema=KPI_SUMMARY_RESPONSE_SCHEMA,
-    serializer=None,
     pydantic_model=KPISummaryParams,
 )
 
@@ -243,8 +240,6 @@ KPI_SINGLE_RESPONSE_SCHEMA = ResponseSchema(
 KPI_SINGLE_CONTRACT = EndpointContract(
     endpoint="kpi-summary-v2/single",
     version="v3",
-    param_schema=KPI_SINGLE_PARAM_SCHEMA,
-    service_schema=KPI_SINGLE_SERVICE_SCHEMA,
     response_schema=KPI_SINGLE_RESPONSE_SCHEMA,
     pydantic_model=KPISingleParams,
 )
@@ -299,8 +294,6 @@ KPI_SUMMARY_LEGACY_RESPONSE_SCHEMA = ResponseSchema(
 KPI_SUMMARY_LEGACY_CONTRACT = EndpointContract(
     endpoint="kpi-summary",
     version="v3",
-    param_schema=KPI_SUMMARY_LEGACY_PARAM_SCHEMA,
-    service_schema=KPI_SUMMARY_LEGACY_SERVICE_SCHEMA,
     response_schema=KPI_SUMMARY_LEGACY_RESPONSE_SCHEMA,
     pydantic_model=KPISummaryLegacyParams,
 )

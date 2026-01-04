@@ -161,8 +161,6 @@ NEW_LAUNCH_ABSORPTION_RESPONSE_SCHEMA = ResponseSchema(
 NEW_LAUNCH_ABSORPTION_CONTRACT = EndpointContract(
     endpoint="new-launch-absorption",
     version="v1",
-    param_schema=NEW_LAUNCH_ABSORPTION_PARAM_SCHEMA,
-    service_schema=NEW_LAUNCH_ABSORPTION_SERVICE_SCHEMA,
     response_schema=NEW_LAUNCH_ABSORPTION_RESPONSE_SCHEMA,
     pydantic_model=NewLaunchAbsorptionParams,
 )
