@@ -1,6 +1,6 @@
 ---
 name: review
-description: Unified code review orchestrator. Runs historical context discovery, plan validation, pattern analysis, simplicity checks, contract validation, risk detection, and inline tests. Use when you want a comprehensive review before pushing or merging.
+description: Unified code review orchestrator. Runs design review, historical context discovery, plan validation, pattern analysis, simplicity checks, contract validation, risk detection, and inline tests. Use when you want a comprehensive review before pushing or merging.
 ---
 
 # Code Review Orchestrator
@@ -17,10 +17,11 @@ Comprehensive code review workflow that catches issues BEFORE pushing.
 
 > **YOU MUST EXECUTE EVERY STEP BELOW. THIS IS NOT OPTIONAL.**
 >
-> 1. **USE THE TASK TOOL** to call agents in Steps 1-4
-> 2. **USE THE BASH TOOL** to run tests in Step 5
+> 1. **USE THE TASK TOOL** to call agents in Steps 1-5
+> 2. **USE THE BASH TOOL** to run tests in Step 6
 > 3. **SHOW ACTUAL OUTPUT** from test commands (pass/fail counts)
 > 4. **PRODUCE THE FINAL REPORT** in the exact format specified
+> 5. **DESIGN REVIEW IS BLOCKING** - If design-reviewer returns RETHINK or STOP, halt and discuss with user
 >
 > If you skip any step, the review is INCOMPLETE and INVALID.
 
@@ -40,14 +41,14 @@ USER INVOKES: "/review" or "review this" or "check my changes"
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│ STEP 0.1: HISTORICAL CONTEXT DISCOVERY (NEW)                    │
+│ STEP 0.1: HISTORICAL CONTEXT DISCOVERY                          │
 │ Use Task tool: subagent_type="thoughts-locator"                 │
 │ Find: Related docs, historical incidents, relevant guardrails   │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│ STEP 0.2: CHECK FOR RELATED PLAN (NEW)                          │
+│ STEP 0.2: CHECK FOR RELATED PLAN                                │
 │ Use Bash/Glob: Look for docs/plans/ files related to changes    │
 │ If found: Use Task with thoughts-analyzer to extract key points │
 └─────────────────────────────────────────────────────────────────┘
@@ -61,45 +62,53 @@ USER INVOKES: "/review" or "review this" or "check my changes"
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│ STEP 1: PATTERN ANALYSIS                                        │
+│ ★ STEP 1: DESIGN REVIEW (BLOCKING)                              │
+│ Use Task tool: subagent_type="design-reviewer"                  │
+│ Ask: Should this exist? Simpler approach? Right problem?        │
+│ If RETHINK or STOP → Halt review, discuss with user             │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ STEP 2: PATTERN ANALYSIS                                        │
 │ Use Task tool: subagent_type="codebase-pattern-finder"          │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│ STEP 2: SIMPLICITY CHECK                                        │
+│ STEP 3: SIMPLICITY CHECK                                        │
 │ Use Task tool: subagent_type="simplicity-reviewer"              │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│ STEP 3: CONTRACT & CONSISTENCY CHECK                            │
+│ STEP 4: CONTRACT & CONSISTENCY CHECK                            │
 │ Use Task tool: subagent_type="fullstack-consistency-reviewer"   │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│ STEP 4: RISK DETECTION                                          │
+│ STEP 5: RISK DETECTION                                          │
 │ Use Task tool: subagent_type="risk-agent"                       │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│ STEP 5: RUN INLINE TESTS                                        │
+│ STEP 6: RUN INLINE TESTS                                        │
 │ Use Bash tool: pytest, npm run lint, npm run typecheck          │
 │ MUST show actual test output with pass/fail counts              │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│ STEP 6: ITERATE ON FAILURES                                     │
+│ STEP 7: ITERATE ON FAILURES                                     │
 │ Auto-fix lint/type errors, ask user for logic failures          │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│ STEP 7: FINAL REPORT                                            │
-│ Pattern Match | Simplicity | Contracts | Risks | Tests          │
+│ STEP 8: FINAL REPORT                                            │
+│ Design | Pattern | Simplicity | Contracts | Risks | Tests       │
 │ Verdict: READY TO PUSH or NEEDS WORK                            │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -263,7 +272,57 @@ recreates functionality that a library already provides.
 
 ---
 
-# STEP 1: PATTERN ANALYSIS
+# STEP 1: DESIGN REVIEW (BLOCKING)
+
+> **This step is BLOCKING.** If the design-reviewer returns RETHINK or STOP, halt the review and discuss with the user before proceeding.
+
+**PURPOSE:** Before diving into implementation details, step back and ask fundamental questions about the approach. The best code is code that doesn't need to exist.
+
+**REQUIRED ACTION:** Use the Task tool with these EXACT parameters:
+
+```
+Tool: Task
+subagent_type: "design-reviewer"
+prompt: |
+  Conduct a design review for these changes:
+  [LIST THE CHANGED FILES FROM STEP 0]
+
+  Commit message / PR title:
+  [PASTE THE COMMIT MESSAGE OR DESCRIBE THE CHANGE]
+
+  Context from Step 0.5:
+  [PASTE RELEVANT ENGINEERING PRINCIPLES AND CONSTRAINTS]
+
+  Answer the 5 Design Questions:
+  1. What problem is this solving? (State in ONE sentence)
+  2. Is there a simpler approach? (10x Simpler Test)
+  3. Do abstractions earn their complexity? (Used 3+ times?)
+  4. Are we solving the right problem? (Root cause vs symptom?)
+  5. Is scope appropriate? (Only what was requested?)
+
+  Output format:
+  - Problem Statement (1 sentence)
+  - Verdict: APPROVED | SIMPLIFY | RETHINK | STOP
+  - If not APPROVED: What should change and why
+  - Watch-fors for implementation review
+```
+
+**WAIT for agent to complete.**
+
+**VERDICT HANDLING:**
+
+| Verdict | Action |
+|---------|--------|
+| **APPROVED** | Proceed to Step 2 |
+| **SIMPLIFY** | Show simplification suggestions, ASK user if they want to proceed or revise |
+| **RETHINK** | HALT. Show alternative approach. Discuss with user before proceeding. |
+| **STOP** | HALT. Explain why this code shouldn't exist. Get user confirmation to proceed. |
+
+**IF RETHINK or STOP:** Do NOT continue to Step 2. The review is blocked until user confirms the design direction.
+
+---
+
+# STEP 2: PATTERN ANALYSIS
 
 **REQUIRED ACTION:** Use the Task tool with these EXACT parameters:
 
@@ -285,11 +344,11 @@ prompt: |
   - Deviations detected (if any)
 ```
 
-**WAIT for agent to complete before proceeding to Step 2.**
+**WAIT for agent to complete before proceeding to Step 3.**
 
 ---
 
-# STEP 2: SIMPLICITY CHECK
+# STEP 3: SIMPLICITY CHECK
 
 **REQUIRED ACTION:** Use the Task tool with these EXACT parameters:
 
@@ -321,7 +380,7 @@ prompt: |
 
 ---
 
-# STEP 3: CONTRACT & CONSISTENCY CHECK
+# STEP 4: CONTRACT & CONSISTENCY CHECK
 
 **REQUIRED ACTION:** Use the Task tool with these EXACT parameters:
 
@@ -351,15 +410,15 @@ prompt: |
   Output: Contract issues, impact assessment
 ```
 
-**WAIT for agent to complete before proceeding to Step 4.**
+**WAIT for agent to complete before proceeding to Step 5.**
 
 ---
 
-# STEP 4: RISK DETECTION
+# STEP 5: RISK DETECTION
 
 **REQUIRED ACTION:** Use the Task tool with these EXACT parameters.
 
-**CRITICAL:** Include context from Steps 0.5-3 so risk-agent doesn't make false positives.
+**CRITICAL:** Include context from Steps 0.5-4 so risk-agent doesn't make false positives.
 
 ```
 Tool: Task
@@ -367,20 +426,25 @@ subagent_type: "risk-agent"
 prompt: |
   ## Context from Previous Review Steps
 
+  ### Design Review Findings (from Step 1)
+  [PASTE the output from design-reviewer]
+  - Design verdict: APPROVED / SIMPLIFY / RETHINK / STOP
+  - Watch-fors noted for implementation review
+
   ### Engineering Principles (from Step 0.5)
   [PASTE key principles from CLAUDE.md that were extracted]
 
-  ### Pattern Analysis Findings (from Step 1)
+  ### Pattern Analysis Findings (from Step 2)
   [PASTE the output from codebase-pattern-finder]
   - What patterns are established in sibling files?
   - What git history shows about these files?
 
-  ### Simplicity Check Findings (from Step 2)
+  ### Simplicity Check Findings (from Step 3)
   [PASTE the output from simplicity-reviewer]
   - Library-First violations found?
   - Is this solving today's problem or hypothetical future?
 
-  ### Contract Check Findings (from Step 3)
+  ### Contract Check Findings (from Step 4)
   [PASTE the output from fullstack-consistency-reviewer]
   - Any contract drift detected?
   - What's the current migration state?

@@ -21,7 +21,7 @@ export {
 } from './utils';
 
 // For advanced usage - hooks
-export { useFilterOptions, useRouteReset } from './hooks';
+export { useFilterOptions } from './hooks';
 
 // Storage utilities for page-namespaced persistence
 export {

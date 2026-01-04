@@ -514,6 +514,93 @@ const { data } = useQuery({
 
 **Lesson:** When using TanStack Query with `initialData`, always use `null` instead of empty objects/arrays. Empty objects make TanStack think the query "succeeded" before any fetch happens.
 
+### Filter Architecture Over-Engineering Incident (Jan 4, 2026)
+
+**What happened:** The filter-to-API flow grew to 7 layers when 3 would suffice:
+
+```
+User clicks filter
+    ↓ (1) Zustand store
+    ↓ (2) getActiveFilters()
+    ↓ (3) getFilterKey() + JSON.stringify
+    ↓ (4) debouncedFilterKey (300ms delay)
+    ↓ (5) useAppQuery deps trigger
+    ↓ (6) buildApiParams() abstraction
+    ↓ (7) adapter (timeframe → period rename)
+    ↓ Backend
+```
+
+**Why Claude built it this way:**
+1. **Premature abstraction**: "We might need custom cache keys" → `generateFilterKey()` (TanStack Query already does this)
+2. **Wrong debounce scope**: Applied debounce to ALL filters, but dropdowns don't need debounce
+3. **Adapter for naming mismatch**: Frontend says `timeframe`, backend says `period` → adapter to rename
+4. **Library distrust**: Built `buildApiParams()` instead of trusting inline params
+5. **Each layer "fixed" a perceived problem**: Each added "just in case" without proving necessity
+
+**What it should be:**
+```
+User clicks filter
+    ↓ Zustand store
+    ↓ useQuery with inline params
+    ↓ Backend
+```
+
+**Specific over-engineering:**
+
+| Abstraction | Why It Was Built | Why It's Unnecessary |
+|-------------|------------------|---------------------|
+| `generateFilterKey()` | "Custom cache keys" | TanStack Query hashes `queryKey` array automatically |
+| `debouncedFilterKey` | "Prevent API spam" | Dropdowns are single-click, not continuous input |
+| `buildApiParams()` | "Centralize param building" | Could be 3 lines inline |
+| `deriveActiveFilters()` | "Breadcrumb overrides" | Rarely used, adds complexity |
+| Adapter layer | "Rename timeframe→period" | Backend should accept same param names |
+
+**Result:**
+- 7 layers to pass a filter value
+- useDeferredFetch bug from optimization complexity
+- Explaining the flow requires a diagram (red flag)
+- Debugging requires tracing through 5 files
+
+**The simpler version:**
+```jsx
+const { timeframe, bedroom } = useFilters();
+
+const { data } = useQuery({
+  queryKey: ['district-liquidity', timeframe, bedroom, saleType],
+  queryFn: ({ signal }) =>
+    api.get('/insights/district-liquidity', {
+      params: { period: timeframe, bed: bedroom, saleType },
+      signal
+    })
+});
+```
+
+**Lesson: The "Why Did Claude Do This?" Analysis**
+
+Claude tends to over-engineer when:
+1. **Pattern matching without context**: Sees "filter state" → applies enterprise patterns
+2. **Defensive coding**: "What if we need X later?" → Builds for hypotheticals
+3. **Library distrust**: "Let me wrap this library in case we need to swap it"
+4. **Abstraction addiction**: "This 3-line pattern appears twice → extract helper"
+
+**Prevention: Questions Claude Must Ask Before Adding Abstraction**
+
+1. **"Is there a bug RIGHT NOW?"** (not hypothetical)
+   - If no → don't add the layer
+
+2. **"Does the library already handle this?"**
+   - TanStack Query: caching, keys, abort, stale, retries
+   - Zustand: state, persistence, subscriptions
+
+3. **"Can I delete this layer and still work?"**
+   - If yes → delete it
+
+4. **"Would a new developer understand this in 5 minutes?"**
+   - If no → too complex
+
+5. **"Am I adding a layer to rename 3 fields?"**
+   - If yes → fix the naming mismatch at source instead
+
 ### Summary: The Over-Engineering Trap
 
 Most incidents above share a pattern: **solving problems that don't exist yet.**

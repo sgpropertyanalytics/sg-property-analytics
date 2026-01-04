@@ -265,26 +265,76 @@ These are the **real bugs** from this codebase's git history. Check for ALL of t
 
 ### Mode 1: Null Data Destructuring (VERY HIGH FREQUENCY)
 
-**What breaks:** `data.foo` crashes when `data` is null during fetch transition.
+**What breaks:** `data.foo` or `data.map()` crashes when `data` is null during fetch transition.
 
 **Detection:**
 ```bash
 # Find data.foo without optional chaining or fallback
-grep -rn "data\.[a-z]" frontend/src/components/ | grep -v "data?.\|data ||"
+grep -rn "data\.[a-z]" frontend/src/components/ frontend/src/pages/ | grep -v "data?.\|data ||"
 
-# Find .map/.filter/.reduce without guard
-grep -rn "\.map(\|\.filter(\|\.reduce(" frontend/src/components/ | grep -v "?.\||| \[\]"
+# Find ALL array methods without guard (not just map/filter/reduce)
+grep -rn "\.map(\|\.filter(\|\.reduce(\|\.find(\|\.forEach(\|\.some(\|\.every(\|\.length" \
+  frontend/src/components/ frontend/src/pages/ | grep -v "?.\||| \[\]\|?? \[\]"
+
+# CRITICAL: Check for initialData changes (Jan 2026 incident pattern)
+git diff HEAD~1 --no-color | grep -C5 "initialData.*null\|initialData.*\[\]" || echo "No initialData changes"
 ```
 
-**The Bug Pattern:**
-```jsx
-// CRASHES when data is null
-const { chartData, startQuarter } = data;
-districtData.forEach(...) // null !== undefined
+**initialData Change Detection (Jan 2026 Incident):**
 
-// SAFE
-const { chartData, startQuarter } = data || {};
-const districtData = data || [];
+When `initialData` changes from `[]` to `null`, ALL downstream usages must have null guards:
+
+```bash
+# For each file with initialData: null, find unguarded array method usage
+# Example: MacroOverview.jsx line 110 changed initialData from [] to null
+# Line 117 calls kpis.items.find() where items can now be null → CRASH
+
+# Detection pattern for this class of bug:
+FILE="frontend/src/pages/MacroOverview.jsx"  # Replace with changed file
+# 1. Find the data variable name from useAppQuery
+grep -n "useAppQuery" "$FILE" | grep "initialData: null"
+# 2. Check downstream usage of that data for unguarded array methods
+grep -n "\.find(\|\.map(\|\.filter(\|\.forEach(\|\.length" "$FILE" | grep -v "?.\||| \[\]"
+```
+
+**The Bug Pattern (Jan 2026 Incident):**
+```jsx
+// CRASHES when initialData changes from [] to null
+const { data: kpiData } = useAppQuery(..., { initialData: null });  // Line 110
+const kpis = { items: kpiData };  // Line 114: items is null, not []
+const getKpi = (id) => kpis.items.find(...);  // Line 117: null.find() → CRASH!
+
+// SAFE (Option 1: Keep initialData as [])
+const { data: kpiData } = useAppQuery(..., { initialData: [] });
+const kpis = { items: kpiData };  // items is always array
+const getKpi = (id) => kpis.items.find(...);  // ✅ Works
+
+// SAFE (Option 2: Null coalesce at source)
+const { data: kpiData } = useAppQuery(..., { initialData: null });
+const kpis = { items: kpiData ?? [] };  // Coalesce to array
+const getKpi = (id) => kpis.items.find(...);  // ✅ Works
+
+// SAFE (Option 3: Optional chaining at usage)
+const { data: kpiData } = useAppQuery(..., { initialData: null });
+const kpis = { items: kpiData };
+const getKpi = (id) => kpis.items?.find(...);  // ✅ Returns undefined if null
+```
+
+**Why E2E Tests Miss This:**
+- E2E mocks respond synchronously (no network delay)
+- React Query resolves before first paint
+- The `null` state exists for <1 frame, never rendered
+- Production has real network latency → null state IS rendered → CRASH
+
+**P0 Finding Template:**
+```markdown
+🔴 **file:line** — Null-unsafe array method after initialData change
+
+**Changed:** `initialData: []` → `initialData: null` (line X)
+**Unsafe usage:** `kpis.items.find(...)` (line Y) - no null guard
+**Crash:** `TypeError: Cannot read properties of null (reading 'find')`
+
+**Fix:** Add `?.` or `?? []` guard
 ```
 
 ---
