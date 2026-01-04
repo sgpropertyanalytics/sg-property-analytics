@@ -53,8 +53,9 @@ class NewVsResaleParams(BaseParamsModel):
         validation_alias='bedroom',
         description="Bedroom filter"
     )
-    segment: Optional[str] = Field(
+    segments: WrapList = Field(
         default=None,
+        validation_alias='segment',
         description="Market segment (CCR, RCR, OCR)"
     )
 

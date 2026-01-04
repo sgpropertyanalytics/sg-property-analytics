@@ -38,13 +38,16 @@ KPI_ITEM_FIELDS = {
 }
 
 KPI_SUMMARY_RESPONSE_SCHEMA = ResponseSchema(
-    # Note: data_fields here describe items in the "kpis" array
-    data_fields=KPI_ITEM_FIELDS,
+    # data is an object with "kpis" key containing the array
+    # data_fields describes the shape of data (not the items)
+    data_fields={
+        "kpis": FieldSpec(name="kpis", type=list, required=True),
+    },
     meta_fields=make_meta_fields(
         FieldSpec(name="filtersApplied", type=dict, required=True),
     ),
     required_meta=make_required_meta("filtersApplied"),
-    data_is_list=True,
+    data_is_list=False,  # data is { kpis: [...] }, not a list itself
 )
 
 

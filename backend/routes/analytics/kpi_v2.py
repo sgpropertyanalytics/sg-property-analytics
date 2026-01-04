@@ -85,20 +85,20 @@ def kpi_summary_v2():
         params = g.normalized_params
         filters = {}
 
-        # District filter
-        district_param = params.get('district')
-        if district_param:
-            filters['districts'] = district_param
+        # District filter (Pydantic normalizes 'district' → 'districts')
+        districts = params.get('districts')
+        if districts:
+            filters['districts'] = districts
 
-        # Bedroom filter
-        bedroom_param = params.get('bedroom')
-        if bedroom_param:
-            filters['bedrooms'] = bedroom_param
+        # Bedroom filter (Pydantic normalizes 'bedroom' → 'bedrooms')
+        bedrooms = params.get('bedrooms')
+        if bedrooms:
+            filters['bedrooms'] = bedrooms
 
-        # Segment filter
-        segment_param = params.get('segment')
-        if segment_param:
-            filters['segment'] = segment_param
+        # Segment filter (Pydantic normalizes 'segment' → 'segments')
+        segments = params.get('segments')
+        if segments:
+            filters['segments'] = segments
 
         # Date filter - use max from DB if not provided (like v1 does)
         max_date_param = params.get('max_date')
@@ -129,8 +129,8 @@ def kpi_summary_v2():
                 "kpis": kpi_results
             },
             "meta": {
-                "elapsed_ms": round(elapsed * 1000, 2),
-                "filters_applied": filters
+                "elapsedMs": round(elapsed * 1000, 2),
+                "filtersApplied": filters
             }
         })
 
@@ -159,17 +159,18 @@ def kpi_single(kpi_id: str):
         params = g.normalized_params
         filters = {}
 
-        district_param = params.get('district')
-        if district_param:
-            filters['districts'] = district_param
+        # Pydantic normalizes singular → plural
+        districts = params.get('districts')
+        if districts:
+            filters['districts'] = districts
 
-        bedroom_param = params.get('bedroom')
-        if bedroom_param:
-            filters['bedrooms'] = bedroom_param
+        bedrooms = params.get('bedrooms')
+        if bedrooms:
+            filters['bedrooms'] = bedrooms
 
-        segment_param = params.get('segment')
-        if segment_param:
-            filters['segment'] = segment_param
+        segments = params.get('segments')
+        if segments:
+            filters['segments'] = segments
 
         # Default to latest transaction date
         filters['max_date'] = _get_max_transaction_date()

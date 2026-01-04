@@ -1740,7 +1740,10 @@
             "segment": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
                 },
                 {
                   "type": "null"
@@ -4360,80 +4363,17 @@
       },
       "response_schema": {
         "data_fields": {
-          "formatted_value": {
+          "kpis": {
             "allowed_values": null,
             "default": null,
             "description": "",
-            "name": "formatted_value",
-            "nullable": true,
-            "required": false,
-            "type": "str"
-          },
-          "insight": {
-            "allowed_values": null,
-            "default": null,
-            "description": "",
-            "name": "insight",
-            "nullable": true,
-            "required": false,
-            "type": "str"
-          },
-          "kpi_id": {
-            "allowed_values": null,
-            "default": null,
-            "description": "",
-            "name": "kpi_id",
+            "name": "kpis",
             "nullable": true,
             "required": true,
-            "type": "str"
-          },
-          "meta": {
-            "allowed_values": null,
-            "default": null,
-            "description": "",
-            "name": "meta",
-            "nullable": true,
-            "required": false,
-            "type": "dict"
-          },
-          "subtitle": {
-            "allowed_values": null,
-            "default": null,
-            "description": "",
-            "name": "subtitle",
-            "nullable": true,
-            "required": false,
-            "type": "str"
-          },
-          "title": {
-            "allowed_values": null,
-            "default": null,
-            "description": "",
-            "name": "title",
-            "nullable": true,
-            "required": true,
-            "type": "str"
-          },
-          "trend": {
-            "allowed_values": null,
-            "default": null,
-            "description": "",
-            "name": "trend",
-            "nullable": true,
-            "required": false,
-            "type": "dict"
-          },
-          "value": {
-            "allowed_values": null,
-            "default": null,
-            "description": "",
-            "name": "value",
-            "nullable": true,
-            "required": false,
-            "type": "float"
+            "type": "list"
           }
         },
-        "data_is_list": true,
+        "data_is_list": false,
         "meta_fields": {
           "apiContractVersion": {
             "allowed_values": null,
@@ -5856,7 +5796,10 @@
             "segment": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
                 },
                 {
                   "type": "null"
@@ -7147,7 +7090,10 @@
             "segment": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
                 },
                 {
                   "type": "null"
@@ -7294,7 +7240,10 @@
             "district": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
                 },
                 {
                   "type": "null"
@@ -7333,7 +7282,10 @@
             "market_segment": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
                 },
                 {
                   "type": "null"

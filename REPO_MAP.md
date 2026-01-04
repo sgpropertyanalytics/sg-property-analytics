@@ -320,12 +320,6 @@ sg-property-analyzer/
 │       ├── claude.yml     # Claude Code PR review (3-stage)
 │       └── regression.yml # CI/CD pipeline
 │
-├── docs/                  # Architecture docs
-│   ├── architecture.md
-│   ├── backend.md
-│   ├── frontend.md
-│   └── BACKEND_CHART_DEPENDENCIES.md
-│
 └── .claude/
     ├── skills/            # Guardrail skills
     └── agents/            # Specialized agents
@@ -627,6 +621,3 @@ Most incidents above share a pattern: **solving problems that don't exist yet.**
 ## Quick Reference Links
 
 - **Rules & Invariants**: [CLAUDE.md](./CLAUDE.md)
-- **Backend Chart Dependencies**: [docs/BACKEND_CHART_DEPENDENCIES.md](./docs/BACKEND_CHART_DEPENDENCIES.md)
-- **Library-First Reference**: [docs/LIBRARY_FIRST_REFERENCE.md](./docs/LIBRARY_FIRST_REFERENCE.md)
-- **Architecture Overview**: [docs/architecture.md](./docs/architecture.md)

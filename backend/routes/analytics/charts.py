@@ -31,9 +31,9 @@ def projects_by_district():
 
     # Use normalized params from Pydantic (via @api_contract decorator)
     params = g.normalized_params
-    district = params.get("district")
+    district = params.get("district")  # Singular - single district required
     segment = params.get("segment")  # Optional: CCR, RCR, OCR
-    bedroom_types = params.get("bedroom", [2, 3, 4])
+    bedroom_types = params.get("bedrooms") or [2, 3, 4]  # Pydantic: bedroom → bedrooms
 
     if not district:
         return jsonify({"error": "district parameter is required"}), 400
@@ -122,8 +122,8 @@ def price_projects_by_district():
 
     # Use normalized params from Pydantic (via @api_contract decorator)
     params = g.normalized_params
-    district = params.get("district")
-    bedroom_types = params.get("bedroom", [2, 3, 4])
+    district = params.get("district")  # Singular - single district required
+    bedroom_types = params.get("bedrooms") or [2, 3, 4]  # Pydantic: bedroom → bedrooms
     months = params.get("months", 15)
 
     if not district:
@@ -292,28 +292,26 @@ def floor_liquidity_heatmap():
     filter_conditions.append(Transaction.transaction_date >= cutoff_date)
     filters_applied['date_from'] = cutoff_date.isoformat()
 
-    # Segment filter
-    segment = params.get('segment')
-    if segment:
-        segments = [s.strip().upper() for s in segment.split(',') if s.strip()] if isinstance(segment, str) else segment
+    # Segment filter (Pydantic normalizes 'segment' → 'segments')
+    segments = params.get('segments')
+    if segments:
+        segment_list = [s.upper() for s in segments if s]
         all_districts = db.session.query(Transaction.district).distinct().all()
-        segment_districts = [d[0] for d in all_districts if get_region_for_district(d[0]) in segments]
+        segment_districts = [d[0] for d in all_districts if get_region_for_district(d[0]) in segment_list]
         filter_conditions.append(Transaction.district.in_(segment_districts))
-        filters_applied['segment'] = segments
+        filters_applied['segments'] = segment_list
 
-    # District filter
-    districts_param = params.get('district')
-    if districts_param:
-        districts = [d.strip().upper() for d in districts_param.split(',') if d.strip()] if isinstance(districts_param, str) else districts_param
-        normalized = [f"D{d.zfill(2)}" if not d.startswith('D') else d for d in districts]
-        filter_conditions.append(Transaction.district.in_(normalized))
-        filters_applied['district'] = normalized
+    # District filter (Pydantic normalizes 'district' → 'districts' via DistrictList)
+    districts = params.get('districts')
+    if districts:
+        filter_conditions.append(Transaction.district.in_(districts))
+        filters_applied['districts'] = districts
 
-    # Bedroom filter
-    bedrooms = params.get('bedroom')
+    # Bedroom filter (Pydantic normalizes 'bedroom' → 'bedrooms')
+    bedrooms = params.get('bedrooms')
     if bedrooms:
         filter_conditions.append(Transaction.bedroom_count.in_(bedrooms))
-        filters_applied['bedroom'] = bedrooms
+        filters_applied['bedrooms'] = bedrooms
 
     try:
         # Query: Group by project and floor_level

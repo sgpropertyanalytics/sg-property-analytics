@@ -11,18 +11,20 @@ from typing import Optional
 from pydantic import Field
 
 from api.contracts.contract_schema import BaseParamsModel
-from .types import CoercedInt
+from .types import CoercedInt, DistrictList, WrapList
 
 
 class UpcomingLaunchesAllParams(BaseParamsModel):
     """Params for /upcoming-launches/all."""
 
-    market_segment: Optional[str] = Field(
+    segments: WrapList = Field(
         default=None,
+        validation_alias='market_segment',
         description="Filter by market segment (CCR, RCR, OCR)"
     )
-    district: Optional[str] = Field(
+    districts: DistrictList = Field(
         default=None,
+        validation_alias='district',
         description="Filter by district"
     )
     launch_year: CoercedInt = Field(
