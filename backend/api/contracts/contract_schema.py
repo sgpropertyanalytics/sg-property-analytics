@@ -80,15 +80,12 @@ class SaleType:
 
     ALL = [NEW_SALE, RESALE, SUB_SALE]
 
-    # Mapping from DB values to API enum values
-    DB_TO_API = {
-        'New Sale': NEW_SALE,
-        'Resale': RESALE,
-        'Sub Sale': SUB_SALE,
-    }
+    # Import canonical mapping from base.py (single source of truth)
+    from api.contracts.pydantic_models.base import SALE_TYPE_TO_DB as _API_TO_DB
 
-    # Reverse mapping from API enum values to DB values
-    API_TO_DB = {v: k for k, v in DB_TO_API.items()}
+    # Derive DB_TO_API from canonical mapping
+    DB_TO_API = {v: k for k, v in _API_TO_DB.items()}
+    API_TO_DB = _API_TO_DB
 
     @classmethod
     def from_db(cls, db_value: Optional[str]) -> Optional[str]:
@@ -118,13 +115,12 @@ class Tenure:
 
     ALL = [FREEHOLD, LEASEHOLD_99, LEASEHOLD_999]
 
-    DB_TO_API = {
-        'Freehold': FREEHOLD,
-        '99-year': LEASEHOLD_99,
-        '999-year': LEASEHOLD_999,
-    }
+    # Import canonical mapping from base.py (single source of truth)
+    from api.contracts.pydantic_models.base import TENURE_TO_DB as _API_TO_DB
 
-    API_TO_DB = {v: k for k, v in DB_TO_API.items()}
+    # Derive DB_TO_API from canonical mapping
+    DB_TO_API = {v: k for k, v in _API_TO_DB.items()}
+    API_TO_DB = _API_TO_DB
 
     @classmethod
     def from_db(cls, db_value: Optional[str]) -> Optional[str]:
@@ -177,16 +173,12 @@ class FloorLevel:
 
     ALL = [LOW, MID_LOW, MID, MID_HIGH, HIGH, LUXURY]
 
-    DB_TO_API = {
-        'Low': LOW,
-        'Mid-Low': MID_LOW,
-        'Mid': MID,
-        'Mid-High': MID_HIGH,
-        'High': HIGH,
-        'Luxury': LUXURY,
-        'Unknown': UNKNOWN,
-    }
-    API_TO_DB = {v: k for k, v in DB_TO_API.items()}
+    # Import canonical mapping from base.py (single source of truth)
+    from api.contracts.pydantic_models.base import FLOOR_LEVEL_TO_DB as _API_TO_DB
+
+    # Derive DB_TO_API from canonical mapping
+    DB_TO_API = {v: k for k, v in _API_TO_DB.items()}
+    API_TO_DB = _API_TO_DB
 
     @classmethod
     def from_db(cls, db_value: Optional[str]) -> Optional[str]:
