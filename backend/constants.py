@@ -489,6 +489,30 @@ TENURE_FREEHOLD = "Freehold"
 TENURE_99_YEAR = "99-year"
 TENURE_999_YEAR = "999-year"
 
+
+# =============================================================================
+# FLOOR LEVEL CLASSIFICATION - SINGLE SOURCE OF TRUTH
+# =============================================================================
+
+# Individual floor level DB values (use these for comparisons)
+FLOOR_LEVEL_LOW = "Low"
+FLOOR_LEVEL_MID_LOW = "Mid-Low"
+FLOOR_LEVEL_MID = "Mid"
+FLOOR_LEVEL_MID_HIGH = "Mid-High"
+FLOOR_LEVEL_HIGH = "High"
+FLOOR_LEVEL_LUXURY = "Luxury"
+FLOOR_LEVEL_UNKNOWN = "Unknown"
+
+# Valid floor levels
+FLOOR_LEVELS = [
+    FLOOR_LEVEL_LOW,
+    FLOOR_LEVEL_MID_LOW,
+    FLOOR_LEVEL_MID,
+    FLOOR_LEVEL_MID_HIGH,
+    FLOOR_LEVEL_HIGH,
+    FLOOR_LEVEL_LUXURY,
+]
+
 # Valid tenure types
 TENURE_TYPES = [TENURE_FREEHOLD, TENURE_99_YEAR, TENURE_999_YEAR]
 
