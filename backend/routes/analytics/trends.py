@@ -52,29 +52,12 @@ def new_vs_resale():
 
     districts = params.get("districts")
 
-    def _expand_csv_list(value, item_type=str):
-        if value is None:
-            return []
-        items = value if isinstance(value, list) else [value]
-        expanded = []
-        for item in items:
-            if isinstance(item, str) and "," in item:
-                expanded.extend([p.strip() for p in item.split(",") if p.strip()])
-            else:
-                expanded.append(item)
-        try:
-            if item_type is int:
-                return [int(v) for v in expanded]
-        except (ValueError, TypeError):
-            raise NormalizeValidationError("Invalid list value")
-        return expanded
-
     try:
-        bedrooms = _expand_csv_list(params.get("bedrooms"), item_type=int)
+        bedrooms = to_list(params.get("bedrooms"), item_type=int)
     except NormalizeValidationError as e:
         return validation_error_response(e)
 
-    segments = _expand_csv_list(params.get("segments"))
+    segments = to_list(params.get("segments"))
     segment = segments[0] if segments else None
 
     date_from = params.get("date_from")

@@ -13,6 +13,7 @@ from datetime import timedelta
 from flask import request, jsonify, g
 from routes.analytics import analytics_bp
 from utils.normalize import (
+    to_list,
     ValidationError as NormalizeValidationError, validation_error_response
 )
 from api.contracts import api_contract
@@ -83,23 +84,6 @@ def dashboard():
         options = {}
         panels_param = None
 
-        def _expand_csv_list(value, item_type=str):
-            if value is None:
-                return []
-            items = value if isinstance(value, list) else [value]
-            expanded = []
-            for item in items:
-                if isinstance(item, str) and "," in item:
-                    expanded.extend([p.strip() for p in item.split(",") if p.strip()])
-                else:
-                    expanded.append(item)
-            try:
-                if item_type is int:
-                    return [int(v) for v in expanded]
-            except (ValueError, TypeError):
-                raise NormalizeValidationError("Invalid list value")
-            return expanded
-
         date_from = params.get("date_from")
         date_to_exclusive = params.get("date_to_exclusive")
         if date_from:
@@ -111,11 +95,11 @@ def dashboard():
         if districts:
             filters["districts"] = districts
 
-        bedrooms = _expand_csv_list(params.get("bedrooms"), item_type=int)
+        bedrooms = to_list(params.get("bedrooms"), item_type=int)
         if bedrooms:
             filters["bedrooms"] = bedrooms
 
-        segments = _expand_csv_list(params.get("segments"))
+        segments = to_list(params.get("segments"))
         if segments:
             filters["segments"] = [s.upper() for s in segments]
 
@@ -147,7 +131,7 @@ def dashboard():
         elif params.get("project"):
             filters["project"] = params.get("project")
 
-        panels_param = _expand_csv_list(params.get("panels"))
+        panels_param = to_list(params.get("panels"))
         if not panels_param:
             panels_param = None
 
