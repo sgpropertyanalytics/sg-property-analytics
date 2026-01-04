@@ -52,13 +52,13 @@
 | `DEPRECATED.md` | Inventory | **Active** | Tracks deprecated code, Dec 2025 | Keep | - |
 | `INGESTION_ARCHITECTURE.md` | Design | **Active** | Data pipeline architecture | Keep | - |
 | `FILTER_SIMPLIFICATION_PLAN.md` | Plan | **Superseded** | 23-layer analysis; newer version exists at docs/plans/ | **Merge/Delete** | Duplicate of docs/plans/filter-simplification.md |
-| `PHASE3_ZUSTAND_MIGRATION_PLAN.md` | Plan | **Completed** | "✅ MIGRATION COMPLETE January 2026" | **Archive** | Original plan, now historical |
+| `PHASE3_ZUSTAND_MIGRATION_PLAN.md` | Plan | **Completed** | "✅ MIGRATION COMPLETE January 2026" | **Delete** | Lessons in REPO_MAP §9 |
 | `PARAM_PYDANTIC.md` | Plan | **Active** | Phase 7 COMPLETE, Phase 8 PARTIAL | Keep | Ongoing migration |
 | `MIGRATION_INTEGRITY_AUDIT.md` | Audit | **Active** | P0-P2 issues listed, Jan 2, 2026 | Keep | Tracks active tech debt |
 | `LOADING_STATE_AUDIT_REPORT.md` | Audit | **Completed** | "✅ MIGRATION COMPLETE" | **Merge** | Overlaps with FRONTEND_ENGINEERING_WORKS.md |
 | `FRONTEND_ENGINEERING_WORKS.md` | Plan | **Active** | PR3 Status-only migration, remaining work listed | Keep | Canonical for frontend migration |
-| `NEW_LAUNCH_PAGE_INVESTIGATION.md` | Investigation | **Completed** | "BUG FOUND AND FIXED" Jan 2, 2026 | **Archive** | Fixed, historical value |
-| `AUDIT_REPORT.md` | Audit | **Completed** | Stability audit Dec 31, 2025 "all issues resolved" | **Archive** | Historical audit |
+| `NEW_LAUNCH_PAGE_INVESTIGATION.md` | Investigation | **Completed** | "BUG FOUND AND FIXED" Jan 2, 2026 | **Delete** | Incident in REPO_MAP §9 |
+| `AUDIT_REPORT.md` | Audit | **Completed** | Stability audit Dec 31, 2025 "all issues resolved" | **Delete** | One-time audit, issues resolved |
 | `DATA_QUALITY_REPORT_2025-12-29.md` | Validation | **Completed** | One-time batch validation | **Delete** | Time-bound, no ongoing value |
 | `MARKET_CORE_DATA_INTEGRITY_REPORT.md` | Validation | **Completed** | "✅ PASS" Dec 28, 2025 | **Delete** | One-time validation |
 | `ABSORPTION_VALIDATION_REPORT.md` | Validation | **Completed** | "✅ CALCULATION INTEGRITY: PASS" Dec 31, 2025 | **Delete** | One-time validation |
@@ -87,11 +87,11 @@
 | `docs/decisions.md` | Design | **Active** | Design rationale | Keep | - |
 | `docs/DEPLOYMENT.md` | Operational | **Active** | Deployment guide | Keep | - |
 | `docs/DATA_UPLOAD_GUIDE.md` | Operational | **Active** | Upload procedures | Keep | - |
-| `docs/MIGRATION.md` | Meta | **Completed** | Dec 2024 doc migration | **Archive** | Historical, explains current structure |
+| `docs/MIGRATION.md` | Meta | **Completed** | Dec 2024 doc migration | **Delete** | Reorg complete, structure self-evident |
 | `docs/SYSTEM_OVERVIEW.md` | Reference | **Active** | High-level overview | Keep | - |
 | `docs/LIBRARY_FIRST_REFERENCE.md` | Reference | **Active** | Library-first policy | Keep | Referenced by REPO_MAP |
 | `docs/BACKEND_CHART_DEPENDENCIES.md` | Reference | **Active** | Chart→endpoint mapping | Keep | Critical for backend changes |
-| `docs/PENDING_BUGS.md` | Tracking | **Completed** | "No pending bugs" - only resolved | **Archive** | BUG-001 resolved, historical |
+| `docs/PENDING_BUGS.md` | Tracking | **Completed** | "No pending bugs" - only resolved | **Delete** | Empty tracker, BUG-001 in REPO_MAP §9 |
 | `docs/API_ENDPOINT_CLEANUP_PLAN.md` | Plan | **Active** | Phase 1-4 checklists, partially complete | Keep | Tracks endpoint cleanup |
 | `docs/ENDPOINT_DEPRECATION_MONITORING.md` | Operational | **Active** | Monitors deprecated endpoints | Keep | - |
 | `docs/DISTRICT_OVERVIEW_BUG_FIX_PLAN.md` | Plan | **Active** | Cache key bug fix, P0 implementation steps | Keep | District filter bug fix |
@@ -269,15 +269,15 @@ Before marking any document for deletion:
 | `data_validation/FILTER_VALIDATION_REPORT.md` | Time-bound, Dec 22 | No references found |
 | `docs/investigations/NL-diagnose-checkpoint.md` | Debug checkpoint, content in parent | No references found |
 
-### Must Archive (Not Delete)
+### Also Safe to Delete (Completed Work)
 
-| File | Reason | Archive Name |
-|------|--------|--------------|
-| `PHASE3_ZUSTAND_MIGRATION_PLAN.md` | Contains implementation details for future reference | `archive/zustand-migration-plan.md` |
-| `NEW_LAUNCH_PAGE_INVESTIGATION.md` | Documents incident and fix, historical value | `archive/new-launch-bug-jan2026.md` |
-| `AUDIT_REPORT.md` | Stability audit, may need to reference fixes | `archive/stability-audit-dec2025.md` |
-| `docs/PENDING_BUGS.md` | BUG-001 resolution details | `archive/pending-bugs-resolved.md` |
-| `docs/MIGRATION.md` | Explains current doc structure origin | `archive/doc-migration-dec2024.md` |
+| File | Reason |
+|------|--------|
+| `PHASE3_ZUSTAND_MIGRATION_PLAN.md` | Migration complete, lessons captured in REPO_MAP §9 |
+| `NEW_LAUNCH_PAGE_INVESTIGATION.md` | Bug fixed, incident documented in REPO_MAP §9 |
+| `AUDIT_REPORT.md` | One-time stability audit, all issues resolved |
+| `docs/PENDING_BUGS.md` | Empty ("No pending bugs"), BUG-001 in REPO_MAP §9 |
+| `docs/MIGRATION.md` | Dec 2024 reorg complete, structure self-evident |
 
 ### Risky - Requires Review
 
@@ -291,25 +291,9 @@ Before marking any document for deletion:
 
 ## 5) Output Deliverables
 
-### Proposed PR Plan (5 Commits)
+### Proposed PR Plan (4 Commits)
 
-#### Commit 1: `docs: add documentation index and archive structure`
-```
-- Create docs/archive/README.md with archival policy
-- Create docs/migrations/README.md explaining active migrations
-- Update docs/README.md with new navigation
-```
-
-#### Commit 2: `docs: archive completed migration and investigation docs`
-```
-- Move PHASE3_ZUSTAND_MIGRATION_PLAN.md → docs/archive/zustand-migration-plan.md
-- Move NEW_LAUNCH_PAGE_INVESTIGATION.md → docs/archive/new-launch-bug-jan2026.md
-- Move AUDIT_REPORT.md → docs/archive/stability-audit-dec2025.md
-- Move docs/PENDING_BUGS.md → docs/archive/pending-bugs-resolved.md
-- Move docs/MIGRATION.md → docs/archive/doc-migration-dec2024.md
-```
-
-#### Commit 3: `docs: consolidate duplicate and overlapping docs`
+#### Commit 1: `docs: consolidate duplicate and overlapping docs`
 ```
 - Merge FILTER_SIMPLIFICATION_PLAN.md unique content into docs/plans/filter-simplification.md
 - Merge LOADING_STATE_AUDIT_REPORT.md component table into FRONTEND_ENGINEERING_WORKS.md
@@ -318,8 +302,9 @@ Before marking any document for deletion:
 - Delete merged source files
 ```
 
-#### Commit 4: `docs: delete obsolete validation reports`
+#### Commit 2: `docs: delete obsolete and completed docs`
 ```
+Validation reports (time-bound):
 - Delete DATA_QUALITY_REPORT_2025-12-29.md
 - Delete MARKET_CORE_DATA_INTEGRITY_REPORT.md
 - Delete ABSORPTION_VALIDATION_REPORT.md
@@ -328,51 +313,35 @@ Before marking any document for deletion:
 - Delete docs/validation/market_core_page_validation_2025-12-28.md
 - Delete data_validation/FILTER_VALIDATION_REPORT.md
 - Delete docs/investigations/NL-diagnose-checkpoint.md
+
+Completed work (lessons in REPO_MAP):
+- Delete PHASE3_ZUSTAND_MIGRATION_PLAN.md
+- Delete NEW_LAUNCH_PAGE_INVESTIGATION.md
+- Delete AUDIT_REPORT.md
+- Delete docs/PENDING_BUGS.md
+- Delete docs/MIGRATION.md
 ```
 
-#### Commit 5: `docs: reorganize active migration docs`
+#### Commit 3: `docs: reorganize active migration docs`
 ```
 - Move PARAM_PYDANTIC.md → docs/migrations/pydantic-migration.md
 - Move FRONTEND_ENGINEERING_WORKS.md → docs/migrations/frontend-status.md
 - Move MIGRATION_INTEGRITY_AUDIT.md → docs/migrations/integrity-audit.md
+- Create docs/migrations/README.md
 - Update REPO_MAP.md references
-- Update cross-references in moved files
+```
+
+#### Commit 4: `docs: move async auth audit to docs/audits`
+```
+- Move frontend/ASYNC_AUTH_AUDIT_REPORT.md → docs/audits/async-auth-audit.md
+- Update any cross-references
 ```
 
 ### Generated Index Files
 
 #### `/docs/README.md` (Updated)
 
-See existing file - add "Migrations" and "Archive" sections to quick links.
-
-#### `/docs/archive/README.md` (New)
-
-```markdown
-# Archived Documentation
-
-Documents moved here are no longer actively maintained but retained for historical reference.
-
-## Contents
-
-| Document | Original Location | Archived | Reason |
-|----------|-------------------|----------|--------|
-| zustand-migration-plan.md | /PHASE3_ZUSTAND_MIGRATION_PLAN.md | 2026-01-04 | Migration complete |
-| new-launch-bug-jan2026.md | /NEW_LAUNCH_PAGE_INVESTIGATION.md | 2026-01-04 | Bug fixed |
-| stability-audit-dec2025.md | /AUDIT_REPORT.md | 2026-01-04 | Audit complete |
-| pending-bugs-resolved.md | /docs/PENDING_BUGS.md | 2026-01-04 | All bugs resolved |
-| doc-migration-dec2024.md | /docs/MIGRATION.md | 2026-01-04 | Migration complete |
-
-## Archival Policy
-
-- **Completed migrations:** Archive after 2 weeks of stability
-- **Bug investigations:** Archive when fix is verified in production
-- **One-time audits:** Archive or delete after findings addressed
-- **Validation reports:** Delete if time-bound; archive if contains methodology
-
-## Retrieval
-
-All archived documents remain searchable via git history.
-```
+See existing file - add "Migrations" section to quick links.
 
 #### `/docs/migrations/README.md` (New)
 
@@ -404,31 +373,29 @@ A migration is complete when:
 
 | Priority | Action | Files Affected | Effort |
 |----------|--------|----------------|--------|
-| **P0** | Delete obsolete validation reports | 8 files | 5 min |
-| **P1** | Archive completed docs | 5 files | 10 min |
+| **P0** | Delete obsolete/completed docs | 13 files | 5 min |
 | **P1** | Merge duplicate content | 3 clusters | 30 min |
 | **P2** | Reorganize migration docs | 3 files | 15 min |
 | **P2** | Update cross-references | ~5 files | 20 min |
-| **P3** | Create index files | 2 new files | 15 min |
+| **P3** | Create index file | 1 new file | 10 min |
 
 ### Impact
 
-- **Files to delete:** 8
-- **Files to archive:** 5
+- **Files to delete:** 13
 - **Files to merge:** 6 (into 3)
-- **Files to move:** 3
-- **Net reduction:** ~15 files from working tree
-- **New files:** 2 (index files)
+- **Files to move:** 4
+- **Net reduction:** ~18 files from working tree
+- **New files:** 1 (migrations/README.md)
 
 ### Documentation Health After Cleanup
 
 | Metric | Before | After |
 |--------|--------|-------|
-| Total docs | 52 | ~35 |
-| Root-level clutter | 17 | 6 |
+| Total docs | 52 | ~32 |
+| Root-level clutter | 17 | 5 |
 | Duplicate content | 3 clusters | 0 |
 | Obsolete reports | 8 | 0 |
-| Orphaned investigations | 2 | 0 |
+| Completed investigations | 5 | 0 |
 
 ---
 
