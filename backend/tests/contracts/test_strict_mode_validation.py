@@ -344,7 +344,7 @@ class TestDecoratorMetaInjection:
 
         # Verify values
         assert meta["apiContractVersion"] == API_CONTRACT_VERSION
-        assert "filter-options:v3:" in meta["contractHash"]
+        assert "fopt:v3:" in meta["contractHash"]
 
 
 # =============================================================================
