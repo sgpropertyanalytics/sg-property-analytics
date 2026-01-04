@@ -14,7 +14,51 @@ Version History:
 
 from typing import Any, Dict, Optional
 from datetime import datetime
+from pydantic import BaseModel, ConfigDict, field_validator
 from utils.normalize import ValidationError
+from constants import (
+    normalize_sale_type_api,
+    normalize_tenure_api,
+    normalize_floor_level_api,
+)
+
+
+# =============================================================================
+# BASE PYDANTIC MODEL FOR API PARAMS
+# =============================================================================
+
+class BaseParamsModel(BaseModel):
+    """
+    Base model for all API param schemas.
+
+    - Frozen after creation (immutable)
+    - Whitespace stripped from strings
+    - Both alias and field name accepted
+    - Unknown fields ignored
+    - sale_type, tenure, floor_level normalized to DB format at boundary
+    """
+    model_config = ConfigDict(
+        frozen=True,
+        str_strip_whitespace=True,
+        populate_by_name=True,
+        extra='ignore',
+    )
+
+    @field_validator('sale_type', mode='before', check_fields=False)
+    @classmethod
+    def normalize_sale_type_to_db(cls, v):
+        return normalize_sale_type_api(v)
+
+    @field_validator('tenure', mode='before', check_fields=False)
+    @classmethod
+    def normalize_tenure_to_db(cls, v):
+        return normalize_tenure_api(v)
+
+    @field_validator('floor_level', mode='before', check_fields=False)
+    @classmethod
+    def normalize_floor_level_to_db(cls, v):
+        return normalize_floor_level_api(v)
+
 
 # =============================================================================
 # API CONTRACT VERSIONING

@@ -20,7 +20,7 @@ Usage:
     normalized = params.model_dump()
 """
 
-from .base import BaseParamsModel
+from api.contracts.contract_schema import BaseParamsModel
 from .aggregate import AggregateParams
 from .dashboard import DashboardParams
 from .filter_options import FilterOptionsParams

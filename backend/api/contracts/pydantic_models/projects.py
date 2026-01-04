@@ -11,7 +11,7 @@ from typing import Optional
 
 from pydantic import Field
 
-from .base import BaseParamsModel
+from api.contracts.contract_schema import BaseParamsModel
 from .types import DistrictList, WrapList, CoercedInt, CoercedBool
 
 

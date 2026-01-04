@@ -15,7 +15,7 @@ from typing import Optional
 
 from pydantic import model_validator
 
-from .base import BaseParamsModel
+from api.contracts.contract_schema import BaseParamsModel
 
 # Import resolve_timeframe for date resolution
 from constants import resolve_timeframe

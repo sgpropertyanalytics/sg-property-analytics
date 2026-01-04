@@ -14,7 +14,7 @@ from typing import Optional, List
 
 from pydantic import Field, model_validator
 
-from .base import BaseParamsModel
+from api.contracts.contract_schema import BaseParamsModel
 from .types import (
     DistrictList,
     WrapList,

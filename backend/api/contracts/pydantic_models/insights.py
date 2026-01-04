@@ -11,7 +11,7 @@ from typing import Optional, Literal
 
 from pydantic import Field, model_validator
 
-from .base import BaseParamsModel
+from api.contracts.contract_schema import BaseParamsModel
 from constants import resolve_timeframe
 
 
