@@ -2,8 +2,7 @@
 Contract Registry - Single source of truth for API contracts.
 
 Each endpoint has:
-- ParamSchema: What frontend sends (public params)
-- ServiceBoundarySchema: What services receive (validated, typed)
+- pydantic_model: Pydantic model for param validation (primary)
 - ResponseSchema: What endpoint returns (validated output)
 - CompatMap: Legacy -> current field/param mappings
 """
@@ -82,35 +81,6 @@ class FieldSpec:
                 'date': date,
             }
             self.type = type_map.get(self.type, str)
-
-
-@dataclass
-class ParamSchema:
-    """Schema for public API parameters (what frontend sends)."""
-    fields: Dict[str, FieldSpec]
-
-    # Normalization rules
-    aliases: Dict[str, str] = field(default_factory=dict)  # e.g., {"saleType": "sale_type"}
-
-    def get_field(self, name: str) -> Optional[FieldSpec]:
-        """Get field spec, checking aliases."""
-        if name in self.fields:
-            return self.fields[name]
-        # Check if name is an alias
-        canonical = self.aliases.get(name)
-        if canonical and canonical in self.fields:
-            return self.fields[canonical]
-        return None
-
-
-@dataclass
-class ServiceBoundarySchema:
-    """Schema for what services receive (post-normalization)."""
-    fields: Dict[str, FieldSpec]
-
-    def get_required_fields(self) -> List[str]:
-        """Get list of required field names."""
-        return [name for name, spec in self.fields.items() if spec.required]
 
 
 @dataclass
@@ -200,16 +170,16 @@ class EndpointContract:
     """
     Complete contract for an endpoint.
 
-    Phase 8 migration: pydantic_model is now the primary validation path.
-    param_schema and service_schema are optional (legacy, for backwards compat).
-    When pydantic_model is set, param_schema and service_schema are ignored.
+    Fields:
+    - endpoint: Route name (e.g., "aggregate")
+    - version: Contract version (e.g., "v3")
+    - response_schema: Output validation schema
+    - pydantic_model: Pydantic model for param validation
     """
     endpoint: str                                    # e.g., "aggregate"
     version: str                                     # e.g., "v3"
     response_schema: ResponseSchema                  # Output validation (always required)
-    pydantic_model: Optional[Any] = None             # PRIMARY: Pydantic model for validation
-    param_schema: Optional[ParamSchema] = None       # LEGACY: Manual param schema (deprecated)
-    service_schema: Optional[ServiceBoundarySchema] = None  # LEGACY: Service boundary (deprecated)
+    pydantic_model: Optional[Any] = None             # Pydantic model for validation
     compat_map: Optional[CompatMap] = None
     serializer: Optional[Callable] = None
     mode: SchemaMode = field(default_factory=_get_default_mode)
