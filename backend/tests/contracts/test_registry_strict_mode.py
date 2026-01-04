@@ -5,8 +5,6 @@ Contract registry strict-mode tests.
 from api.contracts.registry import (
     register_contract,
     EndpointContract,
-    ParamSchema,
-    ServiceBoundarySchema,
     ResponseSchema,
     SchemaMode,
     CONTRACTS,
@@ -21,8 +19,6 @@ def test_register_contract_forces_strict_in_production(monkeypatch):
     contract = EndpointContract(
         endpoint="dashboard",
         version="v3",
-        param_schema=ParamSchema(fields={}),
-        service_schema=ServiceBoundarySchema(fields={}),
         response_schema=ResponseSchema(data_fields={}, meta_fields={}, data_is_list=False),
         mode=SchemaMode.WARN,
     )

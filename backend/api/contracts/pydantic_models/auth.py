@@ -16,7 +16,7 @@ from typing import Optional
 
 from pydantic import Field
 
-from ..contract_schema import BaseParamsModel
+from api.contracts.contract_schema import BaseParamsModel
 
 
 class RegisterParams(BaseParamsModel):

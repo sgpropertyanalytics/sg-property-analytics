@@ -48,6 +48,49 @@ def get_field_type(field: Dict) -> str:
     return field.get("type", "unknown")
 
 
+def extract_param_fields(param_schema: Dict) -> Dict[str, Dict]:
+    """Extract param fields from either Pydantic JSON Schema or legacy format.
+
+    Pydantic format:
+        {"json_schema": {"properties": {...}, "required": [...]}, "model_name": "..."}
+
+    Legacy format:
+        {"fields": {"name": {"type": "str", "required": True, ...}}, "aliases": {...}}
+
+    Returns a normalized dict of {field_name: {"type": str, "required": bool, ...}}
+    """
+    # Check for Pydantic JSON Schema format first
+    if "json_schema" in param_schema:
+        json_schema = param_schema["json_schema"]
+        properties = json_schema.get("properties", {})
+        required_fields = set(json_schema.get("required", []))
+
+        fields = {}
+        for name, prop in properties.items():
+            # Extract type from JSON Schema
+            # Handle anyOf (Optional types), $ref, and direct type
+            if "anyOf" in prop:
+                # Optional type: [{"type": "string"}, {"type": "null"}]
+                types = [t.get("type") for t in prop["anyOf"] if t.get("type") != "null"]
+                field_type = types[0] if types else "unknown"
+            elif "$ref" in prop:
+                # Reference to another definition
+                ref = prop["$ref"]
+                field_type = ref.split("/")[-1] if "/" in ref else ref
+            else:
+                field_type = prop.get("type", "unknown")
+
+            fields[name] = {
+                "type": field_type,
+                "required": name in required_fields,
+                "nullable": "null" in str(prop.get("anyOf", [])),
+            }
+        return fields
+
+    # Fall back to legacy format
+    return param_schema.get("fields", {})
+
+
 def compare_fields(
     old_fields: Dict[str, Dict],
     new_fields: Dict[str, Dict],
@@ -129,9 +172,9 @@ def compare_contracts(old: Dict, new: Dict) -> Dict[str, Any]:
         diff["removed_fields"].extend(removed)
         diff["changed_fields"].extend(changed)
 
-        # Compare param_schema fields
-        old_params = old_c.get("param_schema", {}).get("fields", {})
-        new_params = new_c.get("param_schema", {}).get("fields", {})
+        # Compare param_schema fields (handles both Pydantic and legacy formats)
+        old_params = extract_param_fields(old_c.get("param_schema", {}))
+        new_params = extract_param_fields(new_c.get("param_schema", {}))
         added, removed, changed = compare_fields(
             old_params, new_params, f"{endpoint}.params"
         )

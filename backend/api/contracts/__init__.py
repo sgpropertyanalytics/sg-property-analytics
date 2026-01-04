@@ -9,13 +9,10 @@ from .registry import (
     FieldSpec,
     ResponseSchema,
     EndpointContract,
+    CompatMap,
     register_contract,
     get_contract,
     CONTRACTS,
-    # Legacy exports (kept for test compatibility)
-    ParamSchema,
-    ServiceBoundarySchema,
-    CompatMap,
 )
 from .wrapper import api_contract
 from .validate import ContractViolation
@@ -25,13 +22,10 @@ __all__ = [
     'FieldSpec',
     'ResponseSchema',
     'EndpointContract',
+    'CompatMap',
     'register_contract',
     'get_contract',
     'CONTRACTS',
     'api_contract',
     'ContractViolation',
-    # Legacy exports (kept for test compatibility)
-    'ParamSchema',
-    'ServiceBoundarySchema',
-    'CompatMap',
 ]

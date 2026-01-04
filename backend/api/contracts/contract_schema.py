@@ -108,8 +108,13 @@ CONTRACT_SCHEMA_HASHES = {
 
 
 def get_schema_hash(endpoint_family: str) -> str:
-    """Get the schema hash for an endpoint family."""
-    return CONTRACT_SCHEMA_HASHES.get(endpoint_family, f'{endpoint_family}:v3:unknown')
+    """Get the schema hash for an endpoint family.
+
+    Normalizes endpoint name (hyphens → underscores) before lookup
+    to handle both 'filter-options' and 'filter_options' consistently.
+    """
+    normalized = endpoint_family.replace('-', '_')
+    return CONTRACT_SCHEMA_HASHES.get(normalized, f'{endpoint_family}:v3:unknown')
 
 
 # =============================================================================
