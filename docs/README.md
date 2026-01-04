@@ -8,26 +8,47 @@ Analytics platform for Singapore private residential real estate transactions.
 
 | Document | Description |
 |----------|-------------|
-| [System Overview](SYSTEM_OVERVIEW.md) | **Start here.** High-level architecture (10 min read) |
-| [Architecture](architecture.md) | System design, layer diagrams, data flow, deployment |
+| [Architecture](architecture.md) | System design, layer diagrams, data flow |
 | [Backend](backend.md) | API contracts, SQL rules, services, caching |
-| [Frontend](frontend.md) | Zustand stores, TanStack Query, adapters, components |
-
-### Reference
-
-| Document | Description |
-|----------|-------------|
+| [Frontend](frontend.md) | Zustand stores, TanStack Query, adapters |
 | [Data Model](data-model.md) | Transaction schema, classifications, formulas |
 | [Access Control](access-control.md) | Tiers, paywall, masking, compliance |
 | [Glossary](glossary.md) | Terminology, acronyms, mappings |
 | [Decisions](decisions.md) | Design decisions, trade-offs |
 
-### Operational
+### Runbooks
 
 | Document | Description |
 |----------|-------------|
-| [Deployment](DEPLOYMENT.md) | Database migrations, Render setup |
-| [Data Upload](DATA_UPLOAD_GUIDE.md) | CSV upload pipeline, validation |
+| [Deployment](runbooks/DEPLOYMENT.md) | Database migrations, Render setup |
+| [Migration](runbooks/MIGRATION.md) | Database migration procedures |
+| [Data Upload](runbooks/DATA_UPLOAD_GUIDE.md) | CSV upload pipeline, validation |
+| [Deprecation Monitoring](runbooks/ENDPOINT_DEPRECATION_MONITORING.md) | Track deprecated endpoints |
+
+### Reference
+
+| Document | Description |
+|----------|-------------|
+| [Engineering Principles](reference/ENGINEERING_PRINCIPLES.md) | Core principles |
+| [Code Patterns](reference/CODE_PATTERNS.md) | Snippets and patterns |
+| [Checklists](reference/CHECKLISTS.md) | Pre-commit checklists |
+| [Testing](reference/TESTING.md) | Testing guide |
+| [Library Reference](reference/LIBRARY_FIRST_REFERENCE.md) | Library decisions |
+| [Chart Dependencies](reference/BACKEND_CHART_DEPENDENCIES.md) | Chart → endpoint mapping |
+| [Deprecated](reference/DEPRECATED.md) | Deprecated endpoints/patterns |
+
+### Validation Reports
+
+| Document | Description |
+|----------|-------------|
+| [Market Core Validation](validation/MARKET_CORE_DATA_INTEGRITY_REPORT.md) | Sale type filtering, calculations |
+| [Absorption Validation](validation/ABSORPTION_VALIDATION_REPORT.md) | Absorption rate formula |
+| [Ingestion Architecture](validation/INGESTION_ARCHITECTURE.md) | Data pipeline design |
+
+### Archive
+
+Historical documentation from completed migrations, audits, and investigations.
+See [archive/README.md](archive/README.md) for details.
 
 ---
 
