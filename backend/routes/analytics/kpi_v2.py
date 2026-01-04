@@ -129,8 +129,8 @@ def kpi_summary_v2():
                 "kpis": kpi_results
             },
             "meta": {
-                "elapsed_ms": round(elapsed * 1000, 2),
-                "filters_applied": filters
+                "elapsedMs": round(elapsed * 1000, 2),
+                "filtersApplied": filters
             }
         })
 
