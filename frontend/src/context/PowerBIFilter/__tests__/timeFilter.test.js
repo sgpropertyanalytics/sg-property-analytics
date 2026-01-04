@@ -8,9 +8,7 @@
  * 1. isValidTimeFilter - validates timeFilter structure
  * 2. getTimeFilter - safe getter with fallback
  * 3. countActiveFilters - counts timeFilter correctly
- * 4. generateFilterKey - includes timeFilter, changes appropriately
- * 5. deriveActiveFilters - breadcrumb overrides work with timeFilter
- * 6. buildApiParamsFromState - handles preset vs custom modes
+ * 4. deriveActiveFilters - breadcrumb overrides work with timeFilter
  */
 
 import { describe, it, expect } from 'vitest';
@@ -24,9 +22,7 @@ import {
 
 import {
   countActiveFilters,
-  generateFilterKey,
   deriveActiveFilters,
-  buildApiParamsFromState,
 } from '../utils';
 
 // =============================================================================
@@ -170,68 +166,6 @@ describe('countActiveFilters', () => {
   });
 });
 
-describe('generateFilterKey', () => {
-  const factFilter = { priceRange: { min: null, max: null } };
-
-  it('includes timeFilter in generated key', () => {
-    const filters = { ...INITIAL_FILTERS };
-    const key = generateFilterKey(filters, factFilter);
-    const parsed = JSON.parse(key);
-
-    expect(parsed.timeFilter).toEqual(filters.timeFilter);
-    // Old fields should NOT be in key
-    expect(parsed.datePreset).toBeUndefined();
-    expect(parsed.dateRange).toBeUndefined();
-  });
-
-  it('generates different keys for different preset values', () => {
-    const key1 = generateFilterKey(
-      { ...INITIAL_FILTERS, timeFilter: { type: 'preset', value: 'Y1' } },
-      factFilter
-    );
-    const key2 = generateFilterKey(
-      { ...INITIAL_FILTERS, timeFilter: { type: 'preset', value: 'M3' } },
-      factFilter
-    );
-
-    expect(key1).not.toBe(key2);
-  });
-
-  it('generates different keys for preset vs custom', () => {
-    const keyPreset = generateFilterKey(
-      { ...INITIAL_FILTERS, timeFilter: { type: 'preset', value: 'Y1' } },
-      factFilter
-    );
-    const keyCustom = generateFilterKey(
-      { ...INITIAL_FILTERS, timeFilter: { type: 'custom', start: '2024-01-01', end: '2024-12-31' } },
-      factFilter
-    );
-
-    expect(keyPreset).not.toBe(keyCustom);
-  });
-
-  it('generates different keys for different custom date ranges', () => {
-    const key1 = generateFilterKey(
-      { ...INITIAL_FILTERS, timeFilter: { type: 'custom', start: '2024-01-01', end: '2024-06-30' } },
-      factFilter
-    );
-    const key2 = generateFilterKey(
-      { ...INITIAL_FILTERS, timeFilter: { type: 'custom', start: '2024-07-01', end: '2024-12-31' } },
-      factFilter
-    );
-
-    expect(key1).not.toBe(key2);
-  });
-
-  it('generates same key for identical filters', () => {
-    const filters = { ...INITIAL_FILTERS };
-    const key1 = generateFilterKey(filters, factFilter);
-    const key2 = generateFilterKey(filters, factFilter);
-
-    expect(key1).toBe(key2);
-  });
-});
-
 describe('deriveActiveFilters', () => {
   const emptyBreadcrumbs = { time: [], location: [] };
   const defaultDrillPath = { time: 'month', location: 'region' };
@@ -276,75 +210,5 @@ describe('deriveActiveFilters', () => {
     expect(active.timeFilter.type).toBe('custom');
     expect(active.timeFilter.start).toBe('2024-01-01');
     expect(active.timeFilter.end).toBe('2024-12-31');
-  });
-});
-
-describe('buildApiParamsFromState', () => {
-  const defaultFilters = INITIAL_FILTERS;
-  const factFilter = { priceRange: { min: null, max: null } };
-
-  it('sends timeframe param for preset mode', () => {
-    const activeFilters = {
-      ...INITIAL_FILTERS,
-      timeFilter: { type: 'preset', value: 'M6' },
-    };
-
-    const params = buildApiParamsFromState(activeFilters, defaultFilters, factFilter, {});
-
-    expect(params.timeframe).toBe('M6');
-    expect(params.dateFrom).toBeUndefined();
-    expect(params.dateTo).toBeUndefined();
-  });
-
-  it('sends dateFrom/dateTo params for custom mode', () => {
-    const activeFilters = {
-      ...INITIAL_FILTERS,
-      timeFilter: { type: 'custom', start: '2024-01-01', end: '2024-12-31' },
-    };
-
-    const params = buildApiParamsFromState(activeFilters, defaultFilters, factFilter, {});
-
-    expect(params.timeframe).toBeUndefined();
-    expect(params.dateFrom).toBe('2024-01-01');
-    expect(params.dateTo).toBe('2024-12-31');
-  });
-
-  it('handles partial custom date range (only start)', () => {
-    const activeFilters = {
-      ...INITIAL_FILTERS,
-      timeFilter: { type: 'custom', start: '2024-01-01', end: null },
-    };
-
-    const params = buildApiParamsFromState(activeFilters, defaultFilters, factFilter, {});
-
-    expect(params.dateFrom).toBe('2024-01-01');
-    expect(params.dateTo).toBeUndefined();
-  });
-
-  it('handles partial custom date range (only end)', () => {
-    const activeFilters = {
-      ...INITIAL_FILTERS,
-      timeFilter: { type: 'custom', start: null, end: '2024-12-31' },
-    };
-
-    const params = buildApiParamsFromState(activeFilters, defaultFilters, factFilter, {});
-
-    expect(params.dateFrom).toBeUndefined();
-    expect(params.dateTo).toBe('2024-12-31');
-  });
-
-  it('handles all preset timeframe values', () => {
-    const presets = ['M3', 'M6', 'Y1', 'Y3', 'Y5', 'all'];
-
-    presets.forEach((preset) => {
-      const activeFilters = {
-        ...INITIAL_FILTERS,
-        timeFilter: { type: 'preset', value: preset },
-      };
-
-      const params = buildApiParamsFromState(activeFilters, defaultFilters, factFilter, {});
-
-      expect(params.timeframe).toBe(preset);
-    });
   });
 });

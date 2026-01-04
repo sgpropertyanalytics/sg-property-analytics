@@ -453,14 +453,18 @@ function MarketStrategyMapBase({
   const { isPremium, isFreeResolved } = useSubscription();
   const [hoveredDistrict, setHoveredDistrict] = useState(null);
 
-  // Phase 3.4: Using standardized Zustand filters (same pattern as Market Overview charts)
-  // This replaces local filter state and controlled mode logic
-  const { buildApiParams, debouncedFilterKey, filters } = useZustandFilters();
+  // Phase 4: Simplified filter access - read values directly from Zustand
+  // No buildApiParams abstraction, no debouncedFilterKey (TanStack handles cache keys)
+  const { filters } = useZustandFilters();
 
-  // Derive filter values for display (used by RegionSummaryBar)
-  const selectedPeriod = filters.timeFilter?.type === 'preset'
+  // Extract filter values directly (simple, explicit)
+  const timeframe = filters.timeFilter?.type === 'preset'
     ? filters.timeFilter.value
     : 'Y1';
+  const bedroom = filters.bedroomTypes?.join(',') || '';
+
+  // For display in RegionSummaryBar
+  const selectedPeriod = timeframe;
 
   // Lazy-load GeoJSON to reduce initial bundle size (~100KB savings)
   const [geoJSON, setGeoJSON] = useState(null);
@@ -470,31 +474,24 @@ function MarketStrategyMapBase({
     });
   }, []);
 
-  // Fetch data with canonical hook (handles abort, stale, boot gating)
-  // Phase 3.4: Using buildApiParams + param adapter for standardized filter→API conversion
+  // Phase 4: Simplified data fetching - no adapter layer, inline params
+  // Backend now accepts frontend param names directly (timeframe, bedroom)
   const { data, status, error, refetch } = useAppQuery(
     async (signal) => {
-      // Use standardized buildApiParams (same as Market Overview charts)
-      const params = buildApiParams({ sale_type: selectedSaleType });
-
-      // Adapt param names for this endpoint (timeframe→period, bedroom→bed)
-      // Backend endpoint expects: period, bed, sale_type
-      const adapted = {
-        period: params.timeframe || 'Y1',
-        bed: params.bedroom || '',
-        sale_type: params.saleType || selectedSaleType,
-      };
-
       const response = await apiClient.get('/insights/district-psf', {
-        params: adapted,
+        params: {
+          timeframe,  // Backend accepts 'timeframe' directly
+          bedroom,    // Backend accepts 'bedroom' directly (alias for 'bed')
+          sale_type: selectedSaleType,
+        },
         signal,
       });
       // Contract validation - detect shape changes early
       assertKnownVersion(response.data, '/api/insights/district-psf');
       return response.data.districts || [];
     },
-    // Use debouncedFilterKey for standardized query key (same as Market Overview)
-    [debouncedFilterKey, selectedSaleType, 'district-psf'],
+    // Simple query key - TanStack Query handles cache deduplication automatically
+    ['district-psf', timeframe, bedroom, selectedSaleType],
     { chartName: 'MarketStrategyMap', enabled, initialData: null }
   );
 

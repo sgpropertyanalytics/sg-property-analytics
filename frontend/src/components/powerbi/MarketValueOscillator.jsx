@@ -52,16 +52,20 @@ const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
  * }} props
  */
 function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawData = null, sharedStatus = 'idle' }) {
-  // Get GLOBAL filters and timeGrouping from context
-  // filterKey updates immediately on filter change - used for instant overlay feedback
-  const { buildApiParams, debouncedFilterKey, filterKey, timeGrouping } = useZustandFilters();
+  // Phase 4: Simplified filter access - read values directly from Zustand
+  const { filters, timeGrouping } = useZustandFilters();
+
+  // Extract filter values directly (simple, explicit)
+  const timeframe = filters.timeFilter?.type === 'preset' ? filters.timeFilter.value : 'Y1';
+  const bedroom = filters.bedroomTypes?.join(',') || '';
+  const districts = filters.districts?.join(',') || '';
   const { isPremium, isFreeResolved } = useSubscription();
 
   const chartRef = useRef(null);
 
   // Defer fetch until chart is visible
   const { shouldFetch, containerRef } = useDeferredFetch({
-    filterKey: `${debouncedFilterKey}:${timeGrouping}`,
+    filterKey: `oscillator:${timeframe}:${bedroom}:${timeGrouping}`,
     priority: 'low',
     fetchOnMount: false,
   });
@@ -108,13 +112,16 @@ function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawDat
   // DISABLED when sharedRawData is provided (eliminates duplicate request)
   const { data: fetchedData, status: fetchStatus, error, refetch } = useAppQuery(
     async (signal) => {
-      // saleType is passed from page level - see CLAUDE.md "Business Logic Enforcement"
-      // Exclude segment filter - this chart always shows all regions for comparison
-      const params = buildApiParams({
+      // Phase 4: Inline params - no buildApiParams abstraction
+      // Note: This chart always shows all regions for comparison (no segment/district filter)
+      const params = {
         group_by: `${TIME_GROUP_BY[timeGrouping]},region`,
         metrics: 'median_psf,count',
+        timeframe,
+        bedroom,
+        // segment excluded - shows all regions for comparison
         ...(saleType && { sale_type: saleType }),
-      }, { excludeOwnDimension: 'segment' });
+      };
 
       const response = await getAggregate(params, { signal, priority: 'low' });
 
@@ -137,7 +144,8 @@ function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawDat
       // Transform is grain-agnostic - trusts data's own periodGrain
       return transformOscillatorSeries(rawData, safeBaselineStats);
     },
-    [debouncedFilterKey, timeGrouping, safeBaselineStats, saleType],
+    // Explicit query key - TanStack handles cache deduplication
+    ['market-oscillator', timeframe, bedroom, timeGrouping, safeBaselineStats, saleType],
     { chartName: 'MarketValueOscillator', initialData: null, enabled: shouldFetch && !useShared, keepPreviousData: true }
   );
 
@@ -339,7 +347,7 @@ function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawDat
     <div ref={containerRef}>
       <ChartFrame
         status={status}
-        isFiltering={filterKey !== debouncedFilterKey}
+        isFiltering={false}
         error={error}
         onRetry={refetch}
         empty={!data || data.length === 0}

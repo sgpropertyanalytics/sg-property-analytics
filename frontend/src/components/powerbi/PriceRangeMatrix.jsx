@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 // Phase 2: Using TanStack Query via useAppQuery wrapper
 import { useAppQuery } from '../../hooks';
 import { getAggregate } from '../../api/client';
@@ -65,25 +65,14 @@ export function PriceRangeMatrix({
     return params;
   }, [budget, tolerance, region, district, tenure, dateFrom]);
 
-  // Build stable filter key for query dependency
-  const filterKey = useMemo(() => JSON.stringify(apiParams), [apiParams]);
-
-  // Track if filters are changing (for blur effect)
-  const [debouncedFilterKey, setDebouncedFilterKey] = useState(filterKey);
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedFilterKey(filterKey), 300);
-    return () => clearTimeout(timer);
-  }, [filterKey]);
-  const isFiltering = filterKey !== debouncedFilterKey;
-
   // Fetch data with abort handling - gates on appReady
-  // isBootPending = true while waiting for app boot
-  const { data, status, error, refetch } = useAppQuery(
+  // Phase 4: Inline query key - no filterKey abstraction
+  const { data, status, error, refetch, isFetching } = useAppQuery(
     async (signal) => {
       const response = await getAggregate(apiParams, { signal });
       return transformPriceRangeMatrix(response.data, { budget });
     },
-    [filterKey],
+    [JSON.stringify(apiParams)],
     { chartName: 'PriceRangeMatrix', keepPreviousData: true }
   );
 
@@ -92,7 +81,7 @@ export function PriceRangeMatrix({
   return (
     <ChartFrame
       status={status}
-      isFiltering={isFiltering}
+      isFiltering={isFetching && status === 'success'}
       error={error}
       onRetry={refetch}
       empty={!data || data.totalCount === 0}

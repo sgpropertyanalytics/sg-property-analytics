@@ -51,14 +51,8 @@ function DistrictComparisonChartBase({
   height: propHeight,
   minUnits = 100,
 }) {
-  // Create a stable filter key for dependency tracking (no PowerBIFilterContext)
-  const filterKey = useMemo(
-    () => `${district || ''}:${selectedProject || ''}`,
-    [district, selectedProject]
-  );
-
-  // Data fetching with useGatedAbortableQuery - gates on appReady
-  // isBootPending = true while waiting for app boot
+  // Data fetching with useAppQuery - gates on appReady
+  // Phase 4: Inline query key - no filterKey abstraction
   const { data: transformedData, status, error } = useAppQuery(
     async (signal) => {
       if (!district) {
@@ -80,7 +74,7 @@ function DistrictComparisonChartBase({
       // Transform through adapter - now returns grouped data
       return transformDistrictComparison(response.data, selectedProject, minUnits);
     },
-    [filterKey, minUnits],
+    [district, selectedProject, minUnits],
     { chartName: 'DistrictComparisonChart', initialData: null, keepPreviousData: true }
   );
 

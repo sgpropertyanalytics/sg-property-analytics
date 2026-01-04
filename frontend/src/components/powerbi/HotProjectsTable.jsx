@@ -95,6 +95,9 @@ export function HotProjectsTable({
   // Combined loading state: true during initial boot OR data fetch
   const isLoading = loading || isBootPending;
 
+  // Normalize data to empty array to prevent TypeErrors when data is null/undefined
+  const safeData = data ?? [];
+
   // Handle sort
   const handleSort = (column) => {
     setSortConfig(prev => ({
@@ -104,7 +107,7 @@ export function HotProjectsTable({
   };
 
   // Filter and sort data
-  const sortedData = [...data]
+  const sortedData = [...safeData]
     // Filter out sold-out projects if excludeSoldOut is true
     .filter(project => {
       if (!excludeSoldOut) return true;
@@ -136,15 +139,15 @@ export function HotProjectsTable({
 
   // Calculate min/max for color scaling (reserved for future use)
   const _priceRange = React.useMemo(() => {
-    const prices = data.filter(p => p.median_price).map(p => p.median_price);
-    const psfs = data.filter(p => p.median_psf).map(p => p.median_psf);
+    const prices = safeData.filter(p => p.median_price).map(p => p.median_price);
+    const psfs = safeData.filter(p => p.median_psf).map(p => p.median_psf);
     return {
       minPrice: Math.min(...prices) || 0,
       maxPrice: Math.max(...prices) || 1,
       minPsf: Math.min(...psfs) || 0,
       maxPsf: Math.max(...psfs) || 1,
     };
-  }, [data]);
+  }, [safeData]);
 
   // Color scale using theme colors: highest = #213448, lowest = #EAE0CF (reserved for future use)
   const _getValueColor = (value, min, max) => {
@@ -206,7 +209,7 @@ export function HotProjectsTable({
           <div>
             <h3 className="font-semibold text-[#213448]">Active New Sales</h3>
             <p className="text-xs text-[#547792]">
-              {isLoading ? 'Loading...' : `${data.length} launched projects with sales activity`}
+              {isLoading ? 'Loading...' : `${safeData.length} launched projects with sales activity`}
             </p>
           </div>
           <div className="flex items-center gap-2">

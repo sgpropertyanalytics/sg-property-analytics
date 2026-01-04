@@ -140,6 +140,9 @@ export function GLSDataTable({ height = 400 }) {
   // Combined loading state: true during initial boot OR data fetch
   const isLoading = loading || isBootPending;
 
+  // Normalize data to empty array to prevent TypeErrors when data is null/undefined
+  const safeData = data ?? [];
+
   // Sort indicator
   const SortIcon = ({ column }) => {
     if (sortConfig.column !== column) {
@@ -176,12 +179,12 @@ export function GLSDataTable({ height = 400 }) {
   const { launchedCount, awardedCount } = useMemo(() => {
     let launched = 0;
     let awarded = 0;
-    data.forEach((item) => {
+    safeData.forEach((item) => {
       if (item.status === 'launched') launched += 1;
       if (item.status === 'awarded') awarded += 1;
     });
     return { launchedCount: launched, awardedCount: awarded };
-  }, [data]);
+  }, [safeData]);
 
   return (
     <div ref={containerRef} id="gls-data-table" className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden">
@@ -191,8 +194,8 @@ export function GLSDataTable({ height = 400 }) {
           <div>
             <h3 className="font-semibold text-[#213448]">Government Land Sales (GLS)</h3>
             <p className="text-xs text-[#547792]">
-              {isLoading ? 'Loading...' : `${data.length} tenders`}
-              {!isLoading && data.length > 0 && (
+              {isLoading ? 'Loading...' : `${safeData.length} tenders`}
+              {!isLoading && safeData.length > 0 && (
                 <span className="ml-2">
                   (<span className="text-amber-600">{launchedCount} open</span>
                   {' / '}
@@ -269,14 +272,14 @@ export function GLSDataTable({ height = 400 }) {
               <div className="h-3 bg-slate-200 rounded w-1/2"></div>
             </div>
           ))
-        ) : data.length === 0 ? (
+        ) : safeData.length === 0 ? (
           <div className="text-center py-8">
             <div className="text-slate-500">No GLS tenders found.</div>
             <p className="text-xs text-slate-400 mt-1">Data will be available once synchronized from URA.</p>
           </div>
         ) : (
           <div className={isFreeResolved ? 'blur-sm grayscale-[40%]' : ''}>
-            {data.map((tender, idx) => (
+            {safeData.map((tender, idx) => (
               <div key={tender.id || idx} className="p-3 bg-white rounded-lg border border-[#94B4C1]/30">
                 {/* Header: Location + Status */}
                 <div className="flex justify-between items-start gap-2 mb-2">
@@ -374,7 +377,7 @@ export function GLSDataTable({ height = 400 }) {
                     ))}
                   </tr>
                 ))
-              ) : data.length === 0 ? (
+              ) : safeData.length === 0 ? (
                 <tr>
                   <td colSpan={columns.length} className="px-3 py-8 text-center">
                     <div className="text-slate-500">No GLS tenders found.</div>
@@ -384,7 +387,7 @@ export function GLSDataTable({ height = 400 }) {
                   </td>
                 </tr>
               ) : (
-                data.map((tender, idx) => (
+                safeData.map((tender, idx) => (
                   <tr
                     key={tender.id || idx}
                     className="hover:bg-slate-50 transition-colors"

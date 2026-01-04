@@ -33,25 +33,31 @@ const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
  * }} props
  */
 function TimeTrendChartBase({ height = 300, saleType = null, onDrillThrough: _onDrillThrough }) {
-  // debouncedFilterKey prevents rapid-fire API calls during active filter adjustment
-  // filterKey updates immediately on filter change - used for instant overlay feedback
-  // timeGrouping used for display label (aggregation handled by useTimeSeriesQuery)
-  const { buildApiParams, debouncedFilterKey, filterKey, timeGrouping } = useZustandFilters();
+  // Phase 4: Simplified filter access - read values directly from Zustand
+  const { filters, timeGrouping } = useZustandFilters();
+
+  // Extract filter values directly (simple, explicit)
+  const timeframe = filters.timeFilter?.type === 'preset' ? filters.timeFilter.value : 'Y1';
+  const bedroom = filters.bedroomTypes?.join(',') || '';
+  const districts = filters.districts?.join(',') || '';
+
   const chartRef = useRef(null);
 
   // Debug overlay for API diagnostics (toggle with Ctrl+Shift+D)
   const { captureRequest, captureResponse, captureError, DebugOverlay } = useDebugOverlay('TimeTrendChart');
 
-  // useTimeSeriesQuery: fetches monthly data, aggregates client-side to current grain
-  // Enables instant toggle between month/quarter/year without new API calls
+  // Phase 4: Simplified data fetching - inline params, explicit query key
   const { data: safeData, status, error, refetch } = useTimeSeriesQuery({
     queryFn: async (signal) => {
-      // Always fetch month grain - hook handles aggregation to timeGrouping
-      const params = buildApiParams({
+      // Inline params - no buildApiParams abstraction
+      const params = {
         group_by: 'month',
         metrics: 'count,total_value',
+        timeframe,
+        bedroom,
+        district: districts,
         ...(saleType && { sale_type: saleType }),
-      });
+      };
 
       captureRequest('/api/aggregate', params);
 
@@ -76,7 +82,8 @@ function TimeTrendChartBase({ height = 300, saleType = null, onDrillThrough: _on
         throw err;
       }
     },
-    deps: [debouncedFilterKey, saleType],
+    // Explicit query key - TanStack handles cache deduplication
+    deps: ['time-trend', timeframe, bedroom, districts, saleType],
     chartName: 'TimeTrendChart',
   });
 
@@ -238,7 +245,7 @@ function TimeTrendChartBase({ height = 300, saleType = null, onDrillThrough: _on
   return (
     <ChartFrame
       status={status}
-      isFiltering={filterKey !== debouncedFilterKey}
+      isFiltering={false}
       error={error}
       onRetry={refetch}
       empty={!safeData || safeData.length === 0}

@@ -72,11 +72,10 @@ function GrowthDumbbellChartBase({ saleType = SaleType.RESALE, enabled = true })
     ? filters.bedroomTypes.join(',')
     : '';
 
-  // Create a stable filter key for dependency tracking (no period - fixed date range)
-  const filterKey = useMemo(() => `fixed:${bedroom}:${saleType}`, [bedroom, saleType]);
   const [sortConfig, setSortConfig] = useState({ column: 'growth', order: 'desc' });
 
   // Data fetching with useAppQuery - gates on appReady
+  // Phase 4: Inline query key - no filterKey abstraction
   // enabled prop prevents fetching when component is hidden (e.g., in volume mode)
   const { data, status, error, refetch } = useAppQuery(
     async (signal) => {
@@ -113,7 +112,7 @@ function GrowthDumbbellChartBase({ saleType = SaleType.RESALE, enabled = true })
       // Use adapter for transformation
       return transformGrowthDumbbellSeries(rawData, { districts: ALL_DISTRICTS });
     },
-    [filterKey],
+    [bedroom, saleType],
     { chartName: 'GrowthDumbbellChart', initialData: null, enabled }
   );
 

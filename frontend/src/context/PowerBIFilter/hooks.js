@@ -4,16 +4,9 @@
  * Reusable hooks for filter state management.
  */
 
-import { useState, useEffect, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useState } from 'react';
 import { useData } from '../DataContext';
-import {
-  INITIAL_FILTER_OPTIONS,
-  INITIAL_DRILL_PATH,
-  INITIAL_BREADCRUMBS,
-  INITIAL_FACT_FILTER,
-  INITIAL_SELECTED_PROJECT,
-} from './constants';
+import { INITIAL_FILTER_OPTIONS } from './constants';
 
 // =============================================================================
 // FILTER OPTIONS HOOK
@@ -47,81 +40,3 @@ export function useFilterOptions() {
   return [filterOptions, setFilterOptions];
 }
 
-// =============================================================================
-// ROUTE RESET HOOK
-// =============================================================================
-
-/**
- * Hook to reset state on route changes.
- * @param {Object} setters - State setter functions
- */
-export function useRouteReset({
-  setDrillPath,
-  setBreadcrumbs,
-  setFactFilter,
-  setSelectedProject,
-  // New: single batch reset function for better performance
-  batchReset,
-}) {
-  const location = useLocation();
-  const previousPathnameRef = useRef(location.pathname);
-
-  useEffect(() => {
-    if (previousPathnameRef.current !== location.pathname) {
-      previousPathnameRef.current = location.pathname;
-
-      // Use batch reset if available (single state update = single re-render)
-      if (batchReset) {
-        batchReset();
-      } else {
-        // Fallback to individual setters (4 state updates = potential flicker)
-        setDrillPath(INITIAL_DRILL_PATH);
-        setBreadcrumbs(INITIAL_BREADCRUMBS);
-        setFactFilter(INITIAL_FACT_FILTER);
-        setSelectedProject(INITIAL_SELECTED_PROJECT);
-      }
-    }
-  }, [location.pathname, setDrillPath, setBreadcrumbs, setFactFilter, setSelectedProject, batchReset]);
-}
-
-// =============================================================================
-// DEBOUNCED FILTER KEY HOOK
-// =============================================================================
-
-/**
- * Hook to create a debounced version of the filter key.
- * Delays effect triggers by 200ms when users click multiple filters quickly.
- *
- * @param {string} filterKey - The current filter key
- * @param {number} delay - Debounce delay in ms (default: 200)
- * @returns {string} Debounced filter key
- */
-export function useDebouncedFilterKey(filterKey, delay = 200) {
-  const [debouncedFilterKey, setDebouncedFilterKey] = useState(filterKey);
-  const debounceTimeoutRef = useRef(null);
-  const isFirstRender = useRef(true);
-
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      setDebouncedFilterKey(filterKey);
-      return;
-    }
-
-    if (debounceTimeoutRef.current) {
-      clearTimeout(debounceTimeoutRef.current);
-    }
-
-    debounceTimeoutRef.current = setTimeout(() => {
-      setDebouncedFilterKey(filterKey);
-    }, delay);
-
-    return () => {
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
-      }
-    };
-  }, [filterKey, delay]);
-
-  return debouncedFilterKey;
-}

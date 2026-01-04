@@ -4,8 +4,8 @@
  * Phase 4: PowerBIFilterProvider removed. Filter state now lives in Zustand.
  * This module now only exports:
  * - Constants (TIME_GROUP_BY, etc.)
- * - Pure utility functions (deriveActiveFilters, buildApiParams, etc.)
- * - Hooks (useFilterOptions, useDebouncedFilterKey)
+ * - Pure utility functions (deriveActiveFilters, countActiveFilters)
+ * - Hooks (useFilterOptions)
  * - Storage utilities (page-namespaced persistence)
  *
  * For filter state, use: import { useZustandFilters } from '../stores';
@@ -18,12 +18,10 @@ export { TIME_GROUP_BY } from './constants';
 export {
   deriveActiveFilters,
   countActiveFilters,
-  generateFilterKey,
-  buildApiParamsFromState,
 } from './utils';
 
 // For advanced usage - hooks
-export { useFilterOptions, useRouteReset, useDebouncedFilterKey } from './hooks';
+export { useFilterOptions } from './hooks';
 
 // Storage utilities for page-namespaced persistence
 export {

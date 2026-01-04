@@ -36,22 +36,31 @@ const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
  * @param {{ height?: number }} props
  */
 function NewLaunchTimelineChartBase({ height = 300 }) {
-  // Get GLOBAL filters and timeGrouping from context
-  // filterKey updates immediately on filter change - used for instant overlay feedback
-  const { buildApiParams, debouncedFilterKey, filterKey, filters, timeGrouping } = useZustandFilters();
+  // Phase 4: Simplified filter access - read values directly from Zustand
+  const { filters, timeGrouping } = useZustandFilters();
+
+  // Extract filter values directly (simple, explicit)
+  const timeframe = filters.timeFilter?.type === 'preset' ? filters.timeFilter.value : 'Y1';
+  const bedroom = filters.bedroomTypes?.join(',') || '';
+  const districts = filters.districts?.join(',') || '';
+  const segments = filters.segments?.join(',') || '';
 
   // 2020 had heavily skewed new launch data - exclude by default
   const [include2020, setInclude2020] = useState(false);
 
   const chartRef = useRef(null);
 
-  // Data fetching with useAppQuery - gates on appReady via context
-  // isFetching = true during background refetch (used for inline spinner)
+  // Phase 4: Simplified data fetching - inline params, explicit query key
   const { data, status, error, isFetching, refetch } = useAppQuery(
     async (signal) => {
-      const params = buildApiParams({
+      // Inline params - no buildApiParams abstraction
+      const params = {
         time_grain: TIME_GROUP_BY[timeGrouping],
-      });
+        timeframe,
+        bedroom,
+        district: districts,
+        segment: segments,
+      };
 
       // Fetch both APIs in parallel
       const [timelineRes, absorptionRes] = await Promise.all([
@@ -89,7 +98,8 @@ function NewLaunchTimelineChartBase({ height = 300 }) {
         };
       });
     },
-    [debouncedFilterKey, timeGrouping],
+    // Explicit query key - TanStack handles cache deduplication
+    ['new-launch-timeline', timeframe, bedroom, districts, segments, timeGrouping],
     {
       chartName: 'NewLaunchTimelineChart',
       initialData: null,  // null so hasRealData() returns false → shows skeleton during initial load
@@ -290,7 +300,7 @@ function NewLaunchTimelineChartBase({ height = 300 }) {
   return (
     <ChartFrame
       status={status}
-      isFiltering={filterKey !== debouncedFilterKey}
+      isFiltering={false}
       error={error}
       onRetry={refetch}
       empty={!hasData}

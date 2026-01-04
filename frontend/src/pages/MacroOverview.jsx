@@ -65,8 +65,13 @@ const SALE_TYPE = SaleType.RESALE;
 
 export function MacroOverviewContent() {
   const { apiMetadata } = useData();
-  // Phase 3.3: Now reading from Zustand store
-  const { filters, buildApiParams, debouncedFilterKey, timeGrouping } = useZustandFilters();
+  // Phase 4: Simplified filter access - read values directly from Zustand
+  const { filters, timeGrouping } = useZustandFilters();
+
+  // Extract filter values directly (simple, explicit)
+  const timeframe = filters.timeFilter?.type === 'preset' ? filters.timeFilter.value : 'Y1';
+  const bedroom = filters.bedroomTypes?.join(',') || '';
+  const districts = filters.districts?.join(',') || '';
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTitle, setModalTitle] = useState('');
@@ -118,15 +123,14 @@ export function MacroOverviewContent() {
 
   // Defer below-the-fold chart data to reduce initial load fanout
   // fetchOnMount: true ensures queries start immediately (skeleton shown during boot)
-  // Without this, shouldFetch=false on first render → status='idle' → wrong "No data" UI
   const { shouldFetch: shouldFetchCompression, containerRef: compressionRef } = useDeferredFetch({
-    filterKey: `${debouncedFilterKey}:${timeGrouping}`,
+    filterKey: `compression:${timeframe}:${bedroom}:${timeGrouping}`,
     priority: 'low',
     fetchOnMount: true,
   });
 
   const { shouldFetch: shouldFetchPanels, containerRef: panelsRef } = useDeferredFetch({
-    filterKey: debouncedFilterKey,
+    filterKey: `panels:${timeframe}:${bedroom}`,
     priority: 'medium',
     fetchOnMount: true,
   });
@@ -136,16 +140,22 @@ export function MacroOverviewContent() {
   // PriceCompressionChart, AbsolutePsfChart, and MarketValueOscillator all consume this data
   const { data: compressionRaw, status: compressionStatus, isBootPending: compressionBootPending } = useAppQuery(
     async (signal) => {
-      const params = buildApiParams({
+      // Phase 4: Inline params - no buildApiParams abstraction
+      // Note: This chart always shows all regions for comparison (no segment/district filter)
+      const params = {
         group_by: `${TIME_GROUP_BY[timeGrouping]},region`,
         metrics: 'median_psf,count',
+        timeframe,
+        bedroom,
+        // segment excluded - shows all regions for comparison
         sale_type: SALE_TYPE,
-      }, { excludeOwnDimension: 'segment' });
+      };
 
       const response = await getAggregate(params, { signal, priority: 'low' });
       return response.data || [];
     },
-    [debouncedFilterKey, timeGrouping],
+    // Explicit query key - TanStack handles cache deduplication
+    ['macro-compression', timeframe, bedroom, timeGrouping],
     { chartName: 'MacroOverview-Compression', initialData: null, keepPreviousData: true, enabled: shouldFetchCompression }
   );
 
@@ -157,23 +167,24 @@ export function MacroOverviewContent() {
   );
 
   // Shared dashboard panels for histogram + beads (reduces request fanout)
-  // These panels share the same filter behavior: exclude location drill,
-  // but respect global sidebar filters (incl. segment).
+  // These panels respect global sidebar filters but exclude location drill
   const { data: dashboardPanels, status: dashboardStatus, isBootPending: dashboardBootPending } = useAppQuery(
     async (signal) => {
-      const params = buildApiParams(
-        {
-          panels: 'price_histogram,beads_chart',
-          ...(SALE_TYPE && { sale_type: SALE_TYPE }),
-        },
-        { excludeLocationDrill: true }
-      );
+      // Phase 4: Inline params - no buildApiParams abstraction
+      const params = {
+        panels: 'price_histogram,beads_chart',
+        timeframe,
+        bedroom,
+        // Note: location drill excluded - these panels show global distribution
+        sale_type: SALE_TYPE,
+      };
 
       const response = await getDashboard(params, { signal, priority: 'medium' });
       // axios interceptor already unwraps envelope: response.data = { price_histogram, beads_chart }
       return response.data || {};
     },
-    [debouncedFilterKey],
+    // Explicit query key - TanStack handles cache deduplication
+    ['macro-dashboard', timeframe, bedroom],
     { chartName: 'MacroOverview-Dashboard', initialData: null, keepPreviousData: true, enabled: shouldFetchPanels }
   );
 

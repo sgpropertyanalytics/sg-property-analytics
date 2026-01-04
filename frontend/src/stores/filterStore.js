@@ -25,11 +25,10 @@
 import { create } from 'zustand';
 import { persist, subscribeWithSelector } from 'zustand/middleware';
 import { useLocation } from 'react-router-dom';
-import { useMemo, useCallback, useEffect, useRef } from 'react';
+import { useMemo, useEffect, useRef } from 'react';
 
-// Import debounce hook for debouncedFilterKey compatibility
-// Phase 3.4: Also import useFilterOptions (gets data from DataContext, not PowerBIFilterProvider)
-import { useDebouncedFilterKey, useFilterOptions } from '../context/PowerBIFilter/hooks';
+// Phase 3.4: Import useFilterOptions (gets data from DataContext, not PowerBIFilterProvider)
+import { useFilterOptions } from '../context/PowerBIFilter/hooks';
 
 // Import constants from existing filter system
 import {
@@ -48,8 +47,6 @@ import {
 import {
   deriveActiveFilters,
   countActiveFilters,
-  generateFilterKey,
-  buildApiParamsFromState,
 } from '../context/PowerBIFilter/utils';
 
 // Import storage utilities for page ID resolution
@@ -220,31 +217,6 @@ export function createFilterStore(pageId) {
           getActiveFilterCount: () => {
             const { filters } = get();
             return countActiveFilters(filters);
-          },
-
-          /**
-           * Get stable filter key for query dependencies.
-           */
-          getFilterKey: () => {
-            const { factFilter } = get();
-            const activeFilters = get().getActiveFilters();
-            return generateFilterKey(activeFilters, factFilter);
-          },
-
-          /**
-           * Build API params from current state.
-           * Matches PowerBIFilterProvider's buildApiParams signature.
-           */
-          buildApiParams: (additionalParams = {}, options = {}) => {
-            const { filters, factFilter } = get();
-            const activeFilters = get().getActiveFilters();
-            return buildApiParamsFromState(
-              activeFilters,
-              filters,
-              factFilter,
-              additionalParams,
-              options
-            );
           },
 
           // =================================================================
@@ -682,9 +654,6 @@ export function useZustandFilterState() {
       // Derived state
       activeFilters: store.getActiveFilters(),
       activeFilterCount: store.getActiveFilterCount(),
-      filterKey: store.getFilterKey(),
-      // Helper function
-      buildApiParams: store.buildApiParams,
     }),
     [store]
   );
@@ -740,24 +709,17 @@ export function useZustandFilterActions() {
 /**
  * Full compatibility hook matching usePowerBIFilters from Context.
  *
- * PHASE 3.2: This hook provides the same interface as usePowerBIFilters(),
- * allowing charts to migrate by simply changing their import.
+ * PHASE 4: Simplified - charts read filter values directly from `filters` object.
+ * No more buildApiParams abstraction or debouncedFilterKey.
  *
- * Includes:
- * - All state values (filters, drillPath, breadcrumbs, etc.)
- * - All derived values (activeFilters, filterKey, debouncedFilterKey)
- * - All actions (setTimePreset, setDistricts, drillDown, etc.)
- * - buildApiParams helper function
- *
- * Usage (drop-in replacement for usePowerBIFilters):
+ * Usage:
  * ```jsx
- * // Before:
- * import { usePowerBIFilters } from '../context/PowerBIFilter';
- * const { buildApiParams, debouncedFilterKey, filterKey, timeGrouping } = usePowerBIFilters();
- *
- * // After:
  * import { useZustandFilters } from '../stores';
- * const { buildApiParams, debouncedFilterKey, filterKey, timeGrouping } = useZustandFilters();
+ * const { filters, timeGrouping } = useZustandFilters();
+ *
+ * // Extract filter values directly:
+ * const timeframe = filters.timeFilter?.type === 'preset' ? filters.timeFilter.value : 'Y1';
+ * const bedroom = filters.bedroomTypes?.join(',') || '';
  * ```
  */
 export function useZustandFilters() {
@@ -792,20 +754,8 @@ export function useZustandFilters() {
   // Compute derived state
   const activeFilters = store.getActiveFilters();
   const activeFilterCount = store.getActiveFilterCount();
-  const filterKey = store.getFilterKey();
 
-  // Apply debouncing to filterKey (matches Context behavior)
-  const debouncedFilterKey = useDebouncedFilterKey(filterKey);
-
-  // Stable buildApiParams function
-  const buildApiParams = useCallback(
-    (additionalParams = {}, options = {}) => {
-      return store.buildApiParams(additionalParams, options);
-    },
-    [store]
-  );
-
-  // Return full interface matching usePowerBIFilters
+  // Return full interface
   return useMemo(
     () => ({
       // === State ===
@@ -824,8 +774,6 @@ export function useZustandFilters() {
       // === Derived State ===
       activeFilters,
       activeFilterCount,
-      filterKey,
-      debouncedFilterKey,
 
       // === Actions (Time Filter) ===
       setTimeFilter: store.setTimeFilter,
@@ -865,18 +813,12 @@ export function useZustandFilters() {
 
       // === Actions (Lifecycle) ===
       resetFilters: store.resetFilters,
-
-      // === Helper Functions ===
-      buildApiParams,
     }),
     [
       store,
       filterOptions,
       activeFilters,
       activeFilterCount,
-      filterKey,
-      debouncedFilterKey,
-      buildApiParams,
     ]
   );
 }
@@ -905,7 +847,6 @@ export function logFilterState(pageId) {
     console.group(`[filterStore] ${pageId}`);
     console.log('filters:', state.filters);
     console.log('activeFilters:', state.getActiveFilters());
-    console.log('filterKey:', state.getFilterKey());
     console.log('drillPath:', state.drillPath);
     console.log('breadcrumbs:', state.breadcrumbs);
     console.groupEnd();

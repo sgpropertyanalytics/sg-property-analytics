@@ -85,6 +85,9 @@ export function UpcomingLaunchesTable({
   // Combined loading state (boot + fetch)
   const isLoading = loading || isBootPending;
 
+  // Normalize data to empty array to prevent TypeErrors when data is null/undefined
+  const safeData = data ?? [];
+
   // Handle sort
   const handleSort = (column) => {
     setSortConfig(prev => ({
@@ -160,7 +163,7 @@ export function UpcomingLaunchesTable({
           <div>
             <h3 className="font-semibold text-[#213448]">Upcoming Launches</h3>
             <p className="text-xs text-[#547792]">
-              {isLoading ? 'Loading...' : `${data.length} pre-launch projects`}
+              {isLoading ? 'Loading...' : `${safeData.length} pre-launch projects`}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -190,12 +193,12 @@ export function UpcomingLaunchesTable({
               <div className="h-3 bg-slate-200 rounded w-1/2"></div>
             </div>
           ))
-        ) : data.length === 0 ? (
+        ) : safeData.length === 0 ? (
           <div className="text-center py-8 text-[#547792] text-sm">
             No upcoming launches found.
           </div>
         ) : (
-          data.map((project, idx) => (
+          safeData.map((project, idx) => (
             <div key={project.id || idx} className="p-3 bg-card rounded-lg border border-[#94B4C1]/30 active:bg-[#EAE0CF]/20">
               <div className="flex justify-between items-start gap-3">
                 {/* Left: Project info */}
@@ -279,7 +282,7 @@ export function UpcomingLaunchesTable({
                     ))}
                   </tr>
                 ))
-              ) : data.length === 0 ? (
+              ) : safeData.length === 0 ? (
                 <tr>
                   <td colSpan={columns.length} className="px-3 py-8 text-center">
                     <div className="text-slate-500">No upcoming launches found.</div>
@@ -289,7 +292,7 @@ export function UpcomingLaunchesTable({
                   </td>
                 </tr>
               ) : (
-                data.map((project, idx) => (
+                safeData.map((project, idx) => (
                   <tr
                     key={project.id || idx}
                     className="hover:bg-slate-50 transition-colors"
