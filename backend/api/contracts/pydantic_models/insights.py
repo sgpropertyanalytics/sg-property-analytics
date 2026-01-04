@@ -11,7 +11,7 @@ from typing import Optional, Literal
 
 from pydantic import Field, model_validator
 
-from .base import BaseParamsModel, derive_sale_type_db
+from .base import BaseParamsModel
 from constants import resolve_timeframe
 
 
@@ -49,14 +49,12 @@ class DistrictPsfParams(BaseParamsModel):
         default="all",
         description="Property age filter (deprecated - use sale_type)"
     )
+    # sale_type normalized to DB format by BaseParamsModel validator
+    # "all" -> None, "new_sale" -> "New Sale", etc.
     sale_type: Optional[str] = Field(
-        default="all",
-        alias='saleType',
-        description="Sale type filter (all, new_sale, resale)"
-    )
-    sale_type_db: Optional[str] = Field(
         default=None,
-        description="Sale type in DB format (auto-derived)"
+        alias='saleType',
+        description="Sale type filter (normalized to DB format)"
     )
 
     # === Resolved date bounds (computed from timeframe) ===
@@ -68,7 +66,6 @@ class DistrictPsfParams(BaseParamsModel):
     def apply_normalizations(self) -> 'DistrictPsfParams':
         """Apply domain-specific normalizations."""
         self._resolve_timeframe()
-        self._derive_sale_type_db()
         return self
 
     def _resolve_timeframe(self) -> None:
@@ -82,11 +79,6 @@ class DistrictPsfParams(BaseParamsModel):
             object.__setattr__(self, 'months_in_period', bounds['months_in_period'])
             # Normalize timeframe to uppercase format
             object.__setattr__(self, 'timeframe', tf.upper() if tf else 'Y1')
-
-    def _derive_sale_type_db(self) -> None:
-        """Derive sale_type_db from sale_type for DB queries."""
-        if self.sale_type and self.sale_type != 'all' and not self.sale_type_db:
-            object.__setattr__(self, 'sale_type_db', derive_sale_type_db(self.sale_type))
 
 
 class DistrictLiquidityParams(BaseParamsModel):
@@ -112,14 +104,11 @@ class DistrictLiquidityParams(BaseParamsModel):
         alias="bedroom",  # Frontend sends 'bedroom', backend uses 'bed'
         description="Bedroom filter (all, 1, 2, 3, 4, 5)"
     )
+    # sale_type normalized to DB format by BaseParamsModel validator
     sale_type: Optional[str] = Field(
-        default="all",
-        alias='saleType',
-        description="Sale type filter (all, new_sale, resale)"
-    )
-    sale_type_db: Optional[str] = Field(
         default=None,
-        description="Sale type in DB format (auto-derived)"
+        alias='saleType',
+        description="Sale type filter (normalized to DB format)"
     )
 
     # === Resolved date bounds (computed from timeframe) ===
@@ -131,7 +120,6 @@ class DistrictLiquidityParams(BaseParamsModel):
     def apply_normalizations(self) -> 'DistrictLiquidityParams':
         """Apply domain-specific normalizations."""
         self._resolve_timeframe()
-        self._derive_sale_type_db()
         return self
 
     def _resolve_timeframe(self) -> None:
@@ -145,8 +133,3 @@ class DistrictLiquidityParams(BaseParamsModel):
             object.__setattr__(self, 'months_in_period', bounds['months_in_period'])
             # Normalize timeframe to uppercase format
             object.__setattr__(self, 'timeframe', tf.upper() if tf else 'Y1')
-
-    def _derive_sale_type_db(self) -> None:
-        """Derive sale_type_db from sale_type for DB queries."""
-        if self.sale_type and self.sale_type != 'all' and not self.sale_type_db:
-            object.__setattr__(self, 'sale_type_db', derive_sale_type_db(self.sale_type))

@@ -16,7 +16,7 @@ from typing import Optional, List, Literal
 
 from pydantic import Field, model_validator
 
-from .base import BaseParamsModel, derive_sale_type_db
+from .base import BaseParamsModel
 from .types import (
     CommaList,
     WrapList,
@@ -84,16 +84,11 @@ class AggregateParams(BaseParamsModel):
         description="Alias for segment filter"
     )
 
-    # Sale type (stays singular)
+    # Sale type (normalized to DB format by BaseParamsModel validator)
     sale_type: Optional[str] = Field(
         default=None,
         alias='saleType',
-        description="Sale type filter (new_sale, resale, sub_sale)"
-    )
-    # Computed: DB-ready value (e.g., "New Sale" instead of "new_sale")
-    sale_type_db: Optional[str] = Field(
-        default=None,
-        description="Sale type in DB format (auto-derived)"
+        description="Sale type filter (normalized to DB format: 'New Sale', 'Resale', 'Sub Sale')"
     )
 
     # Tenure (singular -> plural in model_validator)
@@ -208,9 +203,6 @@ class AggregateParams(BaseParamsModel):
         # 5. Region -> segments alias
         self._resolve_region_alias()
 
-        # 6. Derive sale_type_db from sale_type
-        self._derive_sale_type_db()
-
         return self
 
     def _resolve_timeframe(self) -> None:
@@ -274,8 +266,3 @@ class AggregateParams(BaseParamsModel):
         """
         # Don't convert - old behavior passes region through unchanged
         pass
-
-    def _derive_sale_type_db(self) -> None:
-        """Derive sale_type_db from sale_type for DB queries."""
-        if self.sale_type and not self.sale_type_db:
-            object.__setattr__(self, 'sale_type_db', derive_sale_type_db(self.sale_type))
