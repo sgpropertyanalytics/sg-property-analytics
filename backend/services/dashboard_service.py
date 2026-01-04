@@ -1009,7 +1009,7 @@ def query_psf_by_price_band(
     Uses SQL aggregation only (no pandas) for memory safety on 512MB Render.
 
     Args:
-        params: Parsed filter params from parse_filter_params():
+        params: Dict with normalized filter values:
             - date_from: Python date object
             - date_to: Python date object
             - sale_type_db: DB-format sale type (e.g., 'New Sale')
