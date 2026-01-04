@@ -11,7 +11,7 @@ from typing import Optional, List
 
 from pydantic import Field, model_validator
 
-from .base import BaseParamsModel
+from .base import BaseParamsModel, derive_sale_type_db
 from .types import (
     IntList,
     DistrictList,
@@ -53,6 +53,10 @@ class PriceGrowthParams(BaseParamsModel):
         alias='saleType',
         description="Sale type filter"
     )
+    sale_type_db: Optional[str] = Field(
+        default=None,
+        description="Sale type in DB format (auto-derived)"
+    )
 
     # === Date Filters ===
     date_from: CoercedDate = Field(
@@ -91,7 +95,13 @@ class PriceGrowthParams(BaseParamsModel):
         self._resolve_timeframe()
         self._normalize_date_bounds()
         self._align_month_boundaries()
+        self._derive_sale_type_db()
         return self
+
+    def _derive_sale_type_db(self) -> None:
+        """Derive sale_type_db from sale_type for DB queries."""
+        if self.sale_type and not self.sale_type_db:
+            object.__setattr__(self, 'sale_type_db', derive_sale_type_db(self.sale_type))
 
     def _resolve_timeframe(self) -> None:
         """Resolve default timeframe to date bounds."""
@@ -152,6 +162,10 @@ class SegmentsParams(BaseParamsModel):
         alias='saleType',
         description="Sale type filter"
     )
+    sale_type_db: Optional[str] = Field(
+        default=None,
+        description="Sale type in DB format (auto-derived)"
+    )
 
     # === Date Filters ===
     date_from: CoercedDate = Field(
@@ -179,7 +193,13 @@ class SegmentsParams(BaseParamsModel):
         self._resolve_timeframe()
         self._normalize_date_bounds()
         self._align_month_boundaries()
+        self._derive_sale_type_db()
         return self
+
+    def _derive_sale_type_db(self) -> None:
+        """Derive sale_type_db from sale_type for DB queries."""
+        if self.sale_type and not self.sale_type_db:
+            object.__setattr__(self, 'sale_type_db', derive_sale_type_db(self.sale_type))
 
     def _resolve_timeframe(self) -> None:
         """Resolve default timeframe to date bounds."""

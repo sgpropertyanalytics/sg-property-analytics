@@ -81,28 +81,29 @@ def kpi_summary_v2():
     start = time.time()
 
     try:
-        # Parse filters (thin layer - just parsing, no logic)
+        # Use normalized params from Pydantic (via @api_contract decorator)
+        params = g.normalized_params
         filters = {}
 
         # District filter
-        district_param = request.args.get('district')
+        district_param = params.get('district')
         if district_param:
             filters['districts'] = district_param
 
         # Bedroom filter
-        bedroom_param = request.args.get('bedroom')
+        bedroom_param = params.get('bedroom')
         if bedroom_param:
             filters['bedrooms'] = bedroom_param
 
         # Segment filter
-        segment_param = request.args.get('segment')
+        segment_param = params.get('segment')
         if segment_param:
             filters['segment'] = segment_param
 
         # Date filter - use max from DB if not provided (like v1 does)
-        date_param = request.args.get('max_date')
-        if date_param:
-            filters['max_date'] = to_date(date_param, field='max_date')
+        max_date_param = params.get('max_date')
+        if max_date_param:
+            filters['max_date'] = max_date_param
         else:
             # Default to latest transaction date in database
             filters['max_date'] = _get_max_transaction_date()
@@ -154,17 +155,19 @@ def kpi_single(kpi_id: str):
     start = time.time()
 
     try:
+        # Use normalized params from Pydantic (via @api_contract decorator)
+        params = g.normalized_params
         filters = {}
 
-        district_param = request.args.get('district')
+        district_param = params.get('district')
         if district_param:
             filters['districts'] = district_param
 
-        bedroom_param = request.args.get('bedroom')
+        bedroom_param = params.get('bedroom')
         if bedroom_param:
             filters['bedrooms'] = bedroom_param
 
-        segment_param = request.args.get('segment')
+        segment_param = params.get('segment')
         if segment_param:
             filters['segment'] = segment_param
 

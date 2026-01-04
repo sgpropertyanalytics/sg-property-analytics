@@ -10,7 +10,7 @@ This is a THIN route handler - all business logic is in services/supply_service.
 """
 
 import time
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, g, jsonify
 from api.contracts.wrapper import api_contract
 
 supply_bp = Blueprint('supply', __name__)
@@ -33,7 +33,7 @@ def get_supply_summary():
     """
     Get aggregated supply pipeline data for waterfall visualization.
 
-    Query params (camelCase - normalized internally):
+    Query params (camelCase - normalized by Pydantic via @api_contract):
         - includeGls: bool (default true) - Include GLS pipeline in totals
         - launchYear: int (default 2026) - Year filter for upcoming launches
 
@@ -51,31 +51,13 @@ def get_supply_summary():
     Example:
         GET /api/supply/summary?includeGls=true&launchYear=2026
     """
-    # Wrap entire function in try/except to guarantee JSON error response
     try:
         start = time.time()
 
-        # ========== PARSE & NORMALIZE INPUT ==========
-        # Frontend sends camelCase, we normalize here
-        try:
-            from utils.normalize import to_int, to_bool
-
-            # includeGls (default True)
-            include_gls_raw = request.args.get("includeGls", request.args.get("include_gls", "true"))
-            include_gls = to_bool(include_gls_raw, default=True, field="includeGls")
-
-            # launchYear (default 2026)
-            launch_year_raw = request.args.get("launchYear", request.args.get("launch_year"))
-            launch_year = to_int(launch_year_raw, default=2026, field="launchYear")
-
-        except ImportError:
-            # Fallback if normalize module not available
-            include_gls = request.args.get("includeGls", "true").lower() == "true"
-            launch_year_str = request.args.get("launchYear", "2026")
-            try:
-                launch_year = int(launch_year_str)
-            except (ValueError, TypeError):
-                launch_year = 2026
+        # Use normalized params from Pydantic (via @api_contract decorator)
+        params = g.normalized_params
+        include_gls = params.get("include_gls", True)
+        launch_year = params.get("launch_year", 2026)
 
         # Validate launch year range
         if launch_year < 2020 or launch_year > 2035:
@@ -86,7 +68,7 @@ def get_supply_summary():
                 "received": launch_year
             }), 400
 
-        # ========== CALL SERVICE ==========
+        # Call service
         from services.supply_service import get_supply_summary as fetch_summary
 
         result = fetch_summary(
@@ -100,8 +82,6 @@ def get_supply_summary():
         return jsonify(result)
 
     except Exception as e:
-        # Catch ALL errors and return JSON
-        # Log full traceback server-side for debugging, but don't expose to client
         import traceback
         print(f"GET /api/supply/summary FATAL ERROR: {e}")
         traceback.print_exc()

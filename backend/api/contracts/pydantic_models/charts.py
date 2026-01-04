@@ -14,7 +14,7 @@ from typing import Optional, List
 
 from pydantic import Field, model_validator
 
-from .base import BaseParamsModel
+from .base import BaseParamsModel, derive_sale_type_db
 from .types import (
     DistrictList,
     WrapList,
@@ -126,6 +126,10 @@ class PsfByPriceBandParams(BaseParamsModel):
         alias='saleType',
         description="Sale type filter"
     )
+    sale_type_db: Optional[str] = Field(
+        default=None,
+        description="Sale type in DB format (auto-derived)"
+    )
     tenure: Optional[str] = Field(
         default=None,
         description="Tenure filter"
@@ -139,15 +143,18 @@ class PsfByPriceBandParams(BaseParamsModel):
 
     @model_validator(mode='after')
     def apply_normalizations(self) -> 'PsfByPriceBandParams':
-        """Normalize date bounds."""
+        """Normalize date bounds and derive sale_type_db."""
         if self.date_to_exclusive:
             if self.date_to:
                 object.__setattr__(self, 'date_to', None)
-            return self
-
-        if self.date_to and isinstance(self.date_to, date):
+        elif self.date_to and isinstance(self.date_to, date):
             object.__setattr__(self, 'date_to_exclusive', self.date_to + timedelta(days=1))
             object.__setattr__(self, 'date_to', None)
+
+        # Derive sale_type_db
+        if self.sale_type and not self.sale_type_db:
+            object.__setattr__(self, 'sale_type_db', derive_sale_type_db(self.sale_type))
+
         return self
 
 

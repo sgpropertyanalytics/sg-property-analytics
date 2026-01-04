@@ -11,7 +11,7 @@ Endpoints:
 """
 
 import time
-from flask import request, jsonify
+from flask import request, jsonify, g
 from routes.analytics import analytics_bp
 from constants import SALE_TYPE_NEW, SALE_TYPE_RESALE
 from utils.normalize import (
@@ -128,22 +128,20 @@ def get_project_price_bands(project_name):
     from services.price_bands_service import get_project_price_bands as compute_bands
     from api.contracts.contract_schema import serialize_price_bands_v2
 
-    try:
-        # Parse query params
-        window_months = to_int(request.args.get('window_months'), default=24, field='window_months')
-        window_months = min(max(window_months, 6), 60)  # Clamp to 6-60 months
+    # Use normalized params from Pydantic (via @api_contract decorator)
+    params = g.normalized_params
+    window_months = params.get('window_months', 24)
+    window_months = min(max(window_months, 6), 60)  # Clamp to 6-60 months
 
-        unit_psf = to_float(request.args.get('unit_psf'), field='unit_psf')
-        if unit_psf is not None:
-            # Validate PSF range
-            if unit_psf < 300 or unit_psf > 10000:
-                return jsonify({
-                    "error": "unit_psf must be between 300 and 10000",
-                    "type": "validation_error",
-                    "field": "unit_psf"
-                }), 400
-    except NormalizeValidationError as e:
-        return validation_error_response(e)
+    unit_psf = params.get('unit_psf')
+    if unit_psf is not None:
+        # Validate PSF range
+        if unit_psf < 300 or unit_psf > 10000:
+            return jsonify({
+                "error": "unit_psf must be between 300 and 10000",
+                "type": "validation_error",
+                "field": "unit_psf"
+            }), 400
 
     try:
         # Compute price bands

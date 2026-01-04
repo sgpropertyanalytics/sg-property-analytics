@@ -12,7 +12,7 @@ Endpoints:
 """
 
 import time
-from flask import request, jsonify
+from flask import request, jsonify, g
 from routes.analytics import analytics_bp
 from constants import SALE_TYPE_NEW, SALE_TYPE_RESALE
 from utils.normalize import (
@@ -29,21 +29,14 @@ def projects_by_district():
     start = time.time()
     from services.data_processor import get_project_aggregation_by_district
 
-    district = request.args.get("district")
-    segment = request.args.get("segment")  # Optional: CCR, RCR, OCR
+    # Use normalized params from Pydantic (via @api_contract decorator)
+    params = g.normalized_params
+    district = params.get("district")
+    segment = params.get("segment")  # Optional: CCR, RCR, OCR
+    bedroom_types = params.get("bedroom", [2, 3, 4])
 
     if not district:
         return jsonify({"error": "district parameter is required"}), 400
-
-    try:
-        bedroom_types = to_list(
-            request.args.get("bedroom"),
-            item_type=int,
-            default=[2, 3, 4],
-            field="bedroom"
-        )
-    except NormalizeValidationError as e:
-        return validation_error_response(e)
 
     # Normalize district
     d = str(district).strip().upper()
@@ -127,21 +120,14 @@ def price_projects_by_district():
     """
     from datetime import datetime, timedelta
 
-    district = request.args.get("district")
+    # Use normalized params from Pydantic (via @api_contract decorator)
+    params = g.normalized_params
+    district = params.get("district")
+    bedroom_types = params.get("bedroom", [2, 3, 4])
+    months = params.get("months", 15)
+
     if not district:
         return jsonify({"error": "district parameter is required"}), 400
-
-    bedroom_param = request.args.get("bedroom", "2,3,4")
-    try:
-        bedroom_types = [int(b.strip()) for b in bedroom_param.split(",")]
-    except ValueError:
-        return jsonify({"error": "Invalid bedroom parameter"}), 400
-
-    months_param = request.args.get("months", "15")
-    try:
-        months = int(months_param)
-    except ValueError:
-        months = 15
 
     # Normalize district
     d = str(district).strip().upper()
@@ -269,19 +255,17 @@ def floor_liquidity_heatmap():
 
     start = time.time()
 
-    try:
-        # Parse parameters
-        window_months = to_int(request.args.get('window_months'), default=12, field='window_months')
-        if window_months not in [6, 12, 24]:
-            window_months = 12
+    # Use normalized params from Pydantic (via @api_contract decorator)
+    params = g.normalized_params
+    window_months = params.get('window_months', 12)
+    if window_months not in [6, 12, 24]:
+        window_months = 12
 
-        # Exclusion thresholds for reliable liquidity analysis
-        min_transactions = to_int(request.args.get('min_transactions'), default=30, field='min_transactions')
-        min_units = to_int(request.args.get('min_units'), default=100, field='min_units')
-        limit = to_int(request.args.get('limit'), default=0, field='limit')  # 0 = no limit
-        skip_cache = to_bool(request.args.get('skip_cache'), default=False)
-    except NormalizeValidationError as e:
-        return validation_error_response(e)
+    # Exclusion thresholds for reliable liquidity analysis
+    min_transactions = params.get('min_transactions', 30)
+    min_units = params.get('min_units', 100)
+    limit = params.get('limit', 0)  # 0 = no limit
+    skip_cache = params.get('skip_cache', False)
 
     # Build cache key
     cache_key = f"floor_liquidity_heatmap:{request.query_string.decode('utf-8')}"
@@ -309,30 +293,27 @@ def floor_liquidity_heatmap():
     filters_applied['date_from'] = cutoff_date.isoformat()
 
     # Segment filter
-    segment = request.args.get('segment')
+    segment = params.get('segment')
     if segment:
-        segments = [s.strip().upper() for s in segment.split(',') if s.strip()]
+        segments = [s.strip().upper() for s in segment.split(',') if s.strip()] if isinstance(segment, str) else segment
         all_districts = db.session.query(Transaction.district).distinct().all()
         segment_districts = [d[0] for d in all_districts if get_region_for_district(d[0]) in segments]
         filter_conditions.append(Transaction.district.in_(segment_districts))
         filters_applied['segment'] = segments
 
     # District filter
-    districts_param = request.args.get('district')
+    districts_param = params.get('district')
     if districts_param:
-        districts = [d.strip().upper() for d in districts_param.split(',') if d.strip()]
+        districts = [d.strip().upper() for d in districts_param.split(',') if d.strip()] if isinstance(districts_param, str) else districts_param
         normalized = [f"D{d.zfill(2)}" if not d.startswith('D') else d for d in districts]
         filter_conditions.append(Transaction.district.in_(normalized))
         filters_applied['district'] = normalized
 
     # Bedroom filter
-    try:
-        bedrooms = to_list(request.args.get('bedroom'), item_type=int, field='bedroom')
-        if bedrooms:
-            filter_conditions.append(Transaction.bedroom_count.in_(bedrooms))
-            filters_applied['bedroom'] = bedrooms
-    except NormalizeValidationError as e:
-        return validation_error_response(e)
+    bedrooms = params.get('bedroom')
+    if bedrooms:
+        filter_conditions.append(Transaction.bedroom_count.in_(bedrooms))
+        filters_applied['bedroom'] = bedrooms
 
     try:
         # Query: Group by project and floor_level
@@ -498,25 +479,23 @@ def budget_heatmap():
         serialize_heatmap_v2
     )
 
-    try:
-        # Parse required budget
-        budget = to_int(request.args.get('budget'), field='budget')
-        if not budget:
-            return jsonify({"error": "budget parameter is required", "type": "validation_error", "field": "budget"}), 400
+    # Use normalized params from Pydantic (via @api_contract decorator)
+    params = g.normalized_params
+    budget = params.get('budget')
+    if not budget:
+        return jsonify({"error": "budget parameter is required", "type": "validation_error", "field": "budget"}), 400
 
-        if budget < 100000 or budget > 50000000:
-            return jsonify({"error": "budget must be between $100K and $50M", "type": "validation_error", "field": "budget"}), 400
+    if budget < 100000 or budget > 50000000:
+        return jsonify({"error": "budget must be between $100K and $50M", "type": "validation_error", "field": "budget"}), 400
 
-        # Parse optional filters
-        tolerance = to_int(request.args.get('tolerance'), default=100000, field='tolerance')
-        bedroom = to_int(request.args.get('bedroom'), field='bedroom')
-        segment = request.args.get('segment')
-        district = request.args.get('district')
-        tenure = request.args.get('tenure')
-        months_lookback = to_int(request.args.get('months_lookback'), default=24, field='months_lookback')
-        skip_cache = to_bool(request.args.get('skip_cache'), default=False)
-    except NormalizeValidationError as e:
-        return validation_error_response(e)
+    # Parse optional filters
+    tolerance = params.get('tolerance', 100000)
+    bedroom = params.get('bedroom')
+    segment = params.get('segment')
+    district = params.get('district')
+    tenure = params.get('tenure')
+    months_lookback = params.get('months_lookback', 24)
+    skip_cache = params.get('skip_cache', False)
 
     try:
 

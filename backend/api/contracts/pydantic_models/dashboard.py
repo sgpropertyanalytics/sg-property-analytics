@@ -9,7 +9,7 @@ from typing import Optional, List
 
 from pydantic import Field, model_validator
 
-from .base import BaseParamsModel
+from .base import BaseParamsModel, derive_sale_type_db
 from .types import (
     CommaList,
     WrapList,
@@ -77,6 +77,10 @@ class DashboardParams(BaseParamsModel):
         default=None,
         alias='saleType',
         description="Sale type filter"
+    )
+    sale_type_db: Optional[str] = Field(
+        default=None,
+        description="Sale type in DB format (auto-derived)"
     )
     tenure: Optional[str] = Field(
         default=None,
@@ -177,7 +181,13 @@ class DashboardParams(BaseParamsModel):
         self._normalize_date_bounds()
         self._align_month_boundaries()
         self._singular_to_plural()
+        self._derive_sale_type_db()
         return self
+
+    def _derive_sale_type_db(self) -> None:
+        """Derive sale_type_db from sale_type for DB queries."""
+        if self.sale_type and not self.sale_type_db:
+            object.__setattr__(self, 'sale_type_db', derive_sale_type_db(self.sale_type))
 
     def _resolve_timeframe(self) -> None:
         """Resolve timeframe preset to date bounds."""

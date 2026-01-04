@@ -14,7 +14,7 @@ Provides endpoints for:
 
 Follows same patterns as GLS routes for consistency.
 """
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, g
 import time
 from datetime import datetime
 from models.database import db
@@ -46,7 +46,7 @@ def get_all():
     """
     Get all upcoming launch projects.
 
-    Query params:
+    Query params (normalized by Pydantic via @api_contract):
         - market_segment: CCR, RCR, or OCR (optional)
         - district: Filter by district, e.g. D09 (optional)
         - launch_year: Filter by launch year (optional, shows all if not specified)
@@ -60,18 +60,15 @@ def get_all():
     """
     start = time.time()
 
-    market_segment = request.args.get("market_segment")
-    district = request.args.get("district")
-    needs_review = request.args.get("needs_review", "").lower() == "true"
-    sort_by = request.args.get("sort", "project_name")
-    order = request.args.get("order", "asc")
-
-    try:
-        # Parse optional params that may fail - return 400 on validation error
-        launch_year = to_int(request.args.get("launch_year"), field="launch_year")  # Optional
-        limit = to_int(request.args.get("limit"), default=100, field="limit")
-    except NormalizeValidationError as e:
-        return validation_error_response(e)
+    # Use normalized params from Pydantic (via @api_contract decorator)
+    params = g.normalized_params
+    market_segment = params.get("market_segment")
+    district = params.get("district")
+    needs_review = params.get("needs_review", False)
+    sort_by = params.get("sort", "project_name")
+    order = params.get("order", "asc")
+    launch_year = params.get("launch_year")
+    limit = params.get("limit", 100)
 
     try:
         query = db.session.query(UpcomingLaunch)
@@ -88,11 +85,7 @@ def get_all():
             query = query.filter(UpcomingLaunch.market_segment == market_segment.upper())
 
         if district:
-            # Normalize district format
-            d = district.upper()
-            if not d.startswith("D"):
-                d = f"D{d.zfill(2)}"
-            query = query.filter(UpcomingLaunch.district == d)
+            query = query.filter(UpcomingLaunch.district == district)
 
         if needs_review:
             query = query.filter(UpcomingLaunch.needs_review == True)
