@@ -95,21 +95,25 @@ params.sale_type = 'resale';
 2. Filter-derived value (`activeFilters.saleType`)
 3. Default (none)
 
-## 1.3 Reuse-First Principle
+## 1.3 Reuse-First
 
-**NEVER introduce new patterns. Match existing exactly.**
+**Search before writing. Assume it exists until proven otherwise.**
 
-1. Find reference implementation → copy pattern exactly
-2. Extend existing code → don't recreate
-3. All similar code follows same structure
-4. Deviation requires explicit approval
+### Pre-Check (30 seconds):
+```bash
+grep -r "def.*<keyword>" backend/
+grep -r "<keyword>" frontend/src/hooks/
+```
 
-**Reference files:**
-- Charts: `frontend/src/components/powerbi/TimeTrendChart.jsx`
-- Routes: `backend/routes/analytics/aggregate.py`
-- Services: `backend/services/dashboard_service.py`
+### Canonical Locations:
+| Type | Check First |
+|------|-------------|
+| Utils | `backend/utils/` |
+| Hooks | `frontend/src/hooks/` |
+| Constants | `constants.py`, `schemas/` |
+| Components | `frontend/src/components/` |
 
-**Before implementing:** `git log -20 -- <target_files>` to understand patterns.
+**Can't find in 2 min? Ask — don't recreate.**
 
 ## 1.4 Production-Grade Standard
 
