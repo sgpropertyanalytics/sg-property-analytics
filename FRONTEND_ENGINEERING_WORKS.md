@@ -129,3 +129,41 @@ These receive async state as props from parent or use `useSupplyData`:
 - [ ] Migrate `useSupplyData` to return `status` instead of `loading`
 - [ ] Update PriceBandChart/PriceGrowthChart callers to pass `status`
 - [ ] Add ESLint rule to prevent `isBootPending=` in ChartFrame calls
+
+---
+
+## Full Component Audit (26 components)
+
+> Audit completed 2025-01-02. All components verified - no "No data" flash before first API response.
+
+| Component | Pattern | Status |
+|-----------|---------|--------|
+| **MIGRATED (12)** |
+| TimeTrendChart | ChartFrame+status | ✅ |
+| BeadsChart | ChartFrame+status | ✅ |
+| AbsolutePsfChart | ChartFrame+status | ✅ |
+| MarketValueOscillator | ChartFrame+status | ✅ |
+| NewVsResaleChart | ChartFrame+status | ✅ |
+| GrowthDumbbellChart | ChartFrame+status | ✅ |
+| FloorLiquidityHeatmap | ChartFrame+status | ✅ |
+| NewLaunchTimelineChart | ChartFrame+status | ✅ |
+| DistrictComparisonChart | ChartFrame+status | ✅ |
+| BudgetActivityHeatmap | ChartFrame+status | ✅ |
+| MarketMomentumGrid | ChartFrame+status | ✅ |
+| PriceRangeMatrix | ChartFrame+status | ✅ |
+| **LEGACY (4)** |
+| PriceBandChart | ChartFrame+loading | ⚠️ dumb component |
+| PriceGrowthChart | ChartFrame+loading | ⚠️ dumb component |
+| SupplyBreakdownTable | ChartFrame+loading | ⚠️ useSupplyData |
+| SupplyWaterfallChart | ChartFrame+loading | ⚠️ useSupplyData |
+| **OTHER (10)** |
+| ProjectDetailPanel | ChartFrame | ✅ |
+| HotProjectsTable | ChartFrame | ✅ |
+| UpcomingLaunchesTable | ChartFrame | ✅ |
+| GLSDataTable | ChartFrame | ✅ |
+| DistrictMicroChart | Props | ✅ no async |
+| DealCheckerContent | Custom | ✅ |
+| MarketStrategyMap | Custom | ✅ staleGuard |
+| DistrictLiquidityMap | Custom | ✅ staleGuard |
+| MarketHeatmap | Custom | ✅ |
+| MarketHeatmap3D | Custom | ✅ |

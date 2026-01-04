@@ -206,3 +206,66 @@ If migration causes issues:
 | Phase 4 | Dead code deletion | LOW - just cleanup |
 
 **Recommendation:** Do Phase 1 first, then Phase 2 for District Overview only, verify it works, then expand.
+
+---
+
+## Appendix: Historical 23-Layer Analysis
+
+> Preserved from earlier analysis (Jan 2026) showing full complexity before simplification.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    CURRENT FILTER SYSTEM                        │
+│                    (23 Layers Deep)                             │
+└─────────────────────────────────────────────────────────────────┘
+
+CONSTANTS (Layer 1)
+  └─ INITIAL_FILTERS, INITIAL_DRILL_PATH, etc.
+
+STATE MANAGEMENT (Layers 2-7)
+  ├─ filters state (datePreset + dateRange = redundant)
+  ├─ factFilter state
+  ├─ drillPath state
+  ├─ breadcrumbs state
+  ├─ selectedProject state
+  └─ timeGrouping state
+
+DERIVED STATE (Layers 8-11)
+  ├─ deriveActiveFilters(filters, breadcrumbs, drillPath)
+  ├─ countActiveFilters(filters)
+  ├─ generateFilterKey(activeFilters, factFilter)
+  └─ useDebouncedFilterKey(filterKey)
+
+CONTEXTS (Layers 12-15)
+  ├─ FilterStateContext
+  ├─ FilterActionsContext
+  ├─ FilterOptionsContext
+  └─ PowerBIFilterContext (legacy combined)
+
+HOOKS (Layers 16-19)
+  ├─ usePowerBIFilters()
+  ├─ useFilterState()
+  ├─ useFilterActions()
+  └─ useFilterOptionsContext()
+
+STORAGE (Layers 20-21)
+  ├─ Page ID resolution
+  └─ sessionStorage read/write/version/hydration
+
+QUERY LAYER (Layers 22-23)
+  ├─ useQuery → useAbortableQuery → useGatedAbortableQuery
+  └─ useStaleRequestGuard
+
+API BOUNDARY
+  └─ buildApiParamsFromState()
+```
+
+### Comparison: 23 Layers → 3 Layers
+
+| Metric | Before | After | Reduction |
+|--------|--------|-------|-----------|
+| Files | 6 | 2 | 67% |
+| Lines of code | ~1,200 | ~250 | 79% |
+| State layers | 5 | 1 | 80% |
+| Context providers | 4 | 0 | 100% |
+| Custom hooks | 8 | 1 | 88% |
