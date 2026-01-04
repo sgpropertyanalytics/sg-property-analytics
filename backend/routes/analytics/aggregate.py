@@ -17,7 +17,7 @@ from constants import (
 from datetime import timedelta, date, datetime
 from typing import Optional, Tuple
 from utils.normalize import (
-    to_int, to_float, to_date, clamp_date_to_today,
+    to_int, to_float, to_date, to_list, clamp_date_to_today,
     ValidationError as NormalizeValidationError, validation_error_response
 )
 from api.contracts import api_contract
@@ -93,24 +93,6 @@ def _classify_age_band(
         tenure=tenure,
         strict=False  # Return 'unknown' for edge cases
     )
-
-
-def _expand_csv_list(value, item_type=str) -> list:
-    if value is None:
-        return []
-    items = value if isinstance(value, list) else [value]
-    expanded = []
-    for item in items:
-        if isinstance(item, str) and "," in item:
-            expanded.extend([p.strip() for p in item.split(",") if p.strip()])
-        else:
-            expanded.append(item)
-    if item_type is int:
-        try:
-            return [int(v) for v in expanded]
-        except (ValueError, TypeError):
-            raise NormalizeValidationError("Invalid list value")
-    return expanded
 
 
 def _build_aggregate_cache_key(params: dict) -> str:
@@ -245,7 +227,7 @@ def aggregate():
 
     # Bedroom filter
     try:
-        bedrooms = _expand_csv_list(params.get("bedrooms"), item_type=int)
+        bedrooms = to_list(params.get("bedrooms"), item_type=int)
         if bedrooms:
             filter_conditions.append(Transaction.bedroom_count.in_(bedrooms))
             filters_applied["bedroom"] = bedrooms
@@ -254,7 +236,7 @@ def aggregate():
 
     # Segment filter (supports comma-separated values e.g., "CCR,RCR")
     # OPTIMIZED: Use pre-computed district→segment mapping from constants
-    segments = _expand_csv_list(params.get("segments"))
+    segments = to_list(params.get("segments"))
     if segments:
         from constants import get_districts_for_region
         segments = [s.strip().upper() for s in segments]
