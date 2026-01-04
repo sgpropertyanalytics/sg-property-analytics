@@ -120,24 +120,39 @@ export const transformGrowthDumbbellSeries = (rawData, options = {}) => {
   // Sort quarters chronologically
   const sortedQuarters = Array.from(allQuarters).sort();
 
-  if (sortedQuarters.length < 2) {
+  // Need at least 6 quarters for meaningful 3-quarter comparison
+  // (3 earliest + 3 latest should not overlap)
+  if (sortedQuarters.length < 6) {
+    if (isDev) console.warn('[transformGrowthDumbbellSeries] Need at least 6 quarters for 3-quarter comparison');
     return { chartData: [], startQuarter: '', endQuarter: '' };
   }
 
-  // Find global start/end quarters that have data for most districts
-  // Use the earliest and latest quarters overall
-  const globalStartQuarter = sortedQuarters[0];
-  const globalEndQuarter = sortedQuarters[sortedQuarters.length - 1];
+  // Take the earliest 3 quarters and latest 3 quarters
+  const earliestQuarters = sortedQuarters.slice(0, 3);
+  const latestQuarters = sortedQuarters.slice(-3);
 
-  // Calculate growth for each district using the SAME time period
+  // Format quarter ranges for display (e.g., "2020-Q4 – 2021-Q2")
+  const startQuarterRange = `${earliestQuarters[0]} – ${earliestQuarters[2]}`;
+  const endQuarterRange = `${latestQuarters[0]} – ${latestQuarters[2]}`;
+
+  // Helper: calculate average PSF across multiple quarters for a district
+  const getAveragePsf = (quarterData, quarters) => {
+    const values = quarters
+      .map(q => quarterData[q])
+      .filter(v => v && v > 0);
+    if (values.length === 0) return null;
+    return values.reduce((sum, v) => sum + v, 0) / values.length;
+  };
+
+  // Calculate growth for each district using average of 3 quarters
   const chartData = [];
   const excludedDistricts = [];
 
   Object.entries(districtQuarterMap).forEach(([district, quarterData]) => {
-    const startPsf = quarterData[globalStartQuarter];
-    const endPsf = quarterData[globalEndQuarter];
+    const startPsf = getAveragePsf(quarterData, earliestQuarters);
+    const endPsf = getAveragePsf(quarterData, latestQuarters);
 
-    // Only include districts that have data for BOTH the global start and end quarters
+    // Only include districts that have data for BOTH periods
     if (startPsf && startPsf > 0 && endPsf && endPsf > 0) {
       const growthPercent = ((endPsf - startPsf) / startPsf) * 100;
 
@@ -145,8 +160,8 @@ export const transformGrowthDumbbellSeries = (rawData, options = {}) => {
         district,
         startPsf,
         endPsf,
-        startQuarter: globalStartQuarter,
-        endQuarter: globalEndQuarter,
+        startQuarter: startQuarterRange,
+        endQuarter: endQuarterRange,
         growthPercent,
       });
     } else {
@@ -155,11 +170,11 @@ export const transformGrowthDumbbellSeries = (rawData, options = {}) => {
       const missingEnd = !endPsf || endPsf <= 0;
       let reason;
       if (missingStart && missingEnd) {
-        reason = `No data for ${globalStartQuarter} or ${globalEndQuarter}`;
+        reason = `No data for ${startQuarterRange} or ${endQuarterRange}`;
       } else if (missingStart) {
-        reason = `No data for ${globalStartQuarter}`;
+        reason = `No data for ${startQuarterRange}`;
       } else {
-        reason = `No data for ${globalEndQuarter}`;
+        reason = `No data for ${endQuarterRange}`;
       }
       excludedDistricts.push({ district, reason });
 
@@ -171,8 +186,8 @@ export const transformGrowthDumbbellSeries = (rawData, options = {}) => {
 
   return {
     chartData,
-    startQuarter: globalStartQuarter,
-    endQuarter: globalEndQuarter,
+    startQuarter: startQuarterRange,
+    endQuarter: endQuarterRange,
     excludedDistricts,
   };
 };
