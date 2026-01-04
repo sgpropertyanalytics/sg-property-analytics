@@ -22,7 +22,6 @@ import {
   validateResponseGrain,
   DEFAULT_BASELINE_STATS,
 } from '../../adapters';
-import { SaleType } from '../../schemas/apiContract';
 
 // Time level labels for display
 const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
@@ -72,17 +71,14 @@ function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawDat
 
   // HISTORICAL BASELINE: Fetch full historical data (no date filters)
   // This provides stable mean/stdDev for Z-score calculation
-  // Uses page-level saleType prop for consistency with current data
-  // Defaults to RESALE if not provided (new sales can be artificially priced)
+  // Uses page-level saleType prop - page owns business logic decision
+  // See CLAUDE.md "Layer Responsibilities" - components render props, never decide defaults
   const { data: baselineStats } = useAppQuery(
     async (signal) => {
-      // Use page prop or fallback to canonical RESALE enum
-      // See CLAUDE.md "Business Logic Enforcement" - charts receive saleType from page
-      const effectiveSaleType = saleType || SaleType.RESALE;
       const params = {
         group_by: 'quarter,region',
         metrics: 'median_psf,count',
-        sale_type: effectiveSaleType,
+        sale_type: saleType,
       };
 
       const response = await getAggregate(params, { signal, priority: 'low' });

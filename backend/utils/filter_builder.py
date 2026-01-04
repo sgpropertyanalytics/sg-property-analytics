@@ -11,7 +11,7 @@ from sqlalchemy import func
 
 from constants import get_districts_for_region
 from db.sql import OUTLIER_FILTER, exclude_outliers
-from utils.normalize import coerce_to_date
+from utils.normalize import coerce_to_date, to_list
 
 
 def normalize_district(district: Any) -> str:
@@ -25,32 +25,19 @@ def normalize_district(district: Any) -> str:
     return d
 
 
-def _expand_list(value: Any) -> List[Any]:
-    if value is None:
-        return []
-    items = value if isinstance(value, list) else [value]
-    expanded: List[Any] = []
-    for item in items:
-        if isinstance(item, str) and "," in item:
-            expanded.extend([p.strip() for p in item.split(",") if p.strip()])
-        else:
-            expanded.append(item)
-    return expanded
-
-
 def _extract_districts(filters: Dict[str, Any]) -> List[str]:
     raw = filters.get('districts') or filters.get('district')
     if not raw:
         return []
-    return [normalize_district(d) for d in _expand_list(raw)]
+    return [normalize_district(d) for d in to_list(raw)]
 
 
 def _extract_segments(filters: Dict[str, Any]) -> List[str]:
-    segments = _expand_list(filters.get('segments') or [])
+    segments = to_list(filters.get('segments') or [])
     if not segments:
         single_segment = filters.get('segment')
         if single_segment:
-            segments = _expand_list(single_segment)
+            segments = to_list(single_segment)
     return [str(s).strip().upper() for s in segments if str(s).strip()]
 
 
@@ -59,7 +46,7 @@ def _extract_bedrooms(filters: Dict[str, Any]) -> List[int]:
     if not raw:
         return []
     bedrooms: List[int] = []
-    for item in _expand_list(raw):
+    for item in to_list(raw):
         if isinstance(item, str):
             item = item.strip()
         if item in ("", None):

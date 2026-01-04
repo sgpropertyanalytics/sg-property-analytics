@@ -77,10 +77,24 @@ Read target files, check `git log -20 -- <file>`, find reference implementations
 | API params | `contract_schema.py` | Undocumented fields |
 
 ### 4. Reuse-First
-NEVER introduce new patterns. Copy existing exactly.
-- Charts: `TimeTrendChart.jsx`
-- Routes: `backend/routes/analytics/aggregate.py`
-- Services: `backend/services/dashboard_service.py`
+
+**Search before writing. Assume it exists until proven otherwise.**
+
+#### Pre-Check (30 seconds):
+```bash
+grep -r "def.*" backend/
+grep -r "" frontend/src/hooks/
+```
+
+#### Canonical Locations:
+| Type | Check First |
+|------|-------------|
+| Utils | `backend/utils/` |
+| Hooks | `frontend/src/hooks/` |
+| Constants | `constants.py`, `schemas/` |
+| Components | `frontend/src/components/` |
+
+**Can't find in 2 min? Ask — don't recreate.**
 
 ### 5. Library-First
 Before writing >50 lines of infrastructure:
