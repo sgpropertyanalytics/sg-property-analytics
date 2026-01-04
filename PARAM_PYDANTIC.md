@@ -1,4 +1,34 @@
 # Param Flow Integrity Refactor Plan
+
+## Current Status: PHASE 7 COMPLETE (Jan 2026)
+
+| Phase | Status | Notes |
+|-------|--------|-------|
+| Phase 1-4 | COMPLETE | Pydantic models created for 10 endpoints |
+| Phase 5 | COMPLETE | 136 cache key parity tests passing |
+| Phase 6 | COMPLETE | Pydantic enabled globally (USE_PYDANTIC_VALIDATION=true) |
+| **Phase 7** | **COMPLETE** | Parallel mode removed, wrapper.py updated |
+| Phase 8 | PARTIAL | Frontend cleanup (optional, low priority) |
+
+**What's Done:**
+- Pydantic is now the PRIMARY validation path in `wrapper.py`
+- `pydantic_comparison.py` deleted (parallel logging removed)
+- `feature_flags.py` simplified (PYDANTIC_PARALLEL_MODE removed)
+- Fallback to `normalize_params()` only for endpoints without Pydantic models
+
+**What's Still There (by design):**
+- `normalize.py` - Still needed for non-Pydantic endpoints (auth, charts, projects_analytics, etc.)
+- `schemas/*.py` - Still needed for response validation and contract registration
+- `validate.py` - Still needed for response schema validation
+- `registry.py` - Still needed for contract types and get_contract()
+
+**Endpoints with Pydantic Models (10):**
+- aggregate, dashboard, filter-options, kpi-summary-v2, kpi-single, kpi-summary-legacy
+- transactions/price-growth, transactions/price-growth/segments
+- insights/district-psf, insights/district-liquidity
+
+---
+
 ## Summary
 Eliminate param identity drift bugs by adopting Pydantic for validation, standardizing on `timeframe` as the canonical name, and adding comprehensive param flow integrity tests.
 **Key Principle: Don't delete anything until new code is proven identical to old code.**

@@ -1,68 +1,59 @@
 # Pending Bugs
 
-## BUG-001: BeadsChart "No data for selected filters"
+_No pending bugs at this time._
 
-**Status:** Under Investigation
+---
+
+## Resolved Bugs
+
+### BUG-001: BeadsChart "No data for selected filters" [RESOLVED]
+
+**Status:** Fixed
 **Reported:** Jan 4, 2026
+**Resolved:** Jan 4, 2026
 **Environment:** Production (sgpropertytrend.com)
-**Page:** Market Overview (`/market-overview`)
+**Page:** Market Overview (`/market-overview`), New Launch Market (`/new-launch-market`)
 
-### Description
+#### Root Cause
 
-The BeadsChart (Volume-Weighted Median Price by Region & Bedroom) suddenly started showing "No data for selected filters" message. Previously, this issue only affected the PriceDistributionChart. Both charts share the same data fetching mechanism.
+Two related issues causing "No data for selected filters" to flash before chart loads:
 
-### Investigation Summary
+1. **`initialData: {}` in MacroOverview** - When `useAppQuery` receives `initialData: {}`, TanStack Query immediately returns `isSuccess: true` with empty data. Before the actual fetch starts, there's a brief window where `status = 'success'` but `data = {}`, causing ChartFrame to show "No data" instead of skeleton.
 
-#### Q1: Which commit caused this?
+2. **Missing edge case in `deriveQueryStatus`** - The status derivation function didn't account for the case where `isSuccess = true`, `hasData = false`, and `dataUpdatedAt = 0` (no fetch ever completed). This caused queries with empty initialData to report `SUCCESS` status instead of `LOADING`.
 
-Most likely candidates:
+#### Fix Applied
 
-| Commit | Date | Description |
-|--------|------|-------------|
-| `566fb71` | Jan 3 | Added memoization to Market Overview page |
-| `a390220` | Dec 31 | Optimized beads chart query (later reverted) |
-| `df557ba` | Dec 31 | Reverted beads chart optimization |
-| `12619e4` | Dec 31 | Fixed useDeferredFetch visibility triggering |
+1. **MacroOverview.jsx:177** - Changed `initialData: {}` to `initialData: null`
+   ```diff
+   - { chartName: 'MacroOverview-Dashboard', initialData: {}, keepPreviousData: true, enabled: shouldFetchPanels }
+   + { chartName: 'MacroOverview-Dashboard', initialData: null, keepPreviousData: true, enabled: shouldFetchPanels }
+   ```
 
-#### Q2: Why does "No data" keep recurring?
+2. **queryClient.js:148-150** - Added edge case handling in `deriveQueryStatus`:
+   ```javascript
+   // Success with no real data AND no fetch ever completed
+   if (isSuccess && !hasData && queryResult.dataUpdatedAt === 0) {
+     return QueryStatus.LOADING;
+   }
+   ```
 
-Historical analysis shows **5 distinct root causes** that have been fixed multiple times:
+#### Tests Added
 
-1. **Missing `timeframe` field in API schema** - Frontend sends param, backend silently drops it
-2. **HTML response from cold start** - Render timeout returns SPA HTML instead of JSON
-3. **Visibility gating failure** - IntersectionObserver doesn't trigger, charts never fetch
-4. **Defensive fallbacks mask errors** - `data?.data || data || []` hides actual issues
-5. **Wrong data aggregation format** - Adapter expects different shape than API returns
+- `queryClient.test.js`: "returns LOADING when isSuccess but no real data and no fetch ever completed"
+- `queryClient.test.js`: "returns SUCCESS when isSuccess with no data but fetch has completed (legitimate empty result)"
 
-**Pattern:** Each fix addresses one layer, but new code paths reintroduce issues.
+#### Historical Context
 
-### Data Flow
+This was the **6th distinct root cause** for the recurring "No data" issue:
 
-```
-Filters → useDeferredFetch → useAppQuery → /api/dashboard
-                                              ↓
-BeadsChart ← sharedData ← dashboardPanels ← Response
-                                              ↓
-               transformBeadsChartSeries(rawData)
-                                              ↓
-                    datasets.length === 0 → "No data"
-```
+| # | Root Cause | Fix Location |
+|---|------------|--------------|
+| 1 | Missing `timeframe` field in API schema | Backend contract |
+| 2 | HTML response from cold start | API client retry |
+| 3 | Visibility gating failure | useDeferredFetch |
+| 4 | Defensive fallbacks mask errors | Adapter layer |
+| 5 | Wrong data aggregation format | Adapter layer |
+| **6** | **TanStack initialData causes premature success** | **deriveQueryStatus** |
 
-### Key Files
-
-| File | Role |
-|------|------|
-| `frontend/src/pages/MacroOverview.jsx:162-178` | Dashboard panels fetch with visibility gating |
-| `frontend/src/components/powerbi/BeadsChart.jsx` | Bead chart component |
-| `frontend/src/hooks/useDeferredFetch.js` | Visibility-based fetch deferral |
-| `frontend/src/adapters/aggregate/beadsChart.js` | API response transformer |
-| `backend/services/beads_chart_service.py` | Backend SQL query |
-
-### Debug Info Available
-
-BeadsChart has debug logging at lines 82-95:
-- `[BeadsChart] Raw API beads_chart data:`
-- `[BeadsChart] Sample row:`
-- `[BeadsChart] Transformed data:`
-
-Check browser console when bug occurs.
+**Lesson learned:** When using TanStack Query with `initialData`, always use `null` instead of empty objects/arrays to ensure proper loading state detection.

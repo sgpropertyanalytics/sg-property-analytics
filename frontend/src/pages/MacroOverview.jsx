@@ -174,7 +174,7 @@ export function MacroOverviewContent() {
       return response.data || {};
     },
     [debouncedFilterKey],
-    { chartName: 'MacroOverview-Dashboard', initialData: {}, keepPreviousData: true, enabled: shouldFetchPanels }
+    { chartName: 'MacroOverview-Dashboard', initialData: null, keepPreviousData: true, enabled: shouldFetchPanels }
   );
 
   const handleDrillThrough = (title, additionalFilters = {}) => {

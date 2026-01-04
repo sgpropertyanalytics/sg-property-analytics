@@ -162,6 +162,37 @@ describe('deriveQueryStatus', () => {
 
     expect(deriveQueryStatus(queryResult, true, true)).toBe(QueryStatus.ERROR);
   });
+
+  it('returns LOADING when isSuccess but no real data and no fetch ever completed (initialData edge case)', () => {
+    // This tests the edge case where initialData: {} or [] was provided
+    // TanStack returns isSuccess=true immediately, but no actual fetch has happened
+    // dataUpdatedAt === 0 indicates no fetch has completed
+    const queryResult = {
+      isPending: false,
+      isFetching: false,
+      isError: false,
+      isSuccess: true,
+      dataUpdatedAt: 0,  // No fetch has ever completed
+    };
+
+    // hasData = false means initialData was empty
+    expect(deriveQueryStatus(queryResult, true, false)).toBe(QueryStatus.LOADING);
+  });
+
+  it('returns SUCCESS when isSuccess with no data but fetch has completed (legitimate empty result)', () => {
+    // This is a legitimate empty result - API returned no data for the filters
+    // dataUpdatedAt > 0 indicates a fetch did complete
+    const queryResult = {
+      isPending: false,
+      isFetching: false,
+      isError: false,
+      isSuccess: true,
+      dataUpdatedAt: 1704067200000,  // Some timestamp indicating fetch completed
+    };
+
+    // hasData = false but fetch completed - this is a real empty result
+    expect(deriveQueryStatus(queryResult, true, false)).toBe(QueryStatus.SUCCESS);
+  });
 });
 
 // =============================================================================
