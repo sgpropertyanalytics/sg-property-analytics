@@ -5,18 +5,35 @@ Key features:
 - frozen=True: Immutable after normalization (prevents downstream mutation)
 - populate_by_name=True: Accept both alias and field name
 - extra='ignore': Ignore undeclared fields (safe)
-- sale_type normalized to DB format at boundary
+- sale_type, tenure, floor_level normalized to DB format at boundary
 """
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
 
-# API to DB mapping for sale_type normalization
-# Invariant: After validation, sale_type is ALWAYS in DB format (or None)
+# API to DB mappings for boundary normalization
+# Invariant: After validation, these fields are ALWAYS in DB format (or None)
+
 SALE_TYPE_TO_DB = {
     'new_sale': 'New Sale',
     'resale': 'Resale',
     'sub_sale': 'Sub Sale',
+}
+
+TENURE_TO_DB = {
+    'freehold': 'Freehold',
+    '99_year': '99-year',
+    '999_year': '999-year',
+}
+
+FLOOR_LEVEL_TO_DB = {
+    'low': 'Low',
+    'mid_low': 'Mid-Low',
+    'mid': 'Mid',
+    'mid_high': 'Mid-High',
+    'high': 'High',
+    'luxury': 'Luxury',
+    'unknown': 'Unknown',
 }
 
 
@@ -29,11 +46,10 @@ class BaseParamsModel(BaseModel):
     - Whitespace stripped from strings
     - Both alias and field name accepted
     - Unknown fields ignored
-    - sale_type normalized to DB format at boundary (not API format)
+    - sale_type, tenure, floor_level normalized to DB format at boundary
 
-    Invariant: Inside backend (after validation), sale_type is always
-    in DB format ("New Sale", "Resale", "Sub Sale") or None.
-    API format is only for input + output serialization.
+    Invariant: Inside backend (after validation), these fields are always
+    in DB format or None. API format is only for input + output serialization.
     """
     model_config = ConfigDict(
         frozen=True,  # Immutable after normalization
@@ -61,5 +77,45 @@ class BaseParamsModel(BaseModel):
                 return SALE_TYPE_TO_DB[key]
             # Already DB format -> pass through
             if key in SALE_TYPE_TO_DB.values():
+                return key
+        return v
+
+    @field_validator('tenure', mode='before', check_fields=False)
+    @classmethod
+    def normalize_tenure_to_db(cls, v):
+        """Normalize tenure to DB format at validation boundary.
+
+        Accepts: 'freehold', '99_year', '999_year', or already-normalized DB values.
+        Returns: DB format ('Freehold', '99-year', '999-year') or None.
+        """
+        if v is None:
+            return None
+        if isinstance(v, str):
+            key = v.strip()
+            if key == '' or key.lower() == 'all':
+                return None
+            if key in TENURE_TO_DB:
+                return TENURE_TO_DB[key]
+            if key in TENURE_TO_DB.values():
+                return key
+        return v
+
+    @field_validator('floor_level', mode='before', check_fields=False)
+    @classmethod
+    def normalize_floor_level_to_db(cls, v):
+        """Normalize floor_level to DB format at validation boundary.
+
+        Accepts: 'low', 'mid_low', 'mid', etc., or already-normalized DB values.
+        Returns: DB format ('Low', 'Mid-Low', 'Mid', etc.) or None.
+        """
+        if v is None:
+            return None
+        if isinstance(v, str):
+            key = v.strip()
+            if key == '' or key.lower() == 'all':
+                return None
+            if key in FLOOR_LEVEL_TO_DB:
+                return FLOOR_LEVEL_TO_DB[key]
+            if key in FLOOR_LEVEL_TO_DB.values():
                 return key
         return v

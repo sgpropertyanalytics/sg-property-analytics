@@ -190,9 +190,10 @@ def district_psf():
     timeframe = params.get('timeframe', 'Y1')
 
     # Get other params from normalized params (not raw request.args)
+    # sale_type already normalized to DB format by Pydantic validator (None means "all")
     bed_filter = params.get("bed", "all")
     age_filter = params.get("age", "all")
-    sale_type_filter = params.get("sale_type", "all")
+    sale_type_filter = params.get("sale_type")  # DB format: "New Sale", "Resale", or None
 
     # Build base filter conditions (always exclude outliers)
     filter_conditions = [Transaction.outlier_filter()]
@@ -220,12 +221,9 @@ def district_psf():
     if age_condition is not None:
         filter_conditions.append(age_condition)
 
-    # Apply sale type filter (new_sale, resale)
-    if sale_type_filter and sale_type_filter != "all":
-        if sale_type_filter == "new_sale":
-            filter_conditions.append(Transaction.sale_type == SALE_TYPE_NEW)
-        elif sale_type_filter == "resale":
-            filter_conditions.append(Transaction.sale_type == SALE_TYPE_RESALE)
+    # Apply sale type filter (already in DB format: "New Sale", "Resale", or None)
+    if sale_type_filter:
+        filter_conditions.append(Transaction.sale_type == sale_type_filter)
 
     try:
         # Query current period data - grouped by district
@@ -267,12 +265,9 @@ def district_psf():
             if age_condition is not None:
                 yoy_conditions.append(age_condition)
 
-            # Apply same sale type filter for YoY
-            if sale_type_filter and sale_type_filter != "all":
-                if sale_type_filter == "new_sale":
-                    yoy_conditions.append(Transaction.sale_type == SALE_TYPE_NEW)
-                elif sale_type_filter == "resale":
-                    yoy_conditions.append(Transaction.sale_type == SALE_TYPE_RESALE)
+            # Apply same sale type filter for YoY (already in DB format)
+            if sale_type_filter:
+                yoy_conditions.append(Transaction.sale_type == sale_type_filter)
 
             yoy_query = db.session.query(
                 Transaction.district,
@@ -459,10 +454,9 @@ def district_liquidity():
             months_in_period = 12  # Default
 
     # Get other params from normalized params
-    from api.contracts.contract_schema import SaleType
+    # sale_type already normalized to DB format by Pydantic validator ("all" -> None)
     bed_filter = params.get("bed", "all")
-    sale_type_param = params.get("sale_type", "all")
-    sale_type_filter = SaleType.to_db(sale_type_param) if sale_type_param != "all" else "all"
+    sale_type_filter = params.get("sale_type")  # None means "all"
 
     # Build base filter conditions
     filter_conditions = [Transaction.outlier_filter()]
@@ -486,8 +480,8 @@ def district_liquidity():
         elif bed_filter == "5":
             filter_conditions.append(Transaction.bedroom_count >= 5)
 
-    # Apply sale type filter
-    if sale_type_filter != "all":
+    # Apply sale type filter (already in DB format, None means "all")
+    if sale_type_filter:
         filter_conditions.append(Transaction.sale_type == sale_type_filter)
 
     try:

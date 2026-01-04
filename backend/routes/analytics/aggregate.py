@@ -266,11 +266,10 @@ def aggregate():
         filters_applied["segment"] = segments
 
     # Sale type filter (case-insensitive to handle data variations)
+    # sale_type already normalized to DB format by Pydantic validator
     sale_type = params.get("sale_type")
     if sale_type:
-        from api.contracts.contract_schema import SaleType
-        sale_type_db = SaleType.to_db(sale_type)
-        filter_conditions.append(func.lower(Transaction.sale_type) == sale_type_db.lower())
+        filter_conditions.append(func.lower(Transaction.sale_type) == sale_type.lower())
         filters_applied["sale_type"] = sale_type
 
     # Date range filter

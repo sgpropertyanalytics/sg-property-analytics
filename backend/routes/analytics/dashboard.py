@@ -119,10 +119,10 @@ def dashboard():
         if segments:
             filters["segments"] = [s.upper() for s in segments]
 
+        # sale_type already normalized to DB format by Pydantic validator
         sale_type = params.get("sale_type")
         if sale_type:
-            from api.contracts.contract_schema import SaleType
-            filters["sale_type"] = SaleType.to_db(sale_type)
+            filters["sale_type"] = sale_type
 
         if params.get("psf_min") is not None:
             filters["psf_min"] = params.get("psf_min")
@@ -132,10 +132,10 @@ def dashboard():
             filters["size_min"] = params.get("size_min")
         if params.get("size_max") is not None:
             filters["size_max"] = params.get("size_max")
+        # tenure already normalized to DB format by Pydantic validator
         tenure = params.get("tenure")
         if tenure:
-            from api.contracts.contract_schema import Tenure
-            filters["tenure"] = Tenure.to_db(tenure)
+            filters["tenure"] = tenure
         if params.get("property_age_min") is not None:
             filters["property_age_min"] = params.get("property_age_min")
         if params.get("property_age_max") is not None:
