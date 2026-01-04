@@ -681,15 +681,29 @@ describe('transformNewVsResaleSeries', () => {
 // =============================================================================
 
 describe('transformGrowthDumbbellSeries', () => {
+  // New logic: requires 6+ quarters, compares earliest 3 vs latest 3 (averaged)
+  // Earliest 3: Q1, Q2, Q3 -> averaged PSF for baseline
+  // Latest 3: Q4, Q5, Q6 -> averaged PSF for current
   const sampleDistrictData = [
-    { district: 'D01', quarter: '2023-Q1', medianPsf: 2000 },
-    { district: 'D01', quarter: '2023-Q2', medianPsf: 2100 },
-    { district: 'D01', quarter: '2023-Q3', medianPsf: 2200 },
-    { district: 'D02', quarter: '2023-Q1', medianPsf: 1800 },
-    { district: 'D02', quarter: '2023-Q2', medianPsf: 1850 },
-    { district: 'D02', quarter: '2023-Q3', medianPsf: 1900 },
-    { district: 'D03', quarter: '2023-Q1', medianPsf: 1500 },
-    { district: 'D03', quarter: '2023-Q3', medianPsf: 1650 }, // Q2 missing - still valid
+    // D01: All 6 quarters, growing steadily
+    { district: 'D01', quarter: '2022-Q1', medianPsf: 1900 },
+    { district: 'D01', quarter: '2022-Q2', medianPsf: 2000 },
+    { district: 'D01', quarter: '2022-Q3', medianPsf: 2100 }, // Earliest 3 avg: 2000
+    { district: 'D01', quarter: '2022-Q4', medianPsf: 2200 },
+    { district: 'D01', quarter: '2023-Q1', medianPsf: 2300 },
+    { district: 'D01', quarter: '2023-Q2', medianPsf: 2400 }, // Latest 3 avg: 2300
+    // D02: All 6 quarters
+    { district: 'D02', quarter: '2022-Q1', medianPsf: 1700 },
+    { district: 'D02', quarter: '2022-Q2', medianPsf: 1800 },
+    { district: 'D02', quarter: '2022-Q3', medianPsf: 1900 }, // Earliest 3 avg: 1800
+    { district: 'D02', quarter: '2022-Q4', medianPsf: 1950 },
+    { district: 'D02', quarter: '2023-Q1', medianPsf: 2000 },
+    { district: 'D02', quarter: '2023-Q2', medianPsf: 2050 }, // Latest 3 avg: 2000
+    // D03: Missing some quarters but has data for both periods
+    { district: 'D03', quarter: '2022-Q1', medianPsf: 1500 },
+    { district: 'D03', quarter: '2022-Q3', medianPsf: 1600 }, // Q2 missing
+    { district: 'D03', quarter: '2022-Q4', medianPsf: 1700 },
+    { district: 'D03', quarter: '2023-Q2', medianPsf: 1800 }, // Q1 missing
   ];
 
   const allDistricts = ['D01', 'D02', 'D03', 'D04'];
@@ -709,83 +723,127 @@ describe('transformGrowthDumbbellSeries', () => {
     expect(result).toEqual({ chartData: [], startQuarter: '', endQuarter: '' });
   });
 
-  test('groups data by district and calculates growth', () => {
+  test('requires at least 6 quarters for 3-quarter comparison', () => {
+    const tooFewQuarters = [
+      { district: 'D01', quarter: '2023-Q1', medianPsf: 2000 },
+      { district: 'D01', quarter: '2023-Q2', medianPsf: 2100 },
+      { district: 'D01', quarter: '2023-Q3', medianPsf: 2200 },
+    ];
+
+    const result = transformGrowthDumbbellSeries(tooFewQuarters, { districts: ['D01'] });
+
+    // Should return empty - not enough quarters for 3 vs 3 comparison
+    expect(result.chartData).toHaveLength(0);
+  });
+
+  test('groups data by district and calculates growth using 3-quarter averages', () => {
     const result = transformGrowthDumbbellSeries(sampleDistrictData, { districts: allDistricts });
 
-    expect(result.chartData).toHaveLength(3); // D01, D02, D03 (D04 has no data)
+    // D01, D02, D03 have data; D04 has no data
+    expect(result.chartData).toHaveLength(3);
 
     const d01 = result.chartData.find(d => d.district === 'D01');
     expect(d01).toBeDefined();
-    expect(d01.startPsf).toBe(2000);
-    expect(d01.endPsf).toBe(2200);
-    expect(d01.startQuarter).toBe('2023-Q1');
-    expect(d01.endQuarter).toBe('2023-Q3');
-    expect(d01.growthPercent).toBe(10); // (2200 - 2000) / 2000 * 100 = 10%
+    // Earliest 3 (Q1+Q2+Q3): (1900+2000+2100)/3 = 2000
+    expect(d01.startPsf).toBeCloseTo(2000, 0);
+    // Latest 3 (Q4+Q1+Q2): (2200+2300+2400)/3 = 2300
+    expect(d01.endPsf).toBeCloseTo(2300, 0);
+    // Growth: (2300 - 2000) / 2000 * 100 = 15%
+    expect(d01.growthPercent).toBeCloseTo(15, 1);
   });
 
-  test('calculates growth percentage correctly', () => {
+  test('calculates growth percentage correctly with 3-quarter averaging', () => {
     const result = transformGrowthDumbbellSeries(sampleDistrictData, { districts: allDistricts });
 
     const d01 = result.chartData.find(d => d.district === 'D01');
     const d02 = result.chartData.find(d => d.district === 'D02');
-    const d03 = result.chartData.find(d => d.district === 'D03');
 
-    // D01: (2200 - 2000) / 2000 * 100 = 10%
-    expect(d01.growthPercent).toBeCloseTo(10, 1);
+    // D01: (2300 - 2000) / 2000 * 100 = 15%
+    expect(d01.growthPercent).toBeCloseTo(15, 1);
 
-    // D02: (1900 - 1800) / 1800 * 100 = 5.56%
-    expect(d02.growthPercent).toBeCloseTo(5.56, 1);
-
-    // D03: (1650 - 1500) / 1500 * 100 = 10%
-    expect(d03.growthPercent).toBeCloseTo(10, 1);
+    // D02: (2000 - 1800) / 1800 * 100 = 11.11%
+    expect(d02.growthPercent).toBeCloseTo(11.11, 1);
   });
 
-  test('tracks global start and end quarters', () => {
+  test('tracks global start and end quarter ranges', () => {
     const result = transformGrowthDumbbellSeries(sampleDistrictData, { districts: allDistricts });
 
-    expect(result.startQuarter).toBe('2023-Q1');
-    expect(result.endQuarter).toBe('2023-Q3');
+    // Earliest 3: 2022-Q1, 2022-Q2, 2022-Q3
+    expect(result.startQuarter).toBe('2022-Q1 – 2022-Q3');
+    // Latest 3: 2022-Q4, 2023-Q1, 2023-Q2
+    expect(result.endQuarter).toBe('2022-Q4 – 2023-Q2');
   });
 
-  test('skips districts with less than 2 valid data points', () => {
-    const dataWithSinglePoint = [
-      { district: 'D01', quarter: '2023-Q1', medianPsf: 2000 },
-      { district: 'D01', quarter: '2023-Q2', medianPsf: 2100 },
-      { district: 'D02', quarter: '2023-Q1', medianPsf: 1800 }, // Only one point
+  test('excludes districts missing data for entire baseline or latest period', () => {
+    // District with no data in earliest 3 quarters
+    const partialData = [
+      ...sampleDistrictData,
+      { district: 'D04', quarter: '2022-Q4', medianPsf: 1000 },
+      { district: 'D04', quarter: '2023-Q1', medianPsf: 1100 },
+      { district: 'D04', quarter: '2023-Q2', medianPsf: 1200 },
+      // D04 has no earliest 3 quarters data
     ];
 
-    const result = transformGrowthDumbbellSeries(dataWithSinglePoint, { districts: ['D01', 'D02'] });
+    const result = transformGrowthDumbbellSeries(partialData, { districts: ['D01', 'D04'] });
 
-    expect(result.chartData).toHaveLength(1); // Only D01
+    // D04 excluded because no data in earliest 3 quarters
+    expect(result.chartData).toHaveLength(1);
     expect(result.chartData[0].district).toBe('D01');
+    expect(result.excludedDistricts).toContainEqual(
+      expect.objectContaining({ district: 'D04' })
+    );
+  });
+
+  test('averages available quarters even if some are missing', () => {
+    // Use full sample data (has 6 global quarters), but D03 is missing some
+    const result = transformGrowthDumbbellSeries(sampleDistrictData, { districts: allDistricts });
+
+    const d03 = result.chartData.find(d => d.district === 'D03');
+    expect(d03).toBeDefined();
+    // D03 has Q1=1500, Q3=1600 in earliest 3 (Q2 missing)
+    // Average of 2 points: (1500 + 1600) / 2 = 1550
+    expect(d03.startPsf).toBeCloseTo(1550, 0);
+    // D03 has Q4=1700, Q2=1800 in latest 3 (Q1 missing)
+    // Average of 2 points: (1700 + 1800) / 2 = 1750
+    expect(d03.endPsf).toBeCloseTo(1750, 0);
   });
 
   test('skips data points with zero or missing medianPsf', () => {
+    // Need 7 quarters so that after filtering out 0-value, we still have 6
     const dataWithZeros = [
-      { district: 'D01', quarter: '2023-Q1', medianPsf: 0 },
-      { district: 'D01', quarter: '2023-Q2', medianPsf: 2100 },
-      { district: 'D01', quarter: '2023-Q3', medianPsf: 2200 },
+      { district: 'D01', quarter: '2022-Q1', medianPsf: 0 },  // Ignored (0 value)
+      { district: 'D01', quarter: '2022-Q2', medianPsf: 2000 },
+      { district: 'D01', quarter: '2022-Q3', medianPsf: 2100 },
+      { district: 'D01', quarter: '2022-Q4', medianPsf: 2200 },
+      { district: 'D01', quarter: '2023-Q1', medianPsf: 2300 },
+      { district: 'D01', quarter: '2023-Q2', medianPsf: 2400 },
+      { district: 'D01', quarter: '2023-Q3', medianPsf: 2500 },  // 7th quarter
     ];
 
     const result = transformGrowthDumbbellSeries(dataWithZeros, { districts: ['D01'] });
 
-    // Should use Q2 as start since Q1 has 0 PSF
-    expect(result.chartData[0].startPsf).toBe(2100);
-    expect(result.chartData[0].endPsf).toBe(2200);
-    expect(result.chartData[0].startQuarter).toBe('2023-Q2');
+    // After filtering out Q1 (0 value), 6 valid quarters remain: Q2-Q4, Q1-Q3
+    // Earliest 3: Q2=2000, Q3=2100, Q4=2200 -> avg = 2100
+    expect(result.chartData[0].startPsf).toBeCloseTo(2100, 0);
+    // Latest 3: Q1=2300, Q2=2400, Q3=2500 -> avg = 2400
+    expect(result.chartData[0].endPsf).toBeCloseTo(2400, 0);
   });
 
-  test('sorts quarters chronologically within each district', () => {
+  test('sorts quarters chronologically for correct earliest/latest selection', () => {
     const unsortedData = [
-      { district: 'D01', quarter: '2023-Q3', medianPsf: 2200 },
-      { district: 'D01', quarter: '2023-Q1', medianPsf: 2000 },
-      { district: 'D01', quarter: '2023-Q2', medianPsf: 2100 },
+      { district: 'D01', quarter: '2023-Q2', medianPsf: 2400 },
+      { district: 'D01', quarter: '2022-Q3', medianPsf: 2100 },
+      { district: 'D01', quarter: '2022-Q1', medianPsf: 1900 },
+      { district: 'D01', quarter: '2023-Q1', medianPsf: 2300 },
+      { district: 'D01', quarter: '2022-Q2', medianPsf: 2000 },
+      { district: 'D01', quarter: '2022-Q4', medianPsf: 2200 },
     ];
 
     const result = transformGrowthDumbbellSeries(unsortedData, { districts: ['D01'] });
 
-    expect(result.chartData[0].startQuarter).toBe('2023-Q1');
-    expect(result.chartData[0].endQuarter).toBe('2023-Q3');
+    // Should correctly identify Q1-Q3 as earliest, Q4-Q2 as latest regardless of input order
+    expect(result.startQuarter).toBe('2022-Q1 – 2022-Q3');
+    expect(result.endQuarter).toBe('2022-Q4 – 2023-Q2');
   });
 
   test('works without district filter (includes all districts)', () => {
@@ -797,26 +855,34 @@ describe('transformGrowthDumbbellSeries', () => {
 
   test('handles negative growth (price decline)', () => {
     const decliningData = [
+      { district: 'D01', quarter: '2022-Q1', medianPsf: 2400 },
+      { district: 'D01', quarter: '2022-Q2', medianPsf: 2300 },
+      { district: 'D01', quarter: '2022-Q3', medianPsf: 2200 }, // Avg: 2300
+      { district: 'D01', quarter: '2022-Q4', medianPsf: 2100 },
       { district: 'D01', quarter: '2023-Q1', medianPsf: 2000 },
-      { district: 'D01', quarter: '2023-Q2', medianPsf: 1800 },
+      { district: 'D01', quarter: '2023-Q2', medianPsf: 1900 }, // Avg: 2000
     ];
 
     const result = transformGrowthDumbbellSeries(decliningData, { districts: ['D01'] });
 
-    // (1800 - 2000) / 2000 * 100 = -10%
-    expect(result.chartData[0].growthPercent).toBeCloseTo(-10, 1);
+    // (2000 - 2300) / 2300 * 100 = -13.04%
+    expect(result.chartData[0].growthPercent).toBeCloseTo(-13.04, 1);
   });
 
   test('uses avgPsf as fallback when medianPsf is missing', () => {
     const dataWithAvgPsf = [
-      { district: 'D01', quarter: '2023-Q1', avgPsf: 2000 },
-      { district: 'D01', quarter: '2023-Q2', avgPsf: 2100 },
+      { district: 'D01', quarter: '2022-Q1', avgPsf: 1900 },
+      { district: 'D01', quarter: '2022-Q2', avgPsf: 2000 },
+      { district: 'D01', quarter: '2022-Q3', avgPsf: 2100 },
+      { district: 'D01', quarter: '2022-Q4', avgPsf: 2200 },
+      { district: 'D01', quarter: '2023-Q1', avgPsf: 2300 },
+      { district: 'D01', quarter: '2023-Q2', avgPsf: 2400 },
     ];
 
     const result = transformGrowthDumbbellSeries(dataWithAvgPsf, { districts: ['D01'] });
 
-    expect(result.chartData[0].startPsf).toBe(2000);
-    expect(result.chartData[0].endPsf).toBe(2100);
+    expect(result.chartData[0].startPsf).toBeCloseTo(2000, 0);
+    expect(result.chartData[0].endPsf).toBeCloseTo(2300, 0);
   });
 });
 

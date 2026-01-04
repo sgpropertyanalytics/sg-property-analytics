@@ -47,15 +47,16 @@ const getGradientColor = (rankPercent) => {
 /**
  * GrowthDumbbellChart - Dumbbell chart of Median PSF Growth %
  *
- * A dumbbell/gap chart showing baseline vs latest quarter median PSF for each district,
+ * A dumbbell/gap chart showing baseline vs latest median PSF for each district,
  * with sortable columns and absolute PSF increment.
  *
  * IMPORTANT: This chart INTENTIONALLY ignores time filter.
- * It compares the earliest 3 completed months (baseline quarter) against
- * the latest 3 completed months (current quarter) across the FULL database.
+ * It compares the EARLIEST 3 completed quarters (baseline) against
+ * the LATEST 3 completed quarters (current) across the FULL database.
  * This is by design to show long-term growth trajectory.
  *
  * Phase 3.4: Uses Zustand for bedroom filter only, NOT time filter.
+ * Always passes timeframe='all' to get full database history.
  *
  * @param {{
  *  saleType?: string,
@@ -79,20 +80,20 @@ function GrowthDumbbellChartBase({ saleType = SaleType.RESALE, enabled = true })
   // enabled prop prevents fetching when component is hidden (e.g., in volume mode)
   const { data, status, error, refetch } = useAppQuery(
     async (signal) => {
-      // Build API params - NO timeframe filter, uses full database range
-      // INTENTIONAL: This chart compares earliest vs latest quarters across all data
+      // Build API params - explicitly request full database range
+      // INTENTIONAL: This chart compares earliest 3 quarters vs latest 3 quarters
+      // across the FULL database. It does NOT react to the sidebar time filter.
       const params = {
         group_by: 'quarter,district',
         metrics: 'median_psf',
         sale_type: saleType,
+        timeframe: 'all',  // Override default Y1 to get full history
       };
 
-      // Add bedroom filter from Zustand
+      // Add bedroom filter from Zustand (but NOT timeframe - intentionally ignored)
       if (bedroom) {
         params.bedroom = bedroom;
       }
-
-      // NO timeframe - intentionally uses full DB range
 
       const response = await getAggregate(params, { signal });
 
