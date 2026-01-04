@@ -78,7 +78,7 @@ export function UpcomingLaunchesTable({
     {
       chartName: 'UpcomingLaunchesTable',
       enabled: shouldFetch,
-      initialData: [],
+      initialData: null,
     }
   );
 

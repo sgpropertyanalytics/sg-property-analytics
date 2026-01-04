@@ -495,7 +495,7 @@ function MarketStrategyMapBase({
     },
     // Use debouncedFilterKey for standardized query key (same as Market Overview)
     [debouncedFilterKey, selectedSaleType, 'district-psf'],
-    { chartName: 'MarketStrategyMap', enabled, initialData: [] }
+    { chartName: 'MarketStrategyMap', enabled, initialData: null }
   );
 
   // Guard against null during in-flight state (same pattern as DistrictLiquidityMap)

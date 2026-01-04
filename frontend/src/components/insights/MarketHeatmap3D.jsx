@@ -177,7 +177,7 @@ export default function MarketHeatmap3D() {
       return response.data.districts || [];
     },
     [selectedPeriod, selectedBed],
-    { chartName: 'MarketHeatmap3D', initialData: [] }
+    { chartName: 'MarketHeatmap3D', initialData: null }
   );
 
   // Derive loading from status
