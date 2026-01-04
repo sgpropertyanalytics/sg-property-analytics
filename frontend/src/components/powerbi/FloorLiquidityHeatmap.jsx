@@ -35,9 +35,6 @@ import {
  * }} props
  */
 export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightProject: _highlightProject }) {
-  // Create a stable filter key for dependency tracking (no PowerBIFilterContext)
-  const filterKey = useMemo(() => `${bedroom || ''}:${segment || ''}:${district || ''}`, [bedroom, segment, district]);
-
   // Local state for window toggle
   const [windowMonths, setWindowMonths] = useState(12);
 
@@ -48,8 +45,8 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
   const [hoveredCell, setHoveredCell] = useState(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
 
-  // Data fetching with useGatedAbortableQuery - gates on appReady
-  // isBootPending = true while waiting for app boot (auth/subscription/filters)
+  // Data fetching with useAppQuery - gates on appReady
+  // Phase 4: Inline query key - no filterKey abstraction
   const { data: apiResponse, status, error, refetch } = useAppQuery(
     async (signal) => {
       // Build params from props directly (not PowerBIFilterContext)
@@ -73,7 +70,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
         meta: responseData.meta || { exclusions: {} }
       };
     },
-    [filterKey, windowMonths],
+    [bedroom, segment, district, windowMonths],
     { chartName: 'FloorLiquidityHeatmap', initialData: null, keepPreviousData: true }
   );
 

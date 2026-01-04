@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 // Phase 2: Using TanStack Query via useAppQuery wrapper
 import { useAppQuery } from '../../hooks';
 import { getBudgetHeatmap } from '../../api/client';
@@ -103,12 +103,9 @@ export function BudgetActivityHeatmap({
     months_lookback: timeWindow,
   }), [budget, bedroom, region, district, tenure, timeWindow]);
 
-  // Build stable filter key for dependency tracking
-  const filterKey = useMemo(() => JSON.stringify(apiParams), [apiParams]);
-
   // Fetch data with abort handling - gates on appReady
-  // isBootPending = true while waiting for app boot
-  const { data, status, error, refetch } = useAppQuery(
+  // Phase 4: Inline query key - no filterKey abstraction
+  const { data, status, error, refetch, isFetching } = useAppQuery(
     async (signal) => {
       const response = await getBudgetHeatmap(apiParams, { signal });
 
@@ -117,7 +114,7 @@ export function BudgetActivityHeatmap({
 
       return response.data;
     },
-    [filterKey],
+    [JSON.stringify(apiParams)],
     {
       chartName: 'BudgetActivityHeatmap',
       enabled: budget >= 500000,
@@ -125,14 +122,6 @@ export function BudgetActivityHeatmap({
       keepPreviousData: true,
     }
   );
-
-  // Track if filters are changing (for blur effect)
-  const [debouncedFilterKey, setDebouncedFilterKey] = useState(filterKey);
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedFilterKey(filterKey), 300);
-    return () => clearTimeout(timer);
-  }, [filterKey]);
-  const isFiltering = filterKey !== debouncedFilterKey;
 
   // Age bands and bedroom types from response
   const ageBands = getBudgetHeatmapField(data, BudgetHeatmapField.AGE_BANDS) || [];
@@ -146,7 +135,7 @@ export function BudgetActivityHeatmap({
   return (
     <ChartFrame
       status={status}
-      isFiltering={isFiltering}
+      isFiltering={isFetching && status === 'success'}
       error={error}
       onRetry={refetch}
       empty={!data || totalCount === 0}
