@@ -247,8 +247,9 @@ const normalizeError = (error) => {
   const status = error?.response?.status;
 
   if (status === 400) {
-    // Use backend validation message if available, otherwise generic
-    error.userMessage = error?.response?.data?.error || 'Invalid request. Please adjust filters and try again.';
+    // Backend returns { error: { message: "..." } } - extract message from object or use string directly
+    const backendError = error?.response?.data?.error;
+    error.userMessage = backendError?.message || backendError || 'Invalid request. Please adjust filters and try again.';
   } else if (status === 401) {
     error.userMessage = 'Session expired. Please sign in again.';
   } else if (status === 403) {

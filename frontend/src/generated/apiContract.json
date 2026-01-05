@@ -1655,6 +1655,213 @@
       },
       "version": "v3"
     },
+    "charts/district-growth": {
+      "compat_map": {
+        "params": {},
+        "response": {}
+      },
+      "endpoint": "charts/district-growth",
+      "mode": "warn",
+      "param_schema": {
+        "json_schema": {
+          "description": "Params for /charts/district-growth (dumbbell chart).",
+          "properties": {
+            "bedroom": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Comma-separated bedroom counts",
+              "title": "Bedroom"
+            },
+            "district": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Comma-separated districts",
+              "title": "District"
+            },
+            "sale_type": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Sale type filter (new_sale, resale, sub_sale)",
+              "title": "Sale Type"
+            }
+          },
+          "title": "DistrictGrowthParams",
+          "type": "object"
+        },
+        "model_name": "DistrictGrowthParams"
+      },
+      "response_schema": {
+        "data_fields": {
+          "district": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "district",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "endPsf": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "endPsf",
+            "nullable": true,
+            "required": true,
+            "type": "float"
+          },
+          "endQuarter": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "endQuarter",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "growthPercent": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "growthPercent",
+            "nullable": true,
+            "required": true,
+            "type": "float"
+          },
+          "startPsf": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "startPsf",
+            "nullable": true,
+            "required": true,
+            "type": "float"
+          },
+          "startQuarter": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "startQuarter",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          }
+        },
+        "data_is_list": true,
+        "meta_fields": {
+          "apiContractVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiContractVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "apiVersion": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "apiVersion",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "contractHash": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "contractHash",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "elapsedMs": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "elapsedMs",
+            "nullable": true,
+            "required": true,
+            "type": "float"
+          },
+          "endQuarter": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "endQuarter",
+            "nullable": true,
+            "required": false,
+            "type": "str"
+          },
+          "excludedDistricts": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "excludedDistricts",
+            "nullable": true,
+            "required": false,
+            "type": "list"
+          },
+          "requestId": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "requestId",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "startQuarter": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "startQuarter",
+            "nullable": true,
+            "required": false,
+            "type": "str"
+          }
+        },
+        "required_meta": [
+          "requestId",
+          "elapsedMs",
+          "apiVersion",
+          "apiContractVersion",
+          "contractHash"
+        ]
+      },
+      "service_schema": {
+        "fields": {}
+      },
+      "version": "v3"
+    },
     "charts/floor-liquidity-heatmap": {
       "compat_map": {
         "params": {},
@@ -2001,7 +2208,17 @@
         "model_name": "PriceProjectsByDistrictParams"
       },
       "response_schema": {
-        "data_fields": {},
+        "data_fields": {
+          "projects": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "projects",
+            "nullable": true,
+            "required": true,
+            "type": "list"
+          }
+        },
         "data_is_list": false,
         "meta_fields": {
           "apiContractVersion": {
@@ -2123,7 +2340,26 @@
         "model_name": "ProjectsByDistrictParams"
       },
       "response_schema": {
-        "data_fields": {},
+        "data_fields": {
+          "project_count": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "project_count",
+            "nullable": true,
+            "required": false,
+            "type": "int"
+          },
+          "projects": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "projects",
+            "nullable": true,
+            "required": true,
+            "type": "list"
+          }
+        },
         "data_is_list": false,
         "meta_fields": {
           "apiContractVersion": {
@@ -6575,7 +6811,7 @@
             "description": "",
             "name": "bedroomCount",
             "nullable": true,
-            "required": false,
+            "required": true,
             "type": "int"
           },
           "cumulativeGrowthPct": {
@@ -6602,7 +6838,7 @@
             "description": "",
             "name": "floorLevel",
             "nullable": true,
-            "required": false,
+            "required": true,
             "type": "str"
           },
           "incrementalGrowthPct": {
@@ -6614,22 +6850,13 @@
             "required": false,
             "type": "float"
           },
-          "price": {
-            "allowed_values": null,
-            "default": null,
-            "description": "",
-            "name": "price",
-            "nullable": true,
-            "required": false,
-            "type": "float"
-          },
           "project": {
             "allowed_values": null,
             "default": null,
             "description": "",
             "name": "project",
             "nullable": true,
-            "required": false,
+            "required": true,
             "type": "str"
           },
           "psf": {
@@ -6647,7 +6874,7 @@
             "description": "",
             "name": "transactionDate",
             "nullable": true,
-            "required": false,
+            "required": true,
             "type": "str"
           },
           "transactionId": {
@@ -6656,7 +6883,16 @@
             "description": "",
             "name": "transactionId",
             "nullable": true,
-            "required": false,
+            "required": true,
+            "type": "int"
+          },
+          "txnSequence": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "txnSequence",
+            "nullable": true,
+            "required": true,
             "type": "int"
           }
         },
@@ -6698,13 +6934,40 @@
             "required": true,
             "type": "float"
           },
+          "filtersApplied": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "filtersApplied",
+            "nullable": true,
+            "required": false,
+            "type": "dict"
+          },
+          "hasNext": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "hasNext",
+            "nullable": true,
+            "required": true,
+            "type": "bool"
+          },
+          "hasPrev": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "hasPrev",
+            "nullable": true,
+            "required": true,
+            "type": "bool"
+          },
           "page": {
             "allowed_values": null,
             "default": null,
             "description": "",
             "name": "page",
             "nullable": true,
-            "required": false,
+            "required": true,
             "type": "int"
           },
           "perPage": {
@@ -6713,7 +6976,7 @@
             "description": "",
             "name": "perPage",
             "nullable": true,
-            "required": false,
+            "required": true,
             "type": "int"
           },
           "requestId": {
@@ -6731,7 +6994,7 @@
             "description": "",
             "name": "totalPages",
             "nullable": true,
-            "required": false,
+            "required": true,
             "type": "int"
           },
           "totalRecords": {
@@ -6740,7 +7003,7 @@
             "description": "",
             "name": "totalRecords",
             "nullable": true,
-            "required": false,
+            "required": true,
             "type": "int"
           }
         },
@@ -6749,7 +7012,11 @@
           "elapsedMs",
           "apiVersion",
           "apiContractVersion",
-          "contractHash"
+          "contractHash",
+          "page",
+          "perPage",
+          "totalRecords",
+          "totalPages"
         ]
       },
       "service_schema": {
@@ -6873,20 +7140,29 @@
       },
       "response_schema": {
         "data_fields": {
-          "avgAnnualizedGrowthPct": {
-            "allowed_values": null,
-            "default": null,
-            "description": "",
-            "name": "avgAnnualizedGrowthPct",
-            "nullable": true,
-            "required": false,
-            "type": "float"
-          },
           "avgCumulativeGrowthPct": {
             "allowed_values": null,
             "default": null,
             "description": "",
             "name": "avgCumulativeGrowthPct",
+            "nullable": true,
+            "required": false,
+            "type": "float"
+          },
+          "avgDaysBetweenTxn": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "avgDaysBetweenTxn",
+            "nullable": true,
+            "required": false,
+            "type": "int"
+          },
+          "avgIncrementalGrowthPct": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "avgIncrementalGrowthPct",
             "nullable": true,
             "required": false,
             "type": "float"
@@ -6897,7 +7173,7 @@
             "description": "",
             "name": "bedroomCount",
             "nullable": true,
-            "required": false,
+            "required": true,
             "type": "int"
           },
           "floorLevel": {
@@ -6906,8 +7182,26 @@
             "description": "",
             "name": "floorLevel",
             "nullable": true,
-            "required": false,
+            "required": true,
             "type": "str"
+          },
+          "maxCumulativeGrowthPct": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "maxCumulativeGrowthPct",
+            "nullable": true,
+            "required": false,
+            "type": "float"
+          },
+          "minCumulativeGrowthPct": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "minCumulativeGrowthPct",
+            "nullable": true,
+            "required": false,
+            "type": "float"
           },
           "project": {
             "allowed_values": null,
@@ -6915,7 +7209,7 @@
             "description": "",
             "name": "project",
             "nullable": true,
-            "required": false,
+            "required": true,
             "type": "str"
           },
           "transactionCount": {
@@ -6924,7 +7218,7 @@
             "description": "",
             "name": "transactionCount",
             "nullable": true,
-            "required": false,
+            "required": true,
             "type": "int"
           }
         },

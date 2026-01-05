@@ -67,24 +67,25 @@ Original issues and resolution status:
 | Correct key mismatches in routes | P1 | ✅ 90% resolved |
 | Align KPI contract schema | P1 | ✅ Resolved |
 | Unknown param behavior | P2 | ✅ Resolved (dev warnings) |
-| Frontend error extraction | P2 | ⚠️ 70% (partial) |
+| Frontend error extraction | P2 | ✅ Resolved |
 
 ## Action Items & Next Steps
 
 1. **Merge PR to main**
    - [ ] Create PR from codexfix → main
-   - [ ] Review changes (5 commits since last merge)
+   - [ ] Review changes (4 commits since last merge)
    - Blocked by: Nothing
 
-2. **Frontend error extraction (P2 partial)**
-   - [ ] Improve `normalizeError()` to handle `error.response.data.error.message` when error is object
-   - File: `frontend/src/api/client.js:246-270`
-   - Low priority - current implementation handles string errors
+2. **Frontend error extraction (P2 partial)** ✅ DONE
+   - [x] Improve `normalizeError()` to handle `error.response.data.error.message` when error is object
+   - File: `frontend/src/api/client.js:251-252`
+   - Commit: 590bbd4
 
-3. **Regenerate apiContract.json (optional)**
-   - [ ] Run contract generation script
-   - [ ] Update snake_case meta fields to camelCase
+3. **Regenerate apiContract.json (optional)** ✅ DONE
+   - [x] Run contract generation script
+   - [x] Update snake_case meta fields to camelCase
    - File: `frontend/src/generated/apiContract.json`
+   - Commit: 590bbd4
 
 ## Blockers & Open Questions
 
@@ -94,7 +95,7 @@ None - all primary tasks complete.
 
 Key things the next agent should know:
 - Worktree at `~/worktrees/sgpropertytrend/pydantic` (branch: codexfix)
-- 4 commits ready to merge: dashboard meta, frontend cleanup, dead code removal, unknown param warning
+- 4 commits ready to merge: docs updates, unknown param warning, error extraction fix, apiContract regeneration
 - Pattern used: Pydantic response models with `Field(alias='camelCase')` + `model_dump(by_alias=True)`
 - The `serialize_aggregate_response()` still uses manual dict manipulation (tech debt) - not migrated to Pydantic
 
