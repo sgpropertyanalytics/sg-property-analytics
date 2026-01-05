@@ -1,25 +1,24 @@
 import React from 'react';
 import { ChartSkeleton } from './ChartSkeleton';
 import { ErrorState } from './ErrorState';
-import { UpdateIndicator } from './UpdateIndicator';
+import { FrostOverlay } from './loading';
 import { getQueryErrorMessage } from './QueryState';
 import { useAppReadyOptional } from '../../context/AppReadyContext';
 
 /**
- * ChartFrame - Unified wrapper for chart loading states with "Retain and Blur" pattern
+ * ChartFrame - Unified wrapper for chart loading states with Frost Overlay pattern
  *
- * PR1 FIX: Now supports `status` prop from useQuery for correct state handling.
- * Empty state shows ONLY when status === 'success' && empty.
+ * Uses glassmorphism frost overlay for loading states instead of skeleton placeholders.
+ * Provides smooth de-blur transitions when data arrives.
  *
- * Status-based rendering (preferred):
+ * Status-based rendering:
  * - idle: Placeholder (user disabled query)
- * - pending: Skeleton (enabled but request not started - THE GAP KILLER)
- * - loading: Skeleton (request in-flight, no prior data)
- * - refreshing: Blur overlay (request in-flight, has prior data)
+ * - pending/loading: Frost overlay with spinner (initial load)
+ * - refreshing: Light frost with progress bar (has prior data)
  * - success: Chart content (or empty state if data is empty)
  * - error: Error state
  *
- * Boot gating: isBootPending takes priority (skeleton during app boot)
+ * Boot gating: isBootPending takes priority (frost overlay during app boot)
  *
  * @param {string} status - Query status from useQuery: 'idle'|'pending'|'loading'|'refreshing'|'success'|'error'
  * @param {boolean} loading - Legacy: True on initial data load (fallback if status not provided)
@@ -30,8 +29,9 @@ import { useAppReadyOptional } from '../../context/AppReadyContext';
  * @param {Error} error - Error object if request failed
  * @param {Function} onRetry - Callback for retry button
  * @param {boolean} empty - True if data is empty after successful load
- * @param {string} skeleton - Skeleton type: 'bar', 'line', 'pie', 'grid', 'table', 'map'
- * @param {number} height - Fixed height for skeleton and chart container
+ * @param {string} skeleton - Skeleton type (kept for backward compat, ignored in frost mode)
+ * @param {boolean} useSkeleton - Force legacy skeleton mode instead of frost overlay
+ * @param {number} height - Fixed height for overlay and chart container
  * @param {React.ReactNode} children - Chart content to render
  */
 export const ChartFrame = React.memo(function ChartFrame({
@@ -45,6 +45,7 @@ export const ChartFrame = React.memo(function ChartFrame({
   onRetry,
   empty,
   skeleton,
+  useSkeleton = false, // Set to true to use legacy skeleton mode
   height = 300,
   children,
 }) {
@@ -55,12 +56,12 @@ export const ChartFrame = React.memo(function ChartFrame({
   // Boot pending if explicit prop OR context says boot isn't complete
   const isBootPending = isBootPendingProp || !appReady;
 
-  // === BOOT PENDING: Always show skeleton ===
+  // === BOOT PENDING: Show frost overlay (or skeleton if useSkeleton) ===
   if (isBootPending) {
-    if (skeleton) {
+    if (useSkeleton && skeleton) {
       return <ChartSkeleton type={skeleton} height={height} />;
     }
-    return <div className="p-3 text-sm text-[#547792]">Loading...</div>;
+    return <FrostOverlay height={height} showSpinner showProgress />;
   }
 
   // === STATUS-BASED RENDERING (preferred) ===
@@ -79,51 +80,56 @@ export const ChartFrame = React.memo(function ChartFrame({
 
       case 'pending':
       case 'loading':
-        // THE GAP KILLER: Show skeleton during pending (enabled but not started)
-        if (skeleton) {
+        // Show frost overlay during initial load (or skeleton if useSkeleton)
+        if (useSkeleton && skeleton) {
           return <ChartSkeleton type={skeleton} height={height} />;
         }
-        return <div className="p-3 text-sm text-[#547792]">Loading...</div>;
+        return <FrostOverlay height={height} showSpinner showProgress />;
 
       case 'error':
         return <ErrorState message={getQueryErrorMessage(error)} onRetry={onRetry} />;
 
       case 'refreshing':
-        // Safety check: If somehow refreshing with no data, show skeleton instead of blur
-        // This prevents "Updating..." with "0 periods" state
+        // Safety check: If somehow refreshing with no data, show frost overlay
         if (empty) {
-          if (skeleton) {
+          if (useSkeleton && skeleton) {
             return <ChartSkeleton type={skeleton} height={height} />;
           }
-          return <div className="p-3 text-sm text-[#547792]">Loading...</div>;
+          return <FrostOverlay height={height} showSpinner showProgress />;
         }
-        // Has prior data, fetching update - show blur overlay
+        // Has prior data, fetching update - show light frost overlay with content visible
         return (
-          <div className="relative" style={{ minHeight: height }}>
-            <div className="transition-all duration-150 opacity-60 blur-[1px]">
-              {children}
-            </div>
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-              <UpdateIndicator />
-            </div>
-          </div>
+          <FrostOverlay
+            visible
+            height={height}
+            showSpinner={false}
+            showProgress
+            isRefreshing
+          >
+            {children}
+          </FrostOverlay>
         );
 
       case 'success':
         // ONLY show empty state when status === 'success' AND data is empty
         if (empty) {
-          // If actively filtering, show updating overlay on empty state
-          // This prevents jarring "No data" flash during filter transitions
+          // If actively filtering, show light frost overlay on empty state
           if (isFiltering) {
             return (
-              <div className="relative" style={{ minHeight: height }}>
-                <div className="transition-all duration-150 opacity-60 blur-[1px] flex items-center justify-center text-sm text-[#547792]" style={{ minHeight: height }}>
+              <FrostOverlay
+                visible
+                height={height}
+                showSpinner={false}
+                showProgress
+                isRefreshing
+              >
+                <div
+                  className="flex items-center justify-center text-sm text-[#547792]"
+                  style={{ minHeight: height }}
+                >
                   No data for selected filters.
                 </div>
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                  <UpdateIndicator />
-                </div>
-              </div>
+              </FrostOverlay>
             );
           }
           return (
@@ -135,17 +141,18 @@ export const ChartFrame = React.memo(function ChartFrame({
             </div>
           );
         }
-        // Success with data - render chart (check isFiltering for overlay)
+        // Success with data - render chart (check isFiltering for light frost overlay)
         if (isFiltering) {
           return (
-            <div className="relative" style={{ minHeight: height }}>
-              <div className="transition-all duration-150 opacity-60 blur-[1px]">
-                {children}
-              </div>
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                <UpdateIndicator />
-              </div>
-            </div>
+            <FrostOverlay
+              visible
+              height={height}
+              showSpinner={false}
+              showProgress
+              isRefreshing
+            >
+              {children}
+            </FrostOverlay>
           );
         }
         return (
@@ -166,18 +173,18 @@ export const ChartFrame = React.memo(function ChartFrame({
 
   // Pending state (from isPending prop)
   if (isPendingProp) {
-    if (skeleton) {
+    if (useSkeleton && skeleton) {
       return <ChartSkeleton type={skeleton} height={height} />;
     }
-    return <div className="p-3 text-sm text-[#547792]">Loading...</div>;
+    return <FrostOverlay height={height} showSpinner showProgress />;
   }
 
   // Initial load
   if (loading && !isUpdating) {
-    if (skeleton) {
+    if (useSkeleton && skeleton) {
       return <ChartSkeleton type={skeleton} height={height} />;
     }
-    return <div className="p-3 text-sm text-[#547792]">Loading...</div>;
+    return <FrostOverlay height={height} showSpinner showProgress />;
   }
 
   // Error state
@@ -197,22 +204,24 @@ export const ChartFrame = React.memo(function ChartFrame({
     );
   }
 
-  // Success state with optional updating overlay
-  return (
-    <div className="relative" style={{ minHeight: height }}>
-      <div
-        className={`
-          transition-all duration-150
-          ${isUpdating ? 'opacity-60 blur-[1px]' : ''}
-        `}
+  // Success state with optional updating overlay (frost style)
+  if (isUpdating) {
+    return (
+      <FrostOverlay
+        visible
+        height={height}
+        showSpinner={false}
+        showProgress
+        isRefreshing
       >
         {children}
-      </div>
-      {isUpdating && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-          <UpdateIndicator />
-        </div>
-      )}
+      </FrostOverlay>
+    );
+  }
+
+  return (
+    <div className="relative" style={{ minHeight: height }}>
+      {children}
     </div>
   );
 });

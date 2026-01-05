@@ -14,6 +14,7 @@
  *
  * IMPORTANT: Values displayed as "X per 100 units" (NEVER with % symbol)
  */
+import { FrostOverlay } from '../common/loading';
 
 // Institutional color palette for liquidity zones
 const LIQUIDITY_COLORS = {
@@ -135,37 +136,11 @@ function TurnoverBar({ label, value, maxValue = 30 }) {
 }
 
 
-// Skeleton loader for loading state
+// Loading state with frost overlay
 function ExitRiskDashboardSkeleton() {
   return (
-    <div className="bg-card rounded-xl border border-[#94B4C1]/30 p-6 animate-pulse">
-      <div className="h-4 bg-[#94B4C1]/30 rounded w-1/3 mb-6" />
-
-      {/* Market turnover bar skeleton */}
-      <div className="mb-6">
-        <div className="flex justify-between mb-2">
-          <div className="h-3 bg-[#94B4C1]/30 rounded w-1/4" />
-          <div className="h-3 bg-[#94B4C1]/30 rounded w-24" />
-        </div>
-        <div className="h-4 bg-[#94B4C1]/30 rounded-full" />
-      </div>
-
-      {/* Recent turnover bar skeleton */}
-      <div className="mb-6">
-        <div className="flex justify-between mb-2">
-          <div className="h-3 bg-[#94B4C1]/30 rounded w-1/4" />
-          <div className="h-3 bg-[#94B4C1]/30 rounded w-24" />
-        </div>
-        <div className="h-4 bg-[#94B4C1]/30 rounded-full" />
-      </div>
-
-      {/* Badge skeleton */}
-      <div className="flex justify-center mb-4">
-        <div className="h-8 bg-[#94B4C1]/30 rounded-full w-32" />
-      </div>
-
-      {/* Interpretation skeleton */}
-      <div className="h-16 bg-[#94B4C1]/30 rounded" />
+    <div className="bg-card rounded-xl border border-[#94B4C1]/30 overflow-hidden">
+      <FrostOverlay height={280} showSpinner showProgress />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import React from 'react';
 import { HelpTooltip } from './HelpTooltip';
 import { getKpiField, KpiField } from '../../schemas/apiContract';
+import { FrostOverlay } from '../common/loading';
 
 /**
  * KPICardV2 - Universal Card System
@@ -144,6 +145,22 @@ export function KPICardV2({
   const footerText = footnote || transition;
   const combinedTooltip = [tooltip, footerText].filter(Boolean).join('\n\n');
 
+  // Loading state - show frost overlay
+  if (loading) {
+    return (
+      <div
+        className={`
+          bg-card border border-[#94B4C1]/50 rounded-lg overflow-hidden
+          min-h-40
+          shadow-sm
+          ${className}
+        `.trim()}
+      >
+        <FrostOverlay height={160} showSpinner={false} showProgress />
+      </div>
+    );
+  }
+
   return (
     <div
       className={`
@@ -155,32 +172,26 @@ export function KPICardV2({
     >
       {/* Layer 1: Header - pinned to top */}
       <div className="flex-shrink-0 mb-2">
-        {loading ? (
-          <div className="h-3 bg-[#94B4C1]/30 rounded w-2/3 animate-pulse" />
-        ) : (
-          <div>
-            <div className="flex items-center gap-1">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#547792]">
-                {title}
-              </span>
-              {combinedTooltip && (
-                <HelpTooltip content={combinedTooltip} />
-              )}
-            </div>
-            {subtitle && (
-              <p className="text-[9px] text-[#94B4C1] mt-0.5 leading-tight">
-                {subtitle}
-              </p>
+        <div>
+          <div className="flex items-center gap-1">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#547792]">
+              {title}
+            </span>
+            {combinedTooltip && (
+              <HelpTooltip content={combinedTooltip} />
             )}
           </div>
-        )}
+          {subtitle && (
+            <p className="text-[9px] text-[#94B4C1] mt-0.5 leading-tight">
+              {subtitle}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Layer 2: Hero Data - fills remaining space, aligned to bottom */}
       <div className="flex-1 flex items-end pb-2 min-w-0">
-        {loading ? (
-          <div className="h-8 bg-[#94B4C1]/30 rounded w-24 animate-pulse" />
-        ) : typeof value === 'string' ? (
+        {typeof value === 'string' ? (
           <div className="truncate" title={badge ? `${value} ${badge.text}` : value}>
             <span className="text-[22px] sm:text-[32px] font-medium text-[#0f172a] font-mono tabular-nums leading-none">
               {value}
