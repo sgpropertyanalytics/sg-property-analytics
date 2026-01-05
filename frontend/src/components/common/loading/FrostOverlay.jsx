@@ -37,8 +37,9 @@ export const FrostOverlay = React.memo(function FrostOverlay({
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // Frost intensity based on state
+  // Thinner tint (40%) lets blueprint show through sharper - blur does the heavy lifting
   const blurAmount = isRefreshing ? 4 : 8;
-  const bgOpacity = isRefreshing ? 0.4 : 0.6;
+  const bgOpacity = isRefreshing ? 0.3 : 0.4;
 
   // Animation timing
   const duration = prefersReducedMotion ? 0 : 0.4;
