@@ -31,6 +31,9 @@ const resolveField = (fieldName) => {
 /**
  * Transaction field names in API v2 responses.
  * Use these constants instead of hardcoding field names.
+ *
+ * Note: These are for /transactions/price-growth endpoint.
+ * For transaction lists with prices, use the transactions list endpoint.
  */
 export const TxnField = {
   ID: resolveField('transactionId'),
@@ -38,8 +41,8 @@ export const TxnField = {
   BEDROOM_COUNT: resolveField('bedroomCount'),
   FLOOR_LEVEL: resolveField('floorLevel'),
   TRANSACTION_DATE: resolveField('transactionDate'),
-  PRICE: resolveField('price'),
   PSF: resolveField('psf'),
+  TXN_SEQUENCE: resolveField('txnSequence'),
   CUMULATIVE_GROWTH_PCT: resolveField('cumulativeGrowthPct'),
   INCREMENTAL_GROWTH_PCT: resolveField('incrementalGrowthPct'),
   DAYS_SINCE_PREVIOUS: resolveField('daysSincePrevious'),

@@ -33,11 +33,22 @@ from ..pydantic_models import (
 # /projects_by_district
 # =============================================================================
 
+# Project item fields (nested within projects array)
+PROJECT_BY_DISTRICT_ITEM_FIELDS = {
+    "project_name": FieldSpec(name="project_name", type=str, required=True),
+    "total": FieldSpec(name="total", type=float, required=False),
+    "total_quantity": FieldSpec(name="total_quantity", type=int, required=False),
+    # Dynamic bedroom fields: 2b, 3b, 4b, 2b_count, 3b_count, 4b_count
+}
+
 PROJECTS_BY_DISTRICT_RESPONSE_SCHEMA = ResponseSchema(
-    data_fields={},
+    data_fields={
+        "projects": FieldSpec(name="projects", type=list, required=True),
+        "project_count": FieldSpec(name="project_count", type=int, required=False),
+    },
     meta_fields=make_meta_fields(),
     required_meta=make_required_meta(),
-    data_is_list=False,
+    data_is_list=False,  # Response is {projects: [...], project_count: int}
 )
 
 PROJECTS_BY_DISTRICT_CONTRACT = EndpointContract(
@@ -55,11 +66,26 @@ register_contract(PROJECTS_BY_DISTRICT_CONTRACT)
 # /price_projects_by_district
 # =============================================================================
 
+# Price project item fields (nested within projects array)
+PRICE_PROJECT_ITEM_FIELDS = {
+    "project_name": FieldSpec(name="project_name", type=str, required=True),
+    "price_25th": FieldSpec(name="price_25th", type=float, nullable=True),
+    "price_median": FieldSpec(name="price_median", type=float, nullable=True),
+    "price_75th": FieldSpec(name="price_75th", type=float, nullable=True),
+    "psf_25th": FieldSpec(name="psf_25th", type=float, nullable=True),
+    "psf_median": FieldSpec(name="psf_median", type=float, nullable=True),
+    "psf_75th": FieldSpec(name="psf_75th", type=float, nullable=True),
+    "count": FieldSpec(name="count", type=int, required=True),
+    "sale_type_label": FieldSpec(name="sale_type_label", type=str, nullable=True),
+}
+
 PRICE_PROJECTS_BY_DISTRICT_RESPONSE_SCHEMA = ResponseSchema(
-    data_fields={},
+    data_fields={
+        "projects": FieldSpec(name="projects", type=list, required=True),
+    },
     meta_fields=make_meta_fields(),
     required_meta=make_required_meta(),
-    data_is_list=False,
+    data_is_list=False,  # Response is {projects: [...]}
 )
 
 PRICE_PROJECTS_BY_DISTRICT_CONTRACT = EndpointContract(
