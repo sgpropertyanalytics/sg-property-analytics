@@ -104,7 +104,7 @@ export function BudgetActivityHeatmap({
   }), [budget, bedroom, region, district, tenure, timeWindow]);
 
   // Fetch data with abort handling - gates on appReady
-  // Phase 4: Inline query key - no filterKey abstraction
+  // TanStack Query handles structural comparison of query keys
   const { data, status, error, refetch, isFetching } = useAppQuery(
     async (signal) => {
       const response = await getBudgetHeatmap(apiParams, { signal });
@@ -114,7 +114,7 @@ export function BudgetActivityHeatmap({
 
       return response.data;
     },
-    [JSON.stringify(apiParams)],
+    ['budgetHeatmap', apiParams],
     {
       chartName: 'BudgetActivityHeatmap',
       enabled: budget >= 500000,

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 // Phase 2: Using TanStack Query via useAppQuery wrapper
 import { useAppQuery } from '../../hooks';
 import { getHotProjects } from '../../api/client';
@@ -50,10 +50,7 @@ export function HotProjectsTable({
   // Handle manual refresh
   const handleRefresh = () => setRefreshTrigger(prev => prev + 1);
 
-  // Stable key for filters to prevent unnecessary refetches
-  const filtersKey = useMemo(() => JSON.stringify(filters), [filters]);
-
-  // Data fetching with useGatedAbortableQuery - gates on appReady
+  // Data fetching with useAppQuery - gates on appReady
   // isBootPending = true while waiting for app boot (auth/subscription/filters)
   const { data, loading, error, isBootPending, refetch } = useAppQuery(
     async (signal) => {
@@ -83,7 +80,7 @@ export function HotProjectsTable({
 
       return projects;
     },
-    [filtersKey, refreshTrigger],
+    ['hotProjects', filters, refreshTrigger],
     {
       chartName: 'HotProjectsTable',
       initialData: null,

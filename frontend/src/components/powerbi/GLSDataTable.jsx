@@ -78,7 +78,7 @@ export function GLSDataTable({ height = 400 }) {
       const responseData = response.data || {};
       return getGlsAllField(responseData, GlsAllField.DATA) || [];
     },
-    [filter, segmentFilter, sortConfig.column, sortConfig.order, refreshTrigger],
+    ['glsData', filter, segmentFilter, sortConfig.column, sortConfig.order, refreshTrigger],
     {
       chartName: 'GLSDataTable',
       enabled: shouldFetch,

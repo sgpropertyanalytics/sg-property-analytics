@@ -70,7 +70,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
         meta: responseData.meta || { exclusions: {} }
       };
     },
-    [bedroom, segment, district, windowMonths],
+    ['floorLiquidity', bedroom, segment, district, windowMonths],
     { chartName: 'FloorLiquidityHeatmap', initialData: null, keepPreviousData: true }
   );
 

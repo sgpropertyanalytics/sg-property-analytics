@@ -97,7 +97,7 @@ function GrowthDumbbellChartBase({ saleType = SaleType.RESALE, enabled = true })
       // Use adapter for shape normalization (business logic is in backend)
       return transformGrowthDumbbellSeries(response);
     },
-    [bedroom, saleType],
+    ['growthDumbbell', bedroom, saleType],
     { chartName: 'GrowthDumbbellChart', initialData: null, enabled }
   );
 

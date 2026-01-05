@@ -66,13 +66,13 @@ export function PriceRangeMatrix({
   }, [budget, tolerance, region, district, tenure, dateFrom]);
 
   // Fetch data with abort handling - gates on appReady
-  // Phase 4: Inline query key - no filterKey abstraction
+  // TanStack Query handles structural comparison of query keys
   const { data, status, error, refetch, isFetching } = useAppQuery(
     async (signal) => {
       const response = await getAggregate(apiParams, { signal });
       return transformPriceRangeMatrix(response.data, { budget });
     },
-    [JSON.stringify(apiParams)],
+    ['priceRangeMatrix', apiParams],
     { chartName: 'PriceRangeMatrix', keepPreviousData: true }
   );
 

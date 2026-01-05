@@ -75,7 +75,7 @@ export function UpcomingLaunchesTable({
       const responseData = response.data || {};
       return getUpcomingLaunchesField(responseData, UpcomingLaunchesField.DATA) || [];
     },
-    [sortConfig.column, sortConfig.order, refreshTrigger],
+    ['upcomingLaunches', sortConfig.column, sortConfig.order, refreshTrigger],
     {
       chartName: 'UpcomingLaunchesTable',
       enabled: shouldFetch,
