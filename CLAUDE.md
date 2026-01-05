@@ -90,7 +90,11 @@ grep -r "" frontend/src/hooks/
 **Can't find in 2 min? Ask — don't recreate.**
 
 ### 5. Library-First
-Before writing >50 lines of infrastructure:
+
+Before writing ANY infrastructure code (not just >50 lines):
+- **Ask: "What's the native way to do this?"**
+- **State: "I checked [library] and it [does/doesn't] handle this via [feature]"**
+
 1. Check npm/PyPI for existing solution
 2. Get explicit approval for custom code
 
@@ -130,16 +134,36 @@ if (!data?.length) return <EmptyState />;
 return <Chart data={data} />;
 ```
 
-### 11. Fix Root Cause, Not Symptoms
+### 11. Fix Root Cause, Not Symptoms — LIBRARY FIRST
 
-**STOP before fixing ANY bug.** Ask these questions IN ORDER:
+**STOP before implementing ANY solution.** Ask IN ORDER:
 
-1. Does a library/framework already solve this? → Use it
-2. Does stdlib solve this? → Use it
-3. Is existing code the RIGHT pattern, or tech debt? → Ask if unsure
-4. Only then: write custom code matching good existing patterns
+1. **Does the library/framework already handle this?**
+   - Pydantic, TanStack Query, Flask, Zustand — check their docs first
+   - Example: Pydantic has `extra='allow'` + `model_extra` — don't write custom param detection
 
-**Existing patterns are not automatically correct.** If existing code is custom logic that a library handles better, the existing code is tech debt — don't copy it.
+2. **Is there a config option instead of custom code?**
+   - Most "features" are just config flags
+   - Example: TanStack Query has `staleTime` — don't write custom debounce
+
+3. **Does existing code in this repo solve it?**
+   - Search first: `grep -r "similar_pattern" .`
+
+4. **Only then: write minimal custom code**
+
+**Self-Check Before Proposing (MANDATORY):**
+- [ ] "I checked if [library] handles this natively"
+- [ ] "The built-in solution is [X], using it because [reason]"
+- [ ] "Custom code is necessary because [specific reason library can't do this]"
+
+**Red Flags — Stop and Reconsider:**
+- Adding >20 lines for a "simple" feature
+- Creating helper functions for things libraries do
+- Writing "wrapper" code around framework features
+- New files for what should be configuration
+
+**If proposing custom code, MUST state:**
+> "Library alternative: [X]. Not using because: [specific reason]."
 
 ### 12. One API Per Data Need
 
