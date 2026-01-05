@@ -17,6 +17,7 @@
  * PERFORMANCE: Chart.js components are lazy-loaded to reduce initial bundle size.
  */
 import { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
+import { useAppQuery } from '../hooks';
 import { getProjectNames, getProjectExitQueue, getProjectPriceBands, getProjectPriceGrowth, asArray } from '../api/client';
 import ExitRiskDashboard from '../components/powerbi/ExitRiskDashboard';
 import ProjectFundamentalsPanel from '../components/powerbi/ProjectFundamentalsPanel';
@@ -99,23 +100,95 @@ export function ExitRiskContent() {
   // Loading animation state
   const [loadingText, setLoadingText] = useState(() => generateLoadingText());
 
-  // Data state
-  const [projectOptions, setProjectOptions] = useState([]);
-  const [projectOptionsLoading, setProjectOptionsLoading] = useState(true);
-  const [exitQueueData, setExitQueueData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  // Price bands state
-  const [priceBandsData, setPriceBandsData] = useState(null);
-  const [priceBandsLoading, setPriceBandsLoading] = useState(false);
-  const [priceBandsError, setPriceBandsError] = useState(null);
+  // Unit PSF state (for downside protection input)
   const [unitPsf, setUnitPsf] = useState(() => getStoredUnitPsf());
 
-  // Price growth state
-  const [priceGrowthData, setPriceGrowthData] = useState(null);
-  const [priceGrowthLoading, setPriceGrowthLoading] = useState(false);
-  const [priceGrowthError, setPriceGrowthError] = useState(null);
+  // Validate project has required name property
+  const validProject = selectedProject && typeof selectedProject.name === 'string' && selectedProject.name.trim();
+
+  // --- Query 1: Project options (fetch once) ---
+  const { data: projectOptions = [], status: projectsStatus } = useAppQuery(
+    async (signal) => {
+      const response = await getProjectNames({ signal });
+      return asArray(getProjectNamesField(response.data || {}, ProjectNamesField.PROJECTS));
+    },
+    ['exitRisk-projects'],
+    { chartName: 'ExitRisk-projects', staleTime: Infinity }
+  );
+  const projectOptionsLoading = projectsStatus === 'pending';
+
+  // --- Query 2: Exit queue + price growth (when project selected) ---
+  const { data: projectData, status: projectDataStatus, error: projectDataError } = useAppQuery(
+    async (signal) => {
+      const [exitQueueRes, priceGrowthRes] = await Promise.allSettled([
+        getProjectExitQueue(selectedProject.name, { signal }),
+        getProjectPriceGrowth(selectedProject.name, { signal }),
+      ]);
+
+      // Process exitQueue result
+      let exitQueueData = null;
+      let exitQueueError = null;
+
+      if (exitQueueRes.status === 'fulfilled') {
+        exitQueueData = exitQueueRes.value.data;
+      } else {
+        const err = exitQueueRes.reason;
+        if (err.response?.status === 404) {
+          const errorData = err.response?.data;
+          if (errorData?.data_quality?.completeness === 'no_resales') {
+            // Project exists but no resales - treat as data
+            exitQueueData = errorData;
+          } else {
+            // Project doesn't exist - throw to trigger error state
+            throw new Error('Project not found. It may have been removed from the database.');
+          }
+        } else {
+          exitQueueError = err.response?.data?.error || 'Failed to load project data';
+        }
+      }
+
+      // Process priceGrowth result
+      let priceGrowthData = null;
+      let priceGrowthError = null;
+
+      if (priceGrowthRes.status === 'fulfilled') {
+        priceGrowthData = priceGrowthRes.value.data;
+      } else {
+        const err = priceGrowthRes.reason;
+        if (err.response?.status === 404) {
+          priceGrowthError = 'Price growth data coming soon';
+        } else {
+          priceGrowthError = err.response?.data?.error || 'Failed to load price growth data';
+        }
+      }
+
+      // Return with embedded errors for partial success handling
+      return { exitQueue: exitQueueData, exitQueueError, priceGrowth: priceGrowthData, priceGrowthError };
+    },
+    ['exitRisk-data', selectedProject?.name],
+    { chartName: 'ExitRisk-data', enabled: !!validProject }
+  );
+
+  // Derive state from projectData query
+  const loading = projectDataStatus === 'pending';
+  const error = projectDataStatus === 'error' ? projectDataError?.message : projectData?.exitQueueError;
+  const exitQueueData = projectData?.exitQueue ?? null;
+  const priceGrowthData = projectData?.priceGrowth ?? null;
+  const priceGrowthError = projectData?.priceGrowthError ?? null;
+  const priceGrowthLoading = loading;
+
+  // --- Query 3: Price bands (when project selected) ---
+  const { data: priceBandsData = null, status: priceBandsStatus, error: priceBandsQueryError } = useAppQuery(
+    async (signal) => {
+      const params = unitPsf ? { unit_psf: unitPsf } : {};
+      const response = await getProjectPriceBands(selectedProject.name, params, { signal });
+      return response.data;
+    },
+    ['exitRisk-bands', selectedProject?.name, unitPsf],
+    { chartName: 'ExitRisk-bands', enabled: !!validProject }
+  );
+  const priceBandsLoading = priceBandsStatus === 'pending';
+  const priceBandsError = priceBandsQueryError?.response?.data?.error || (priceBandsQueryError ? 'Failed to load price bands' : null);
 
   const normalizedExitQueue = useMemo(
     () => normalizeExitQueueResponse(exitQueueData),
@@ -140,163 +213,24 @@ export function ExitRiskContent() {
     }
   }, [unitPsf]);
 
-  // Load project options on mount
+  // Validate stored project exists (runs once when projects load)
   useEffect(() => {
-    const controller = new AbortController();
-
-    const fetchProjects = async () => {
-      setProjectOptionsLoading(true);
-      try {
-        const response = await getProjectNames({ signal: controller.signal });
-        const responseData = response.data || {};
-        const projects = asArray(getProjectNamesField(responseData, ProjectNamesField.PROJECTS));
-        setProjectOptions(projects);
-
-        // Validate stored project exists
-        if (selectedProject) {
-          const exists = projects.some(p => p.name === selectedProject.name);
-          if (!exists) {
-            setSelectedProject(null);
-            sessionStorage.removeItem(STORAGE_KEY_PROJECT);
-          }
-        }
-      } catch (err) {
-        if (err.name === 'AbortError' || err.name === 'CanceledError') return;
-        console.error('Failed to load project options:', err);
-        setProjectOptions([]);
-      } finally {
-        if (!controller.signal.aborted) {
-          setProjectOptionsLoading(false);
-        }
-      }
-    };
-    fetchProjects();
-
-    return () => controller.abort();
+    if (projectsStatus !== 'success' || !selectedProject) return;
+    const exists = projectOptions.some(p => p.name === selectedProject.name);
+    if (!exists) {
+      setSelectedProject(null);
+      sessionStorage.removeItem(STORAGE_KEY_PROJECT);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [projectsStatus, projectOptions]);
 
-  // Parallel fetch for exitQueue + priceGrowth when project changes
+  // Handle "project not found" error by clearing selection
   useEffect(() => {
-    // Guard: Validate project has required name property
-    if (!selectedProject || typeof selectedProject.name !== 'string' || !selectedProject.name.trim()) {
-      setExitQueueData(null);
-      setPriceGrowthData(null);
-      setPriceGrowthError(null);
-      // Clear invalid project from state and storage
-      if (selectedProject) {
-        setSelectedProject(null);
-        sessionStorage.removeItem(STORAGE_KEY_PROJECT);
-      }
-      return;
+    if (projectDataError?.message === 'Project not found. It may have been removed from the database.') {
+      setSelectedProject(null);
+      sessionStorage.removeItem(STORAGE_KEY_PROJECT);
     }
-
-    const controller = new AbortController();
-    const signal = controller.signal;
-
-    const fetchProjectData = async () => {
-      setLoading(true);
-      setError(null);
-      setPriceGrowthLoading(true);
-      setPriceGrowthError(null);
-
-      try {
-        const [exitQueueRes, priceGrowthRes] = await Promise.allSettled([
-          getProjectExitQueue(selectedProject.name, { signal }),
-          getProjectPriceGrowth(selectedProject.name, { signal }),
-        ]);
-
-        if (controller.signal.aborted) return;
-
-        if (exitQueueRes.status === 'fulfilled') {
-          setExitQueueData(exitQueueRes.value.data);
-        } else {
-          const err = exitQueueRes.reason;
-          if (err.name !== 'AbortError' && err.name !== 'CanceledError') {
-            // Handle 404 - project not found or no resale data
-            if (err.response?.status === 404) {
-              const errorData = err.response?.data;
-              // Check if it's a "no resales" case (project exists but no resale data)
-              if (errorData?.data_quality?.completeness === 'no_resales') {
-                // Show this as data, not error - the project exists but has no resales
-                setExitQueueData(errorData);
-                setError(null);
-              } else {
-                // Project doesn't exist - clear selection
-                setError('Project not found. It may have been removed from the database.');
-                setExitQueueData(null);
-                setSelectedProject(null);
-                sessionStorage.removeItem(STORAGE_KEY_PROJECT);
-              }
-            } else {
-              setError(err.response?.data?.error || 'Failed to load project data');
-              setExitQueueData(null);
-            }
-          }
-        }
-
-        if (priceGrowthRes.status === 'fulfilled') {
-          setPriceGrowthData(priceGrowthRes.value.data);
-        } else {
-          const err = priceGrowthRes.reason;
-          if (err.name !== 'AbortError' && err.name !== 'CanceledError') {
-            if (err.response?.status === 404) {
-              setPriceGrowthError('Price growth data coming soon');
-            } else {
-              setPriceGrowthError(err.response?.data?.error || 'Failed to load price growth data');
-            }
-            setPriceGrowthData(null);
-          }
-        }
-      } finally {
-        if (!controller.signal.aborted) {
-          setLoading(false);
-          setPriceGrowthLoading(false);
-        }
-      }
-    };
-
-    fetchProjectData();
-    return () => controller.abort();
-  }, [selectedProject]);
-
-  // Load price bands data when project or unitPsf changes
-  useEffect(() => {
-    // Guard: Validate project has required name property
-    if (!selectedProject || typeof selectedProject.name !== 'string' || !selectedProject.name.trim()) {
-      setPriceBandsData(null);
-      setPriceBandsError(null);
-      return;
-    }
-
-    const controller = new AbortController();
-
-    const fetchPriceBands = async () => {
-      setPriceBandsLoading(true);
-      setPriceBandsError(null);
-      try {
-        const params = {};
-        if (unitPsf) {
-          params.unit_psf = unitPsf;
-        }
-        const response = await getProjectPriceBands(selectedProject.name, params, { signal: controller.signal });
-        if (!controller.signal.aborted) {
-          setPriceBandsData(response.data);
-        }
-      } catch (err) {
-        if (err.name === 'AbortError' || err.name === 'CanceledError') return;
-        setPriceBandsError(err.response?.data?.error || 'Failed to load price bands');
-        setPriceBandsData(null);
-      } finally {
-        if (!controller.signal.aborted) {
-          setPriceBandsLoading(false);
-        }
-      }
-    };
-    fetchPriceBands();
-
-    return () => controller.abort();
-  }, [selectedProject, unitPsf]);
+  }, [projectDataError]);
 
   // Handle click outside to close dropdown
   useEffect(() => {
@@ -334,14 +268,9 @@ export function ExitRiskContent() {
   };
 
   const handleClearSelection = () => {
+    // Clear UI state - TanStack Query handles data state via enabled: !!validProject
     setSelectedProject(null);
-    setExitQueueData(null);
-    setError(null);
-    setPriceBandsData(null);
-    setPriceBandsError(null);
     setUnitPsf(null);
-    setPriceGrowthData(null);
-    setPriceGrowthError(null);
   };
 
   const renderGatingWarnings = () => {
