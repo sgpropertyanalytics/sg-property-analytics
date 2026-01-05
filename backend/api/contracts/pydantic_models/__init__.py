@@ -22,7 +22,7 @@ Usage:
 
 from api.contracts.contract_schema import BaseParamsModel
 from .aggregate import AggregateParams
-from .dashboard import DashboardParams
+from .dashboard import DashboardParams, DashboardMeta
 from .filter_options import FilterOptionsParams
 from .kpi_summary import KPISummaryParams, KPISingleParams, KPISummaryLegacyParams
 from .transactions import PriceGrowthParams, SegmentsParams
@@ -68,6 +68,7 @@ __all__ = [
     # Core endpoints (Phase 7)
     'AggregateParams',
     'DashboardParams',
+    'DashboardMeta',
     'FilterOptionsParams',
     'KPISummaryParams',
     'KPISingleParams',

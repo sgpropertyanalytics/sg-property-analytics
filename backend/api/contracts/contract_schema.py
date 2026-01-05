@@ -988,7 +988,7 @@ def serialize_dashboard_response(
     data: Dict[str, Any],
     meta: Dict[str, Any],
 ) -> Dict[str, Any]:
-    """Serialize full dashboard response to v2 schema.
+    """Serialize full dashboard response to API schema.
 
     Args:
         data: Dict of panel_name → panel_data
@@ -997,6 +997,8 @@ def serialize_dashboard_response(
     Returns:
         Complete response dict with serialized panels and meta
     """
+    from api.contracts.pydantic_models.dashboard import DashboardMeta
+
     serialized_data = {
         panel_name: (
             panel_data if panel_data is None or (isinstance(panel_data, dict) and 'error' in panel_data)
@@ -1005,12 +1007,15 @@ def serialize_dashboard_response(
         for panel_name, panel_data in data.items()
     }
 
+    # Normalize meta casing using Pydantic model (snake_case → camelCase)
+    serialized_meta = DashboardMeta.model_validate(meta).model_dump(by_alias=True)
+
     # Note: apiContractVersion and contractHash are now injected by @api_contract decorator
     # This keeps serializers as pure data transformers
 
     return {
         'data': serialized_data,
-        'meta': meta,
+        'meta': serialized_meta,
     }
 
 

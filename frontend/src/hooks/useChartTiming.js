@@ -69,8 +69,8 @@ export function useChartTiming(chartName) {
     (meta = {}) => {
       if (!isDev || !context) return;
       context.recordTiming(chartId, 'response', performance.now(), {
-        backendElapsedMs: meta.elapsedMs || meta.elapsed_ms,
-        requestId: meta.requestId || meta.request_id,
+        backendElapsedMs: meta.elapsedMs,
+        requestId: meta.requestId,
       });
     },
     [chartId, context]

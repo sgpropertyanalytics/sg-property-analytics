@@ -145,8 +145,8 @@ export function transformPriceRangeMatrix(response, options = {}) {
     bedrooms: BEDROOM_ORDER_NUMERIC,
     totalCount,
     meta: {
-      filtersApplied: meta.filters_applied || meta.filtersApplied || {},
-      cacheHit: meta.cache_hit ?? meta.cacheHit ?? false,
+      filtersApplied: meta.filtersApplied || {},
+      cacheHit: meta.cacheHit ?? false,
     },
   };
 }
