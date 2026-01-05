@@ -46,6 +46,7 @@ function PriceDistributionChartBase({
   saleType = null,
   sharedData = null,
   sharedStatus = 'idle',
+  staggerIndex = 0,
   onDrillThrough: _onDrillThrough,
 }) {
   // Phase 4: Simplified filter access - read values directly from Zustand
@@ -267,6 +268,7 @@ function PriceDistributionChartBase({
       empty={!bins || bins.length === 0}
       skeleton="bar"
       height={350}
+      staggerIndex={staggerIndex}
     >
       <div
         className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"

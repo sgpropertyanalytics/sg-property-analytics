@@ -151,19 +151,42 @@ return <Chart data={data} />;
 
 4. **Only then: write minimal custom code**
 
-**Self-Check Before Proposing (MANDATORY):**
-- [ ] "I checked if [library] handles this natively"
-- [ ] "The built-in solution is [X], using it because [reason]"
-- [ ] "Custom code is necessary because [specific reason library can't do this]"
+**HARD STOP: Custom Code Gate (BLOCKING)**
 
-**Red Flags — Stop and Reconsider:**
-- Adding >20 lines for a "simple" feature
-- Creating helper functions for things libraries do
-- Writing "wrapper" code around framework features
-- New files for what should be configuration
+Claude CANNOT propose custom code until this block is written:
 
-**If proposing custom code, MUST state:**
-> "Library alternative: [X]. Not using because: [specific reason]."
+```
+┌─────────────────────────────────────────────────────────────┐
+│ LIBRARY CHECK (mandatory before ANY custom code)            │
+├─────────────────────────────────────────────────────────────┤
+│ Task: [what I'm trying to solve]                            │
+│                                                             │
+│ npm search: [search terms used]                             │
+│ Found: [library name] - [weekly downloads] - [bundle size]  │
+│                                                             │
+│ Decision: □ USE LIBRARY  □ CUSTOM CODE                      │
+│ Reason: [specific justification]                            │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Invalid Excuses for Custom Code:**
+
+| Excuse | Why It's Wrong |
+|--------|----------------|
+| "Adds ~XKB dependency" | Irrelevant if <50KB |
+| "Simple to write ourselves" | Simple to MAINTAIN? No. |
+| "We already have similar code" | That code might be tech debt |
+| "More control" | Libraries are battle-tested |
+| "No external dependencies" | Dependencies are GOOD |
+
+**Valid Reasons for Custom Code:**
+
+| Reason | Example |
+|--------|---------|
+| Library doesn't exist | Truly novel requirement |
+| Library is unmaintained | No updates in 2+ years, security issues |
+| Library is massive | >100KB for a tiny feature |
+| Project-specific domain logic | Business rules unique to this app |
 
 ### 12. One API Per Data Need
 
@@ -263,6 +286,9 @@ Use `/review` for comprehensive pre-merge review.
 | `// TODO: fix later` | Fix now or don't merge |
 | Context file >100 lines | Use Zustand |
 | Hardcoded strings for enums | Use constants |
+| "Create a minimal hook (~20 lines)" | Use the npm library instead |
+| "Option B: Custom code, no dependency" | Dependency fear is outdated |
+| Proposing custom code without LIBRARY CHECK | Auto-reject |
 
 ---
 

@@ -29,10 +29,11 @@ const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
  * @param {{
  *  height?: number,
  *  saleType?: string | null,
+ *  staggerIndex?: number,
  *  onDrillThrough?: (value: string) => void,
  * }} props
  */
-function TimeTrendChartBase({ height = 300, saleType = null, onDrillThrough: _onDrillThrough }) {
+function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, onDrillThrough: _onDrillThrough }) {
   // Phase 4: Simplified filter access - read values directly from Zustand
   const { filters, timeGrouping } = useZustandFilters();
 
@@ -251,6 +252,7 @@ function TimeTrendChartBase({ height = 300, saleType = null, onDrillThrough: _on
       empty={!safeData || safeData.length === 0}
       skeleton="bar"
       height={height + 80}
+      staggerIndex={staggerIndex}
     >
       <div
         className="bg-card rounded-lg border border-[#94B4C1]/30 overflow-hidden flex flex-col shadow-sm relative"

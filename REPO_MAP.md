@@ -616,6 +616,25 @@ Most incidents above share a pattern: **solving problems that don't exist yet.**
 
 **If unsure → don't do it. Ship the simple version.**
 
+### CLAUDE.md Not Activated Incident (Jan 5, 2026)
+
+**What happened:** When investigating `useDeferredFetch`, Claude recommended Option B (create custom `useInView` hook, ~20 lines) as the default solution instead of Option A (`react-intersection-observer` library).
+
+**Impact:** Violated CLAUDE.md rules 5 (Library-First) and 11 (Fix Root Cause - LIBRARY FIRST). Would have created unnecessary custom code when a battle-tested library exists.
+
+**Why it was wrong:** Claude treated CLAUDE.md as "background info read once" rather than a **mandatory pre-flight checklist** to verify against before every recommendation. The pattern:
+1. See problem (useDeferredFetch complexity)
+2. Jump to analyzing solutions based on default training
+3. Default training says "20 lines of custom code is simple/fine"
+4. Present options without checking: "Wait, what does CLAUDE.md say about this?"
+
+**Fix:** Before recommending ANY code approach, Claude must:
+1. Re-read relevant CLAUDE.md rules (especially 5 and 11 for new code)
+2. Explicitly state: "Library alternative: [X]. Using it because [reason]" OR "Custom code necessary because [specific reason library can't do this]"
+3. Default to library solutions; custom code requires justification
+
+**Lesson:** CLAUDE.md is a **mandatory pre-flight checklist**, not optional background reading. Every recommendation must be verified against it BEFORE presenting options.
+
 ---
 
 ## Quick Reference Links
