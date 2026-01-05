@@ -341,6 +341,7 @@ export function MacroOverviewContent() {
                       onDrillThrough={(value) => handleDrillThrough(`Transactions in ${value}`)}
                       height={trendChartHeight}
                       saleType={SALE_TYPE}
+                      staggerIndex={0}
                     />
                   </ErrorBoundary>
                 </div>
@@ -361,6 +362,7 @@ export function MacroOverviewContent() {
                           saleType={SALE_TYPE}
                           sharedData={compressionData}
                           sharedStatus={shouldFetchCompression ? compressionStatus : 'pending'}
+                          staggerIndex={1}
                         />
                       </Suspense>
                     </ChartWatermark>
@@ -373,6 +375,7 @@ export function MacroOverviewContent() {
                           saleType={SALE_TYPE}
                           sharedData={compressionData}
                           sharedStatus={shouldFetchCompression ? compressionStatus : 'pending'}
+                          staggerIndex={2}
                         />
                       </Suspense>
                     </ChartWatermark>
@@ -391,6 +394,7 @@ export function MacroOverviewContent() {
                           saleType={SALE_TYPE}
                           sharedRawData={compressionRaw}
                           sharedStatus={shouldFetchCompression ? compressionStatus : 'pending'}
+                          staggerIndex={3}
                         />
                       </Suspense>
                     </ChartWatermark>
@@ -411,6 +415,7 @@ export function MacroOverviewContent() {
                           saleType={SALE_TYPE}
                           sharedData={dashboardPanels?.price_histogram}
                           sharedStatus={shouldFetchPanels ? dashboardStatus : 'pending'}
+                          staggerIndex={4}
                         />
                       </ChartWatermark>
                     </ErrorBoundary>
@@ -424,6 +429,7 @@ export function MacroOverviewContent() {
                           saleType={SALE_TYPE}
                           sharedData={dashboardPanels?.beads_chart}
                           sharedStatus={shouldFetchPanels ? dashboardStatus : 'pending'}
+                          staggerIndex={5}
                         />
                       </ChartWatermark>
                     </ErrorBoundary>

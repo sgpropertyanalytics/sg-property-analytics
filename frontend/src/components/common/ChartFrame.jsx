@@ -32,6 +32,7 @@ import { useAppReadyOptional } from '../../context/AppReadyContext';
  * @param {string} skeleton - Skeleton type (kept for backward compat, ignored in frost mode)
  * @param {boolean} useSkeleton - Force legacy skeleton mode instead of frost overlay
  * @param {number} height - Fixed height for overlay and chart container
+ * @param {number} staggerIndex - Cascade delay index for waterfall reveal (0=first, 1=+50ms, etc.)
  * @param {React.ReactNode} children - Chart content to render
  */
 export const ChartFrame = React.memo(function ChartFrame({
@@ -47,6 +48,7 @@ export const ChartFrame = React.memo(function ChartFrame({
   skeleton,
   useSkeleton = false, // Set to true to use legacy skeleton mode
   height = 300,
+  staggerIndex = 0, // Cascade delay index for waterfall reveal
   children,
 }) {
   // CENTRAL BOOT GATING: Automatically check appReady from context
@@ -61,7 +63,7 @@ export const ChartFrame = React.memo(function ChartFrame({
     if (useSkeleton && skeleton) {
       return <ChartSkeleton type={skeleton} height={height} />;
     }
-    return <FrostOverlay height={height} showSpinner showProgress />;
+    return <FrostOverlay height={height} showSpinner showProgress staggerIndex={staggerIndex} />;
   }
 
   // === STATUS-BASED RENDERING (preferred) ===
@@ -84,7 +86,7 @@ export const ChartFrame = React.memo(function ChartFrame({
         if (useSkeleton && skeleton) {
           return <ChartSkeleton type={skeleton} height={height} />;
         }
-        return <FrostOverlay height={height} showSpinner showProgress />;
+        return <FrostOverlay height={height} showSpinner showProgress staggerIndex={staggerIndex} />;
 
       case 'error':
         return <ErrorState message={getQueryErrorMessage(error)} onRetry={onRetry} />;
@@ -95,7 +97,7 @@ export const ChartFrame = React.memo(function ChartFrame({
           if (useSkeleton && skeleton) {
             return <ChartSkeleton type={skeleton} height={height} />;
           }
-          return <FrostOverlay height={height} showSpinner showProgress />;
+          return <FrostOverlay height={height} showSpinner showProgress staggerIndex={staggerIndex} />;
         }
         // Has prior data, fetching update - show light frost overlay with content visible
         return (
@@ -105,6 +107,7 @@ export const ChartFrame = React.memo(function ChartFrame({
             showSpinner={false}
             showProgress
             isRefreshing
+            staggerIndex={staggerIndex}
           >
             {children}
           </FrostOverlay>
@@ -122,6 +125,7 @@ export const ChartFrame = React.memo(function ChartFrame({
                 showSpinner={false}
                 showProgress
                 isRefreshing
+                staggerIndex={staggerIndex}
               >
                 <div
                   className="flex items-center justify-center text-sm text-[#547792]"
@@ -150,6 +154,7 @@ export const ChartFrame = React.memo(function ChartFrame({
               showSpinner={false}
               showProgress
               isRefreshing
+              staggerIndex={staggerIndex}
             >
               {children}
             </FrostOverlay>
@@ -176,7 +181,7 @@ export const ChartFrame = React.memo(function ChartFrame({
     if (useSkeleton && skeleton) {
       return <ChartSkeleton type={skeleton} height={height} />;
     }
-    return <FrostOverlay height={height} showSpinner showProgress />;
+    return <FrostOverlay height={height} showSpinner showProgress staggerIndex={staggerIndex} />;
   }
 
   // Initial load
@@ -184,7 +189,7 @@ export const ChartFrame = React.memo(function ChartFrame({
     if (useSkeleton && skeleton) {
       return <ChartSkeleton type={skeleton} height={height} />;
     }
-    return <FrostOverlay height={height} showSpinner showProgress />;
+    return <FrostOverlay height={height} showSpinner showProgress staggerIndex={staggerIndex} />;
   }
 
   // Error state
@@ -213,6 +218,7 @@ export const ChartFrame = React.memo(function ChartFrame({
         showSpinner={false}
         showProgress
         isRefreshing
+        staggerIndex={staggerIndex}
       >
         {children}
       </FrostOverlay>

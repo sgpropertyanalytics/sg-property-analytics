@@ -51,6 +51,7 @@ function BeadsChartBase({
   saleType = null,
   sharedData = null,
   sharedStatus = 'idle',
+  staggerIndex = 0,
 }) {
   // Phase 4: Simplified filter access - read values directly from Zustand
   const { filters } = useZustandFilters();
@@ -329,6 +330,7 @@ function BeadsChartBase({
       empty={!hasData}
       skeleton="bar"
       height={350}
+      staggerIndex={staggerIndex}
       debugInfo={debugInfo}
     >
       <div

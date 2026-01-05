@@ -48,7 +48,7 @@ const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
  *  sharedStatus?: string,
  * }} props
  */
-function PriceCompressionChartBase({ height = 380, saleType = null, sharedData = null, sharedStatus = 'idle' }) {
+function PriceCompressionChartBase({ height = 380, saleType = null, sharedData = null, sharedStatus = 'idle', staggerIndex = 0 }) {
   // Phase 4: Simplified filter access - read values directly from Zustand
   const { filters, timeGrouping } = useZustandFilters();
 
@@ -261,6 +261,7 @@ function PriceCompressionChartBase({ height = 380, saleType = null, sharedData =
       empty={!data || data.length === 0}
       skeleton="line"
       height={350}
+      staggerIndex={staggerIndex}
     >
       <div
         className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"

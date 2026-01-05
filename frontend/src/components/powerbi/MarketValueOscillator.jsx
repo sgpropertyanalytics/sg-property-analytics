@@ -50,7 +50,7 @@ const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
  *  sharedStatus?: string,
  * }} props
  */
-function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawData = null, sharedStatus = 'idle' }) {
+function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawData = null, sharedStatus = 'idle', staggerIndex = 0 }) {
   // Phase 4: Simplified filter access - read values directly from Zustand
   const { filters, timeGrouping } = useZustandFilters();
 
@@ -349,6 +349,7 @@ function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawDat
         empty={!data || data.length === 0}
         skeleton="line"
         height={height}
+        staggerIndex={staggerIndex}
       >
         <div
           className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
