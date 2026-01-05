@@ -8,6 +8,7 @@
  *
  * Turnover values displayed as "X per 100 units" (NEVER with % symbol)
  */
+import { FrostOverlay } from '../common/loading';
 
 // Liquidity zone colors (institutional, muted palette)
 const _LIQUIDITY_COLORS = {
@@ -63,20 +64,11 @@ function MetricCard({ label, value, subtext, zone = 'default', isUnavailable = f
   );
 }
 
-// Skeleton loader
-function ResaleMetricsSkeleton({ compact = false }) {
+// Loading state with frost overlay
+function ResaleMetricsSkeleton() {
   return (
-    <div className="bg-card rounded-xl border border-[#94B4C1]/30 p-4 md:p-6 animate-pulse">
-      <div className="h-4 bg-[#94B4C1]/30 rounded w-1/2 mb-4" />
-      <div className={`grid gap-3 ${compact ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-1 md:grid-cols-3'}`}>
-        {[...Array(3)].map((_, i) => (
-          <div key={i} className="bg-[#94B4C1]/20 rounded-lg p-3 md:p-4">
-            <div className="h-3 bg-[#94B4C1]/30 rounded w-1/2 mb-2" />
-            <div className="h-6 md:h-8 bg-[#94B4C1]/30 rounded w-2/3 mb-1" />
-            <div className="h-3 bg-[#94B4C1]/30 rounded w-3/4" />
-          </div>
-        ))}
-      </div>
+    <div className="bg-card rounded-xl border border-[#94B4C1]/30 overflow-hidden">
+      <FrostOverlay height={180} showSpinner showProgress />
     </div>
   );
 }

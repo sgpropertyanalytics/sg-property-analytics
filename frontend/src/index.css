@@ -319,3 +319,63 @@ input[type="range"].slider-thumb::-moz-range-progress {
   animation: spin 1s linear infinite;
 }
 
+/* ====== Frost Overlay Loading Effects ====== */
+
+/* Frost overlay base - glassmorphism effect */
+.frost-overlay {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  background: rgba(254, 254, 254, 0.6);
+}
+
+/* Light frost for refresh state */
+.frost-overlay--light {
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  background: rgba(254, 254, 254, 0.4);
+}
+
+/* Frost clearing transition */
+.frost-overlay--clearing {
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(0px);
+  background: rgba(254, 254, 254, 0);
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.5s ease-out;
+}
+
+/* Progress bar slide animation */
+@keyframes frost-progress-slide {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(400%);
+  }
+}
+
+.frost-progress-bar {
+  height: 2px;
+  width: 25%;
+  background: linear-gradient(90deg, transparent, #547792, transparent);
+  animation: frost-progress-slide 1.5s ease-in-out infinite;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .frost-progress-bar {
+    animation: none;
+    width: 100%;
+    opacity: 0.6;
+  }
+
+  .frost-overlay {
+    transition: none;
+  }
+
+  .frost-overlay--clearing {
+    transition: none;
+  }
+}
+

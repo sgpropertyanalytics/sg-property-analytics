@@ -1,4 +1,5 @@
 import React from 'react';
+import { FrostOverlay } from '../common/loading';
 
 /**
  * InlineCard - Bloomberg-style KPI card for use INSIDE chart components
@@ -134,9 +135,8 @@ export function InlineCard({
 
   if (loading) {
     return (
-      <div className={`${currentSize.container} ${className}`} style={bgStyle}>
-        <div className="h-3 w-16 bg-[#94B4C1]/30 rounded animate-pulse mb-1.5" />
-        <div className="h-6 w-24 bg-[#94B4C1]/30 rounded animate-pulse" />
+      <div className={`${currentSize.container} ${className} overflow-hidden`} style={bgStyle}>
+        <FrostOverlay height={60} showSpinner={false} showProgress />
       </div>
     );
   }

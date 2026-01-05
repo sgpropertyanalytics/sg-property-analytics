@@ -24,6 +24,7 @@ import ResaleMetricsCards from '../components/powerbi/ResaleMetricsCards';
 import UnitPsfInput from '../components/powerbi/UnitPsfInput';
 import { KeyInsightBox } from '../components/ui/KeyInsightBox';
 import { ChartSkeleton } from '../components/common/ChartSkeleton';
+import { FrostOverlay } from '../components/common/loading';
 import { ErrorState } from '../components/common/ErrorState';
 import { getQueryErrorMessage } from '../components/common/QueryState';
 import { ErrorBoundary } from '../components/ui/ErrorBoundary';
@@ -567,11 +568,17 @@ export function ExitRiskContent() {
               <ResaleMetricsCards loading={true} compact />
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-              <div className="bg-card rounded-xl border border-[#94B4C1]/30 p-4 md:p-6 h-[350px] animate-pulse" />
-              <div className="bg-card rounded-xl border border-[#94B4C1]/30 p-4 md:p-6 h-[400px] animate-pulse" />
+              <div className="bg-card rounded-xl border border-[#94B4C1]/30 overflow-hidden">
+                <FrostOverlay height={350} showSpinner showProgress />
+              </div>
+              <div className="bg-card rounded-xl border border-[#94B4C1]/30 overflow-hidden">
+                <FrostOverlay height={400} showSpinner showProgress />
+              </div>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-              <div className="bg-card rounded-xl border border-[#94B4C1]/30 p-4 md:p-6 h-[400px] animate-pulse" />
+              <div className="bg-card rounded-xl border border-[#94B4C1]/30 overflow-hidden">
+                <FrostOverlay height={400} showSpinner showProgress />
+              </div>
               <ExitRiskDashboard loading={true} />
             </div>
           </div>

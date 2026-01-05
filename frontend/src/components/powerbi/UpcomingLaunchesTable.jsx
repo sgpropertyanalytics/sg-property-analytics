@@ -9,6 +9,7 @@ import { UpcomingLaunchesField, getUpcomingLaunchesField } from '../../schemas/a
 import { VerificationBadge } from '../verification';
 import { ErrorState } from '../common/ErrorState';
 import { getQueryErrorMessage } from '../common/QueryState';
+import { FrostOverlay } from '../common/loading';
 
 /**
  * Upcoming Launches Table - Shows projects NOT YET LAUNCHED (pre-sale info)
@@ -187,12 +188,7 @@ export function UpcomingLaunchesTable({
         {error ? (
           <ErrorState message={getQueryErrorMessage(error)} onRetry={refetch} />
         ) : isLoading ? (
-          [...Array(5)].map((_, i) => (
-            <div key={i} className="p-3 bg-card rounded-lg border border-[#94B4C1]/30 animate-pulse">
-              <div className="h-4 bg-slate-200 rounded w-3/4 mb-2"></div>
-              <div className="h-3 bg-slate-200 rounded w-1/2"></div>
-            </div>
-          ))
+          <FrostOverlay height={height - 60} showSpinner showProgress />
         ) : safeData.length === 0 ? (
           <div className="text-center py-8 text-[#547792] text-sm">
             No upcoming launches found.
@@ -272,16 +268,11 @@ export function UpcomingLaunchesTable({
             </thead>
             <tbody className={isFreeResolved ? 'blur-sm grayscale-[40%]' : ''}>
               {isLoading ? (
-                // Loading skeleton
-                [...Array(10)].map((_, i) => (
-                  <tr key={i} className="animate-pulse">
-                    {columns.map(col => (
-                      <td key={col.key} className="px-3 py-2 border-b border-slate-100">
-                        <div className="h-4 bg-slate-200 rounded w-full"></div>
-                      </td>
-                    ))}
-                  </tr>
-                ))
+                <tr>
+                  <td colSpan={columns.length} className="p-0">
+                    <FrostOverlay height={height - 60} showSpinner showProgress />
+                  </td>
+                </tr>
               ) : safeData.length === 0 ? (
                 <tr>
                   <td colSpan={columns.length} className="px-3 py-8 text-center">
