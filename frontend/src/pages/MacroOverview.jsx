@@ -1,4 +1,5 @@
 import React, { useState, useMemo, lazy, Suspense } from 'react';
+import { useInView } from 'react-intersection-observer';
 // Phase 3.4: PowerBIFilterProvider removed - useZustandFilters is self-contained
 import { TIME_GROUP_BY } from '../context/PowerBIFilter';
 import { useZustandFilters } from '../stores';
@@ -17,7 +18,7 @@ import { transformCompressionSeries } from '../adapters';
 import { ErrorBoundary, ChartWatermark, KPICardV2, KPICardV2Group, KPIHeroContent } from '../components/ui';
 // Desktop-first chart height with mobile guardrail
 // Phase 2: Using TanStack Query via useAppQuery wrapper
-import { useChartHeight, MOBILE_CAPS, useAppQuery, useDeferredFetch } from '../hooks';
+import { useChartHeight, MOBILE_CAPS, useAppQuery } from '../hooks';
 // Unified filter bar component (handles desktop + mobile)
 import { FilterBar } from '../components/powerbi/FilterBar';
 
@@ -121,18 +122,19 @@ export function MacroOverviewContent() {
   // Helper to get KPI by ID from the array
   const getKpi = (kpiId) => kpis.items?.find(k => getKpiField(k, KpiField.KPI_ID) === kpiId);
 
-  // Defer below-the-fold chart data to reduce initial load fanout
-  // fetchOnMount: true ensures queries start immediately (skeleton shown during boot)
-  const { shouldFetch: shouldFetchCompression, containerRef: compressionRef } = useDeferredFetch({
-    filterKey: `compression:${timeframe}:${bedroom}:${timeGrouping}`,
-    priority: 'low',
-    fetchOnMount: true,
+  // Visibility-based fetch deferral for below-the-fold charts
+  // Uses react-intersection-observer library (CLAUDE.md Rule 5: Library-First)
+  // initialInView: true ensures queries start immediately (skeleton shown during boot)
+  const { ref: compressionRef, inView: compressionInView } = useInView({
+    triggerOnce: false,
+    rootMargin: '100px',
+    initialInView: true,
   });
 
-  const { shouldFetch: shouldFetchPanels, containerRef: panelsRef } = useDeferredFetch({
-    filterKey: `panels:${timeframe}:${bedroom}`,
-    priority: 'medium',
-    fetchOnMount: true,
+  const { ref: panelsRef, inView: panelsInView } = useInView({
+    triggerOnce: false,
+    rootMargin: '100px',
+    initialInView: true,
   });
 
   // SHARED DATA FETCH: Compression/Absolute PSF/Oscillator charts use identical API call
@@ -156,7 +158,7 @@ export function MacroOverviewContent() {
     },
     // Explicit query key - TanStack handles cache deduplication
     ['macro-compression', timeframe, bedroom, timeGrouping],
-    { chartName: 'MacroOverview-Compression', initialData: null, keepPreviousData: true, enabled: shouldFetchCompression }
+    { chartName: 'MacroOverview-Compression', initialData: null, keepPreviousData: true, enabled: compressionInView }
   );
 
   // Transform raw data for compression charts (memoized to avoid re-transform on every render)
@@ -185,7 +187,7 @@ export function MacroOverviewContent() {
     },
     // Explicit query key - TanStack handles cache deduplication
     ['macro-dashboard', timeframe, bedroom],
-    { chartName: 'MacroOverview-Dashboard', initialData: null, keepPreviousData: true, enabled: shouldFetchPanels }
+    { chartName: 'MacroOverview-Dashboard', initialData: null, keepPreviousData: true, enabled: panelsInView }
   );
 
   const handleDrillThrough = (title, additionalFilters = {}) => {
@@ -361,7 +363,7 @@ export function MacroOverviewContent() {
                           height={compressionHeight}
                           saleType={SALE_TYPE}
                           sharedData={compressionData}
-                          sharedStatus={shouldFetchCompression ? compressionStatus : 'pending'}
+                          sharedStatus={compressionInView ? compressionStatus : 'pending'}
                           staggerIndex={1}
                         />
                       </Suspense>
@@ -374,7 +376,7 @@ export function MacroOverviewContent() {
                           height={compressionHeight}
                           saleType={SALE_TYPE}
                           sharedData={compressionData}
-                          sharedStatus={shouldFetchCompression ? compressionStatus : 'pending'}
+                          sharedStatus={compressionInView ? compressionStatus : 'pending'}
                           staggerIndex={2}
                         />
                       </Suspense>
@@ -393,7 +395,7 @@ export function MacroOverviewContent() {
                           height={oscillatorHeight}
                           saleType={SALE_TYPE}
                           sharedRawData={compressionRaw}
-                          sharedStatus={shouldFetchCompression ? compressionStatus : 'pending'}
+                          sharedStatus={compressionInView ? compressionStatus : 'pending'}
                           staggerIndex={3}
                         />
                       </Suspense>
@@ -414,7 +416,7 @@ export function MacroOverviewContent() {
                           height={standardChartHeight}
                           saleType={SALE_TYPE}
                           sharedData={dashboardPanels?.price_histogram}
-                          sharedStatus={shouldFetchPanels ? dashboardStatus : 'pending'}
+                          sharedStatus={panelsInView ? dashboardStatus : 'pending'}
                           staggerIndex={4}
                         />
                       </ChartWatermark>
@@ -428,7 +430,7 @@ export function MacroOverviewContent() {
                           height={standardChartHeight}
                           saleType={SALE_TYPE}
                           sharedData={dashboardPanels?.beads_chart}
-                          sharedStatus={shouldFetchPanels ? dashboardStatus : 'pending'}
+                          sharedStatus={panelsInView ? dashboardStatus : 'pending'}
                           staggerIndex={5}
                         />
                       </ChartWatermark>

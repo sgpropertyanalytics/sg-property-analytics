@@ -1,6 +1,7 @@
 import React, { useRef, useMemo } from 'react';
+import { useInView } from 'react-intersection-observer';
 // Phase 2: Using TanStack Query via useAppQuery wrapper
-import { useAppQuery, useDeferredFetch } from '../../hooks';
+import { useAppQuery } from '../../hooks';
 import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
 import { Line } from 'react-chartjs-2';
@@ -65,11 +66,10 @@ function PriceCompressionChartBase({ height = 380, saleType = null, sharedData =
   // Use loose equality to catch both null AND undefined (common when data hasn't arrived)
   const useSharedData = sharedData != null;
 
-  // Defer fetch until chart is visible (low priority - below the fold)
-  const { shouldFetch, containerRef } = useDeferredFetch({
-    filterKey: `compression:${timeframe}:${bedroom}:${timeGrouping}`,
-    priority: 'low',
-    fetchOnMount: false,
+  // Visibility-based fetch deferral (CLAUDE.md Rule 5: Library-First)
+  const { ref: containerRef, inView } = useInView({
+    triggerOnce: false,
+    rootMargin: '100px',
   });
 
   // HISTORICAL BASELINE: Fetch full historical data once (no date filters)
@@ -90,7 +90,7 @@ function PriceCompressionChartBase({ height = 380, saleType = null, sharedData =
       return calculateHistoricalBaseline(transformed);
     },
     [], // Empty deps = fetch once on mount
-    { chartName: 'PriceCompressionChart-baseline', initialData: null, enabled: shouldFetch, keepPreviousData: true }
+    { chartName: 'PriceCompressionChart-baseline', initialData: null, enabled: inView, keepPreviousData: true }
   );
 
   // Default fallback for baseline data (initial load) - matches main query pattern
@@ -134,7 +134,7 @@ function PriceCompressionChartBase({ height = 380, saleType = null, sharedData =
     },
     // Explicit query key - TanStack handles cache deduplication
     ['price-compression', timeframe, bedroom, timeGrouping, saleType],
-    { chartName: 'PriceCompressionChart', initialData: null, enabled: shouldFetch && !useSharedData, keepPreviousData: true }
+    { chartName: 'PriceCompressionChart', initialData: null, enabled: inView && !useSharedData, keepPreviousData: true }
   );
 
   // Use shared data from parent if provided, otherwise use internal fetch

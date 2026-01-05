@@ -1,6 +1,7 @@
 import React, { useMemo, useRef } from 'react';
+import { useInView } from 'react-intersection-observer';
 // Phase 2: Using TanStack Query via useAppQuery wrapper
-import { useAppQuery, useDeferredFetch } from '../../hooks';
+import { useAppQuery } from '../../hooks';
 import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
 import { Line } from 'react-chartjs-2';
@@ -62,11 +63,10 @@ function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawDat
 
   const chartRef = useRef(null);
 
-  // Defer fetch until chart is visible
-  const { shouldFetch, containerRef } = useDeferredFetch({
-    filterKey: `oscillator:${timeframe}:${bedroom}:${timeGrouping}`,
-    priority: 'low',
-    fetchOnMount: false,
+  // Visibility-based fetch deferral (CLAUDE.md Rule 5: Library-First)
+  const { ref: containerRef, inView } = useInView({
+    triggerOnce: false,
+    rootMargin: '100px',
   });
 
   // HISTORICAL BASELINE: Fetch full historical data (no date filters)
@@ -91,7 +91,7 @@ function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawDat
     {
       chartName: 'MarketValueOscillator-baseline',
       initialData: null,
-      enabled: shouldFetch,
+      enabled: inView,
       keepPreviousData: true,
     }
   );
@@ -142,7 +142,7 @@ function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawDat
     },
     // Explicit query key - TanStack handles cache deduplication
     ['market-oscillator', timeframe, bedroom, timeGrouping, safeBaselineStats, saleType],
-    { chartName: 'MarketValueOscillator', initialData: null, enabled: shouldFetch && !useShared, keepPreviousData: true }
+    { chartName: 'MarketValueOscillator', initialData: null, enabled: inView && !useShared, keepPreviousData: true }
   );
 
   // When using shared data, transform it with useMemo (same transform as internal fetch)
