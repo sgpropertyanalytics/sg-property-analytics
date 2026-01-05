@@ -8,15 +8,18 @@
  *
  * Prevents redundant API calls by fetching static data once at the app level.
  * All filter option consumers should use this context instead of fetching independently.
+ *
+ * MIGRATION: Phase 2 - Uses useAppQuery instead of useEffect+useState (CLAUDE.md Rule 9)
  */
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useMemo } from 'react';
+import { useAppQuery } from '../hooks';
 import { getFilterOptions, getMetadata } from '../api/client';
 import { normalizeFilterOptions } from '../schemas/apiContract';
 
 const DataContext = createContext(null);
 
-// Initial filter options state (matches PowerBIFilter/constants.js)
-const INITIAL_FILTER_OPTIONS = {
+// Default filter options (used during loading)
+const DEFAULT_FILTER_OPTIONS = {
   districts: [],
   regions: [],
   bedrooms: [],
@@ -29,33 +32,24 @@ const INITIAL_FILTER_OPTIONS = {
   sizeRange: { min: null, max: null },
   districtsRaw: [],
   regionsLegacy: null,
-  loading: true,
-  error: null,
 };
 
 export function DataProvider({ children }) {
-  const [filterOptions, setFilterOptions] = useState(INITIAL_FILTER_OPTIONS);
-  const [apiMetadata, setApiMetadata] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  // Fetch static data once using TanStack Query (CLAUDE.md Rule 9)
+  // staleTime: Infinity ensures this only fetches once
+  const { data, status, error } = useAppQuery(
+    async (signal) => {
+      // Fetch filter options and metadata in parallel
+      const [filterOptionsRes, metadataRes] = await Promise.all([
+        getFilterOptions({ signal, priority: 'high' }).catch(() => ({ data: {} })),
+        getMetadata({ signal, priority: 'high' }).catch(() => ({ data: null }))
+      ]);
 
-  // Fetch static data once on mount
-  useEffect(() => {
-    const fetchStaticData = async () => {
-      setLoading(true);
-      setError(null);
+      // Normalize filter options using shared adapter
+      const normalized = normalizeFilterOptions(filterOptionsRes.data);
 
-      try {
-        // Fetch filter options and metadata in parallel
-        const [filterOptionsRes, metadataRes] = await Promise.all([
-          getFilterOptions({ priority: 'high' }).catch(() => ({ data: {} })),
-          getMetadata({ priority: 'high' }).catch(() => ({ data: null }))
-        ]);
-
-        // Normalize filter options using shared adapter
-        const normalized = normalizeFilterOptions(filterOptionsRes.data);
-
-        setFilterOptions({
+      return {
+        filterOptions: {
           districts: normalized.districts,
           regions: normalized.regions,
           bedrooms: normalized.bedrooms,
@@ -68,29 +62,30 @@ export function DataProvider({ children }) {
           sizeRange: normalized.sizeRange,
           districtsRaw: normalized.districtsRaw,
           regionsLegacy: normalized.regionsLegacy,
-          loading: false,
-          error: null,
-        });
-        setApiMetadata(metadataRes.data);
-      } catch (err) {
-        console.error('Error fetching static data:', err);
-        setError(err.message);
-        setFilterOptions(prev => ({ ...prev, loading: false, error: err.message }));
-        setApiMetadata(null);
-      } finally {
-        setLoading(false);
-      }
-    };
+        },
+        apiMetadata: metadataRes.data,
+      };
+    },
+    ['staticData'], // Stable key for app-wide static data
+    { chartName: 'DataContext', staleTime: Infinity, gcTime: Infinity }
+  );
 
-    fetchStaticData();
-  }, []); // Only fetch once on mount
+  // Derive values from query result
+  const filterOptions = data?.filterOptions ?? DEFAULT_FILTER_OPTIONS;
+  const apiMetadata = data?.apiMetadata ?? null;
+  const loading = status === 'pending';
 
   // Derive availableDistricts from filterOptions for backward compatibility
   const availableDistricts = filterOptions.districtsRaw || [];
 
-  const value = {
+  // Memoize context value to prevent unnecessary re-renders
+  const value = useMemo(() => ({
     // Full filter options (normalized)
-    filterOptions,
+    filterOptions: {
+      ...filterOptions,
+      loading,
+      error: error?.message ?? null,
+    },
 
     // Legacy: district list for backward compatibility
     availableDistricts,
@@ -100,11 +95,11 @@ export function DataProvider({ children }) {
 
     // State
     loading,
-    error,
+    error: error?.message ?? null,
 
     // Helpers
-    isDataReady: !loading && availableDistricts.length > 0,
-  };
+    isDataReady: status === 'success' && availableDistricts.length > 0,
+  }), [filterOptions, availableDistricts, apiMetadata, loading, error, status]);
 
   return (
     <DataContext.Provider value={value}>
