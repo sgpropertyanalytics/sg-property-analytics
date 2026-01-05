@@ -95,6 +95,7 @@ def get_transaction_price_growth():
         return validation_error_response(e)
 
     try:
+        from api.contracts.pydantic_models.transactions import PriceGrowthResponse
 
         # Compute price growth
         result = compute_growth(
@@ -109,10 +110,8 @@ def get_transaction_price_growth():
             per_page=per_page
         )
 
-        # Serialize response (future: add proper serializer in api/contracts/contract_schema.py)
-        # For now, return as-is with v2 metadata.
-        response = result
-        response['apiContractVersion'] = 'v2'
+        # Serialize via Pydantic response model (snake_case → camelCase)
+        response = PriceGrowthResponse.from_service(result).model_dump(by_alias=True)
 
         elapsed = time.time() - start
         print(f"GET /api/transactions/price-growth completed in {elapsed:.4f}s")
@@ -155,6 +154,8 @@ def get_price_growth_segments():
         districts = params.get("districts") or []
         district = districts[0] if isinstance(districts, list) and districts else None
 
+        from api.contracts.pydantic_models.transactions import SegmentSummaryResponse
+
         # Get segment summary
         segments = get_segment_summary(
             project_name=project_name,
@@ -162,8 +163,8 @@ def get_price_growth_segments():
             sale_type=sale_type
         )
 
-        # Build response
-        response = {"data": segments, "apiContractVersion": "v2"}
+        # Serialize via Pydantic response model (snake_case → camelCase)
+        response = SegmentSummaryResponse.from_service(segments).model_dump(by_alias=True)
 
         elapsed = time.time() - start
         print(f"GET /api/transactions/price-growth/segments completed in {elapsed:.4f}s")
