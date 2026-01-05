@@ -19,9 +19,10 @@ The decorator:
 
 import functools
 import logging
+import os
 import time
 import uuid
-from typing import Callable, Any, Dict, Optional, Tuple, Union
+from typing import Callable, Any, Dict, Optional, Tuple, Union, Set
 
 from flask import request, jsonify, g, Response
 from pydantic import ValidationError as PydanticValidationError
@@ -33,6 +34,40 @@ from utils.normalize import ValidationError
 
 
 logger = logging.getLogger('api.contracts')
+
+# Dev mode detection for unknown param warnings
+_IS_DEV = os.environ.get('FLASK_DEBUG', '').lower() == 'true' or \
+          os.environ.get('FLASK_ENV', '').lower() == 'development'
+
+
+def _get_known_param_names(pydantic_model) -> Set[str]:
+    """Get all known parameter names from a Pydantic model, including aliases."""
+    known = set()
+    for field_name, field_info in pydantic_model.model_fields.items():
+        known.add(field_name)
+        # Add alias if defined
+        if field_info.alias:
+            known.add(field_info.alias)
+        # Add validation_alias if defined (for input parsing)
+        if field_info.validation_alias:
+            if isinstance(field_info.validation_alias, str):
+                known.add(field_info.validation_alias)
+    return known
+
+
+def _warn_unknown_params(endpoint_name: str, raw_params: Dict, pydantic_model) -> None:
+    """Log warning for unknown parameters in dev mode."""
+    if not _IS_DEV:
+        return
+
+    known_names = _get_known_param_names(pydantic_model)
+    unknown = set(raw_params.keys()) - known_names
+
+    if unknown:
+        logger.warning(
+            f"[{endpoint_name}] Unknown params ignored: {sorted(unknown)}. "
+            f"Known params: {sorted(known_names)}"
+        )
 
 
 def api_contract(endpoint_name: str):
@@ -78,6 +113,9 @@ def api_contract(endpoint_name: str):
                 # All endpoints now have pydantic_model (migration complete Jan 2026)
                 if not contract.pydantic_model:
                     raise ValueError(f"No pydantic_model for endpoint '{endpoint_name}' - all endpoints must have Pydantic models")
+
+                # Warn about unknown params in dev mode (helps catch typos)
+                _warn_unknown_params(endpoint_name, raw_params, contract.pydantic_model)
 
                 try:
                     normalized = contract.pydantic_model(**raw_params).model_dump()
