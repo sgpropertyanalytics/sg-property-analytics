@@ -2,6 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FrostSpinner } from './FrostSpinner';
 import { FrostProgressBar } from './FrostProgressBar';
+import { ChartBlueprint } from './ChartBlueprint';
 
 /**
  * FrostOverlay - Glassmorphism loading overlay with premium transitions
@@ -74,9 +75,11 @@ export const FrostOverlay = React.memo(function FrostOverlay({
         </motion.div>
       )}
 
-      {/* Placeholder background when no children */}
+      {/* Blueprint layer when no children - gives frost something to blur */}
       {!children && (
-        <div className="absolute inset-0 bg-card" />
+        <div className="absolute inset-0 z-0 bg-card p-4 text-[#94B4C1]/20">
+          <ChartBlueprint />
+        </div>
       )}
 
       {/* Frost overlay with curtain lift */}
