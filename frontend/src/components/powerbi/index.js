@@ -6,7 +6,6 @@ export { PriceDistributionChart } from './PriceDistributionChart';
 export { NewVsResaleChart } from './NewVsResaleChart';
 export { TransactionDetailModal } from './TransactionDetailModal';
 export { DrillBreadcrumb } from './DrillBreadcrumb';
-export { TransactionDataTable } from './TransactionDataTable';
 export { GLSDataTable } from './GLSDataTable';
 export { AbsolutePsfChart } from './AbsolutePsfChart';
 
