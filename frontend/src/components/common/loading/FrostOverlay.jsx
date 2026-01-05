@@ -77,7 +77,7 @@ export const FrostOverlay = React.memo(function FrostOverlay({
 
       {/* Blueprint layer when no children - gives frost something to blur */}
       {!children && (
-        <div className="absolute inset-0 z-0 bg-card p-4 text-[#94B4C1]/20">
+        <div className="absolute inset-0 z-0 bg-card p-4 text-[#94B4C1]/50">
           <ChartBlueprint />
         </div>
       )}
