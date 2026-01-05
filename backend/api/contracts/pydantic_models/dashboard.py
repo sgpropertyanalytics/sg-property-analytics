@@ -1,13 +1,13 @@
 """
-Pydantic model for /dashboard endpoint params.
+Pydantic models for /dashboard endpoint params and responses.
 
 Similar to aggregate but with additional fields for panels and display options.
 """
 
 from datetime import date, timedelta
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 
-from pydantic import Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from api.contracts.contract_schema import BaseParamsModel
 from .types import (
@@ -223,3 +223,28 @@ class DashboardParams(BaseParamsModel):
         if self.tenure and not self.tenures:
             object.__setattr__(self, 'tenures', [self.tenure])
             object.__setattr__(self, 'tenure', None)
+
+
+# =============================================================================
+# RESPONSE MODELS (for serialization)
+# =============================================================================
+
+class DashboardMeta(BaseModel):
+    """
+    Response model for dashboard meta object.
+
+    Serializes backend snake_case to frontend camelCase via Field aliases.
+    """
+    model_config = ConfigDict(
+        populate_by_name=True,
+        extra='allow',  # Allow additional fields from service
+    )
+
+    cache_hit: bool = Field(alias='cacheHit')
+    elapsed_ms: float = Field(alias='elapsedMs')
+    filters_applied: Dict[str, Any] = Field(alias='filtersApplied')
+    filter_notes: Optional[Dict[str, str]] = Field(default=None, alias='filterNotes')
+    panels_returned: List[str] = Field(alias='panelsReturned')
+    options: Optional[Dict[str, Any]] = Field(default=None)
+    total_records_matched: int = Field(alias='totalRecordsMatched')
+    data_masked: Optional[bool] = Field(default=None, alias='dataMasked')
