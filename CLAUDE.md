@@ -49,7 +49,7 @@ Private condo analytics platform using URA transaction data. Resale-focused with
 
 ## Core Invariants (NON-NEGOTIABLE)
 
-These 12 rules apply to EVERY task. Violation = bug.
+These 13 rules apply to EVERY task. Violation = bug.
 
 ### 1. Understand Before Implementing
 Read target files, check `git log -20 -- <file>`, find reference implementations. The architecture is SETTLED.
@@ -131,19 +131,15 @@ return <Chart data={data} />;
 ```
 
 ### 11. Fix Root Cause, Not Symptoms
-**STOP before fixing ANY bug.** Don't blindly patch. Don't add layers.
 
-Ask these questions FIRST:
-1. **Band-aid or long-term fix?** — If band-aid, find root cause instead
-2. **Am I adding complexity?** — New middleware, wrapper, helper = RED FLAG
-3. **Does a library already solve this?** — Check before writing custom code
-4. **Does existing code handle this?** — Search repo for patterns first
-5. **Should I redesign the flow?** — Sometimes the architecture is wrong
+**STOP before fixing ANY bug.** Ask these questions IN ORDER:
 
-**Priority:** Clean, simple, efficient code that is **aligned and consistent** with existing patterns.
+1. Does a library/framework already solve this? → Use it
+2. Does stdlib solve this? → Use it
+3. Is existing code the RIGHT pattern, or tech debt? → Ask if unsure
+4. Only then: write custom code matching good existing patterns
 
-> If you're adding a layer to fix a bug, you're probably creating two bugs.
-> If unsure whether it's a proper fix → **ASK, don't guess.**
+**Existing patterns are not automatically correct.** If existing code is custom logic that a library handles better, the existing code is tech debt — don't copy it.
 
 ### 12. One API Per Data Need
 
@@ -156,6 +152,17 @@ Design APIs around **data needs**, not pages or charts.
 | **One API per data need** | ✅ Sweet spot. Reusable, focused, decoupled. |
 
 **Example:** If 3 charts all need quarterly median PSF by district, create ONE `/api/aggregate` endpoint they all share — not 3 separate endpoints.
+
+### 13. Check Both Sides Before Changing Contracts
+
+When modifying code that sits between two layers (API contracts, adapters, schemas, serializers, type definitions), ALWAYS:
+
+1. **Check both sides** — What does the upstream send? What does the downstream expect?
+2. **State the current reality** — "Layer A sends X, Layer B expects Y, this file says Z"
+3. **Propose direction** — Are we changing the contract to match reality, or adding a translation layer?
+4. **Don't just fix one side** — Moving a mismatch is not fixing it
+
+**Ask before proceeding if all three don't align.**
 
 ---
 
