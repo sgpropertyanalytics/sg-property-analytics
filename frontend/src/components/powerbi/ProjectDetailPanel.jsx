@@ -1,8 +1,10 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useState } from 'react';
 // Chart.js components registered globally in chartSetup.js
 import { Line, Bar } from 'react-chartjs-2';
 // Phase 3.3: Migrated from usePowerBIFilters to useZustandFilters
 import { useZustandFilters } from '../../stores';
+// Phase 2: Using TanStack Query via useAppQuery wrapper (CLAUDE.md Rule 9)
+import { useAppQuery } from '../../hooks';
 import { getAggregate, getProjectInventory, getDashboard } from '../../api/client';
 import { DISTRICT_NAMES } from '../../constants';
 import {
@@ -27,14 +29,12 @@ const K_PROJECT_THRESHOLD = 15;
  *
  * IMPORTANT: This component does NOT affect global charts.
  * It uses its own API queries filtered to the selected project only.
+ *
+ * MIGRATION: Phase 2 - Uses useAppQuery instead of useEffect+useState (CLAUDE.md Rule 9)
  */
 export function ProjectDetailPanel() {
   // Phase 3.3: Now reading/writing to Zustand store
   const { selectedProject, clearSelectedProject, filters } = useZustandFilters();
-  const [trendData, setTrendData] = useState([]);
-  const [priceData, setPriceData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   // Don't render if no project selected
   if (!selectedProject.name) {
@@ -46,176 +46,125 @@ export function ProjectDetailPanel() {
       selectedProject={selectedProject}
       clearSelectedProject={clearSelectedProject}
       filters={filters}
-      trendData={trendData}
-      setTrendData={setTrendData}
-      priceData={priceData}
-      setPriceData={setPriceData}
-      loading={loading}
-      setLoading={setLoading}
-      error={error}
-      setError={setError}
     />
   );
 }
 
-// Inner component to handle effects after we know project is selected
+// Inner component to handle data fetching after we know project is selected
 function ProjectDetailPanelInner({
   selectedProject,
   clearSelectedProject,
   filters,
-  trendData,
-  setTrendData,
-  priceData,
-  setPriceData,
-  loading,
-  setLoading,
-  error,
-  setError,
 }) {
-  // State for cumulative sales by sale type
-  const [salesByType, setSalesByType] = useState({ newSale: 0, resale: 0 });
-  // State for inventory data (total units, unsold estimation)
-  const [inventoryData, setInventoryData] = useState(null);
-  // State for price histogram data
-  const [histogramData, setHistogramData] = useState([]);
+  // UI state only - data state handled by useAppQuery
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Request tracking for stale request prevention
-  const requestIdRef = useRef(0);
-  const abortControllerRef = useRef(null);
+  // Build base params for project-specific queries
+  // Note: We intentionally DON'T use buildApiParams from context
+  // to ensure this query is independent and doesn't affect global state
+  const buildBaseParams = () => {
+    const baseParams = {
+      project_exact: selectedProject.name, // EXACT match (not partial LIKE)
+    };
 
-  // Fetch project-specific data
-  useEffect(() => {
-    // Abort previous request if it exists
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
+    // Apply sidebar filters for trend/price views (but not highlight)
+    const tf = filters.timeFilter;
+    if (tf?.type === 'preset' && tf.value) {
+      baseParams.timeframe = tf.value;
+    } else if (tf?.type === 'custom') {
+      if (tf.start) baseParams.date_from = tf.start;
+      if (tf.end) baseParams.date_to = tf.end;
     }
-    abortControllerRef.current = new AbortController();
-    const signal = abortControllerRef.current.signal;
+    if (filters.bedroomTypes?.length > 0) {
+      baseParams.bedroom = filters.bedroomTypes.join(',');
+    }
+    if (filters.saleType) baseParams.sale_type = filters.saleType;
 
-    // Increment request ID for stale detection
-    requestIdRef.current += 1;
-    const requestId = requestIdRef.current;
+    return baseParams;
+  };
 
-    const fetchProjectData = async () => {
-      setLoading(true);
-      setError(null);
+  // Fetch all project data in parallel using useAppQuery (CLAUDE.md Rule 9)
+  // TanStack Query handles abort/stale requests automatically
+  const { data, status, error, refetch } = useAppQuery(
+    async (signal) => {
+      const baseParams = buildBaseParams();
 
-      try {
-        // Build params for project-specific queries
-        // Note: We intentionally DON'T use buildApiParams from context
-        // to ensure this query is independent and doesn't affect global state
-        // IMPORTANT: Use project_exact for EXACT match (not partial LIKE match)
-        // This ensures we only get data for this specific project, not similar-named projects
-        const baseParams = {
-          project_exact: selectedProject.name,
-        };
+      // Trend data params (monthly transactions)
+      const trendParams = {
+        ...baseParams,
+        group_by: 'month',
+        metrics: 'count,median_psf,avg_psf',
+      };
 
-        // Apply sidebar filters for trend/price views (but not highlight)
-        const tf = filters.timeFilter;
-        if (tf?.type === 'preset' && tf.value) {
-          baseParams.timeframe = tf.value;
-        } else if (tf?.type === 'custom') {
-          if (tf.start) baseParams.date_from = tf.start;
-          if (tf.end) baseParams.date_to = tf.end;
-        }
-        if (filters.bedroomTypes.length > 0) {
-          baseParams.bedroom = filters.bedroomTypes.join(',');
-        }
-        if (filters.saleType) baseParams.sale_type = filters.saleType;
+      // Price distribution params (by bedroom)
+      const priceParams = {
+        ...baseParams,
+        group_by: 'bedroom',
+        metrics: 'count,median_psf,avg_psf,min_psf,max_psf,median_price,price_25th,price_75th',
+      };
 
-        // Fetch trend data (monthly transactions)
-        const trendParams = {
-          ...baseParams,
-          group_by: 'month',
-          metrics: 'count,median_psf,avg_psf',
-        };
+      // Histogram params for price distribution
+      const histogramParams = {
+        project_exact: selectedProject.name,
+        panels: 'price_histogram',
+        histogram_bins: 20,
+      };
+      // Apply time filters to histogram
+      const tf = filters.timeFilter;
+      if (tf?.type === 'preset' && tf.value) {
+        histogramParams.timeframe = tf.value;
+      } else if (tf?.type === 'custom') {
+        if (tf.start) histogramParams.date_from = tf.start;
+        if (tf.end) histogramParams.date_to = tf.end;
+      }
+      if (filters.bedroomTypes?.length > 0) {
+        histogramParams.bedroom = filters.bedroomTypes.join(',');
+      }
+      if (filters.saleType) histogramParams.sale_type = filters.saleType;
 
-        // Fetch price distribution (by bedroom)
-        const priceParams = {
-          ...baseParams,
-          group_by: 'bedroom',
-          metrics: 'count,median_psf,avg_psf,min_psf,max_psf,median_price,price_25th,price_75th',
-        };
+      // Fetch all data in parallel
+      const [trendResponse, priceResponse, inventoryResponse, histogramResponse] = await Promise.all([
+        getAggregate(trendParams, { signal }),
+        getAggregate(priceParams, { signal }),
+        getProjectInventory(selectedProject.name, { signal }),
+        getDashboard(histogramParams, { signal }),
+      ]);
 
-        // Build histogram params for project-specific price distribution
-        // IMPORTANT: Use project_exact for EXACT match (not partial LIKE match)
-        const histogramParams = {
-          project_exact: selectedProject.name,
-          panels: 'price_histogram',
-          histogram_bins: 20,
-        };
-        // Apply time filters to histogram as well
-        if (tf?.type === 'preset' && tf.value) {
-          histogramParams.timeframe = tf.value;
-        } else if (tf?.type === 'custom') {
-          if (tf.start) histogramParams.date_from = tf.start;
-          if (tf.end) histogramParams.date_to = tf.end;
-        }
-        if (filters.bedroomTypes.length > 0) {
-          histogramParams.bedroom = filters.bedroomTypes.join(',');
-        }
-        if (filters.saleType) histogramParams.sale_type = filters.saleType;
+      // Sort trend data by month
+      const trendData = (trendResponse.data || [])
+        .filter(d => getAggField(d, AggField.COUNT) > 0)
+        .sort((a, b) => (a.month || '').localeCompare(b.month || ''));
 
-        // Fetch all data in parallel, including inventory and histogram
-        const [trendResponse, priceResponse, inventoryResponse, histogramResponse] = await Promise.all([
-          getAggregate(trendParams, { signal }),
-          getAggregate(priceParams, { signal }),
-          getProjectInventory(selectedProject.name, { signal }),
-          getDashboard(histogramParams, { signal }),
-        ]);
+      // Sort price data by bedroom
+      const priceData = (priceResponse.data || [])
+        .filter(d => getAggField(d, AggField.COUNT) > 0)
+        .sort((a, b) => (getAggField(a, AggField.BEDROOM_COUNT) || 0) - (getAggField(b, AggField.BEDROOM_COUNT) || 0));
 
-        // Ignore stale responses - a newer request has started
-        if (requestId !== requestIdRef.current) return;
+      // Extract inventory data
+      const inventory = inventoryResponse.data || {};
 
-        // Sort trend data by month (use getAggField for contract-safe access)
-        const sortedTrend = (trendResponse.data || [])
-          .filter(d => getAggField(d, AggField.COUNT) > 0)
-          .sort((a, b) => (a.month || '').localeCompare(b.month || ''));
-
-        // Sort price data by bedroom (use getAggField for contract-safe access)
-        const sortedPrice = (priceResponse.data || [])
-          .filter(d => getAggField(d, AggField.COUNT) > 0)
-          .sort((a, b) => (getAggField(a, AggField.BEDROOM_COUNT) || 0) - (getAggField(b, AggField.BEDROOM_COUNT) || 0));
-
-        // Extract inventory data (includes cumulative sales from backend)
-        const inventory = inventoryResponse.data || {};
-        setSalesByType({
+      return {
+        trendData,
+        priceData,
+        inventoryData: inventory,
+        salesByType: {
           newSale: getProjectInventoryField(inventory, ProjectInventoryField.CUMULATIVE_NEW_SALES) || 0,
-          resale: getProjectInventoryField(inventory, ProjectInventoryField.CUMULATIVE_RESALES) || 0
-        });
-        setInventoryData(inventory);
+          resale: getProjectInventoryField(inventory, ProjectInventoryField.CUMULATIVE_RESALES) || 0,
+        },
+        histogramData: histogramResponse.data?.price_histogram || [],
+      };
+    },
+    ['projectDetail', selectedProject.name, filters.timeFilter, filters.bedroomTypes, filters.saleType, refreshKey],
+    { chartName: 'ProjectDetailPanel', enabled: !!selectedProject.name }
+  );
 
-        // Extract histogram data
-        const histData = histogramResponse.data?.price_histogram || [];
-        setHistogramData(histData);
-
-        setTrendData(sortedTrend);
-        setPriceData(sortedPrice);
-      } catch (err) {
-        // Ignore abort errors - expected when request is cancelled
-        if (err.name === 'CanceledError' || err.name === 'AbortError') return;
-        // Ignore errors from stale requests
-        if (requestId !== requestIdRef.current) return;
-        console.error('Error fetching project data:', err);
-        setError(err);
-      } finally {
-        // Only clear loading for the current request
-        if (requestId === requestIdRef.current) {
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchProjectData();
-
-    // Cleanup: abort on unmount or when dependencies change
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-    };
-  }, [selectedProject.name, filters, refreshKey, setTrendData, setPriceData, setLoading, setError]);
+  // Derive values from query result (Rule 10: handle all states)
+  const loading = status === 'pending';
+  const trendData = data?.trendData ?? [];
+  const priceData = data?.priceData ?? [];
+  const inventoryData = data?.inventoryData ?? null;
+  const salesByType = data?.salesByType ?? { newSale: 0, resale: 0 };
+  const histogramData = data?.histogramData ?? [];
 
   const districtName = selectedProject.district
     ? DISTRICT_NAMES[selectedProject.district] || selectedProject.district
@@ -486,12 +435,12 @@ function ProjectDetailPanelInner({
             <div className="flex items-center justify-center h-64">
               <div className="text-[#547792]">Loading project data...</div>
             </div>
-          ) : error ? (
+          ) : status === 'error' ? (
             <div className="flex items-center justify-center h-64">
               <div className="w-full max-w-md">
                 <ErrorState
                   message={getQueryErrorMessage(error)}
-                  onRetry={() => setRefreshKey((prev) => prev + 1)}
+                  onRetry={refetch}
                 />
               </div>
             </div>

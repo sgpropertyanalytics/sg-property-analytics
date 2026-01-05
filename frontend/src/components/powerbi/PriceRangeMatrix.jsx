@@ -76,7 +76,8 @@ export function PriceRangeMatrix({
     { chartName: 'PriceRangeMatrix', keepPreviousData: true }
   );
 
-  const { matrix, ageBands, bedrooms } = data || {};
+  // Destructure with defaults - prevents crash when children evaluated before ChartFrame renders
+  const { matrix = {}, ageBands = [], bedrooms = [] } = data || {};
 
   return (
     <ChartFrame
@@ -84,7 +85,7 @@ export function PriceRangeMatrix({
       isFiltering={isFetching && status === 'success'}
       error={error}
       onRetry={refetch}
-      empty={!data || data.totalCount === 0}
+      empty={!data || !bedrooms?.length}
       skeleton="grid"
       height={300}
     >

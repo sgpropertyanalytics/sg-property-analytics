@@ -7,8 +7,14 @@
  * 3. Compare across three scopes: Same Project, 1km radius, 2km radius
  * 4. See map with both radius circles
  * 5. Get percentile rank showing how their deal compares
+ *
+ * MIGRATION: Phase 2 - Uses useAppQuery instead of useEffect+useState (CLAUDE.md Rule 9)
+ * - Removed inline useStaleRequestGuard (TanStack handles abort automatically)
+ * - Project list uses useAppQuery with staleTime: Infinity
+ * - Deal check uses useAppQuery with enabled: !!dealParams
  */
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useAppQuery } from '../../hooks';
 import { getProjectNames, getDealCheckerMultiScope } from '../../api/client';
 import { PriceDistributionHeroChart } from '../PriceDistributionHeroChart';
 import DealCheckerMap from './DealCheckerMap';
@@ -20,34 +26,6 @@ import {
   getProjectNamesField,
 } from '../../schemas/apiContract';
 import { getPercentile } from '../../utils/statistics';
-
-/**
- * Inline stale request guard (previously useStaleRequestGuard hook)
- * Simple abort/stale request protection for deal checker fetches.
- */
-function useStaleRequestGuard() {
-  const requestIdRef = React.useRef(0);
-  const abortControllerRef = React.useRef(null);
-
-  const startRequest = React.useCallback(() => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    abortControllerRef.current = new AbortController();
-    requestIdRef.current += 1;
-    return requestIdRef.current;
-  }, []);
-
-  const isStale = React.useCallback((requestId) => {
-    return requestId !== requestIdRef.current;
-  }, []);
-
-  const getSignal = React.useCallback(() => {
-    return abortControllerRef.current?.signal;
-  }, []);
-
-  return { startRequest, isStale, getSignal };
-}
 
 // K-anonymity threshold for project-level data (min 15 for privacy)
 const K_PROJECT_THRESHOLD = 15;
@@ -144,19 +122,14 @@ export default function DealCheckerContent() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  // Data state
-  const [projectOptions, setProjectOptions] = useState([]);
-  const [projectOptionsLoading, setProjectOptionsLoading] = useState(true);
+  // Deal check params - set on form submit to trigger query
+  const [dealParams, setDealParams] = useState(null);
+
+  // Loading animation state
   const [loadingText, setLoadingText] = useState(() => generateLoadingText());
-  const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
 
   // Scope selection state
   const [activeScope, setActiveScope] = useState('radius_1km');
-
-  // Stale request protection - prevents old responses from overwriting new ones
-  const { startRequest, isStale, getSignal } = useStaleRequestGuard();
 
   // Sort config for nearby projects table
   const [projectsSortConfig, setProjectsSortConfig] = useState({
@@ -164,23 +137,44 @@ export default function DealCheckerContent() {
     order: 'asc',
   });
 
-  // Load project names for dropdown
-  useEffect(() => {
-    const loadProjects = async () => {
-      try {
-        const response = await getProjectNames();
-        // Envelope already unwrapped by interceptor - use response.data directly
-        const responseData = response.data || {};
-        const projects = getProjectNamesField(responseData, ProjectNamesField.PROJECTS) || [];
-        setProjectOptions(projects);
-      } catch (err) {
-        console.error('Failed to load project names:', err);
-      } finally {
-        setProjectOptionsLoading(false);
-      }
-    };
-    loadProjects();
-  }, []);
+  // Error state for form validation (not API errors)
+  const [formError, setFormError] = useState(null);
+
+  // 1. Project options - fetch once (CLAUDE.md Rule 9)
+  const { data: projectOptionsData, status: projectsStatus } = useAppQuery(
+    async (signal) => {
+      const response = await getProjectNames({ signal });
+      const responseData = response.data || {};
+      return getProjectNamesField(responseData, ProjectNamesField.PROJECTS) || [];
+    },
+    ['dealChecker-projects'],
+    { chartName: 'DealChecker-projects', staleTime: Infinity }
+  );
+
+  const projectOptions = projectOptionsData ?? [];
+  const projectOptionsLoading = projectsStatus === 'pending';
+
+  // 2. Deal check - triggered by form submit via dealParams (CLAUDE.md Rule 9)
+  // TanStack Query handles abort/stale requests automatically
+  const { data: dealResult, status: dealStatus, error: dealError } = useAppQuery(
+    async (signal) => {
+      if (!dealParams) return null;
+      const response = await getDealCheckerMultiScope(dealParams, { signal });
+      const responseData = response.data || {};
+      const project = getDealCheckerField(responseData, DealCheckerField.PROJECT) || {};
+      const filters = getDealCheckerField(responseData, DealCheckerField.FILTERS) || {};
+      const scopes = getDealCheckerField(responseData, DealCheckerField.SCOPES) || {};
+      const mapData = getDealCheckerField(responseData, DealCheckerField.MAP_DATA) || {};
+      const meta = getDealCheckerField(responseData, DealCheckerField.META) || {};
+      return { project, filters, scopes, map_data: mapData, meta };
+    },
+    ['dealChecker-result', dealParams],
+    { chartName: 'DealChecker-result', enabled: !!dealParams }
+  );
+
+  const result = dealResult;
+  const loading = dealStatus === 'pending' && !!dealParams;
+  const error = formError || (dealError?.message ?? null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -216,82 +210,46 @@ export default function DealCheckerContent() {
     setIsDropdownOpen(false);
   };
 
-  // Handle form submission
-  const handleCheck = async (e) => {
+  // Handle form submission - sets params to trigger useAppQuery
+  const handleCheck = (e) => {
     e.preventDefault();
+    setFormError(null);
 
     if (!projectName || !bedroom || !price) {
-      setError('Please fill in Project, Bedroom, and Price fields');
+      setFormError('Please fill in Project, Bedroom, and Price fields');
       return;
     }
 
     const priceNum = parseFloat(parseFormattedNumber(price));
     if (isNaN(priceNum) || priceNum <= 0) {
-      setError('Please enter a valid price');
+      setFormError('Please enter a valid price');
       return;
     }
 
-    // Start new request and get ID for stale check
-    const requestId = startRequest();
-    const signal = getSignal();
+    // Build params - setting this triggers the useAppQuery
+    const params = {
+      project_name: projectName,
+      bedroom: bedroom,
+      price: priceNum
+    };
 
-    setLoading(true);
-    setError(null);
-
-    try {
-      const params = {
-        project_name: projectName,
-        bedroom: bedroom,
-        price: priceNum
-      };
-
-      const sqftNum = parseFloat(parseFormattedNumber(sqft));
-      if (!isNaN(sqftNum) && sqftNum > 0) {
-        params.sqft = sqftNum;
-      }
-
-      const response = await getDealCheckerMultiScope(params, { signal });
-
-      // Guard: Don't update state if a newer request started
-      if (isStale(requestId)) return;
-
-      const responseData = response.data || {};
-      const project = getDealCheckerField(responseData, DealCheckerField.PROJECT) || {};
-      const filters = getDealCheckerField(responseData, DealCheckerField.FILTERS) || {};
-      const scopes = getDealCheckerField(responseData, DealCheckerField.SCOPES) || {};
-      const mapData = getDealCheckerField(responseData, DealCheckerField.MAP_DATA) || {};
-      const meta = getDealCheckerField(responseData, DealCheckerField.META) || {};
-
-      setResult({
-        project,
-        filters,
-        scopes,
-        map_data: mapData,
-        meta,
-      });
-      // Default to 1km scope, or same_project if it has more data
-      if (scopes?.same_project?.transaction_count > 10) {
-        setActiveScope('same_project');
-      } else {
-        setActiveScope('radius_1km');
-      }
-    } catch (err) {
-      // Ignore abort errors (intentional cancellation)
-      if (err.name === 'CanceledError' || err.name === 'AbortError') {
-        return;
-      }
-      // Guard: Check stale after error too
-      if (isStale(requestId)) return;
-
-      setError(err.response?.data?.error || 'Failed to check deal');
-      setResult(null);
-    } finally {
-      // Only clear loading if not stale
-      if (!isStale(requestId)) {
-        setLoading(false);
-      }
+    const sqftNum = parseFloat(parseFormattedNumber(sqft));
+    if (!isNaN(sqftNum) && sqftNum > 0) {
+      params.sqft = sqftNum;
     }
+
+    // Set params to trigger query (TanStack handles abort/stale automatically)
+    setDealParams(params);
   };
+
+  // Update active scope when result changes
+  useEffect(() => {
+    if (result?.scopes?.same_project?.transaction_count > 10) {
+      setActiveScope('same_project');
+    } else if (result) {
+      setActiveScope('radius_1km');
+    }
+  }, [result]);
 
   // Handle price input formatting
   const handlePriceChange = (e) => {

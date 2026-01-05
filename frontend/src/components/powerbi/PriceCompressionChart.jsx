@@ -89,7 +89,7 @@ function PriceCompressionChartBase({ height = 380, saleType = null, sharedData =
       const transformed = transformCompressionSeries(rawData);
       return calculateHistoricalBaseline(transformed);
     },
-    [], // Empty deps = fetch once on mount
+    ['priceCompressionBaseline'], // Explicit key to avoid collision with other fetch-once queries
     { chartName: 'PriceCompressionChart-baseline', initialData: null, enabled: inView, keepPreviousData: true }
   );
 

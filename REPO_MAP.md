@@ -188,6 +188,34 @@ The following were deleted after TanStack Query migration:
 backend/routes/analytics/deprecated.py  → Contains removed endpoints
 ```
 
+### SubscriptionContext Custom Cache Layer (Phase 2 - Backlog)
+
+**Where:** `frontend/src/context/SubscriptionContext.jsx` (733 lines)
+
+**Problem:** Manual cache + request guards + status machine duplicate TanStack Query capabilities.
+
+| Duplicated Feature | Lines | TanStack Equivalent |
+|--------------------|-------|---------------------|
+| Custom localStorage cache | 75-160 | `persistQueryClient` |
+| Stale request guard | 8-33 | Built-in `AbortSignal` |
+| Status machine | 172-177 | `status: 'pending' \| 'success' \| 'error'` |
+| Request deduplication | 344-348 | Built-in query deduplication |
+| Rate limit cooldown | 426-431 | `retry` + `retryDelay` options |
+
+**Why deferred:**
+- 🔴 HIGH RISK: Auth-related, affects user entitlements
+- 🔴 Revenue-critical: Paywall logic must be correct
+- Complex coupling with AuthContext (two-way data flow)
+- Per-user cache keying not natively supported by `persistQueryClient`
+- Needs E2E test coverage before refactoring
+
+**Migration plan (when ready):**
+1. Add E2E tests for login/logout/payment flows
+2. Investigate `persistQueryClient` per-user cache support
+3. Use `setQueryData` to replace `bootstrapSubscription`
+4. Keep `ensureSubscription` as thin wrapper over `useQuery`
+5. Incremental migration (not big-bang)
+
 ---
 
 ## 6. Pattern References

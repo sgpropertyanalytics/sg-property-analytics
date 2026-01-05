@@ -14,8 +14,8 @@
  * - SupplyBreakdownTable
  */
 
-import React, { createContext, useContext, useMemo, useState, useEffect } from 'react';
-// Phase 2: Using TanStack Query via useAppQuery wrapper
+import React, { createContext, useContext, useMemo } from 'react';
+// Phase 2: Using TanStack Query via useAppQuery wrapper (CLAUDE.md Rule 9)
 import { useAppQuery } from '../hooks';
 import { getSupplySummary } from '../api/client';
 
@@ -37,20 +37,6 @@ export function SupplyDataProvider({
   launchYear = 2026,
   children,
 }) {
-  // Build filter key for cache/refetch
-  const filterKey = useMemo(
-    () => `supply:${includeGls}:${launchYear}`,
-    [includeGls, launchYear]
-  );
-
-  // Track if filters are changing (for blur effect)
-  const [debouncedFilterKey, setDebouncedFilterKey] = useState(filterKey);
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedFilterKey(filterKey), 300);
-    return () => clearTimeout(timer);
-  }, [filterKey]);
-  const isFiltering = filterKey !== debouncedFilterKey;
-
   // Single shared fetch for all supply data - gated on appReady
   // isBootPending = true while waiting for app boot (auth/subscription/filters)
   const { data, loading, error, isBootPending, isFetching, refetch } = useAppQuery(
@@ -65,6 +51,7 @@ export function SupplyDataProvider({
   );
 
   // Memoize context value to prevent unnecessary re-renders
+  // isFiltering derived from isFetching (CLAUDE.md Rule 11: use library feature)
   const contextValue = useMemo(
     () => ({
       data,
@@ -72,13 +59,13 @@ export function SupplyDataProvider({
       error,
       isBootPending,
       isFetching,
-      isFiltering,
+      isFiltering: isFetching && !loading, // TanStack: fetching while we have data
       refetch,
       // Pass through filter values so components know the current state
       includeGls,
       launchYear,
     }),
-    [data, loading, error, isBootPending, isFetching, isFiltering, refetch, includeGls, launchYear]
+    [data, loading, error, isBootPending, isFetching, refetch, includeGls, launchYear]
   );
 
   return (
