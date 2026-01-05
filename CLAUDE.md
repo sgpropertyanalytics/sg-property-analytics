@@ -49,7 +49,7 @@ Private condo analytics platform using URA transaction data. Resale-focused with
 
 ## Core Invariants (NON-NEGOTIABLE)
 
-These 13 rules apply to EVERY task. Violation = bug.
+These 14 rules apply to EVERY task. Violation = bug.
 
 ### 1. Understand Before Implementing
 Read target files, check `git log -20 -- <file>`, find reference implementations. The architecture is SETTLED.
@@ -163,6 +163,16 @@ When modifying code that sits between two layers (API contracts, adapters, schem
 4. **Don't just fix one side** — Moving a mismatch is not fixing it
 
 **Ask before proceeding if all three don't align.**
+
+### 14. Field/API Changes Require Full Search
+
+When removing, renaming, or changing any field:
+
+1. Search for ALL usages across frontend and backend
+2. Update all references, or
+3. List breaking changes that need manual review
+
+**Never remove a field without verifying zero usages or updating all consumers.**
 
 ---
 
