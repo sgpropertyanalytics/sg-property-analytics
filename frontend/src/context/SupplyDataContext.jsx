@@ -60,7 +60,7 @@ export function SupplyDataProvider({
         { signal }
       );
     },
-    [filterKey],
+    ['supply', includeGls, launchYear],
     { initialData: null, keepPreviousData: true }
   );
 

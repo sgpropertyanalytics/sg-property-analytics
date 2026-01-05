@@ -74,7 +74,7 @@ function DistrictComparisonChartBase({
       // Transform through adapter - now returns grouped data
       return transformDistrictComparison(response.data, selectedProject, minUnits);
     },
-    [district, selectedProject, minUnits],
+    ['districtComparison', district, selectedProject, minUnits],
     { chartName: 'DistrictComparisonChart', initialData: null, keepPreviousData: true }
   );
 

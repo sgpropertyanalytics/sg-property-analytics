@@ -57,7 +57,7 @@
  */
 
 import { useQuery as useTanStackQuery } from '@tanstack/react-query';
-import { useMemo, useRef, useCallback, useEffect } from 'react';
+import { useRef, useCallback, useEffect } from 'react';
 import { useAppReadyOptional } from '../context/AppReadyContext';
 import { useChartTiming } from './useChartTiming';
 import { QueryStatus, deriveQueryStatus, hasRealData } from '../lib/queryClient';
@@ -87,15 +87,11 @@ export function useAppQuery(queryFn, deps = [], options = {}) {
   // Gate enabled on appReady - query won't execute until boot completes
   const effectiveEnabled = userEnabled && appReady;
 
-  // Stable query key from deps
-  // CRITICAL: Serialize deps to ensure stable reference comparison.
-  // Without this, passing [...deps] as array argument creates new reference
-  // every render, causing infinite query loops.
+  // Query key from deps
+  // TanStack Query uses hashQueryKey() for structural comparison, so we don't
+  // need custom serialization. Just construct the key directly.
   // Note: appReady is NOT included in queryKey - enabled handles boot gating.
-  // Including appReady would cause duplicate fetches (one when enabled becomes
-  // true, another when queryKey changes).
-  const depsKey = JSON.stringify(deps);
-  const queryKey = useMemo(() => ['appQuery', ...deps], [depsKey]);
+  const queryKey = ['appQuery', ...deps];
 
   // Stable ref for queryFn (avoid recreating query on every render)
   const queryFnRef = useRef(queryFn);

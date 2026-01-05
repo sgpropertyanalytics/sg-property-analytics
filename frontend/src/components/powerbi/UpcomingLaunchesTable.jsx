@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
+import { useInView } from 'react-intersection-observer';
 // Phase 2: Using TanStack Query via useAppQuery wrapper
-import { useAppQuery, useDeferredFetch } from '../../hooks';
+import { useAppQuery } from '../../hooks';
 import { getUpcomingLaunchesAll } from '../../api/client';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { getRegionBadgeClass } from '../../constants';
@@ -40,24 +41,18 @@ export function UpcomingLaunchesTable({
   });
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  // Create a stable key for deferred fetch (changes when sort/refresh changes)
-  const deferKey = useMemo(
-    () => `upcoming-${sortConfig.column}-${sortConfig.order}-${refreshTrigger}`,
-    [sortConfig, refreshTrigger]
-  );
-
-  // Defer fetch until table is visible (low priority - below the fold)
-  const { shouldFetch, containerRef } = useDeferredFetch({
-    filterKey: deferKey,
-    priority: 'low',
-    fetchOnMount: true,
+  // Visibility-based fetch deferral (CLAUDE.md Rule 5: Library-First)
+  const { ref: containerRef, inView } = useInView({
+    triggerOnce: false,
+    rootMargin: '100px',
+    initialInView: true,
   });
 
   // Handle manual refresh
   const handleRefresh = () => setRefreshTrigger(prev => prev + 1);
 
-  // Data fetching with useGatedAbortableQuery - gates on appReady
-  // enabled: shouldFetch ensures we only fetch when visible (deferred fetch)
+  // Data fetching with useAppQuery - gates on appReady
+  // enabled: inView ensures we only fetch when visible (deferred fetch)
   // isBootPending = true while waiting for app boot
   const { data, loading, error, isBootPending, refetch } = useAppQuery(
     async (signal) => {
@@ -75,10 +70,10 @@ export function UpcomingLaunchesTable({
       const responseData = response.data || {};
       return getUpcomingLaunchesField(responseData, UpcomingLaunchesField.DATA) || [];
     },
-    [sortConfig.column, sortConfig.order, refreshTrigger],
+    ['upcomingLaunches', sortConfig.column, sortConfig.order, refreshTrigger],
     {
       chartName: 'UpcomingLaunchesTable',
-      enabled: shouldFetch,
+      enabled: inView,
       initialData: null,
     }
   );
