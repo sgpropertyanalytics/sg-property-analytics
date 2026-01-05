@@ -131,19 +131,15 @@ return <Chart data={data} />;
 ```
 
 ### 11. Fix Root Cause, Not Symptoms
-**STOP before fixing ANY bug.** Don't blindly patch. Don't add layers.
 
-Ask these questions FIRST:
-1. **Band-aid or long-term fix?** — If band-aid, find root cause instead
-2. **Am I adding complexity?** — New middleware, wrapper, helper = RED FLAG
-3. **Does a library already solve this?** — Check before writing custom code
-4. **Does existing code handle this?** — Search repo for patterns first
-5. **Should I redesign the flow?** — Sometimes the architecture is wrong
+**STOP before fixing ANY bug.** Ask these questions IN ORDER:
 
-**Priority:** Clean, simple, efficient code that is **aligned and consistent** with existing patterns.
+1. Does a library/framework already solve this? → Use it
+2. Does stdlib solve this? → Use it
+3. Is existing code the RIGHT pattern, or tech debt? → Ask if unsure
+4. Only then: write custom code matching good existing patterns
 
-> If you're adding a layer to fix a bug, you're probably creating two bugs.
-> If unsure whether it's a proper fix → **ASK, don't guess.**
+**Existing patterns are not automatically correct.** If existing code is custom logic that a library handles better, the existing code is tech debt — don't copy it.
 
 ### 12. One API Per Data Need
 
