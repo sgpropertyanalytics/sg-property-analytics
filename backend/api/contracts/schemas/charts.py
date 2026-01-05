@@ -4,6 +4,7 @@ Contract schemas for chart endpoints.
 Specialized chart data endpoints for visualizations.
 
 Endpoints:
+- GET /api/district-growth
 - GET /api/projects_by_district
 - GET /api/price_projects_by_district
 - GET /api/floor-liquidity-heatmap
@@ -21,12 +22,46 @@ from ..registry import (
     make_required_meta,
 )
 from ..pydantic_models import (
+    DistrictGrowthParams,
     ProjectsByDistrictParams,
     PriceProjectsByDistrictParams,
     FloorLiquidityHeatmapParams,
     PsfByPriceBandParams,
     BudgetHeatmapParams,
 )
+
+
+# =============================================================================
+# /district-growth (dumbbell chart)
+# =============================================================================
+
+DISTRICT_GROWTH_RESPONSE_SCHEMA = ResponseSchema(
+    data_fields={
+        "district": FieldSpec(name="district", type=str, required=True),
+        "startQuarter": FieldSpec(name="startQuarter", type=str, required=True),
+        "endQuarter": FieldSpec(name="endQuarter", type=str, required=True),
+        "startPsf": FieldSpec(name="startPsf", type=float, required=True),
+        "endPsf": FieldSpec(name="endPsf", type=float, required=True),
+        "growthPercent": FieldSpec(name="growthPercent", type=float, required=True),
+    },
+    meta_fields=make_meta_fields(
+        FieldSpec(name="startQuarter", type=str),
+        FieldSpec(name="endQuarter", type=str),
+        FieldSpec(name="excludedDistricts", type=list),
+    ),
+    required_meta=make_required_meta(),
+    data_is_list=True,
+)
+
+DISTRICT_GROWTH_CONTRACT = EndpointContract(
+    endpoint="charts/district-growth",
+    version="v3",
+    response_schema=DISTRICT_GROWTH_RESPONSE_SCHEMA,
+    pydantic_model=DistrictGrowthParams,
+    mode=SchemaMode.WARN,
+)
+
+register_contract(DISTRICT_GROWTH_CONTRACT)
 
 
 # =============================================================================

@@ -4,13 +4,10 @@ import { useAppQuery } from '../../hooks';
 // Phase 3.4: Using standardized Zustand filters (bedroom only - ignores time filter)
 import { useZustandFilters } from '../../stores';
 import { ChartFrame } from '../common/ChartFrame';
-import { getAggregate } from '../../api/client';
-import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS, DISTRICT_NAMES, getRegionForDistrict } from '../../constants';
+import { getDistrictGrowth } from '../../api/client';
+import { DISTRICT_NAMES, getRegionForDistrict } from '../../constants';
 import { SaleType } from '../../schemas/apiContract';
-import { transformGrowthDumbbellSeries, logFetchDebug, assertKnownVersion } from '../../adapters';
-
-// All districts
-const ALL_DISTRICTS = [...CCR_DISTRICTS, ...RCR_DISTRICTS, ...OCR_DISTRICTS];
+import { transformGrowthDumbbellSeries, logFetchDebug } from '../../adapters';
 
 
 // Region header colors (matching micro-charts)
@@ -51,12 +48,11 @@ const getGradientColor = (rankPercent) => {
  * with sortable columns and absolute PSF increment.
  *
  * IMPORTANT: This chart INTENTIONALLY ignores time filter.
- * It compares the EARLIEST 3 completed quarters (baseline) against
- * the LATEST 3 completed quarters (current) across the FULL database.
+ * It compares the EARLIEST completed quarter (baseline) against
+ * the LATEST completed quarter (current) across the FULL database.
  * This is by design to show long-term growth trajectory.
  *
  * Phase 3.4: Uses Zustand for bedroom filter only, NOT time filter.
- * Always passes timeframe='all' to get full database history.
  *
  * @param {{
  *  saleType?: string,
@@ -76,18 +72,12 @@ function GrowthDumbbellChartBase({ saleType = SaleType.RESALE, enabled = true })
   const [sortConfig, setSortConfig] = useState({ column: 'growth', order: 'desc' });
 
   // Data fetching with useAppQuery - gates on appReady
-  // Phase 4: Inline query key - no filterKey abstraction
   // enabled prop prevents fetching when component is hidden (e.g., in volume mode)
   const { data, status, error, refetch } = useAppQuery(
     async (signal) => {
-      // Build API params - explicitly request full database range
-      // INTENTIONAL: This chart compares earliest 3 quarters vs latest 3 quarters
-      // across the FULL database. It does NOT react to the sidebar time filter.
+      // Build API params - backend calculates growth comparing earliest vs latest quarter
       const params = {
-        group_by: 'quarter,district',
-        metrics: 'median_psf',
         sale_type: saleType,
-        timeframe: 'all',  // Override default Y1 to get full history
       };
 
       // Add bedroom filter from Zustand (but NOT timeframe - intentionally ignored)
@@ -95,23 +85,17 @@ function GrowthDumbbellChartBase({ saleType = SaleType.RESALE, enabled = true })
         params.bedroom = bedroom;
       }
 
-      const response = await getAggregate(params, { signal });
-
-      // Validate API contract version (dev/test only)
-      assertKnownVersion(response.data, '/api/aggregate');
-
-      const rawData = response.data || [];
+      const response = await getDistrictGrowth(params, { signal });
 
       // Debug logging (dev only)
       logFetchDebug('GrowthDumbbellChart', {
-        endpoint: '/api/aggregate',
-        timeGrain: 'quarter,district',
-        response: response.data,
-        rowCount: rawData.length,
+        endpoint: '/api/district-growth',
+        response: response,
+        rowCount: response?.data?.length || 0,
       });
 
-      // Use adapter for transformation
-      return transformGrowthDumbbellSeries(rawData, { districts: ALL_DISTRICTS });
+      // Use adapter for shape normalization (business logic is in backend)
+      return transformGrowthDumbbellSeries(response);
     },
     [bedroom, saleType],
     { chartName: 'GrowthDumbbellChart', initialData: null, enabled }

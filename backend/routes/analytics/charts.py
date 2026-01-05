@@ -5,6 +5,7 @@ Specialized chart data endpoints that go beyond /aggregate.
 Includes project-level drilldowns, heatmaps, and price band analysis.
 
 Endpoints:
+- /district-growth - Median PSF growth % per district (dumbbell chart)
 - /projects_by_district - Project-level volume breakdown
 - /price_projects_by_district - Project price quartiles
 - /floor-liquidity-heatmap - Floor zone liquidity analysis
@@ -20,6 +21,74 @@ from utils.normalize import (
     ValidationError as NormalizeValidationError, validation_error_response
 )
 from api.contracts.wrapper import api_contract
+
+
+@analytics_bp.route("/district-growth", methods=["GET"])
+@api_contract("charts/district-growth")
+def district_growth():
+    """
+    Median PSF growth % per district - compares earliest vs latest quarter.
+
+    Used by the Dumbbell Chart on District Deep Dive page.
+
+    Query params:
+      - sale_type: 'new_sale', 'resale', 'sub_sale' (default: resale)
+      - bedroom: comma-separated bedroom counts (e.g., 2,3,4)
+      - district: comma-separated districts (e.g., D01,D02)
+
+    Returns:
+      {
+        "data": [
+          {
+            "district": "D01",
+            "startQuarter": "2020-Q4",
+            "endQuarter": "2024-Q4",
+            "startPsf": 1234.56,
+            "endPsf": 1567.89,
+            "growthPercent": 27.02
+          },
+          ...
+        ],
+        "meta": {
+          "startQuarter": "2020-Q4",
+          "endQuarter": "2024-Q4",
+          "excludedDistricts": [...]
+        }
+      }
+    """
+    from services.district_growth_service import get_district_growth
+
+    start = time.time()
+
+    try:
+        # Use normalized params from Pydantic (via @api_contract decorator)
+        params = g.normalized_params
+
+        # Extract filters
+        sale_type = params.get('sale_type')
+        bedrooms = params.get('bedrooms')
+        districts = params.get('districts')
+
+        # Call service
+        result = get_district_growth(
+            sale_type=sale_type,
+            bedrooms=bedrooms,
+            districts=districts
+        )
+
+        elapsed = time.time() - start
+        result['meta']['elapsedMs'] = int(elapsed * 1000)
+
+        print(f"GET /api/district-growth took: {elapsed:.4f}s ({len(result['data'])} districts)")
+
+        return jsonify(result)
+
+    except Exception as e:
+        elapsed = time.time() - start
+        print(f"GET /api/district-growth ERROR (took {elapsed:.4f}s): {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
 
 
 @analytics_bp.route("/projects_by_district", methods=["GET"])

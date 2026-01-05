@@ -2,6 +2,7 @@
 Pydantic models for /charts/* endpoints.
 
 Endpoints:
+- charts/district-growth
 - charts/projects-by-district
 - charts/price-projects-by-district
 - charts/floor-liquidity-heatmap
@@ -23,6 +24,26 @@ from .types import (
     CoercedFloat,
     CoercedBool,
 )
+
+
+class DistrictGrowthParams(BaseParamsModel):
+    """Params for /charts/district-growth (dumbbell chart)."""
+
+    # sale_type normalized to DB format by BaseParamsModel validator
+    sale_type: Optional[str] = Field(
+        default=None,
+        description="Sale type filter (new_sale, resale, sub_sale)"
+    )
+    bedrooms: WrapList = Field(
+        default=None,
+        validation_alias='bedroom',
+        description="Comma-separated bedroom counts"
+    )
+    districts: DistrictList = Field(
+        default=None,
+        validation_alias='district',
+        description="Comma-separated districts"
+    )
 
 
 class ProjectsByDistrictParams(BaseParamsModel):
