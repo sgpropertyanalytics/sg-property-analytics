@@ -76,8 +76,8 @@ export function PriceRangeMatrix({
     { chartName: 'PriceRangeMatrix', keepPreviousData: true }
   );
 
-  // Destructure with safe access - ChartFrame handles empty state
-  const { matrix, ageBands, bedrooms } = data || {};
+  // Destructure with defaults - prevents crash when children evaluated before ChartFrame renders
+  const { matrix = {}, ageBands = [], bedrooms = [] } = data || {};
 
   return (
     <ChartFrame
