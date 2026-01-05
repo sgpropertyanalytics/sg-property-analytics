@@ -52,70 +52,6 @@ KPI_SUMMARY_RESPONSE_SCHEMA = ResponseSchema(
 
 
 # =============================================================================
-# CUSTOM RESPONSE VALIDATOR
-# =============================================================================
-
-def validate_kpi_response(response: dict) -> None:
-    """
-    Custom validation for KPI response.
-
-    The response has structure:
-    {
-        "kpis": [...],
-        "meta": {...}
-    }
-
-    Not:
-    {
-        "data": [...],
-        "meta": {...}
-    }
-    """
-    from ..validate import ContractViolation
-
-    violations = []
-
-    # Check kpis array exists
-    if "kpis" not in response:
-        violations.append({
-            "path": "kpis",
-            "error": "missing_field",
-            "message": "Response must have 'kpis' array"
-        })
-    elif not isinstance(response["kpis"], list):
-        violations.append({
-            "path": "kpis",
-            "error": "type_mismatch",
-            "expected": "list",
-            "received": type(response["kpis"]).__name__
-        })
-    elif response["kpis"]:
-        # Validate first KPI item
-        kpi = response["kpis"][0]
-        for field_name, spec in KPI_ITEM_FIELDS.items():
-            if spec.required and field_name not in kpi:
-                violations.append({
-                    "path": f"kpis[].{field_name}",
-                    "error": "missing_field",
-                    "message": f"Required field '{field_name}' missing"
-                })
-
-    # Check meta exists
-    if "meta" not in response:
-        violations.append({
-            "path": "meta",
-            "error": "missing_field",
-            "message": "Response must have 'meta' object"
-        })
-
-    if violations:
-        raise ContractViolation(
-            message=f"{len(violations)} KPI response schema violation(s)",
-            details={"violations": violations}
-        )
-
-
-# =============================================================================
 # REGISTER CONTRACTS
 # =============================================================================
 
@@ -129,7 +65,9 @@ KPI_SUMMARY_CONTRACT = EndpointContract(
 register_contract(KPI_SUMMARY_CONTRACT)
 
 
+# =============================================================================
 # KPI-SUMMARY-V2/<KPI_ID> - Single KPI endpoint
+# =============================================================================
 KPI_SINGLE_RESPONSE_SCHEMA = ResponseSchema(
     data_fields={},
     meta_fields=make_meta_fields(),
