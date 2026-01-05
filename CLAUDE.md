@@ -49,7 +49,7 @@ Private condo analytics platform using URA transaction data. Resale-focused with
 
 ## Core Invariants (NON-NEGOTIABLE)
 
-These 11 rules apply to EVERY task. Violation = bug.
+These 12 rules apply to EVERY task. Violation = bug.
 
 ### 1. Understand Before Implementing
 Read target files, check `git log -20 -- <file>`, find reference implementations. The architecture is SETTLED.
@@ -144,6 +144,18 @@ Ask these questions FIRST:
 
 > If you're adding a layer to fix a bug, you're probably creating two bugs.
 > If unsure whether it's a proper fix → **ASK, don't guess.**
+
+### 12. One API Per Data Need
+
+Design APIs around **data needs**, not pages or charts.
+
+| Approach | When to Use |
+|----------|-------------|
+| One API per page | Almost never. Couples backend to frontend layout. |
+| One API per chart | Sometimes overkill. What if 3 charts need same data? |
+| **One API per data need** | ✅ Sweet spot. Reusable, focused, decoupled. |
+
+**Example:** If 3 charts all need quarterly median PSF by district, create ONE `/api/aggregate` endpoint they all share — not 3 separate endpoints.
 
 ---
 

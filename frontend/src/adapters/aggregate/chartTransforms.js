@@ -7,8 +7,6 @@
  */
 
 import {
-  getAggField,
-  AggField,
   getNewVsResaleField,
   NewVsResaleField,
 } from '../../schemas/apiContract';
@@ -64,130 +62,39 @@ export const transformNewVsResaleSeries = (rawData) => {
 };
 
 /**
- * Transform raw aggregate data into growth dumbbell chart format.
+ * Transform /api/district-growth response into chart format.
  *
- * Uses a CONSISTENT time period across all districts for fair comparison:
- * - Finds the global earliest and latest quarters with sufficient data
- * - Compares each district's PSF at those same quarters
- * - Excludes districts missing data for either endpoint
+ * This is a pure adapter - all business logic (quarter selection, growth calculation)
+ * is handled by the backend. This function only normalizes the response shape.
  *
- * @param {Array} rawData - Raw data from /api/aggregate with quarter,district grouping
- * @param {Object} options - Configuration options
- * @param {Array} options.districts - List of valid district codes (e.g., ['D01', 'D02', ...])
- * @returns {Object} Transformed data:
- *   {
- *     chartData: [{ district, startPsf, endPsf, startQuarter, endQuarter, growthPercent }],
- *     startQuarter: string,  // Global earliest quarter (same for all)
- *     endQuarter: string,    // Global latest quarter (same for all)
- *     excludedDistricts: [{ district, reason }]  // Districts excluded due to missing data
- *   }
+ * @param {Object} rawData - Raw response from /api/district-growth
+ * @returns {Object} Normalized data for GrowthDumbbellChart
  */
-export const transformGrowthDumbbellSeries = (rawData, options = {}) => {
-  const { districts = [] } = options;
-
+export const transformGrowthDumbbellSeries = (rawData) => {
   // Handle null/undefined input
-  if (!Array.isArray(rawData)) {
-    if (isDev) console.warn('[transformGrowthDumbbellSeries] Invalid input', rawData);
-    return { chartData: [], startQuarter: '', endQuarter: '' };
+  if (!rawData) {
+    if (isDev) console.warn('[transformGrowthDumbbellSeries] Null input');
+    return { chartData: [], startQuarter: '', endQuarter: '', excludedDistricts: [] };
   }
 
-  if (rawData.length === 0) {
-    return { chartData: [], startQuarter: '', endQuarter: '' };
-  }
+  // Extract data and meta from response
+  const data = rawData.data || [];
+  const meta = rawData.meta || {};
 
-  // Build a map of district -> quarter -> medianPsf
-  const districtQuarterMap = {};
-  const allQuarters = new Set();
-
-  rawData.forEach(row => {
-    const district = row.district;
-    // API v2 uses 'period' as the unified time bucket field (not 'quarter')
-    const quarter = getAggField(row, AggField.PERIOD) || row.quarter;
-    const medianPsf = getAggField(row, AggField.MEDIAN_PSF) || getAggField(row, AggField.AVG_PSF) || 0;
-
-    // Only include if district is in our list (or if no list provided)
-    if (districts.length === 0 || districts.includes(district)) {
-      if (!districtQuarterMap[district]) {
-        districtQuarterMap[district] = {};
-      }
-      if (medianPsf > 0) {
-        districtQuarterMap[district][quarter] = medianPsf;
-        allQuarters.add(quarter);
-      }
-    }
-  });
-
-  // Sort quarters chronologically
-  const sortedQuarters = Array.from(allQuarters).sort();
-
-  // Need at least 6 quarters for meaningful 3-quarter comparison
-  // (3 earliest + 3 latest should not overlap)
-  if (sortedQuarters.length < 6) {
-    if (isDev) console.warn('[transformGrowthDumbbellSeries] Need at least 6 quarters for 3-quarter comparison');
-    return { chartData: [], startQuarter: '', endQuarter: '' };
-  }
-
-  // Take the earliest 3 quarters and latest 3 quarters
-  const earliestQuarters = sortedQuarters.slice(0, 3);
-  const latestQuarters = sortedQuarters.slice(-3);
-
-  // Format quarter ranges for display (e.g., "2020-Q4 – 2021-Q2")
-  const startQuarterRange = `${earliestQuarters[0]} – ${earliestQuarters[2]}`;
-  const endQuarterRange = `${latestQuarters[0]} – ${latestQuarters[2]}`;
-
-  // Helper: calculate average PSF across multiple quarters for a district
-  const getAveragePsf = (quarterData, quarters) => {
-    const values = quarters
-      .map(q => quarterData[q])
-      .filter(v => v && v > 0);
-    if (values.length === 0) return null;
-    return values.reduce((sum, v) => sum + v, 0) / values.length;
-  };
-
-  // Calculate growth for each district using average of 3 quarters
-  const chartData = [];
-  const excludedDistricts = [];
-
-  Object.entries(districtQuarterMap).forEach(([district, quarterData]) => {
-    const startPsf = getAveragePsf(quarterData, earliestQuarters);
-    const endPsf = getAveragePsf(quarterData, latestQuarters);
-
-    // Only include districts that have data for BOTH periods
-    if (startPsf && startPsf > 0 && endPsf && endPsf > 0) {
-      const growthPercent = ((endPsf - startPsf) / startPsf) * 100;
-
-      chartData.push({
-        district,
-        startPsf,
-        endPsf,
-        startQuarter: startQuarterRange,
-        endQuarter: endQuarterRange,
-        growthPercent,
-      });
-    } else {
-      // Track excluded districts with reason
-      const missingStart = !startPsf || startPsf <= 0;
-      const missingEnd = !endPsf || endPsf <= 0;
-      let reason;
-      if (missingStart && missingEnd) {
-        reason = `No data for ${startQuarterRange} or ${endQuarterRange}`;
-      } else if (missingStart) {
-        reason = `No data for ${startQuarterRange}`;
-      } else {
-        reason = `No data for ${endQuarterRange}`;
-      }
-      excludedDistricts.push({ district, reason });
-
-      if (isDev) {
-        console.warn(`[transformGrowthDumbbellSeries] Excluding ${district}: ${reason}`);
-      }
-    }
-  });
+  // Normalize each row (ensure consistent shape)
+  const chartData = data.map((row) => ({
+    district: row.district || '',
+    startQuarter: row.startQuarter || meta.startQuarter || '',
+    endQuarter: row.endQuarter || meta.endQuarter || '',
+    startPsf: row.startPsf ?? 0,
+    endPsf: row.endPsf ?? 0,
+    growthPercent: row.growthPercent ?? 0,
+  }));
 
   return {
     chartData,
-    startQuarter: startQuarterRange,
-    endQuarter: endQuarterRange,
-    excludedDistricts,
+    startQuarter: meta.startQuarter || '',
+    endQuarter: meta.endQuarter || '',
+    excludedDistricts: meta.excludedDistricts || [],
   };
 };

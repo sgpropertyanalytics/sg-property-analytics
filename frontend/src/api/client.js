@@ -600,6 +600,33 @@ export const getAggregate = (params = {}, options = {}) => {
 };
 
 /**
+ * Get district growth data - median PSF growth % per district
+ * Compares earliest quarter to latest quarter.
+ * Used by GrowthDumbbellChart on District Deep Dive page.
+ *
+ * @param {Object} params - Query parameters
+ * @param {string} [params.sale_type] - Sale type filter (new_sale, resale, sub_sale)
+ * @param {string} [params.bedroom] - Comma-separated bedroom counts
+ * @param {string} [params.district] - Comma-separated districts
+ * @param {Object} options - Request options
+ * @param {AbortSignal} [options.signal] - AbortController signal for cancellation
+ * @returns {Promise<{
+ *   data: Array<{district, startQuarter, endQuarter, startPsf, endPsf, growthPercent}>,
+ *   meta: {startQuarter, endQuarter, excludedDistricts, elapsedMs}
+ * }>}
+ */
+export const getDistrictGrowth = (params = {}, options = {}) => {
+  const queryString = buildQueryString(params);
+  const cacheKey = `district-growth:${queryString}`;
+  const { skipCache, signal, priority } = options;
+  return cachedFetch(
+    cacheKey,
+    () => apiClient.get(`/district-growth?${queryString}`, { signal }),
+    { forceRefresh: skipCache, signal, priority }
+  );
+};
+
+/**
  * Get KPI summary using registry-based endpoint
  * Returns array of KPIResult objects with consistent shape.
  * @param {Object} params - Filter parameters

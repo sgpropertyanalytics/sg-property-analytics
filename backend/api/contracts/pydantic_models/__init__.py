@@ -31,6 +31,7 @@ from .insights import DistrictPsfParams, DistrictLiquidityParams
 # New models - Phase 8 migration
 from .trends import NewVsResaleParams
 from .charts import (
+    DistrictGrowthParams,
     ProjectsByDistrictParams,
     PriceProjectsByDistrictParams,
     FloorLiquidityHeatmapParams,
@@ -77,6 +78,7 @@ __all__ = [
     'DistrictLiquidityParams',
     # New endpoints (Phase 8)
     'NewVsResaleParams',
+    'DistrictGrowthParams',
     'ProjectsByDistrictParams',
     'PriceProjectsByDistrictParams',
     'FloorLiquidityHeatmapParams',
