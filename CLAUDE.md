@@ -49,7 +49,7 @@ Private condo analytics platform using URA transaction data. Resale-focused with
 
 ## Core Invariants (NON-NEGOTIABLE)
 
-These 12 rules apply to EVERY task. Violation = bug.
+These 13 rules apply to EVERY task. Violation = bug.
 
 ### 1. Understand Before Implementing
 Read target files, check `git log -20 -- <file>`, find reference implementations. The architecture is SETTLED.
@@ -156,6 +156,17 @@ Design APIs around **data needs**, not pages or charts.
 | **One API per data need** | ✅ Sweet spot. Reusable, focused, decoupled. |
 
 **Example:** If 3 charts all need quarterly median PSF by district, create ONE `/api/aggregate` endpoint they all share — not 3 separate endpoints.
+
+### 13. Check Both Sides Before Changing Contracts
+
+When modifying code that sits between two layers (API contracts, adapters, schemas, serializers, type definitions), ALWAYS:
+
+1. **Check both sides** — What does the upstream send? What does the downstream expect?
+2. **State the current reality** — "Layer A sends X, Layer B expects Y, this file says Z"
+3. **Propose direction** — Are we changing the contract to match reality, or adding a translation layer?
+4. **Don't just fix one side** — Moving a mismatch is not fixing it
+
+**Ask before proceeding if all three don't align.**
 
 ---
 
