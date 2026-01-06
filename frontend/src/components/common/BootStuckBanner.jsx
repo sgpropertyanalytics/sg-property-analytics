@@ -1,6 +1,10 @@
+import { useLocation } from 'react-router-dom';
 import { useAppReady } from '../../context/AppReadyContext';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { useAuth } from '../../context/AuthContext';
+
+// Public routes that don't need auth/subscription - don't show banner here
+const PUBLIC_ROUTES = ['/', '/landing', '/login', '/pricing'];
 
 /**
  * BootStuckBanner - Recovery UI when boot is stuck >10s
@@ -17,10 +21,14 @@ import { useAuth } from '../../context/AuthContext';
  * Usage: Add to App.jsx layout, outside main content
  */
 export function BootStuckBanner() {
+  const location = useLocation();
   const { isBootStuck, bootStatus } = useAppReady();
   const { retrySubscription } = useSubscription();
   const { retryTokenSync } = useAuth();
 
+  // Don't show on public routes - they don't need auth/subscription
+  if (PUBLIC_ROUTES.includes(location.pathname)) return null;
+  
   if (!isBootStuck) return null;
 
   const handleRetry = () => {
