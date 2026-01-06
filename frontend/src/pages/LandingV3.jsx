@@ -1,19 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion, useInView } from 'framer-motion';
-import {
-  ArrowRight,
-  ChevronDown,
-  ChevronRight,
-  Command,
-  Database,
-  Globe,
-  Lock,
-  Radar,
-  ShieldCheck,
-  Terminal,
-  Zap,
-} from 'lucide-react';
+import { ArrowRight, ChevronDown, ChevronRight, Command, Globe, Lock, Terminal } from 'lucide-react';
 
 const CANVAS = '#fafafa';
 const INK = '#000000';
@@ -147,13 +135,12 @@ function CommandBar({ onExecute }) {
 
   const suggestions = useMemo(
     () => [
-      'view market data',
-      'open market overview',
-      'scan district d09 resale 2br',
-      'compare ccr vs ocr psf 12m',
-      'stream latest resale prints',
-      'validate ura pipeline health',
-      'find mispricing: 721 sqft > $2,480 psf',
+      'query --district d09 --type resale --beds 2',
+      'scan --region ccr --sort yield --limit 50',
+      'stream --feed live_prints --filter psf>2000',
+      'diff --project "avenue-south" --period 12m',
+      'validate --pipeline health --verbose',
+      'export --format csv --scope d10_resale_2024',
     ],
     [],
   );
@@ -203,10 +190,10 @@ function CommandBar({ onExecute }) {
 
   return (
     <div className="relative">
-      <div className="flex items-stretch border border-black/10 bg-[#fafafa]">
-        <div className="flex items-center gap-2 px-3 border-r border-black/10">
-          <Command className="h-4 w-4 text-black/30" />
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40 hidden sm:inline">
+      <div className="flex items-stretch border border-white/10 border-l-4 border-emerald-500 bg-black">
+        <div className="flex items-center gap-2 px-3 border-r border-white/10">
+          <Command className="h-4 w-4 text-emerald-400/80" />
+          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40 hidden sm:inline">
             Cmd
           </span>
         </div>
@@ -223,20 +210,18 @@ function CommandBar({ onExecute }) {
             window.setTimeout(() => setIsOpen(false), 120);
           }}
           onKeyDown={onKeyDown}
-          placeholder="Type a command…"
-          className="flex-1 min-w-0 px-3 py-3 font-mono text-xs tracking-wide text-black/70 placeholder:text-black/30 bg-transparent outline-none"
+          placeholder="> query --district 10 --type resale --sort psf"
+          className="flex-1 min-w-0 px-3 py-3 font-mono text-xs tracking-wide text-emerald-100 placeholder:text-emerald-400/40 caret-emerald-400 bg-transparent outline-none"
         />
         <button
           type="button"
           onClick={() => execute(value || filtered[0] || '')}
-          className="group flex items-center gap-2 px-4 bg-black hover:bg-black/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
+          className="group flex items-center gap-2 px-4 bg-black hover:bg-white/[0.06] border-l border-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30"
         >
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-white">Enter Terminal</span>
-          <ArrowRight className="h-4 w-4 text-white group-hover:translate-x-0.5 transition-transform" />
+          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/80">Execute</span>
+          <ArrowRight className="h-4 w-4 text-white/70 group-hover:translate-x-0.5 transition-transform" />
         </button>
       </div>
-
-
 
       <AnimatePresence>
         {isOpen && filtered.length ? (
@@ -244,7 +229,7 @@ function CommandBar({ onExecute }) {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 8 }}
-            className="absolute left-0 right-0 mt-2 border border-black/10 bg-[#fafafa]"
+            className="absolute left-0 right-0 mt-2 border border-white/10 bg-black/95 backdrop-blur"
           >
             {filtered.map((s, i) => (
               <button
@@ -255,14 +240,14 @@ function CommandBar({ onExecute }) {
                   setValue(s);
                   setIsOpen(false);
                 }}
-                className={`w-full px-3 py-2 flex items-center justify-between gap-3 text-left hover:bg-black/[0.02] border-t first:border-t-0 border-black/05 ${
-                  i === activeIndex ? 'bg-black/[0.02]' : ''
+                className={`w-full px-3 py-2 flex items-center justify-between gap-3 text-left hover:bg-white/[0.06] border-t first:border-t-0 border-white/10 ${
+                  i === activeIndex ? 'bg-white/[0.06]' : ''
                 }`}
               >
                 <div className="min-w-0">
-                  <div className="font-mono text-xs text-black/70 truncate">{s}</div>
+                  <div className="font-mono text-xs text-emerald-100/90 truncate">{s}</div>
                 </div>
-                <ChevronRight className="h-4 w-4 text-black/20" />
+                <ChevronRight className="h-4 w-4 text-white/25" />
               </button>
             ))}
           </motion.div>
@@ -307,26 +292,47 @@ function TerminalOutput({ lines, isLive = true }) {
 
 
   return (
-    <div 
-      ref={containerRef}
-      className="font-mono text-xs leading-relaxed text-black/40 h-[240px] overflow-hidden"
-    >
-      {visibleLines.map((line, i) => (
-        <div key={i} className={line.startsWith('→') ? 'text-emerald-600' : 'text-black/40'}>
-          {line}
+    <div className="border border-white/10 bg-black h-[240px] flex flex-col">
+      <div className="px-3 py-2 border-b border-white/10 flex items-center justify-between">
+        <div className="flex items-center gap-2 min-w-0">
+          {isLive ? (
+            <span className="relative inline-flex h-2 w-2 flex-shrink-0">
+              <span className="absolute inline-flex h-full w-full bg-emerald-500 opacity-60 animate-ping" />
+              <span className="relative inline-flex h-2 w-2 bg-emerald-500" />
+            </span>
+          ) : (
+            <span className="h-2 w-2 bg-white/20 flex-shrink-0" />
+          )}
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/50 truncate">
+            Terminal Output
+          </div>
         </div>
-      ))}
-      {currentTyping && (
-        <div className={currentTyping.startsWith('→') ? 'text-emerald-600' : 'text-black/40'}>
-          {currentTyping}
-          <span className={`inline-block ${cursorOn ? 'opacity-100' : 'opacity-0'}`}>_</span>
+        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/30">
+          {isLive ? 'streaming' : 'idle'}
         </div>
-      )}
-      {currentLineIndex >= lines.length && (
-        <div className="text-emerald-600">
-          $ ready<span className={`inline-block ${cursorOn ? 'opacity-100' : 'opacity-0'}`}>_</span>
-        </div>
-      )}
+      </div>
+
+      <div
+        ref={containerRef}
+        className="flex-1 px-3 py-2 font-mono text-xs leading-relaxed text-white/55 overflow-hidden"
+      >
+        {visibleLines.map((line, i) => (
+          <div key={i} className={line.startsWith('→') ? 'text-emerald-400' : 'text-white/55'}>
+            {line}
+          </div>
+        ))}
+        {currentTyping && (
+          <div className={currentTyping.startsWith('→') ? 'text-emerald-400' : 'text-white/55'}>
+            {currentTyping}
+            <span className={`inline-block text-emerald-300 ${cursorOn ? 'opacity-100' : 'opacity-0'}`}>_</span>
+          </div>
+        )}
+        {currentLineIndex >= lines.length && (
+          <div className="text-emerald-400">
+            $ ready<span className={`inline-block text-emerald-300 ${cursorOn ? 'opacity-100' : 'opacity-0'}`}>_</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -707,24 +713,48 @@ function DotMatrixMap() {
   );
 }
 
-function CapabilityCard({ icon: Icon, title, desc }) {
+function HudCard({ children, className = '' }) {
   return (
-    <div className="group border border-black/10 bg-[#fafafa] p-6 hover:border-black/20 transition-colors">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">Capability</div>
-          <div className="mt-2 text-lg font-bold tracking-tight text-black">{title}</div>
-        </div>
-        <div className="border border-black/10 p-2">
-          <Icon className="h-5 w-5 text-black/30" />
-        </div>
-      </div>
-      <div className="mt-3 text-sm leading-relaxed text-black/50">{desc}</div>
-      <div className="mt-5 flex items-center justify-between">
-        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/30">Inspect</div>
-        <ChevronRight className="h-4 w-4 text-black/20 group-hover:translate-x-0.5 transition-transform" />
-      </div>
+    <div className={`relative border border-black/10 bg-[#fafafa] ${className}`}>
+      {/* Top-left corner tick */}
+      <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
+      {/* Bottom-right corner tick */}
+      <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
+      {children}
     </div>
+  );
+}
+
+function CapabilityCard({ seq, title, desc }) {
+  return (
+    <HudCard className="group p-4 hover:border-black/20 transition-colors">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">CAPABILITY</div>
+          <div className="mt-2 font-mono text-[13px] uppercase tracking-[0.16em] text-black truncate">
+            {title}
+          </div>
+        </div>
+
+        <div className="shrink-0 border border-black/10 px-2 py-1">
+          <div className="flex items-end gap-2">
+            <div className="font-mono text-xs tracking-[0.18em] text-black/50 tabular-nums">{seq}</div>
+            <div className="flex items-end gap-[2px]">
+              <div className="w-[3px] h-[6px] bg-black/15" />
+              <div className="w-[3px] h-[10px] bg-black/25" />
+              <div className="w-[3px] h-[8px] bg-black/20" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-3 text-sm leading-relaxed text-black/50">{desc}</div>
+
+      <div className="mt-5 flex items-center justify-between">
+        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/30">OPEN</div>
+        <div className="font-mono text-xs text-black/20 group-hover:translate-x-0.5 transition-transform">›</div>
+      </div>
+    </HudCard>
   );
 }
 
@@ -805,7 +835,7 @@ export default function LandingV3() {
 
       {/* NAV */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[#fafafa] border-b border-black/10">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-2.5">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3 min-w-0">
               <div className="border border-black/10 p-2">
@@ -927,43 +957,54 @@ export default function LandingV3() {
           <div className="max-w-7xl mx-auto px-4 md:px-6">
             <SectionTitle
               eyebrow="Coverage"
-              title="Signal depth"
-              muted="with auditability"
+              title="SIGNAL_DEPTH_MANIFEST"
+              muted="WITH_AUDITABILITY"
               rightSlot={<MonoPill>All outputs are preview-mode</MonoPill>}
             />
 
             <div className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="border border-black/10 bg-[#fafafa] p-6">
-                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">Transactions</div>
+              <HudCard className="p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">TRANSACTIONS</div>
+                  <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/30">[TX_TAPE_RESALE]</div>
+                </div>
                 <div className="mt-3 text-2xl md:text-3xl font-bold tracking-tight text-black">
                   <AnimatedNumber
                     value={103379}
                     format={(n) => Math.round(n).toLocaleString('en-SG')}
                   />
                 </div>
-                <div className="mt-1 text-sm text-black/50">Resale-focused tape</div>
-              </div>
-              <div className="border border-black/10 bg-[#fafafa] p-6">
-                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">Integrity</div>
+              </HudCard>
+
+              <HudCard className="p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">INTEGRITY</div>
+                  <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/30">[OUTLIER_GATE_v2.1]</div>
+                </div>
                 <div className="mt-3 text-2xl md:text-3xl font-bold tracking-tight text-black">
                   <AnimatedNumber value={99.2} format={(n) => `${n.toFixed(1)}%`} />
                 </div>
-                <div className="mt-1 text-sm text-black/50">Outlier-gated metrics</div>
-              </div>
-              <div className="border border-black/10 bg-[#fafafa] p-6">
-                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">Districts</div>
+              </HudCard>
+
+              <HudCard className="p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">DISTRICTS</div>
+                  <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/30">[GEO_CLUSTER_CCR_RCR_OCR]</div>
+                </div>
                 <div className="mt-3 text-2xl md:text-3xl font-bold tracking-tight text-black">
                   <AnimatedNumber value={28} format={(n) => String(Math.round(n))} />
                 </div>
-                <div className="mt-1 text-sm text-black/50">CCR / RCR / OCR</div>
-              </div>
-              <div className="border border-black/10 bg-[#fafafa] p-6">
-                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">History</div>
+              </HudCard>
+
+              <HudCard className="p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">HISTORY</div>
+                  <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/30">[DEPTH_CYCLES_FULL]</div>
+                </div>
                 <div className="mt-3 text-2xl md:text-3xl font-bold tracking-tight text-black">
                   <AnimatedNumber value={5} format={(n) => `${Math.round(n)}Y`} />
                 </div>
-                <div className="mt-1 text-sm text-black/50">Depth for cycles</div>
-              </div>
+              </HudCard>
             </div>
           </div>
         </section>
@@ -971,28 +1012,28 @@ export default function LandingV3() {
         {/* CAPABILITIES */}
         <section className="py-14 md:py-18">
           <div className="max-w-7xl mx-auto px-4 md:px-6">
-            <SectionTitle eyebrow="Tools" title="Capabilities" muted="built for analysts" />
+            <SectionTitle eyebrow="Tools" title="SYSTEM_CAPABILITIES" muted="BUILT_FOR_ANALYSTS" />
 
             <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <CapabilityCard
-                icon={Radar}
-                title="Deal Underwriting"
-                desc="Benchmark PSF by district, project, and unit type with repeatable assumptions."
+                seq="01"
+                title="BENCHMARK_ENGINE"
+                desc="Median PSF baselines by district, project, unit tier."
               />
               <CapabilityCard
-                icon={Database}
-                title="Raw Transaction Tape"
-                desc="Scan prints like a feed: district · size · psf · timestamp. No hidden smoothing."
+                seq="02"
+                title="TX_FEED_RAW"
+                desc="Chronological tape: district · size · psf · timestamp."
               />
               <CapabilityCard
-                icon={ShieldCheck}
-                title="Integrity Gating"
-                desc="Signal quality checks baked into the workflow — thin data flags and audit trails."
+                seq="03"
+                title="OUTLIER_FILTER"
+                desc="Gate / flag thin samples; preserve audit trail."
               />
               <CapabilityCard
-                icon={Zap}
-                title="Fast Navigation"
-                desc="Command-first UX for power users: run queries without leaving the keyboard."
+                seq="04"
+                title="LOW_LATENCY_QUERY"
+                desc="Keyboard-first routing for fast pivots + drilldown."
               />
             </div>
           </div>
