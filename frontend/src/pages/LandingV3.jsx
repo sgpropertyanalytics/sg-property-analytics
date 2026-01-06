@@ -663,10 +663,17 @@ function DotMatrixMap() {
 
         const v = land * 0.85 + sg * 2;
         const alpha = clamp(v, 0, 1);
+        const phase = ((x * 17 + y * 31) % 97) / 97;
+        const jitter = Math.sin(x * 1.35 + y * 0.92) * 0.55 + Math.cos(x * 0.62 - y * 0.28) * 0.35;
+        const shift = clamp(jitter, -0.9, 0.9) * (0.25 + alpha * 0.75);
+
         dots.push({
           key: `${x}-${y}`,
           alpha,
           isSg: sg > 0.35,
+          delay: phase * 1.9,
+          dur: 3.0 + phase * 2.2,
+          shift,
         });
       }
     }
@@ -687,9 +694,12 @@ function DotMatrixMap() {
           {cells.map((c) => (
             <div
               key={c.key}
-              className="h-[3px] w-full"
+              className={`h-[3px] w-full ${c.isSg ? 'landingV3-dotSg' : 'landingV3-dot'}`}
               style={{
                 backgroundColor: c.isSg ? 'rgba(0,0,0,0.55)' : `rgba(0,0,0,${0.06 + c.alpha * 0.18})`,
+                '--landingV3-dotShift': `${c.shift.toFixed(2)}px`,
+                '--landingV3-dotDur': `${c.dur.toFixed(2)}s`,
+                '--landingV3-dotDelay': `${c.delay.toFixed(2)}s`,
               }}
             />
           ))}
@@ -771,8 +781,32 @@ export default function LandingV3() {
     <div className="relative min-h-screen bg-[#fafafa] text-black overflow-x-hidden">
       <style>{`
         :root { color-scheme: light; }
+
+        @keyframes landingV3-dotDrift {
+          0%, 100% { transform: translate3d(0, 0, 0); opacity: 0.82; }
+          50% { transform: translate3d(0, var(--landingV3-dotShift, 0px), 0); opacity: 1; }
+        }
+
+        @keyframes landingV3-dotPulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.68; }
+        }
+
+        .landingV3-dot {
+          will-change: transform, opacity;
+          animation: landingV3-dotDrift var(--landingV3-dotDur, 3.2s) ease-in-out infinite;
+          animation-delay: var(--landingV3-dotDelay, 0s);
+        }
+
+        .landingV3-dotSg {
+          will-change: opacity;
+          animation: landingV3-dotPulse 2.6s ease-in-out infinite;
+          animation-delay: var(--landingV3-dotDelay, 0s);
+        }
+
         @media (prefers-reduced-motion: reduce) {
           .landingV3-scanline { display: none !important; }
+          .landingV3-dot, .landingV3-dotSg { animation: none !important; }
         }
       `}</style>
 
@@ -1016,6 +1050,32 @@ export default function LandingV3() {
                   <InsightRow label="Momentum" value="STABLE" delta="-0.3% MoM" />
                   <InsightRow label="Volume" value="2,104" delta="+4.1% QoQ" />
                   <InsightRow label="Dispersion" value="LOW" delta="-1.2% QoQ" />
+
+                  <div className="mt-2 border-t border-black/05 pt-3 pb-1">
+                    <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">
+                      Tagged entities
+                    </div>
+                    <div className="mt-2 grid grid-cols-1 gap-2">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="min-w-0 font-mono text-[10px] uppercase tracking-[0.18em] text-black/50 truncate">
+                          ORCHARD_RD <span className="text-black/30">[SG-D09-8821]</span>
+                        </div>
+                        <div className="font-mono text-xs text-black/60 tabular-nums">$2,480</div>
+                      </div>
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="min-w-0 font-mono text-[10px] uppercase tracking-[0.18em] text-black/50 truncate">
+                          TIONG_BAHRU <span className="text-black/30">[SG-D03-4412]</span>
+                        </div>
+                        <div className="font-mono text-xs text-black/60 tabular-nums">$2,110</div>
+                      </div>
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="min-w-0 font-mono text-[10px] uppercase tracking-[0.18em] text-black/50 truncate">
+                          BEDOK_RESERVOIR <span className="text-black/30">[SG-D16-1097]</span>
+                        </div>
+                        <div className="font-mono text-xs text-black/60 tabular-nums">$1,760</div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 <div className="px-4 py-4 border-t border-black/05">
                   <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">Notes</div>
