@@ -69,13 +69,13 @@ function SectionTitle({ eyebrow, title, muted, rightSlot }) {
     <div className="flex items-end justify-between gap-6">
       <div>
         {eyebrow ? (
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
             {eyebrow}
           </div>
         ) : null}
         <div className="mt-2 font-display text-2xl md:text-3xl font-bold tracking-tighter text-black glitch-hover cursor-default">
           {title}{' '}
-          {muted ? <span className="text-black/30">{muted}</span> : null}
+          {muted ? <span className="text-black/60">{muted}</span> : null}
         </div>
       </div>
       {rightSlot ? <div className="hidden md:block">{rightSlot}</div> : null}
@@ -85,7 +85,7 @@ function SectionTitle({ eyebrow, title, muted, rightSlot }) {
 
 function MonoPill({ children, leftDot = null }) {
   return (
-    <div className="inline-flex items-center gap-2 border border-black/10 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-black/50">
+    <div className="inline-flex items-center gap-2 border border-black/10 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
       {leftDot ? <span className="flex h-2 w-2 items-center justify-center">{leftDot}</span> : null}
       <span>{children}</span>
     </div>
@@ -226,8 +226,8 @@ function CommandBar({ onExecute }) {
     <div className="relative">
       <div className="flex items-stretch border border-black/10 bg-[#fafafa] command-bar-focus">
         <div className="flex items-center gap-2 px-3 border-r border-black/10">
-          <Command className="h-4 w-4 text-black/30" />
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40 hidden sm:inline">
+          <Command className="h-4 w-4 text-black/60" />
+          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60 hidden sm:inline">
             Cmd
           </span>
         </div>
@@ -245,7 +245,7 @@ function CommandBar({ onExecute }) {
           }}
           onKeyDown={onKeyDown}
           placeholder="Type a command…"
-          className="flex-1 min-w-0 px-3 py-3 font-mono text-xs tracking-wide text-black/70 placeholder:text-black/30 bg-transparent outline-none"
+          className="flex-1 min-w-0 px-3 py-3 font-mono text-xs tracking-wide text-black/70 placeholder:text-black/60 bg-transparent outline-none"
         />
         <button
           type="button"
@@ -283,7 +283,7 @@ function CommandBar({ onExecute }) {
                 <div className="min-w-0">
                   <div className="font-mono text-xs text-black/70 truncate">{s}</div>
                 </div>
-                <ChevronRight className="h-4 w-4 text-black/20" />
+                <ChevronRight className="h-4 w-4 text-black/60" />
               </button>
             ))}
           </motion.div>
@@ -330,15 +330,15 @@ function TerminalOutput({ lines, isLive = true }) {
   return (
     <div 
       ref={containerRef}
-      className="font-mono text-xs leading-relaxed text-black/40 h-[240px] overflow-hidden"
+      className="font-mono text-xs leading-relaxed text-black/60 h-[240px] overflow-hidden"
     >
       {visibleLines.map((line, i) => (
-        <div key={i} className={line.startsWith('→') ? 'text-emerald-600' : 'text-black/40'}>
+        <div key={i} className={line.startsWith('→') ? 'text-emerald-600' : 'text-black/60'}>
           {line}
         </div>
       ))}
       {currentTyping && (
-        <div className={currentTyping.startsWith('→') ? 'text-emerald-600' : 'text-black/40'}>
+        <div className={currentTyping.startsWith('→') ? 'text-emerald-600' : 'text-black/60'}>
           {currentTyping}
           <span className={`inline-block ${cursorOn ? 'opacity-100' : 'opacity-0'}`}>_</span>
         </div>
@@ -577,12 +577,12 @@ function ParticleGlobe() {
     >
       <canvas ref={canvasRef} className="absolute inset-0" />
       <div className="absolute top-4 right-4 text-right">
-        <div className="font-mono text-[10px] uppercase tracking-wider text-black/20">
+        <div className="font-mono text-[10px] uppercase tracking-wider text-black/60">
           GLOBAL_NETWORK
         </div>
         <div className="mt-1 flex items-center justify-end gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-black/60 animate-pulse" />
-          <span className="font-mono text-[10px] uppercase tracking-wider text-black/50">LIVE</span>
+          <span className="font-mono text-[10px] uppercase tracking-wider text-black/60">LIVE</span>
         </div>
       </div>
     </div>
@@ -614,23 +614,23 @@ function StatusPanel() {
   return (
     <div className="border border-black/10 bg-[#fafafa] h-[240px] flex flex-col">
       <div className="px-3 py-2 border-b border-black/05 flex items-center justify-between">
-        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">
+        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
           System Status
         </div>
-        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/30 tabular-nums">
+        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60 tabular-nums">
           SG {clock}
         </div>
       </div>
       <div className="p-3 grid grid-cols-2 gap-3 flex-1">
         <div className="border border-black/10 px-3 py-2">
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">URA LINK</div>
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">URA LINK</div>
           <div className="mt-1 flex items-center gap-2">
             <LiveDot />
             <div className="font-mono text-xs text-black/60">ONLINE</div>
           </div>
         </div>
         <div className="border border-black/10 px-3 py-2">
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">PIPELINE</div>
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">PIPELINE</div>
           <div className="mt-1 flex items-center gap-2">
             <span className="relative inline-flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full bg-emerald-500 opacity-50 animate-ping" style={{ animationDuration: '2s' }} />
@@ -640,16 +640,16 @@ function StatusPanel() {
           </div>
         </div>
         <div className="border border-black/10 px-3 py-2">
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">TRANSACTIONS</div>
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">TRANSACTIONS</div>
           <div className="mt-1 font-mono text-xs text-black/60 tabular-nums transition-all duration-300">{txCount.toLocaleString('en-SG')}</div>
         </div>
         <div className="border border-black/10 px-3 py-2">
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">INTEGRITY</div>
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">INTEGRITY</div>
           <div className="mt-1 font-mono text-xs text-black/60 tabular-nums transition-all duration-300">{integrity.toFixed(1)}%</div>
         </div>
       </div>
       <div className="px-3 py-2 border-t border-black/05 flex items-center justify-between mt-auto">
-        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/30">
+        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
           LAST SYNC: {syncAgo}s ago
         </div>
         <div className="flex items-center gap-1">
@@ -712,8 +712,8 @@ function DotMatrixMap() {
       <div className="absolute top-0 left-1/2 w-px h-1.5 bg-black/30" />
       <div className="absolute top-0 left-3/4 w-px h-1 bg-black/20" />
       <div className="px-3 py-2 border-b border-black/05 flex items-center justify-between">
-        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">MAP</div>
-        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/30">SINGAPORE FOCUS</div>
+        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">MAP</div>
+        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">SINGAPORE FOCUS</div>
       </div>
       <div className="p-3">
         <div
@@ -734,10 +734,10 @@ function DotMatrixMap() {
           ))}
         </div>
         <div className="mt-3 flex items-center justify-between">
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
             COORD: 1.3521N / 103.8198E
           </div>
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/30">
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
             GRID: DOT-MATRIX
           </div>
         </div>
@@ -761,17 +761,17 @@ function CapabilityCard({ icon: Icon, title, desc, code }) {
       <div className="absolute top-0 left-3/4 w-px h-1 bg-black/20" />
       <div className="flex items-start justify-between gap-4">
         <div>
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">{code}</div>
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">{code}</div>
           <div className="mt-2 text-base font-bold tracking-tight text-black">{title}</div>
         </div>
         <div className="border border-black/10 p-2">
-          <Icon className="h-4 w-4 text-black/40" />
+          <Icon className="h-4 w-4 text-black/60" />
         </div>
       </div>
       <div className="mt-2 text-sm leading-relaxed text-black/60">{desc}</div>
       <div className="mt-4 flex items-center justify-between">
-        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/30">INSPECT</div>
-        <ChevronRight className="h-4 w-4 text-black/20 group-hover:translate-x-0.5 transition-transform" />
+        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">INSPECT</div>
+        <ChevronRight className="h-4 w-4 text-black/60 group-hover:translate-x-0.5 transition-transform" />
       </div>
     </div>
   );
@@ -782,7 +782,7 @@ function InsightRow({ label, value, delta }) {
   return (
     <div className="flex items-center justify-between gap-6 border-t border-black/05 py-3 first:border-t-0">
       <div className="min-w-0">
-        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">{label}</div>
+        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">{label}</div>
       </div>
       <div className="flex items-center gap-4">
         <div className="font-mono text-xs text-black/60 tabular-nums">{value}</div>
@@ -815,7 +815,7 @@ function TerminalChartWrapper({ title, subtitle, children, showLive = false, loc
       {/* Header */}
       <div className="px-4 py-3 border-b border-black/05 flex items-center justify-between">
         <div>
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">{title}</div>
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">{title}</div>
           {subtitle && (
             <div className="mt-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-black/25">{subtitle}</div>
           )}
@@ -828,7 +828,7 @@ function TerminalChartWrapper({ title, subtitle, children, showLive = false, loc
             </>
           )}
           {locked && (
-            <Lock className="h-3 w-3 text-black/30" />
+            <Lock className="h-3 w-3 text-black/60" />
           )}
         </div>
       </div>
@@ -838,8 +838,8 @@ function TerminalChartWrapper({ title, subtitle, children, showLive = false, loc
         {locked && (
           <div className="absolute inset-0 backdrop-blur-sm bg-white/60 flex items-center justify-center">
             <div className="text-center">
-              <Lock className="h-5 w-5 text-black/30 mx-auto" />
-              <div className="mt-2 font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">
+              <Lock className="h-5 w-5 text-black/60 mx-auto" />
+              <div className="mt-2 font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
                 AUTH_REQUIRED
               </div>
             </div>
@@ -856,7 +856,7 @@ function RegionalPricingPreview() {
     <div className="space-y-4">
       {REGIONAL_PRICING_DATA.map((region) => (
         <div key={region.name} className="flex items-center gap-4">
-          <div className="w-10 font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">
+          <div className="w-10 font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
             {region.name}
           </div>
           <div className="flex-1 relative h-6">
@@ -881,13 +881,13 @@ function RegionalPricingPreview() {
               ))}
             </div>
           </div>
-          <div className="w-16 text-right font-mono text-xs text-black/50 tabular-nums">
+          <div className="w-16 text-right font-mono text-xs text-black/60 tabular-nums">
             ${(region.prices[2] / 1000).toFixed(1)}K
           </div>
         </div>
       ))}
       <div className="flex items-center justify-between pt-2 border-t border-black/05">
-        <div className="font-mono text-[9px] uppercase tracking-[0.12em] text-black/30">
+        <div className="font-mono text-[9px] uppercase tracking-[0.12em] text-black/60">
           MEDIAN_PSF_BY_BR
         </div>
         <div className="flex items-center gap-3">
@@ -902,7 +902,7 @@ function RegionalPricingPreview() {
                   opacity: 0.3 + i * 0.2,
                 }}
               />
-              <span className="font-mono text-[8px] text-black/30">{br}</span>
+              <span className="font-mono text-[8px] text-black/60">{br}</span>
             </div>
           ))}
         </div>
@@ -925,15 +925,15 @@ function VolumeTrendPreview() {
               className="w-full bg-black/80 transition-all"
               style={{ height: `${(volumes[i] / maxVol) * 100}%` }}
             />
-            <div className="font-mono text-[8px] text-black/30">{month}</div>
+            <div className="font-mono text-[8px] text-black/60">{month}</div>
           </div>
         ))}
       </div>
       <div className="mt-2 flex items-center justify-between">
-        <div className="font-mono text-[9px] uppercase tracking-[0.12em] text-black/30">
+        <div className="font-mono text-[9px] uppercase tracking-[0.12em] text-black/60">
           TX_VOLUME_2024
         </div>
-        <div className="font-mono text-xs text-black/50 tabular-nums">
+        <div className="font-mono text-xs text-black/60 tabular-nums">
           +4.1% QoQ
         </div>
       </div>
@@ -947,7 +947,7 @@ function DistrictGrowthPreview() {
     <div className="space-y-2">
       {DISTRICT_GROWTH_DATA.map((d) => (
         <div key={d.id} className="flex items-center gap-3">
-          <div className="w-8 font-mono text-[9px] text-black/40">{d.id}</div>
+          <div className="w-8 font-mono text-[9px] text-black/60">{d.id}</div>
           <div className="flex-1 relative h-4">
             {/* Track */}
             <div className="absolute top-1/2 left-0 right-0 h-px bg-black/10" />
@@ -976,14 +976,14 @@ function DistrictGrowthPreview() {
         </div>
       ))}
       <div className="pt-2 border-t border-black/05 flex items-center justify-between">
-        <div className="font-mono text-[9px] uppercase tracking-[0.12em] text-black/30">
+        <div className="font-mono text-[9px] uppercase tracking-[0.12em] text-black/60">
           PSF_DELTA_5Y
         </div>
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-black/20" />
-          <span className="font-mono text-[8px] text-black/30">2019</span>
+          <span className="font-mono text-[8px] text-black/60">2019</span>
           <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-          <span className="font-mono text-[8px] text-black/30">2024</span>
+          <span className="font-mono text-[8px] text-black/60">2024</span>
         </div>
       </div>
     </div>
@@ -999,7 +999,7 @@ function MomentumGridPreview() {
           key={d.id}
           className="aspect-square border border-black/05 p-1 flex flex-col items-center justify-center"
         >
-          <div className="font-mono text-[7px] text-black/30">{d.id}</div>
+          <div className="font-mono text-[7px] text-black/60">{d.id}</div>
           {/* Mini sparkline */}
           <svg className="w-full h-3 mt-0.5" viewBox="0 0 20 8">
             <path
@@ -1140,7 +1140,7 @@ export default function LandingV3() {
                 <Terminal className="h-5 w-5 text-black" />
               </div>
               <div className="min-w-0">
-                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">
+                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
                   PROPANALYTICS.SG
                 </div>
                 <div className="text-sm font-bold tracking-tight text-black">
@@ -1197,7 +1197,7 @@ export default function LandingV3() {
                     className="flex items-center gap-3"
                   >
                     <MonoPill leftDot={<LiveDot />}>Live URA Data</MonoPill>
-                    <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/30">
+                    <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
                       v3 // preview
                     </div>
                   </motion.div>
@@ -1209,14 +1209,14 @@ export default function LandingV3() {
                     className="mt-6 font-display text-4xl sm:text-5xl md:text-6xl xl:text-7xl font-bold tracking-tighter leading-[1.05]"
                   >
                     <span className="block text-black">Singapore Condo</span>
-                    <span className="block text-black/30" style={{ whiteSpace: 'nowrap' }}>Market Intelligence</span>
+                    <span className="block text-black/60" style={{ whiteSpace: 'nowrap' }}>Market Intelligence</span>
                   </motion.h1>
 
                   <motion.p
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.6, delay: 0.12 }}
-                    className="mt-6 text-base sm:text-lg leading-relaxed text-black/50 max-w-xl"
+                    className="mt-6 text-base sm:text-lg leading-relaxed text-black/60 max-w-xl"
                   >
                     Data-driven price benchmarking across projects, locations, and market segments — based on 100,000+ private property transactions.
                   </motion.p>
@@ -1286,14 +1286,14 @@ export default function LandingV3() {
                 <div className="absolute top-0 left-1/4 w-px h-1 bg-black/20" />
                 <div className="absolute top-0 left-1/2 w-px h-1.5 bg-black/30" />
                 <div className="absolute top-0 left-3/4 w-px h-1 bg-black/20" />
-                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">TX_COUNT</div>
+                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">TX_COUNT</div>
                 <div className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-black tabular-nums font-data">
                   <AnimatedNumber
                     value={103379}
                     format={(n) => Math.round(n).toLocaleString('en-SG')}
                   />
                 </div>
-                <div className="mt-1 font-mono text-[10px] text-black/40">RESALE_TAPE</div>
+                <div className="mt-1 font-mono text-[10px] text-black/60">RESALE_TAPE</div>
               </div>
               {/* Card 2 */}
               <div
@@ -1305,11 +1305,11 @@ export default function LandingV3() {
                 <div className="absolute top-0 left-1/4 w-px h-1 bg-black/20" />
                 <div className="absolute top-0 left-1/2 w-px h-1.5 bg-black/30" />
                 <div className="absolute top-0 left-3/4 w-px h-1 bg-black/20" />
-                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">INTEGRITY</div>
+                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">INTEGRITY</div>
                 <div className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-black tabular-nums font-data">
                   <AnimatedNumber value={99.2} format={(n) => `${n.toFixed(1)}%`} />
                 </div>
-                <div className="mt-1 font-mono text-[10px] text-black/40">OUTLIER_GATED</div>
+                <div className="mt-1 font-mono text-[10px] text-black/60">OUTLIER_GATED</div>
               </div>
               {/* Card 3 - slight rotation */}
               <div
@@ -1321,11 +1321,11 @@ export default function LandingV3() {
                 <div className="absolute top-0 left-1/4 w-px h-1 bg-black/20" />
                 <div className="absolute top-0 left-1/2 w-px h-1.5 bg-black/30" />
                 <div className="absolute top-0 left-3/4 w-px h-1 bg-black/20" />
-                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">DISTRICTS</div>
+                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">DISTRICTS</div>
                 <div className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-black tabular-nums font-data">
                   <AnimatedNumber value={28} format={(n) => String(Math.round(n))} />
                 </div>
-                <div className="mt-1 font-mono text-[10px] text-black/40">CCR/RCR/OCR</div>
+                <div className="mt-1 font-mono text-[10px] text-black/60">CCR/RCR/OCR</div>
               </div>
               {/* Card 4 */}
               <div
@@ -1337,11 +1337,11 @@ export default function LandingV3() {
                 <div className="absolute top-0 left-1/4 w-px h-1 bg-black/20" />
                 <div className="absolute top-0 left-1/2 w-px h-1.5 bg-black/30" />
                 <div className="absolute top-0 left-3/4 w-px h-1 bg-black/20" />
-                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">HISTORY</div>
+                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">HISTORY</div>
                 <div className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-black tabular-nums font-data">
                   <AnimatedNumber value={5} format={(n) => `${Math.round(n)}Y`} />
                 </div>
-                <div className="mt-1 font-mono text-[10px] text-black/40">CYCLE_DEPTH</div>
+                <div className="mt-1 font-mono text-[10px] text-black/60">CYCLE_DEPTH</div>
               </div>
             </div>
           </div>
@@ -1436,8 +1436,8 @@ export default function LandingV3() {
                 <div className="absolute top-0 left-1/2 w-px h-1.5 bg-black/30" />
                 <div className="absolute top-0 left-3/4 w-px h-1 bg-black/20" />
                 <div className="px-4 py-3 border-b border-black/05 flex items-center justify-between">
-                  <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">Metrics</div>
-                  <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/30">
+                  <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">Metrics</div>
+                  <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
                     Snapshot · non-binding
                   </div>
                 </div>
@@ -1448,25 +1448,25 @@ export default function LandingV3() {
                   <InsightRow label="Dispersion" value="LOW" delta="-1.2% QoQ" />
 
                   <div className="mt-2 border-t border-black/05 pt-3 pb-1">
-                    <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">
+                    <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
                       Tagged entities
                     </div>
                     <div className="mt-2 grid grid-cols-1 gap-2">
                       <div className="flex items-center justify-between gap-4">
-                        <div className="min-w-0 font-mono text-[10px] uppercase tracking-[0.18em] text-black/50 truncate">
-                          ORCHARD_RD <span className="text-black/30">[SG-D09-8821]</span>
+                        <div className="min-w-0 font-mono text-[10px] uppercase tracking-[0.18em] text-black/60 truncate">
+                          ORCHARD_RD <span className="text-black/60">[SG-D09-8821]</span>
                         </div>
                         <div className="font-mono text-xs text-black/60 tabular-nums">$2,480</div>
                       </div>
                       <div className="flex items-center justify-between gap-4">
-                        <div className="min-w-0 font-mono text-[10px] uppercase tracking-[0.18em] text-black/50 truncate">
-                          TIONG_BAHRU <span className="text-black/30">[SG-D03-4412]</span>
+                        <div className="min-w-0 font-mono text-[10px] uppercase tracking-[0.18em] text-black/60 truncate">
+                          TIONG_BAHRU <span className="text-black/60">[SG-D03-4412]</span>
                         </div>
                         <div className="font-mono text-xs text-black/60 tabular-nums">$2,110</div>
                       </div>
                       <div className="flex items-center justify-between gap-4">
-                        <div className="min-w-0 font-mono text-[10px] uppercase tracking-[0.18em] text-black/50 truncate">
-                          BEDOK_RESERVOIR <span className="text-black/30">[SG-D16-1097]</span>
+                        <div className="min-w-0 font-mono text-[10px] uppercase tracking-[0.18em] text-black/60 truncate">
+                          BEDOK_RESERVOIR <span className="text-black/60">[SG-D16-1097]</span>
                         </div>
                         <div className="font-mono text-xs text-black/60 tabular-nums">$1,760</div>
                       </div>
@@ -1474,8 +1474,8 @@ export default function LandingV3() {
                   </div>
                 </div>
                 <div className="px-4 py-4 border-t border-black/05">
-                  <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">Notes</div>
-                  <div className="mt-2 text-sm leading-relaxed text-black/50">
+                  <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">Notes</div>
+                  <div className="mt-2 text-sm leading-relaxed text-black/60">
                     Preview signals are illustrative. Authenticate to unlock full district/project drilldowns, export, and
                     full time windows.
                   </div>
@@ -1492,25 +1492,25 @@ export default function LandingV3() {
                   <div className="absolute top-0 left-3/4 w-px h-1 bg-black/20" />
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">ACCESS</div>
+                      <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">ACCESS</div>
                       <div className="mt-2 text-base font-bold tracking-tight text-black">Terminal clearance required</div>
-                      <div className="mt-2 text-sm leading-relaxed text-black/50">
+                      <div className="mt-2 text-sm leading-relaxed text-black/60">
                         Login to unlock market overview, district heatmaps, exit risk, and valuation tools.
                       </div>
                     </div>
                     <div className="border border-black/10 p-2">
-                      <Lock className="h-4 w-4 text-black/30" />
+                      <Lock className="h-4 w-4 text-black/60" />
                     </div>
                   </div>
                   <div className="mt-4 flex items-center justify-between">
-                    <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/30">AUTH</div>
+                    <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">AUTH</div>
                     <button
                       type="button"
                       onClick={onAnyCTA}
                       className="group inline-flex items-center gap-2 px-4 py-2 border border-black/10 hover:border-black/20 hover:bg-black/[0.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
                     >
                       Proceed
-                      <ArrowRight className="h-4 w-4 text-black/30 group-hover:translate-x-0.5 transition-transform" />
+                      <ArrowRight className="h-4 w-4 text-black/60 group-hover:translate-x-0.5 transition-transform" />
                     </button>
                   </div>
                 </div>
@@ -1597,23 +1597,23 @@ export default function LandingV3() {
                 <span>All Systems Operational</span>
               </div>
               <div className="status-item">
-                <span className="text-black/30">URA_FEED</span>
+                <span className="text-black/60">URA_FEED</span>
                 <span className="text-emerald-600">SYNC</span>
               </div>
               <div className="status-item">
-                <span className="text-black/30">LATENCY</span>
+                <span className="text-black/60">LATENCY</span>
                 <span>&lt;50ms</span>
               </div>
               <div className="status-item hidden md:flex">
-                <span className="text-black/30">UPTIME</span>
+                <span className="text-black/60">UPTIME</span>
                 <span>99.9%</span>
               </div>
             </div>
 
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pt-6">
               <div>
-                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">Build</div>
-                <div className="mt-1 text-sm text-black/50">LandingV3 · monochrome + emerald signals</div>
+                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">Build</div>
+                <div className="mt-1 text-sm text-black/60">LandingV3 · monochrome + emerald signals</div>
               </div>
               <div className="flex items-center gap-2">
                 <button
