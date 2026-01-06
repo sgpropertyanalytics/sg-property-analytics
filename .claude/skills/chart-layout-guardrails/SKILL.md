@@ -1,5 +1,5 @@
 ---
-name: dashboard-guardrails
+name: chart-layout-guardrails
 description: Protection and verification system for dashboard development. ALWAYS activate before modifying ANY existing dashboard code. Defines what NOT to touch (chart internals, filter logic), provides verification checklists for all platforms (desktop, tablet, iPad, iPhone, Android), and ensures no regressions. Use before AND after any dashboard changes.
 ---
 

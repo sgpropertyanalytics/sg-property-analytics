@@ -66,7 +66,7 @@ function SectionTitle({ eyebrow, title, muted, rightSlot }) {
             {eyebrow}
           </div>
         ) : null}
-        <div className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-black">
+        <div className="mt-2 font-display text-2xl md:text-3xl font-bold tracking-tighter text-black glitch-hover cursor-default">
           {title}{' '}
           {muted ? <span className="text-black/30">{muted}</span> : null}
         </div>
@@ -85,11 +85,25 @@ function MonoPill({ children, leftDot = null }) {
   );
 }
 
+function SectionDivider() {
+  return (
+    <div className="relative h-px bg-black/10 max-w-7xl mx-auto">
+      {/* Aerospace-style decorative markers */}
+      <div className="absolute left-1/4 -top-1 w-2 h-2 border border-black/15 bg-[#fafafa] rotate-45" />
+      <div className="absolute left-1/2 -translate-x-1/2 -top-1.5 w-3 h-3 border border-black/20 bg-[#fafafa] rotate-45" />
+      <div className="absolute right-1/4 -top-1 w-2 h-2 border border-black/15 bg-[#fafafa] rotate-45" />
+    </div>
+  );
+}
+
 function LiveDot() {
   return (
     <span className="relative inline-flex h-2 w-2">
       <span className="absolute inline-flex h-full w-full bg-emerald-500 opacity-70 animate-ping" />
-      <span className="relative inline-flex h-2 w-2 bg-emerald-600" />
+      <span
+        className="relative inline-flex h-2 w-2 bg-emerald-600 rounded-full"
+        style={{ boxShadow: '0 0 8px rgba(16, 185, 129, 0.6)' }}
+      />
     </span>
   );
 }
@@ -681,7 +695,10 @@ function DotMatrixMap() {
   }, []);
 
   return (
-    <div className="relative border border-black/10 bg-[#fafafa]">
+    <div
+      className="relative border border-black/10 bg-white/90 backdrop-blur-sm"
+      style={{ boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)' }}
+    >
       <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
       <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
       <div className="absolute top-0 left-1/4 w-px h-1 bg-black/20" />
@@ -724,7 +741,10 @@ function DotMatrixMap() {
 
 function CapabilityCard({ icon: Icon, title, desc, code }) {
   return (
-    <div className="group relative border border-black/10 bg-[#fafafa] p-4 hover:border-black/20 transition-colors">
+    <div
+      className="group relative border border-black/10 bg-white/90 backdrop-blur-sm p-4 hover:border-black/20 transition-all hover:shadow-sm scan-line-hover"
+      style={{ boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)' }}
+    >
       {/* HUD corner ticks */}
       <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
       <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
@@ -738,10 +758,10 @@ function CapabilityCard({ icon: Icon, title, desc, code }) {
           <div className="mt-2 text-base font-bold tracking-tight text-black">{title}</div>
         </div>
         <div className="border border-black/10 p-2">
-          <Icon className="h-4 w-4 text-black/30" />
+          <Icon className="h-4 w-4 text-black/40" />
         </div>
       </div>
-      <div className="mt-2 text-sm leading-relaxed text-black/50">{desc}</div>
+      <div className="mt-2 text-sm leading-relaxed text-black/60">{desc}</div>
       <div className="mt-4 flex items-center justify-between">
         <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/30">INSPECT</div>
         <ChevronRight className="h-4 w-4 text-black/20 group-hover:translate-x-0.5 transition-transform" />
@@ -759,7 +779,7 @@ function InsightRow({ label, value, delta }) {
       </div>
       <div className="flex items-center gap-4">
         <div className="font-mono text-xs text-black/60 tabular-nums">{value}</div>
-        <div 
+        <div
           className="font-mono text-[10px] uppercase tracking-[0.18em] tabular-nums"
           style={{ color: isNegative ? '#FF5500' : 'rgba(0,0,0,0.3)' }}
         >
@@ -770,11 +790,272 @@ function InsightRow({ label, value, delta }) {
   );
 }
 
+// ===== CHART PREVIEW COMPONENTS =====
+
+function TerminalChartWrapper({ title, subtitle, children, showLive = false, locked = false }) {
+  return (
+    <div
+      className="relative border border-black/10 bg-white/90 backdrop-blur-sm scan-line-hover"
+      style={{ boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)' }}
+    >
+      {/* HUD corners */}
+      <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
+      <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
+      {/* Ruler ticks */}
+      <div className="absolute top-0 left-1/4 w-px h-1 bg-black/20" />
+      <div className="absolute top-0 left-1/2 w-px h-1.5 bg-black/30" />
+      <div className="absolute top-0 left-3/4 w-px h-1 bg-black/20" />
+      {/* Header */}
+      <div className="px-4 py-3 border-b border-black/05 flex items-center justify-between">
+        <div>
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">{title}</div>
+          {subtitle && (
+            <div className="mt-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-black/25">{subtitle}</div>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {showLive && (
+            <>
+              <LiveDot />
+              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-emerald-600">LIVE</span>
+            </>
+          )}
+          {locked && (
+            <Lock className="h-3 w-3 text-black/30" />
+          )}
+        </div>
+      </div>
+      {/* Content */}
+      <div className="relative p-4 cursor-crosshair">
+        {children}
+        {locked && (
+          <div className="absolute inset-0 backdrop-blur-sm bg-white/60 flex items-center justify-center">
+            <div className="text-center">
+              <Lock className="h-5 w-5 text-black/30 mx-auto" />
+              <div className="mt-2 font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">
+                AUTH_REQUIRED
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Regional Pricing Preview - simplified beads visualization
+function RegionalPricingPreview() {
+  const regions = [
+    { name: 'CCR', color: '#213448', prices: [2800, 3200, 3600, 4200] },
+    { name: 'RCR', color: '#547792', prices: [1800, 2100, 2400, 2900] },
+    { name: 'OCR', color: '#94B4C1', prices: [1400, 1650, 1900, 2200] },
+  ];
+
+  return (
+    <div className="space-y-4">
+      {regions.map((region) => (
+        <div key={region.name} className="flex items-center gap-4">
+          <div className="w-10 font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">
+            {region.name}
+          </div>
+          <div className="flex-1 relative h-6">
+            {/* String line */}
+            <div className="absolute top-1/2 left-0 right-0 h-px bg-black/10" />
+            {/* Beads */}
+            <div className="absolute inset-0 flex items-center justify-around">
+              {region.prices.map((price, i) => (
+                <div
+                  key={i}
+                  className="relative"
+                  style={{
+                    width: 12 + i * 4,
+                    height: 12 + i * 4,
+                  }}
+                >
+                  <div
+                    className="absolute inset-0 rounded-full border-2 border-white"
+                    style={{ backgroundColor: region.color }}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="w-16 text-right font-mono text-xs text-black/50 tabular-nums">
+            ${(region.prices[2] / 1000).toFixed(1)}K
+          </div>
+        </div>
+      ))}
+      <div className="flex items-center justify-between pt-2 border-t border-black/05">
+        <div className="font-mono text-[9px] uppercase tracking-[0.12em] text-black/30">
+          MEDIAN_PSF_BY_BR
+        </div>
+        <div className="flex items-center gap-3">
+          {['1BR', '2BR', '3BR', '4BR+'].map((br, i) => (
+            <div key={br} className="flex items-center gap-1">
+              <div
+                className="rounded-full"
+                style={{
+                  width: 6 + i * 2,
+                  height: 6 + i * 2,
+                  backgroundColor: '#213448',
+                  opacity: 0.3 + i * 0.2,
+                }}
+              />
+              <span className="font-mono text-[8px] text-black/30">{br}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Volume Trend Preview - simplified bar + line chart
+function VolumeTrendPreview() {
+  const months = ['Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const volumes = [320, 280, 350, 410, 380, 420];
+  const maxVol = Math.max(...volumes);
+
+  return (
+    <div className="h-32">
+      <div className="flex items-end justify-between h-24 gap-2">
+        {months.map((month, i) => (
+          <div key={month} className="flex-1 flex flex-col items-center gap-1">
+            <div
+              className="w-full bg-black/80 transition-all"
+              style={{ height: `${(volumes[i] / maxVol) * 100}%` }}
+            />
+            <div className="font-mono text-[8px] text-black/30">{month}</div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-2 flex items-center justify-between">
+        <div className="font-mono text-[9px] uppercase tracking-[0.12em] text-black/30">
+          TX_VOLUME_2024
+        </div>
+        <div className="font-mono text-xs text-black/50 tabular-nums">
+          +4.1% QoQ
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// District Growth Preview - simplified dumbbell chart
+function DistrictGrowthPreview() {
+  const districts = [
+    { id: 'D09', name: 'Orchard', start: 2100, end: 2480, delta: '+18.1%' },
+    { id: 'D10', name: 'Tanglin', start: 2200, end: 2520, delta: '+14.5%' },
+    { id: 'D03', name: 'Tiong Bahru', start: 1850, end: 2110, delta: '+14.1%' },
+    { id: 'D15', name: 'East Coast', start: 1720, end: 1950, delta: '+13.4%' },
+    { id: 'D16', name: 'Bedok', start: 1520, end: 1680, delta: '+10.5%' },
+  ];
+  const maxPrice = 2600;
+
+  return (
+    <div className="space-y-2">
+      {districts.map((d) => (
+        <div key={d.id} className="flex items-center gap-3">
+          <div className="w-8 font-mono text-[9px] text-black/40">{d.id}</div>
+          <div className="flex-1 relative h-4">
+            {/* Track */}
+            <div className="absolute top-1/2 left-0 right-0 h-px bg-black/10" />
+            {/* Start dot */}
+            <div
+              className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-black/20"
+              style={{ left: `${(d.start / maxPrice) * 100}%` }}
+            />
+            {/* Growth bar */}
+            <div
+              className="absolute top-1/2 -translate-y-1/2 h-1 bg-gradient-to-r from-black/30 to-emerald-500"
+              style={{
+                left: `${(d.start / maxPrice) * 100}%`,
+                width: `${((d.end - d.start) / maxPrice) * 100}%`,
+              }}
+            />
+            {/* End dot */}
+            <div
+              className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-emerald-500"
+              style={{ left: `${(d.end / maxPrice) * 100}%` }}
+            />
+          </div>
+          <div className="w-12 text-right font-mono text-[9px] text-emerald-600 tabular-nums">
+            {d.delta}
+          </div>
+        </div>
+      ))}
+      <div className="pt-2 border-t border-black/05 flex items-center justify-between">
+        <div className="font-mono text-[9px] uppercase tracking-[0.12em] text-black/30">
+          PSF_DELTA_5Y
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-black/20" />
+          <span className="font-mono text-[8px] text-black/30">2019</span>
+          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+          <span className="font-mono text-[8px] text-black/30">2024</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Momentum Grid Preview - 28 mini sparklines
+function MomentumGridPreview() {
+  // Deterministic trend data based on district number
+  const districts = useMemo(() =>
+    Array.from({ length: 28 }, (_, i) => ({
+      id: `D${String(i + 1).padStart(2, '0')}`,
+      // Realistic pattern: CCR/prime districts up, some OCR down
+      trend: [1, 2, 3, 6, 7, 9, 10, 11, 12, 14, 15, 19, 21].includes(i + 1) ? 'up' : 'down',
+    })),
+  []);
+
+  return (
+    <div className="grid grid-cols-7 gap-1">
+      {districts.map((d) => (
+        <div
+          key={d.id}
+          className="aspect-square border border-black/05 p-1 flex flex-col items-center justify-center"
+        >
+          <div className="font-mono text-[7px] text-black/30">{d.id}</div>
+          {/* Mini sparkline */}
+          <svg className="w-full h-3 mt-0.5" viewBox="0 0 20 8">
+            <path
+              d={d.trend === 'up'
+                ? 'M0 7 L5 5 L10 6 L15 3 L20 1'
+                : 'M0 1 L5 3 L10 2 L15 5 L20 7'
+              }
+              fill="none"
+              stroke={d.trend === 'up' ? '#10B981' : '#FF5500'}
+              strokeWidth="1"
+            />
+          </svg>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function LandingV3() {
   const navigate = useNavigate();
 
   const onAnyCTA = () => navigate('/login');
   const [isGridHot, setIsGridHot] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  // Track scroll progress for navbar effects
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+      setScrollProgress(progress);
+      setIsScrolled(scrollTop > 20);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const onSectionEnter = () => setIsGridHot(true);
   const onSectionLeave = () => setIsGridHot(false);
@@ -858,7 +1139,18 @@ export default function LandingV3() {
       />
 
       {/* NAV */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#fafafa] border-b border-black/10">
+      <nav
+        className={`fixed top-0 left-0 right-0 z-50 border-b transition-all duration-200 ${
+          isScrolled
+            ? 'bg-[#fafafa]/95 backdrop-blur-sm border-black/10 shadow-sm'
+            : 'bg-[#fafafa] border-black/10'
+        }`}
+      >
+        {/* Scroll progress indicator */}
+        <div
+          className="absolute bottom-0 left-0 h-px bg-black/30 transition-all duration-75"
+          style={{ width: `${scrollProgress}%` }}
+        />
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-3">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3 min-w-0">
@@ -903,11 +1195,19 @@ export default function LandingV3() {
 
       <main className="relative z-10">
         {/* HERO */}
-        <section className="pt-24 md:pt-28 pb-16 md:pb-24">
+        <section className="relative pt-24 md:pt-28 pb-16 md:pb-24 overflow-hidden">
+          {/* Gradient mesh - subtle corner accent */}
+          <div
+            className="absolute top-0 right-0 w-1/2 h-1/2 pointer-events-none"
+            style={{
+              background: 'radial-gradient(ellipse at top right, rgba(0,0,0,0.02) 0%, transparent 60%)',
+            }}
+          />
           <div className="max-w-7xl mx-auto px-4 md:px-6">
             <div>
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-                <div className="lg:col-span-6">
+                {/* 60/40 asymmetric split for visual interest */}
+                <div className="lg:col-span-7">
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -924,10 +1224,10 @@ export default function LandingV3() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.6, delay: 0.05 }}
-                    className="mt-6 text-5xl sm:text-6xl lg:text-6xl xl:text-7xl font-bold tracking-tight leading-[1.1]"
+                    className="mt-6 font-display text-4xl sm:text-5xl md:text-6xl xl:text-7xl font-bold tracking-tighter leading-[1.05]"
                   >
                     <span className="block text-black">Singapore Condo</span>
-                    <span className="block whitespace-nowrap text-black/30">Market Intelligence</span>
+                    <span className="block text-black/30" style={{ whiteSpace: 'nowrap' }}>Market Intelligence</span>
                   </motion.h1>
 
                   <motion.p
@@ -961,7 +1261,8 @@ export default function LandingV3() {
                   </motion.div>
                 </div>
 
-                <div className="lg:col-span-6">
+                {/* Globe column - slightly overflow for tension */}
+                <div className="lg:col-span-5 lg:-mr-8">
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -976,8 +1277,10 @@ export default function LandingV3() {
 
         </section>
 
+        <SectionDivider />
+
         {/* STATS */}
-        <section className="pt-24 md:pt-32 pb-14 md:pb-18" onMouseEnter={onSectionEnter} onMouseLeave={onSectionLeave}>
+        <section className="py-16 md:py-24" onMouseEnter={onSectionEnter} onMouseLeave={onSectionLeave}>
           <div className="max-w-7xl mx-auto px-4 md:px-6">
             <SectionTitle
               eyebrow="COVERAGE"
@@ -986,8 +1289,13 @@ export default function LandingV3() {
               rightSlot={<MonoPill>PREVIEW_MODE</MonoPill>}
             />
 
-            <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-3">
-              <div className="relative border border-black/10 bg-[#fafafa] p-4">
+            {/* Stats grid with equal-height cards */}
+            <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-4 auto-rows-fr">
+              {/* Card 1 - slight rotation for visual interest per Phase 7.1 */}
+              <div
+                className="relative h-full border border-black/10 bg-white/90 backdrop-blur-sm p-4 hover:border-black/20 transition-all hover:shadow-sm"
+                style={{ boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)', transform: 'rotate(-0.5deg)' }}
+              >
                 {/* HUD corner ticks */}
                 <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
                 <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
@@ -996,7 +1304,7 @@ export default function LandingV3() {
                 <div className="absolute top-0 left-1/2 w-px h-1.5 bg-black/30" />
                 <div className="absolute top-0 left-3/4 w-px h-1 bg-black/20" />
                 <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">TX_COUNT</div>
-                <div className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-black tabular-nums">
+                <div className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-black tabular-nums font-data">
                   <AnimatedNumber
                     value={103379}
                     format={(n) => Math.round(n).toLocaleString('en-SG')}
@@ -1004,38 +1312,50 @@ export default function LandingV3() {
                 </div>
                 <div className="mt-1 font-mono text-[10px] text-black/40">RESALE_TAPE</div>
               </div>
-              <div className="relative border border-black/10 bg-[#fafafa] p-4">
+              {/* Card 2 */}
+              <div
+                className="relative h-full border border-black/10 bg-white/90 backdrop-blur-sm p-4 hover:border-black/20 transition-all hover:shadow-sm"
+                style={{ boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)', transform: 'rotate(0.5deg)' }}
+              >
                 <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
                 <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
                 <div className="absolute top-0 left-1/4 w-px h-1 bg-black/20" />
                 <div className="absolute top-0 left-1/2 w-px h-1.5 bg-black/30" />
                 <div className="absolute top-0 left-3/4 w-px h-1 bg-black/20" />
                 <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">INTEGRITY</div>
-                <div className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-black tabular-nums">
+                <div className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-black tabular-nums font-data">
                   <AnimatedNumber value={99.2} format={(n) => `${n.toFixed(1)}%`} />
                 </div>
                 <div className="mt-1 font-mono text-[10px] text-black/40">OUTLIER_GATED</div>
               </div>
-              <div className="relative border border-black/10 bg-[#fafafa] p-4">
+              {/* Card 3 - slight rotation */}
+              <div
+                className="relative h-full border border-black/10 bg-white/90 backdrop-blur-sm p-4 hover:border-black/20 transition-all hover:shadow-sm"
+                style={{ boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)', transform: 'rotate(-0.5deg)' }}
+              >
                 <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
                 <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
                 <div className="absolute top-0 left-1/4 w-px h-1 bg-black/20" />
                 <div className="absolute top-0 left-1/2 w-px h-1.5 bg-black/30" />
                 <div className="absolute top-0 left-3/4 w-px h-1 bg-black/20" />
                 <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">DISTRICTS</div>
-                <div className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-black tabular-nums">
+                <div className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-black tabular-nums font-data">
                   <AnimatedNumber value={28} format={(n) => String(Math.round(n))} />
                 </div>
                 <div className="mt-1 font-mono text-[10px] text-black/40">CCR/RCR/OCR</div>
               </div>
-              <div className="relative border border-black/10 bg-[#fafafa] p-4">
+              {/* Card 4 */}
+              <div
+                className="relative h-full border border-black/10 bg-white/90 backdrop-blur-sm p-4 hover:border-black/20 transition-all hover:shadow-sm"
+                style={{ boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)', transform: 'rotate(0.5deg)' }}
+              >
                 <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
                 <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
                 <div className="absolute top-0 left-1/4 w-px h-1 bg-black/20" />
                 <div className="absolute top-0 left-1/2 w-px h-1.5 bg-black/30" />
                 <div className="absolute top-0 left-3/4 w-px h-1 bg-black/20" />
                 <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">HISTORY</div>
-                <div className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-black tabular-nums">
+                <div className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-black tabular-nums font-data">
                   <AnimatedNumber value={5} format={(n) => `${Math.round(n)}Y`} />
                 </div>
                 <div className="mt-1 font-mono text-[10px] text-black/40">CYCLE_DEPTH</div>
@@ -1044,12 +1364,52 @@ export default function LandingV3() {
           </div>
         </section>
 
+        <SectionDivider />
+
+        {/* MARKET INTELLIGENCE - Chart Preview Section */}
+        <section className="py-16 md:py-24" onMouseEnter={onSectionEnter} onMouseLeave={onSectionLeave}>
+          <div className="max-w-7xl mx-auto px-4 md:px-6">
+            <SectionTitle
+              eyebrow="ANALYTICS"
+              title="MARKET_INTELLIGENCE"
+              muted="live_feed"
+              rightSlot={<MonoPill>PREVIEW_MODE</MonoPill>}
+            />
+
+            {/* Row 1: Regional Pricing + Volume Trend */}
+            <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <TerminalChartWrapper title="REGIONAL_PRICING" subtitle="CCR / RCR / OCR" showLive>
+                <RegionalPricingPreview />
+              </TerminalChartWrapper>
+              <TerminalChartWrapper title="VOLUME_TREND" subtitle="6M_ROLLING">
+                <VolumeTrendPreview />
+              </TerminalChartWrapper>
+            </div>
+
+            {/* Row 2: District Growth - Full Width */}
+            <div className="mt-4">
+              <TerminalChartWrapper title="DISTRICT_GROWTH" subtitle="TOP_5_PERFORMERS // PSF_DELTA" showLive>
+                <DistrictGrowthPreview />
+              </TerminalChartWrapper>
+            </div>
+
+            {/* Row 3: Momentum Grid - Locked */}
+            <div className="mt-4">
+              <TerminalChartWrapper title="MOMENTUM_GRID" subtitle="28_DISTRICTS" locked>
+                <MomentumGridPreview />
+              </TerminalChartWrapper>
+            </div>
+          </div>
+        </section>
+
+        <SectionDivider />
+
         {/* CAPABILITIES */}
-        <section className="py-14 md:py-18" onMouseEnter={onSectionEnter} onMouseLeave={onSectionLeave}>
+        <section className="py-16 md:py-24" onMouseEnter={onSectionEnter} onMouseLeave={onSectionLeave}>
           <div className="max-w-7xl mx-auto px-4 md:px-6">
             <SectionTitle eyebrow="SYSTEM" title="CAPABILITIES_MANIFEST" muted="analyst_tools" />
 
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <CapabilityCard
                 icon={Radar}
                 code="UNDERWRITE"
@@ -1078,12 +1438,14 @@ export default function LandingV3() {
           </div>
         </section>
 
+        <SectionDivider />
+
         {/* INSIGHTS */}
-        <section className="py-14 md:py-18" onMouseEnter={onSectionEnter} onMouseLeave={onSectionLeave}>
+        <section className="py-16 md:py-24" onMouseEnter={onSectionEnter} onMouseLeave={onSectionLeave}>
           <div className="max-w-7xl mx-auto px-4 md:px-6">
             <SectionTitle eyebrow="READOUT" title="MARKET_SIGNALS" muted="realtime" />
 
-            <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-3">
+            <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-4">
               <div className="lg:col-span-7 relative border border-black/10 bg-[#fafafa]">
                 <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
                 <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
@@ -1137,7 +1499,7 @@ export default function LandingV3() {
                 </div>
               </div>
 
-              <div className="lg:col-span-5 grid grid-cols-1 gap-3">
+              <div className="lg:col-span-5 grid grid-cols-1 gap-4">
                 <DotMatrixMap />
                 <div className="relative border border-black/10 bg-[#fafafa] p-4">
                   <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
@@ -1175,14 +1537,14 @@ export default function LandingV3() {
         </section>
 
         {/* CTA */}
-        <section className="py-16 md:py-20 bg-black text-[#fafafa]">
+        <section className="py-16 md:py-24 bg-black text-[#fafafa]">
           <div className="max-w-7xl mx-auto px-4 md:px-6">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
               <div className="lg:col-span-8">
                 <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#fafafa]/60">
                   Clearance
                 </div>
-                <div className="mt-3 text-4xl md:text-5xl font-bold tracking-tight">
+                <div className="mt-3 font-display text-4xl md:text-5xl font-bold tracking-tighter">
                   Request terminal clearance
                 </div>
                 <div className="mt-4 text-base md:text-lg leading-relaxed text-[#fafafa]/70 max-w-2xl">

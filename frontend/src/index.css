@@ -1,12 +1,24 @@
 @import "tailwindcss";
 
+/* Geist font for display headlines */
+@import "@fontsource/geist-sans/400.css";
+@import "@fontsource/geist-sans/500.css";
+@import "@fontsource/geist-sans/600.css";
+@import "@fontsource/geist-sans/700.css";
+
 @theme {
+  --font-display: "Geist Sans", system-ui, -apple-system, sans-serif;
   --font-sans: "Inter", system-ui, -apple-system, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
 
   /* Semantic card colors - warm-tinted white for sand/cream backgrounds */
   --color-card: #FFFCF5;
   --color-card-hover: #FFF9F0;
+}
+
+/* Display font class for headlines */
+.font-display {
+  font-family: var(--font-display);
 }
 
 /* Bloomberg Terminal style - mono font for numerical data */
@@ -377,5 +389,81 @@ input[type="range"].slider-thumb::-moz-range-progress {
   .frost-overlay--clearing {
     transition: none;
   }
+}
+
+/* ====== Glitch & Terminal Effects ====== */
+
+/* Glitch effect for headlines on hover */
+@keyframes glitch {
+  0%, 100% { transform: translate(0); }
+  20% { transform: translate(-2px, 2px); }
+  40% { transform: translate(-2px, -2px); }
+  60% { transform: translate(2px, 2px); }
+  80% { transform: translate(2px, -2px); }
+}
+
+.glitch-hover:hover {
+  animation: glitch 0.3s ease-in-out;
+}
+
+/* Scan line sweep effect for cards on hover */
+@keyframes scanSweep {
+  0% { top: -100%; }
+  100% { top: 100%; }
+}
+
+.scan-line-hover {
+  position: relative;
+  overflow: hidden;
+}
+
+.scan-line-hover::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.1), transparent);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.scan-line-hover:hover::before {
+  opacity: 1;
+  animation: scanSweep 0.8s ease-out;
+}
+
+/* Data stream animation for numbers */
+@keyframes dataStream {
+  0% { opacity: 0.7; transform: translateY(2px); }
+  50% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0.7; transform: translateY(-2px); }
+}
+
+.animate-data-stream {
+  animation: dataStream 2s ease-in-out infinite;
+}
+
+/* Staggered fade-in for scroll reveals */
+@keyframes scrollFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-scroll-fade-in {
+  animation: scrollFadeIn 0.6s ease-out forwards;
+}
+
+/* Crosshair cursor for chart areas */
+.cursor-crosshair {
+  cursor: crosshair;
 }
 
