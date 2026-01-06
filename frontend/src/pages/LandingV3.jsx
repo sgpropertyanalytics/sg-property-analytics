@@ -581,8 +581,8 @@ function ParticleGlobe() {
           GLOBAL_NETWORK
         </div>
         <div className="mt-1 flex items-center justify-end gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-black/60 animate-pulse" />
-          <span className="font-mono text-[10px] uppercase tracking-wider text-black/60">LIVE</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="font-mono text-[10px] uppercase tracking-wider text-emerald-600">LIVE</span>
         </div>
       </div>
     </div>
