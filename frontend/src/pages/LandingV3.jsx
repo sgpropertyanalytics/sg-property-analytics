@@ -1051,7 +1051,8 @@ function formatBedroom(bedroom) {
   return `${bedroom}BR`;
 }
 
-// Pulse Ticker - auto-scrolling horizontal event feed with real transaction data
+// Pulse Ticker - auto-scrolling horizontal event feed with structured data packets
+// Format: [DISTRICT] PROJECT [PRICE] // separated by double forward slash
 function PulseTicker({ transactions, onTransactionClick, activeDistrict, isLoading }) {
   const doubled = useMemo(() => {
     if (!transactions?.length) return [];
@@ -1061,7 +1062,7 @@ function PulseTicker({ transactions, onTransactionClick, activeDistrict, isLoadi
   if (isLoading) {
     return (
       <div className="overflow-hidden border border-black/10 bg-[#fafafa] h-10 flex items-center justify-center">
-        <div className="font-mono text-[11px] text-black/40">LOADING_FEED...</div>
+        <div className="font-mono text-[11px] text-black/40 tracking-wider">LOADING_FEED...</div>
       </div>
     );
   }
@@ -1069,26 +1070,33 @@ function PulseTicker({ transactions, onTransactionClick, activeDistrict, isLoadi
   if (!transactions?.length) {
     return (
       <div className="overflow-hidden border border-black/10 bg-[#fafafa] h-10 flex items-center justify-center">
-        <div className="font-mono text-[11px] text-black/40">NO_SIGNAL</div>
+        <div className="font-mono text-[11px] text-black/40 tracking-wider">NO_SIGNAL</div>
       </div>
     );
   }
 
   return (
     <div className="overflow-hidden border border-black/10 bg-[#fafafa] h-10">
-      <div className="flex items-center h-full gap-12 animate-ticker whitespace-nowrap px-4">
+      <div className="flex items-center h-full animate-ticker whitespace-nowrap px-4">
         {doubled.map((tx, idx) => (
           <button
             key={`${tx.project}-${idx}`}
             type="button"
             onClick={() => onTransactionClick(tx.district)}
-            className={`font-mono text-[11px] tracking-wide transition-colors ${
+            className={`font-mono text-[11px] tracking-wide transition-colors flex items-center ${
               activeDistrict === tx.district
                 ? 'text-emerald-600'
-                : 'text-black/60 hover:text-black/80'
+                : 'text-black/50 hover:text-black/70'
             }`}
           >
-            {tx.project} · {formatBedroom(tx.bedroom)} · {formatPrice(tx.price)}
+            <span className="text-black/30">[</span>
+            <span className="text-black/60">{tx.district}</span>
+            <span className="text-black/30">]</span>
+            <span className="mx-1.5">{tx.project}</span>
+            <span className="text-black/30">[</span>
+            <span>{formatPrice(tx.price)}</span>
+            <span className="text-black/30">]</span>
+            <span className="mx-4 text-black/20">//</span>
           </button>
         ))}
       </div>
@@ -1097,7 +1105,7 @@ function PulseTicker({ transactions, onTransactionClick, activeDistrict, isLoadi
 }
 
 // Ghost Map - SVG-based Singapore district map with pulsing dots
-// 3D Tactical Overlay: Sea (white grid) → Landmass (Slate-100 fill) → Skeleton (line hierarchy)
+// Laser-cut acrylic concept: Pale blue-grey sea + White land "cutout" + Technical grey lines
 function GhostMap({ highlightedDistrict, activePulses, onPulseFade }) {
   const [geoData, setGeoData] = useState(null);
   const [centroids, setCentroids] = useState(null);
@@ -1110,35 +1118,33 @@ function GhostMap({ highlightedDistrict, activePulses, onPulseFade }) {
 
   if (!geoData || !centroids) {
     return (
-      <div className="h-[280px] border border-black/10 bg-white flex items-center justify-center">
-        <div className="font-mono text-[10px] text-black/40">LOADING_MAP...</div>
+      <div className="h-[280px] border border-black/10 bg-slate-50 flex items-center justify-center">
+        <div className="font-mono text-[10px] text-black/40 tracking-wider">LOADING_MAP...</div>
       </div>
     );
   }
 
-  // Layer 2: The Landmass fill color based on state
+  // The Land: Pure white "cutout" with subtle lift on interaction
   const getDistrictFill = (district) => {
-    if (highlightedDistrict === district) return '#E2E8F0'; // Slate-200 - active highlight
-    if (hoveredDistrict === district) return '#E2E8F0'; // Slate-200 - hover
-    return '#F1F5F9'; // Slate-100 - default landmass ("thick paper")
+    if (highlightedDistrict === district) return '#F8FAFC'; // Slate-50 - slight tint on active
+    if (hoveredDistrict === district) return '#F8FAFC'; // Slate-50 - slight tint on hover
+    return '#FFFFFF'; // Pure white - the "positive space" cutout
   };
 
-  // Layer 3: The Skeleton stroke color based on state
+  // The Skeleton: Technical grey lines for district boundaries
   const getDistrictStroke = (district) => {
     if (highlightedDistrict === district || hoveredDistrict === district) {
-      return '#94A3B8'; // Slate-400 - crisper on interaction
+      return '#64748B'; // Slate-500 - crisper on interaction
     }
-    return '#CBD5E1'; // Slate-300 - subtle division
+    return '#94A3B8'; // Slate-400 - technical drawing line
   };
 
   return (
     <div
       className="relative border border-black/10"
       style={{
-        // Layer 1: The Sea - white with faint blueprint grid
-        backgroundColor: '#FFFFFF',
-        backgroundImage: 'radial-gradient(#E2E8F0 1px, transparent 1px)',
-        backgroundSize: '20px 20px',
+        // The Sea: Very pale blue-grey engineering surface
+        backgroundColor: '#F8FAFC', // Slate-50
       }}
     >
       {/* HUD corners */}
@@ -1152,12 +1158,8 @@ function GhostMap({ highlightedDistrict, activePulses, onPulseFade }) {
       <svg
         viewBox={`0 0 ${SVG_SIZE.width} ${SVG_SIZE.height}`}
         className="w-full h-auto"
-        style={{
-          // Coastline container - hard dark edge around entire shape
-          filter: 'drop-shadow(0px 0px 1px #64748B)',
-        }}
       >
-        {/* District paths - Landmass (fill) + Skeleton (strokes) */}
+        {/* District paths - White land cutouts with physical lift shadow */}
         {geoData.map((f) => (
           <path
             key={f.properties.district}
@@ -1166,6 +1168,10 @@ function GhostMap({ highlightedDistrict, activePulses, onPulseFade }) {
             stroke={getDistrictStroke(f.properties.district)}
             strokeWidth="0.5"
             className="transition-all duration-200 ease-out cursor-crosshair"
+            style={{
+              // The "Physical Lift" - subtle shadow makes land feel elevated
+              filter: 'drop-shadow(0px 1px 2px rgba(148, 163, 184, 0.25))',
+            }}
             onMouseEnter={() => setHoveredDistrict(f.properties.district)}
             onMouseLeave={() => setHoveredDistrict(null)}
           />
@@ -1196,7 +1202,7 @@ function GhostMap({ highlightedDistrict, activePulses, onPulseFade }) {
       </svg>
 
       {/* Timestamp overlay */}
-      <div className="absolute bottom-2 right-3 font-mono text-[9px] text-black/40">
+      <div className="absolute bottom-2 right-3 font-mono text-[9px] text-slate-400 tracking-wider">
         SIG_FEED // LIVE
       </div>
     </div>
