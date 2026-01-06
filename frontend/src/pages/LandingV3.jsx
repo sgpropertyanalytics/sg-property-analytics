@@ -1169,6 +1169,25 @@ function GhostMap({ highlightedDistrict, activePulses, onPulseFade }) {
   );
 }
 
+// Fallback sample data when API is unavailable
+const FALLBACK_TRANSACTIONS = [
+  { project: 'THE ORIE', bedroom: 2, price: 1850000, district: 'D19' },
+  { project: 'PINETREE HILL', bedroom: 3, price: 2680000, district: 'D21' },
+  { project: 'LENTOR MANSION', bedroom: 2, price: 1520000, district: 'D26' },
+  { project: 'HILLOCK GREEN', bedroom: 3, price: 1980000, district: 'D26' },
+  { project: 'GRAND DUNMAN', bedroom: 4, price: 3850000, district: 'D15' },
+  { project: 'TEMBUSU GRAND', bedroom: 2, price: 1720000, district: 'D15' },
+  { project: 'ORCHARD SOPHIA', bedroom: 1, price: 1280000, district: 'D09' },
+  { project: 'THE CONTINUUM', bedroom: 3, price: 3250000, district: 'D15' },
+  { project: 'SCENECA RESIDENCE', bedroom: 2, price: 1380000, district: 'D16' },
+  { project: 'LENTORIA', bedroom: 2, price: 1450000, district: 'D26' },
+  { project: 'THE MYST', bedroom: 3, price: 2150000, district: 'D23' },
+  { project: 'ALTURA', bedroom: 4, price: 2480000, district: 'D23' },
+  { project: 'J\'DEN', bedroom: 2, price: 1680000, district: 'D22' },
+  { project: 'THE LAKEGARDEN RESIDENCES', bedroom: 3, price: 2280000, district: 'D22' },
+  { project: 'WATTEN HOUSE', bedroom: 3, price: 4850000, district: 'D11' },
+];
+
 // Live Signal Ecosystem - container for Pulse Ticker + Ghost Map
 function LiveSignalEcosystem() {
   const [highlightedDistrict, setHighlightedDistrict] = useState(null);
@@ -1178,7 +1197,7 @@ function LiveSignalEcosystem() {
   const sectionRef = useRef(null);
   const isInView = useInView(sectionRef, { once: true, amount: 0.2 });
 
-  // Fetch recent transactions from API
+  // Fetch recent transactions from API with fallback
   useEffect(() => {
     const fetchRecentActivity = async () => {
       try {
@@ -1186,10 +1205,16 @@ function LiveSignalEcosystem() {
         const response = await fetch('/api/landing/recent-activity');
         if (response.ok) {
           const result = await response.json();
-          setTransactions(result.data || []);
+          if (result.data?.length > 0) {
+            setTransactions(result.data);
+            return;
+          }
         }
+        // Use fallback if API fails or returns empty
+        setTransactions(FALLBACK_TRANSACTIONS);
       } catch (error) {
-        console.error('Failed to fetch recent activity:', error);
+        console.error('Failed to fetch recent activity, using fallback:', error);
+        setTransactions(FALLBACK_TRANSACTIONS);
       } finally {
         setIsLoading(false);
       }
