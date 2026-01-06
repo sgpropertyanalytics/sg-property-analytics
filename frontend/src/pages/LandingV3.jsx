@@ -1152,7 +1152,7 @@ function GhostMap({ highlightedDistrict, activePulses, onPulseFade }) {
 
   if (!geoData || !centroids) {
     return (
-      <div className="h-[340px] border border-black/10 bg-slate-50 flex items-center justify-center">
+      <div className="h-[280px] border border-black/10 bg-slate-50 flex items-center justify-center">
         <div className="font-mono text-[10px] text-black/40 tracking-wider">LOADING_MAP...</div>
       </div>
     );
@@ -1179,7 +1179,7 @@ function GhostMap({ highlightedDistrict, activePulses, onPulseFade }) {
   return (
     <div
       ref={containerRef}
-      className="relative border border-black/10 h-[340px] flex items-center justify-center"
+      className="relative border border-black/10"
       style={{
         // The Sea: Very pale blue-grey engineering surface
         backgroundColor: '#F8FAFC', // Slate-50
@@ -1210,27 +1210,24 @@ function GhostMap({ highlightedDistrict, activePulses, onPulseFade }) {
             }}
           >
             <div
-              className="font-mono text-[11px] leading-relaxed"
+              className="font-mono text-[10px] leading-tight"
               style={{
-                background: 'rgba(30, 41, 59, 0.92)', // slate-800 with slight transparency
+                background: '#0F172A',
                 color: '#F8FAFC',
-                padding: '10px 14px',
-                borderRadius: '2px',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.1)',
-                backdropFilter: 'blur(8px)',
-                minWidth: '200px',
+                padding: '6px 10px',
+                boxShadow: '2px 2px 0 rgba(0,0,0,0.3)',
               }}
             >
               {/* Header line */}
               <div className="flex items-center gap-2">
-                <span className="text-slate-400">[</span>
-                <span className="text-white font-semibold">{hoveredDistrict}</span>
-                <span className="text-slate-400">]</span>
-                <span className="text-slate-200 truncate max-w-[160px]">{hoveredStats?.name || 'SCANNING...'}</span>
+                <span className="text-slate-500">[</span>
+                <span className="text-white font-medium">{hoveredDistrict}</span>
+                <span className="text-slate-500">]</span>
+                <span className="text-slate-300 truncate max-w-[140px]">{hoveredStats?.name || 'SCANNING...'}</span>
               </div>
               {/* Stats line - 3M summary */}
-              <div className="flex items-center gap-4 mt-2 text-[10px]">
-                <span className="text-slate-400">3M:</span>
+              <div className="flex items-center gap-3 mt-1 text-[9px]">
+                <span className="text-slate-500">3M:</span>
                 <span>
                   <span className="text-slate-400">VOL:</span>
                   <span className={hoveredStats?.vol === 'HIGH' ? 'text-emerald-400 ml-1' : hoveredStats?.vol === 'LOW' ? 'text-amber-400 ml-1' : 'text-slate-300 ml-1'}>
@@ -1257,30 +1254,6 @@ function GhostMap({ highlightedDistrict, activePulses, onPulseFade }) {
         viewBox={`0 0 ${SVG_SIZE.width} ${SVG_SIZE.height}`}
         className="w-full h-auto"
       >
-        {/* Outer coastline fill - covers gaps between districts */}
-        <path
-          d={`
-            M 65,245
-            Q 40,220 35,190
-            Q 30,160 45,130
-            Q 55,100 80,85
-            Q 120,65 170,55
-            Q 220,48 280,52
-            Q 340,55 380,70
-            Q 420,85 445,115
-            Q 465,145 470,180
-            Q 472,210 455,235
-            Q 435,255 400,265
-            Q 350,275 290,275
-            Q 230,278 170,272
-            Q 110,265 65,245
-            Z
-          `}
-          fill="#FFFFFF"
-          stroke="#E2E8F0"
-          strokeWidth="0.75"
-        />
-
         {/* District paths - White land cutouts with paper-thin shadow */}
         {geoData.map((f) => (
           <path
