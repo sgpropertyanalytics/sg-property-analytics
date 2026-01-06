@@ -22,7 +22,7 @@ import { SubscriptionProvider } from './context/SubscriptionContext';
 import { AppReadyProvider } from './context/AppReadyContext';
 import { DebugProvider } from './context/DebugContext';
 import { ChartTimingProvider } from './context/ChartTimingContext';
-import LandingPage from './pages/Landing';
+import LandingPage from './pages/LandingV3';
 import Login from './pages/Login';
 import Pricing from './pages/Pricing';
 import { DashboardLayout } from './components/layout';

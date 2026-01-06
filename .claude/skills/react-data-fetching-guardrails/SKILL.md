@@ -1,5 +1,5 @@
 ---
-name: contract-async-guardrails
+name: react-data-fetching-guardrails
 description: Frontend contract and async safety guardrails. ALWAYS activate before writing or modifying ANY React components that fetch data, use API responses, or handle enums. Enforces adapter pattern, TanStack Query usage, contract versioning, and enum safety. Use before AND after any frontend data-fetching changes.
 ---
 
