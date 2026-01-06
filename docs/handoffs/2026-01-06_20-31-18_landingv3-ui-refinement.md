@@ -36,7 +36,7 @@ status: in_progress
 
 These documents MUST be read before continuing:
 - `REPO_MAP.md` - Navigation guide + historical incidents
-- `.claude/plans/sunny-squishing-cloud.md` - **THE ORIGINAL PLAN** - Contains all phases with detailed implementation specs
+- `docs/plans/landingv3-ui-refinement-plan.md` - **THE ORIGINAL PLAN** - Contains all phases with detailed implementation specs
 - `.claude/skills/frontend-design/skill.md` - Design guidelines to follow
 - `frontend/src/index.css` - Current animations and CSS variables
 
@@ -69,9 +69,9 @@ frontend/src/pages/LandingV3.jsx:1369-1402 - MARKET_INTELLIGENCE section with 4 
    - File reference: `frontend/src/index.css:10`
 
 3. **Plan adherence is critical**
-   - What: The original plan at `.claude/plans/sunny-squishing-cloud.md` has every detail
+   - What: The original plan at `docs/plans/landingv3-ui-refinement-plan.md` has every detail
    - Why it matters: User explicitly wants ALL items implemented, no skipping
-   - File reference: `.claude/plans/sunny-squishing-cloud.md`
+   - File reference: `docs/plans/landingv3-ui-refinement-plan.md`
 
 ## Artifacts
 
@@ -152,7 +152,7 @@ npm run lint 2>&1 | head -30
 npm run build 2>&1 | tail -20
 
 # Read the plan file (CRITICAL)
-cat /Users/changyuesin/Desktop/sgpropertytrend/.claude/plans/sunny-squishing-cloud.md
+cat /Users/changyuesin/Desktop/sgpropertytrend/docs/plans/landingv3-ui-refinement-plan.md
 
 # Continue from here - add remaining CSS
 # Open frontend/src/index.css and add:
