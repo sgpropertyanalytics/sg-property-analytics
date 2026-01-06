@@ -1376,9 +1376,9 @@ export default function LandingV3() {
               </TerminalChartWrapper>
             </div>
 
-            {/* Row 3: Momentum Grid - Locked */}
+            {/* Row 3: Momentum Grid */}
             <div className="mt-4">
-              <TerminalChartWrapper title="MOMENTUM_GRID" subtitle="28_DISTRICTS" locked>
+              <TerminalChartWrapper title="MOMENTUM_GRID" subtitle="28_DISTRICTS">
                 <MomentumGridPreview />
               </TerminalChartWrapper>
             </div>
