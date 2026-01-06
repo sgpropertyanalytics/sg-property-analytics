@@ -1133,12 +1133,12 @@ function GhostMap({ highlightedDistrict, activePulses, onPulseFade }) {
     return '#FFFFFF'; // Pure white - the "positive space" cutout
   };
 
-  // The Skeleton: Technical grey lines for district boundaries
+  // The Skeleton: Paper-thin lines for district boundaries
   const getDistrictStroke = (district) => {
     if (highlightedDistrict === district || hoveredDistrict === district) {
-      return '#64748B'; // Slate-500 - crisper on interaction
+      return '#94A3B8'; // Slate-400 - crisper on interaction
     }
-    return '#94A3B8'; // Slate-400 - technical drawing line
+    return '#CBD5E1'; // Slate-300 - faint schematic line
   };
 
   return (
@@ -1161,7 +1161,7 @@ function GhostMap({ highlightedDistrict, activePulses, onPulseFade }) {
         viewBox={`0 0 ${SVG_SIZE.width} ${SVG_SIZE.height}`}
         className="w-full h-auto"
       >
-        {/* District paths - White land cutouts with physical lift shadow */}
+        {/* District paths - White land cutouts with paper-thin shadow */}
         {geoData.map((f) => (
           <path
             key={f.properties.district}
@@ -1171,33 +1171,54 @@ function GhostMap({ highlightedDistrict, activePulses, onPulseFade }) {
             strokeWidth="0.5"
             className="transition-all duration-200 ease-out cursor-crosshair"
             style={{
-              // The "Physical Lift" - subtle shadow makes land feel elevated
-              filter: 'drop-shadow(0px 1px 2px rgba(148, 163, 184, 0.25))',
+              // Paper-thin shadow - crisp separation without thickness
+              filter: 'drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.08))',
             }}
             onMouseEnter={() => setHoveredDistrict(f.properties.district)}
             onMouseLeave={() => setHoveredDistrict(null)}
           />
         ))}
 
-        {/* Pulsing dots - phosphor green */}
+        {/* Hard Radar Ring - military-grade target lock animation */}
         <AnimatePresence>
           {activePulses.map((pulse) => {
             const c = centroids.find(c => c.district === pulse.district)?.centroid;
             if (!c) return null;
             const [x, y] = projectToSVG([c.lng, c.lat]);
             return (
-              <motion.circle
-                key={pulse.id}
-                cx={x}
-                cy={y}
-                r={5}
-                fill="#10B981"
-                initial={{ opacity: 1, scale: 1 }}
-                animate={{ opacity: 0, scale: 3 }}
-                transition={{ duration: 3, ease: 'easeOut' }}
-                onAnimationComplete={() => onPulseFade(pulse.id)}
-                style={{ filter: 'drop-shadow(0 0 6px rgba(16,185,129,0.8))' }}
-              />
+              <g key={pulse.id}>
+                {/* Center dot - brief flash */}
+                <motion.circle
+                  cx={x}
+                  cy={y}
+                  r={2}
+                  fill="#0F766E"
+                  initial={{ opacity: 1 }}
+                  animate={{ opacity: 0 }}
+                  transition={{ duration: 0.5, ease: 'easeOut' }}
+                />
+                {/* Expanding radar ring - sharp 1px vector */}
+                <motion.circle
+                  cx={x}
+                  cy={y}
+                  fill="none"
+                  stroke="#0F766E"
+                  initial={{ r: 3, strokeWidth: 2, opacity: 1 }}
+                  animate={{ r: 25, strokeWidth: 0.5, opacity: 0 }}
+                  transition={{ duration: 1.5, ease: [0, 0, 0.2, 1] }}
+                  onAnimationComplete={() => onPulseFade(pulse.id)}
+                />
+                {/* Second ring - delayed ripple */}
+                <motion.circle
+                  cx={x}
+                  cy={y}
+                  fill="none"
+                  stroke="#0F766E"
+                  initial={{ r: 3, strokeWidth: 1.5, opacity: 0.6 }}
+                  animate={{ r: 35, strokeWidth: 0.3, opacity: 0 }}
+                  transition={{ duration: 2, ease: [0, 0, 0.2, 1], delay: 0.2 }}
+                />
+              </g>
             );
           })}
         </AnimatePresence>
