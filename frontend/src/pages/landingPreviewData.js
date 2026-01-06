@@ -47,3 +47,16 @@ export const TERMINAL_LINES = [
 
 // Max price for dumbbell chart scaling
 export const MAX_DISTRICT_PRICE = 2600;
+
+// Signal Feed Events - Live surveillance-style event stream
+// Language: Volume→Liquidity, Risk→Exposure, Safe→High Confidence
+export const SIGNAL_EVENTS = [
+  { id: 'sig_001', time: '21:19', region: 'OCR', district: 'D23', type: 'LIQUIDITY_SPIKE', delta: '+18%', sigma: true },
+  { id: 'sig_002', time: '21:21', region: 'CCR', district: 'D09', type: 'PRICE_COMPRESSION', status: 'EASING' },
+  { id: 'sig_003', time: '21:22', region: 'RCR', district: 'D15', type: 'APPRECIATION_VECTOR', delta: '+2.1%' },
+  { id: 'sig_004', time: '21:24', region: 'OCR', district: 'D19', type: 'HIGH_CONFIDENCE', score: '87%' },
+  { id: 'sig_005', time: '21:26', region: 'CCR', district: 'D10', type: 'EXPOSURE_ALERT', level: 'MODERATE' },
+  { id: 'sig_006', time: '21:28', region: 'RCR', district: 'D03', type: 'LIQUIDITY_SPIKE', delta: '+12%', sigma: true },
+  { id: 'sig_007', time: '21:31', region: 'OCR', district: 'D17', type: 'APPRECIATION_VECTOR', delta: '+1.8%' },
+  { id: 'sig_008', time: '21:33', region: 'CCR', district: 'D11', type: 'HIGH_CONFIDENCE', score: '92%' },
+];

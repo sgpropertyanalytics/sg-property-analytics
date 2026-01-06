@@ -20,6 +20,7 @@ import {
   DISTRICT_GROWTH_DATA,
   MOMENTUM_GRID_DATA,
   MAX_DISTRICT_PRICE,
+  SIGNAL_EVENTS,
 } from './landingPreviewData';
 
 const CANVAS = '#fafafa';
@@ -1018,6 +1019,193 @@ function MomentumGridPreview() {
   );
 }
 
+// ===== LIVE SIGNAL ECOSYSTEM COMPONENTS =====
+
+// SVG projection constants for Singapore
+const SG_BOUNDS = { minLng: 103.6, maxLng: 104.05, minLat: 1.22, maxLat: 1.47 };
+const SVG_SIZE = { width: 500, height: 280 };
+
+function projectToSVG([lng, lat]) {
+  const x = ((lng - SG_BOUNDS.minLng) / (SG_BOUNDS.maxLng - SG_BOUNDS.minLng)) * SVG_SIZE.width;
+  const y = ((SG_BOUNDS.maxLat - lat) / (SG_BOUNDS.maxLat - SG_BOUNDS.minLat)) * SVG_SIZE.height;
+  return [x, y];
+}
+
+function coordsToPath(coords) {
+  return coords[0].map(([lng, lat], i) => {
+    const [x, y] = projectToSVG([lng, lat]);
+    return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ') + ' Z';
+}
+
+// Pulse Ticker - auto-scrolling horizontal event feed
+function PulseTicker({ signals, onSignalClick, activeDistrict }) {
+  const doubled = useMemo(() => [...signals, ...signals], [signals]);
+
+  const formatSignal = (s) => {
+    const sigma = s.sigma ? ' σ' : '';
+    const value = s.delta || s.status || s.score || s.level || '';
+    return `[${s.time}] ${s.region}_${s.type} [${value}${sigma}]`;
+  };
+
+  return (
+    <div className="overflow-hidden border border-black/10 bg-[#fafafa] h-10">
+      <div className="flex items-center h-full gap-12 animate-ticker whitespace-nowrap px-4">
+        {doubled.map((signal, idx) => (
+          <button
+            key={`${signal.id}-${idx}`}
+            type="button"
+            onClick={() => onSignalClick(signal.district)}
+            className={`font-mono text-[11px] tracking-wide transition-colors ${
+              activeDistrict === signal.district
+                ? 'text-emerald-600'
+                : 'text-black/60 hover:text-black/80'
+            }`}
+          >
+            {formatSignal(signal)}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Ghost Map - SVG-based Singapore district map with pulsing dots
+function GhostMap({ highlightedDistrict, activePulses, onPulseFade }) {
+  const [geoData, setGeoData] = useState(null);
+  const [centroids, setCentroids] = useState(null);
+
+  useEffect(() => {
+    import('../data/singaporeDistrictsGeoJSON').then(m => setGeoData(m.singaporeDistrictsGeoJSON.features));
+    import('../data/districtCentroids').then(m => setCentroids(m.DISTRICT_CENTROIDS));
+  }, []);
+
+  if (!geoData || !centroids) {
+    return (
+      <div className="h-[280px] border border-black/10 bg-[#fafafa] flex items-center justify-center">
+        <div className="font-mono text-[10px] text-black/40">LOADING_MAP...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative border border-black/10 bg-[#fafafa]">
+      {/* HUD corners */}
+      <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
+      <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
+      {/* Ruler ticks */}
+      <div className="absolute top-0 left-1/4 w-px h-1 bg-black/20" />
+      <div className="absolute top-0 left-1/2 w-px h-1.5 bg-black/30" />
+      <div className="absolute top-0 left-3/4 w-px h-1 bg-black/20" />
+
+      <svg viewBox={`0 0 ${SVG_SIZE.width} ${SVG_SIZE.height}`} className="w-full h-auto">
+        {/* District boundaries - ghost style */}
+        {geoData.map((f) => (
+          <path
+            key={f.properties.district}
+            d={coordsToPath(f.geometry.coordinates)}
+            fill={highlightedDistrict === f.properties.district ? 'rgba(0,0,0,0.03)' : 'transparent'}
+            stroke="rgba(0,0,0,0.08)"
+            strokeWidth="0.5"
+            className="transition-colors duration-300"
+          />
+        ))}
+
+        {/* Pulsing dots */}
+        <AnimatePresence>
+          {activePulses.map((pulse) => {
+            const c = centroids.find(c => c.district === pulse.district)?.centroid;
+            if (!c) return null;
+            const [x, y] = projectToSVG([c.lng, c.lat]);
+            return (
+              <motion.circle
+                key={pulse.id}
+                cx={x}
+                cy={y}
+                r={5}
+                fill="#10B981"
+                initial={{ opacity: 1, scale: 1 }}
+                animate={{ opacity: 0, scale: 3 }}
+                transition={{ duration: 10, ease: 'easeOut' }}
+                onAnimationComplete={() => onPulseFade(pulse.id)}
+                style={{ filter: 'drop-shadow(0 0 6px rgba(16,185,129,0.8))' }}
+              />
+            );
+          })}
+        </AnimatePresence>
+      </svg>
+
+      {/* Timestamp overlay */}
+      <div className="absolute bottom-2 right-3 font-mono text-[9px] text-black/40">
+        SIG_FEED // LIVE
+      </div>
+    </div>
+  );
+}
+
+// Live Signal Ecosystem - container for Pulse Ticker + Ghost Map
+function LiveSignalEcosystem() {
+  const [highlightedDistrict, setHighlightedDistrict] = useState(null);
+  const [activePulses, setActivePulses] = useState([]);
+  const sectionRef = useRef(null);
+  const isInView = useInView(sectionRef, { once: true, amount: 0.2 });
+
+  const handleSignalClick = (district) => {
+    setHighlightedDistrict(district);
+    setActivePulses(prev => [...prev, { id: `p_${Date.now()}`, district }]);
+    setTimeout(() => setHighlightedDistrict(null), 3000);
+  };
+
+  const handlePulseFade = (id) => {
+    setActivePulses(prev => prev.filter(p => p.id !== id));
+  };
+
+  // Cold boot animation variants
+  const containerVariants = {
+    hidden: {},
+    visible: { transition: { staggerChildren: 0.15 } },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
+  };
+
+  return (
+    <motion.div
+      ref={sectionRef}
+      className="space-y-4"
+      variants={containerVariants}
+      initial="hidden"
+      animate={isInView ? 'visible' : 'hidden'}
+    >
+      {/* Ticker */}
+      <motion.div variants={itemVariants}>
+        <PulseTicker
+          signals={SIGNAL_EVENTS}
+          onSignalClick={handleSignalClick}
+          activeDistrict={highlightedDistrict}
+        />
+      </motion.div>
+
+      {/* Ghost Map */}
+      <motion.div variants={itemVariants}>
+        <GhostMap
+          highlightedDistrict={highlightedDistrict}
+          activePulses={activePulses}
+          onPulseFade={handlePulseFade}
+        />
+      </motion.div>
+
+      {/* System status */}
+      <motion.div variants={itemVariants} className="flex items-center justify-center gap-2">
+        <div className="heartbeat-led" />
+        <span className="font-mono text-[9px] text-black/50">SYSTEM_ACTIVE</span>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 export default function LandingV3() {
   const navigate = useNavigate();
 
@@ -1349,38 +1537,17 @@ export default function LandingV3() {
 
         <SectionDivider />
 
-        {/* MARKET INTELLIGENCE - Chart Preview Section */}
+        {/* LIVE SIGNAL ECOSYSTEM */}
         <section className="py-16 md:py-24 section-overlap-up" onMouseEnter={onSectionEnter} onMouseLeave={onSectionLeave}>
           <div className="max-w-7xl mx-auto px-4 md:px-6">
             <SectionTitle
-              eyebrow="ANALYTICS"
-              title="MARKET_INTELLIGENCE"
-              muted="live_feed"
-              rightSlot={<MonoPill>PREVIEW_MODE</MonoPill>}
+              eyebrow="SURVEILLANCE"
+              title="SIGNAL_FEED"
+              muted="live_stream"
+              rightSlot={<MonoPill leftDot={<div className="heartbeat-led" />}>ACTIVE</MonoPill>}
             />
-
-            {/* Row 1: Regional Pricing + Volume Trend */}
-            <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <TerminalChartWrapper title="REGIONAL_PRICING" subtitle="CCR / RCR / OCR" showLive>
-                <RegionalPricingPreview />
-              </TerminalChartWrapper>
-              <TerminalChartWrapper title="VOLUME_TREND" subtitle="6M_ROLLING">
-                <VolumeTrendPreview />
-              </TerminalChartWrapper>
-            </div>
-
-            {/* Row 2: District Growth - Full Width */}
-            <div className="mt-4">
-              <TerminalChartWrapper title="DISTRICT_GROWTH" subtitle="TOP_5_PERFORMERS // PSF_DELTA" showLive>
-                <DistrictGrowthPreview />
-              </TerminalChartWrapper>
-            </div>
-
-            {/* Row 3: Momentum Grid */}
-            <div className="mt-4">
-              <TerminalChartWrapper title="MOMENTUM_GRID" subtitle="28_DISTRICTS">
-                <MomentumGridPreview />
-              </TerminalChartWrapper>
+            <div className="mt-6">
+              <LiveSignalEcosystem />
             </div>
           </div>
         </section>

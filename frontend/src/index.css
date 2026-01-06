@@ -745,5 +745,41 @@ input[type="range"].slider-thumb::-moz-range-progress {
     animation: none !important;
     transition: none !important;
   }
+
+  .animate-ticker,
+  .heartbeat-led {
+    animation: none !important;
+  }
+}
+
+/* ====== Live Signal Ecosystem ====== */
+
+/* Ticker auto-scroll animation */
+@keyframes ticker-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-ticker {
+  animation: ticker-scroll 40s linear infinite;
+}
+
+.animate-ticker:hover {
+  animation-play-state: paused;
+}
+
+/* System heartbeat LED - slow breathing glow */
+@keyframes heartbeat-glow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.heartbeat-led {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10B981;
+  box-shadow: 0 0 4px rgba(16, 185, 129, 0.6);
+  animation: heartbeat-glow 4s ease-in-out infinite;
 }
 
