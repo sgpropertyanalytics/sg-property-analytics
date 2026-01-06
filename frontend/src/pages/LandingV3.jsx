@@ -578,14 +578,17 @@ function StatusPanel() {
   
   useInterval(() => setClock(formatSgClock(new Date())), 1000);
   
-  useInterval(() => {
-    setTxCount(prev => prev + Math.floor(Math.random() * 3));
-    setIntegrity(prev => {
-      const delta = (Math.random() - 0.5) * 0.02;
-      return Math.min(99.9, Math.max(99.0, prev + delta));
-    });
-    setSyncAgo(prev => (prev + 1) % 60);
-  }, 2000);
+  useEffect(() => {
+    const id = setInterval(() => {
+      setTxCount(prev => prev + Math.floor(Math.random() * 3) + 1);
+      setIntegrity(prev => {
+        const delta = (Math.random() - 0.5) * 0.1;
+        return Math.min(99.9, Math.max(99.0, prev + delta));
+      });
+      setSyncAgo(prev => (prev + 2) % 60);
+    }, 2000);
+    return () => clearInterval(id);
+  }, []);
 
   return (
     <div className="border border-black/10 bg-[#fafafa]">
@@ -751,15 +754,15 @@ export default function LandingV3() {
       'AUTH: GUEST // CLEARANCE: NONE',
       'MODE: READ-ONLY PREVIEW',
       '',
-      '> init system.boot … OK',
       '> handshake ura.endpoint … OK',
       '> pipeline.validate integrity=99.2% … OK',
-      '> cache.warmup districts=28 … OK',
       '> stream.transactions sale_type=RESALE … RUNNING',
+      '',
+      'Tip: Press Ctrl+K to run a command.',
+      '',
+      '> cache.warmup districts=28 … OK',
       '> index.projects count=1,247 … OK',
       '> verify.data_quality … PASSED',
-      '',
-      'System ready. Type a command above.',
     ],
     [],
   );
