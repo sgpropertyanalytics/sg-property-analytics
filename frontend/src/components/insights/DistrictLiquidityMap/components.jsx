@@ -140,7 +140,7 @@ export function HoverCard({ district, data }) {
       transition={{ duration: 0.15 }}
       className="absolute z-50 pointer-events-none top-[200px] left-4"
     >
-      <div className="bg-white rounded-lg shadow-xl border border-[#94B4C1]/50 p-3 w-[180px]">
+      <div className="bg-white rounded-none shadow-weapon border border-mono-muted p-3 w-[180px]">
         {/* Header */}
         <div className="flex items-center justify-between mb-2">
           <span className="font-bold text-[#213448] text-sm">{district.district}</span>

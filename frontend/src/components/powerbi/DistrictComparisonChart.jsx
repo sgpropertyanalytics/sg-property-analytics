@@ -11,12 +11,13 @@ import {
   truncateProjectName,
 } from '../../adapters';
 import { CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
+import { BRAND } from '../../constants/colors';
 
-// Color palette - age band differentiated
+// Color palette from centralized colors.js - age band differentiated
 const COLORS = {
-  selected: '#213448',        // Navy - selected project
-  sameAgeBand: '#547792',     // Blue - same age cohort
-  otherBand: '#94B4C1',       // Sky - other age cohorts
+  selected: BRAND.navy,        // Navy - selected project
+  sameAgeBand: BRAND.blue,     // Blue - same age cohort
+  otherBand: BRAND.sky,        // Sky - other age cohorts
   selectedHover: '#2d4660',
   sameAgeBandHover: '#6889a6',
   otherBandHover: '#a8c5d4',

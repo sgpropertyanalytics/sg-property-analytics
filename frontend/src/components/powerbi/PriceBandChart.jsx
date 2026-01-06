@@ -19,17 +19,15 @@ import { Line } from 'react-chartjs-2';
 import { isFloorDirection, FloorDirectionLabels } from '../../schemas/apiContract';
 import { ChartSlot } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
+import { BRAND } from '../../constants/colors';
 import { VerdictBadge, VerdictBadgeLarge } from './VerdictBadge';
 
-// Colors
+// Colors from centralized colors.js + chart-specific fills
 const COLORS = {
-  navy: '#213448',
-  oceanBlue: '#547792',
-  skyBlue: '#94B4C1',
-  sand: '#EAE0CF',
+  ...BRAND,  // navy, blue, sky, sand
   protectedFill: 'rgba(16, 185, 129, 0.12)', // Light green
   cautionFill: 'rgba(239, 68, 68, 0.12)',    // Light red
-  unitMarker: '#547792',
+  unitMarker: BRAND.blue,
 };
 
 /**

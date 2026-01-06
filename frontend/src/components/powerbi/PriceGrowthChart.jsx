@@ -15,16 +15,12 @@ import React, { useMemo, useRef } from 'react';
 import { Line } from 'react-chartjs-2';
 import { ChartSlot } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
+import { BRAND } from '../../constants/colors';
 import { ChartFrame } from '../common/ChartFrame';
 import { getTxnField, TxnField } from '../../schemas/apiContract';
 
-// Colors
-const COLORS = {
-  navy: '#213448',
-  oceanBlue: '#547792',
-  skyBlue: '#94B4C1',
-  sand: '#EAE0CF',
-};
+// Colors from centralized colors.js
+const COLORS = BRAND;
 
 // Helper: Calculate median
 const median = (arr) => {

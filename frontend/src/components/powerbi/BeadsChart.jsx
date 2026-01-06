@@ -10,6 +10,7 @@ import { getDashboard } from '../../api/client';
 import { KeyInsightBox, ChartSlot } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 import { REGIONS } from '../../constants';
+import { REGION } from '../../constants/colors';
 import {
   transformBeadsChartSeries,
   formatPrice,
@@ -18,12 +19,8 @@ import {
 } from '../../adapters';
 import { niceMaxMillion } from '../../utils/niceAxisMax';
 
-// Region colors for strings and labels (outside component to avoid dependency issues)
-const REGION_COLORS = {
-  CCR: '#213448', // Navy
-  RCR: '#547792', // Blue
-  OCR: '#94B4C1', // Sky
-};
+// Region colors from centralized colors.js
+const REGION_COLORS = REGION;
 
 /**
  * Beads on String Chart - Volume-Weighted Median Prices by Region & Bedroom

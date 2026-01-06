@@ -15,14 +15,11 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useSupplyData } from '../../context/SupplyDataContext';
 import { ChartFrame } from '../common/ChartFrame';
 import { DISTRICT_NAMES, getRegionForDistrict, getRegionBadgeClass } from '../../constants';
+import { SUPPLY } from '../../constants/colors';
 import { SupplyField, getSupplyField } from '../../schemas/apiContract';
 
-// Colors for volume bars (muted warm tones)
-const COLORS = {
-  unsold: '#6b4226',    // Muted chocolate brown
-  upcoming: '#9c6644',  // Muted terracotta
-  gls: '#c4a77d',       // Muted camel/tan
-};
+// Colors from centralized colors.js (muted warm tones)
+const COLORS = SUPPLY;
 
 /**
  * Supply Breakdown Table Component

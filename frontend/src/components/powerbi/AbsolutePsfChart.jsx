@@ -12,6 +12,7 @@ import { TIME_GROUP_BY } from '../../context/PowerBIFilter';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { PreviewChartOverlay, ChartSlot, InlineCard, InlineCardRow } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
+import { REGION } from '../../constants/colors';
 import {
   transformCompressionSeries,
   logFetchDebug,
@@ -22,12 +23,8 @@ import {
 // Time level labels for display
 const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
 
-// Region colors (consistent with brand)
-const REGION_COLORS = {
-  CCR: '#213448',
-  RCR: '#547792',
-  OCR: '#94B4C1',
-};
+// Region colors from centralized colors.js
+const REGION_COLORS = REGION;
 
 /**
  * Absolute PSF by Region Chart

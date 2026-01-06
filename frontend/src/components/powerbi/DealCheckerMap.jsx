@@ -306,7 +306,7 @@ export default function DealCheckerMap({
       )}
 
       {/* Legend */}
-      <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-sm rounded-lg shadow-md p-2 text-xs">
+      <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-sm rounded-none shadow-weapon border border-mono-muted p-2 text-xs">
         <div className="flex items-center gap-2 mb-1">
           <div className="w-3 h-3 bg-[#213448] rounded-full border border-white"></div>
           <span className="text-[#213448]">Your project</span>
