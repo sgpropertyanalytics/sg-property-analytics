@@ -467,3 +467,283 @@ input[type="range"].slider-thumb::-moz-range-progress {
   cursor: crosshair;
 }
 
+/* ====== Phase 3.3: Grayscale Depth Utility Classes ====== */
+
+/* Text color hierarchy for monochrome depth */
+.text-ink { color: #000000; }
+.text-gray-dark { color: #333333; }
+.text-gray-mid { color: #666666; }
+.text-gray-light { color: #999999; }
+.text-gray-muted { color: #cccccc; }
+
+/* Background variants */
+.bg-ink { background-color: #000000; }
+.bg-gray-dark { background-color: #333333; }
+.bg-gray-mid { background-color: #666666; }
+.bg-gray-light { background-color: #999999; }
+.bg-gray-muted { background-color: #cccccc; }
+
+/* Border variants */
+.border-ink { border-color: #000000; }
+.border-gray-dark { border-color: #333333; }
+.border-gray-mid { border-color: #666666; }
+.border-gray-light { border-color: #999999; }
+.border-gray-muted { border-color: #cccccc; }
+
+/* ====== Phase 4.1: Enhanced Pulse Ring Animation ====== */
+
+/* Multiple expanding rings for live indicators */
+@keyframes pulseRing {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+@keyframes pulseRingDelayed {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(3);
+    opacity: 0;
+  }
+}
+
+.pulse-ring {
+  position: relative;
+}
+
+.pulse-ring::before,
+.pulse-ring::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  animation: pulseRing 2s ease-out infinite;
+}
+
+.pulse-ring::after {
+  animation: pulseRingDelayed 2s ease-out infinite;
+  animation-delay: 0.5s;
+}
+
+/* Emerald pulse ring variant */
+.pulse-ring-emerald::before,
+.pulse-ring-emerald::after {
+  border-color: rgba(16, 185, 129, 0.6);
+}
+
+/* ====== Phase 4.3: Card Hover & Micro-interactions ====== */
+
+/* Card hover lift + glow effect */
+.card-hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.08),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+/* Card with emerald glow on hover */
+.card-hover-glow {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.card-hover-glow:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.08),
+    0 0 20px rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+/* Button scan sweep effect (builds on scan-line-hover) */
+.btn-scan-sweep {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-scan-sweep::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: left 0.5s ease;
+}
+
+.btn-scan-sweep:hover::before {
+  left: 100%;
+}
+
+/* Input focus glow (emerald accent) */
+.input-focus-glow {
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.input-focus-glow:focus {
+  outline: none;
+  border-color: rgba(16, 185, 129, 0.5);
+  box-shadow:
+    0 0 0 3px rgba(16, 185, 129, 0.1),
+    0 0 12px rgba(16, 185, 129, 0.2);
+}
+
+/* Command bar specific focus glow */
+.command-bar-focus {
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.command-bar-focus:focus-within {
+  border-color: rgba(16, 185, 129, 0.4);
+  box-shadow:
+    0 0 0 3px rgba(16, 185, 129, 0.1),
+    0 0 20px rgba(16, 185, 129, 0.15);
+}
+
+/* ====== Phase 6.3: Globe Glow Effect ====== */
+
+.globe-glow {
+  box-shadow:
+    0 0 40px rgba(16, 185, 129, 0.1),
+    0 0 80px rgba(16, 185, 129, 0.05);
+}
+
+.globe-bloom {
+  position: relative;
+}
+
+.globe-bloom::after {
+  content: '';
+  position: absolute;
+  inset: -20%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(16, 185, 129, 0.08) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+/* ====== Phase 6.4: Footer Grid Pattern ====== */
+
+.footer-grid-pattern {
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* System status indicator row */
+.system-status-row {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: rgba(0, 0, 0, 0.4);
+}
+
+.system-status-row .status-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ====== Phase 7.3: Section Overlap ====== */
+
+.section-overlap-down {
+  position: relative;
+  z-index: 10;
+  margin-bottom: -2rem;
+}
+
+.section-overlap-up {
+  padding-top: 4rem;
+}
+
+/* ====== Phase 8: Comprehensive Reduced Motion Support ====== */
+
+@media (prefers-reduced-motion: reduce) {
+  /* Disable all custom animations */
+  .glitch-hover:hover,
+  .scan-line-hover:hover::before,
+  .animate-data-stream,
+  .animate-scroll-fade-in,
+  .animate-scroll-up,
+  .skeleton-shimmer,
+  .skeleton-pulse,
+  .update-indicator,
+  .update-indicator-spin,
+  .animate-slide-in-right,
+  .animate-slide-in-left,
+  .animate-chip-appear,
+  .animate-fade-in,
+  .animate-view-enter {
+    animation: none !important;
+  }
+
+  /* Disable pulse ring animations */
+  .pulse-ring::before,
+  .pulse-ring::after {
+    animation: none !important;
+    opacity: 0.5;
+    transform: scale(1.5);
+  }
+
+  /* Disable Tailwind's ping animation */
+  .animate-ping {
+    animation: none !important;
+    opacity: 0.5;
+  }
+
+  /* Disable button scan sweep */
+  .btn-scan-sweep::before {
+    display: none;
+  }
+
+  /* Keep hover states but remove transform transitions */
+  .card-hover-lift,
+  .card-hover-glow {
+    transition: box-shadow 0.2s ease;
+  }
+
+  .card-hover-lift:hover,
+  .card-hover-glow:hover {
+    transform: none;
+  }
+
+  /* Keep focus states functional */
+  .input-focus-glow:focus,
+  .command-bar-focus:focus-within {
+    transition: none;
+  }
+
+  /* Disable motion on framer-motion elements */
+  [data-framer-motion],
+  .motion-reduce {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+

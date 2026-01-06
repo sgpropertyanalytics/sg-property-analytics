@@ -14,6 +14,13 @@ import {
   Terminal,
   Zap,
 } from 'lucide-react';
+import {
+  REGIONAL_PRICING_DATA,
+  VOLUME_TREND_DATA,
+  DISTRICT_GROWTH_DATA,
+  MOMENTUM_GRID_DATA,
+  MAX_DISTRICT_PRICE,
+} from './landingPreviewData';
 
 const CANVAS = '#fafafa';
 const INK = '#000000';
@@ -217,7 +224,7 @@ function CommandBar({ onExecute }) {
 
   return (
     <div className="relative">
-      <div className="flex items-stretch border border-black/10 bg-[#fafafa]">
+      <div className="flex items-stretch border border-black/10 bg-[#fafafa] command-bar-focus">
         <div className="flex items-center gap-2 px-3 border-r border-black/10">
           <Command className="h-4 w-4 text-black/30" />
           <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40 hidden sm:inline">
@@ -845,15 +852,9 @@ function TerminalChartWrapper({ title, subtitle, children, showLive = false, loc
 
 // Regional Pricing Preview - simplified beads visualization
 function RegionalPricingPreview() {
-  const regions = [
-    { name: 'CCR', color: '#213448', prices: [2800, 3200, 3600, 4200] },
-    { name: 'RCR', color: '#547792', prices: [1800, 2100, 2400, 2900] },
-    { name: 'OCR', color: '#94B4C1', prices: [1400, 1650, 1900, 2200] },
-  ];
-
   return (
     <div className="space-y-4">
-      {regions.map((region) => (
+      {REGIONAL_PRICING_DATA.map((region) => (
         <div key={region.name} className="flex items-center gap-4">
           <div className="w-10 font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">
             {region.name}
@@ -912,8 +913,7 @@ function RegionalPricingPreview() {
 
 // Volume Trend Preview - simplified bar + line chart
 function VolumeTrendPreview() {
-  const months = ['Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const volumes = [320, 280, 350, 410, 380, 420];
+  const { months, volumes } = VOLUME_TREND_DATA;
   const maxVol = Math.max(...volumes);
 
   return (
@@ -943,18 +943,9 @@ function VolumeTrendPreview() {
 
 // District Growth Preview - simplified dumbbell chart
 function DistrictGrowthPreview() {
-  const districts = [
-    { id: 'D09', name: 'Orchard', start: 2100, end: 2480, delta: '+18.1%' },
-    { id: 'D10', name: 'Tanglin', start: 2200, end: 2520, delta: '+14.5%' },
-    { id: 'D03', name: 'Tiong Bahru', start: 1850, end: 2110, delta: '+14.1%' },
-    { id: 'D15', name: 'East Coast', start: 1720, end: 1950, delta: '+13.4%' },
-    { id: 'D16', name: 'Bedok', start: 1520, end: 1680, delta: '+10.5%' },
-  ];
-  const maxPrice = 2600;
-
   return (
     <div className="space-y-2">
-      {districts.map((d) => (
+      {DISTRICT_GROWTH_DATA.map((d) => (
         <div key={d.id} className="flex items-center gap-3">
           <div className="w-8 font-mono text-[9px] text-black/40">{d.id}</div>
           <div className="flex-1 relative h-4">
@@ -963,20 +954,20 @@ function DistrictGrowthPreview() {
             {/* Start dot */}
             <div
               className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-black/20"
-              style={{ left: `${(d.start / maxPrice) * 100}%` }}
+              style={{ left: `${(d.start / MAX_DISTRICT_PRICE) * 100}%` }}
             />
             {/* Growth bar */}
             <div
               className="absolute top-1/2 -translate-y-1/2 h-1 bg-gradient-to-r from-black/30 to-emerald-500"
               style={{
-                left: `${(d.start / maxPrice) * 100}%`,
-                width: `${((d.end - d.start) / maxPrice) * 100}%`,
+                left: `${(d.start / MAX_DISTRICT_PRICE) * 100}%`,
+                width: `${((d.end - d.start) / MAX_DISTRICT_PRICE) * 100}%`,
               }}
             />
             {/* End dot */}
             <div
               className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-emerald-500"
-              style={{ left: `${(d.end / maxPrice) * 100}%` }}
+              style={{ left: `${(d.end / MAX_DISTRICT_PRICE) * 100}%` }}
             />
           </div>
           <div className="w-12 text-right font-mono text-[9px] text-emerald-600 tabular-nums">
@@ -1001,18 +992,9 @@ function DistrictGrowthPreview() {
 
 // Momentum Grid Preview - 28 mini sparklines
 function MomentumGridPreview() {
-  // Deterministic trend data based on district number
-  const districts = useMemo(() =>
-    Array.from({ length: 28 }, (_, i) => ({
-      id: `D${String(i + 1).padStart(2, '0')}`,
-      // Realistic pattern: CCR/prime districts up, some OCR down
-      trend: [1, 2, 3, 6, 7, 9, 10, 11, 12, 14, 15, 19, 21].includes(i + 1) ? 'up' : 'down',
-    })),
-  []);
-
   return (
     <div className="grid grid-cols-7 gap-1">
-      {districts.map((d) => (
+      {MOMENTUM_GRID_DATA.map((d) => (
         <div
           key={d.id}
           className="aspect-square border border-black/05 p-1 flex flex-col items-center justify-center"
@@ -1264,6 +1246,7 @@ export default function LandingV3() {
                 {/* Globe column - slightly overflow for tension */}
                 <div className="lg:col-span-5 lg:-mr-8">
                   <motion.div
+                    className="globe-bloom"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.8, delay: 0.2 }}
@@ -1280,7 +1263,7 @@ export default function LandingV3() {
         <SectionDivider />
 
         {/* STATS */}
-        <section className="py-16 md:py-24" onMouseEnter={onSectionEnter} onMouseLeave={onSectionLeave}>
+        <section className="py-16 md:py-24 section-overlap-down" onMouseEnter={onSectionEnter} onMouseLeave={onSectionLeave}>
           <div className="max-w-7xl mx-auto px-4 md:px-6">
             <SectionTitle
               eyebrow="COVERAGE"
@@ -1367,7 +1350,7 @@ export default function LandingV3() {
         <SectionDivider />
 
         {/* MARKET INTELLIGENCE - Chart Preview Section */}
-        <section className="py-16 md:py-24" onMouseEnter={onSectionEnter} onMouseLeave={onSectionLeave}>
+        <section className="py-16 md:py-24 section-overlap-up" onMouseEnter={onSectionEnter} onMouseLeave={onSectionLeave}>
           <div className="max-w-7xl mx-auto px-4 md:px-6">
             <SectionTitle
               eyebrow="ANALYTICS"
@@ -1602,9 +1585,32 @@ export default function LandingV3() {
           </div>
         </section>
 
-        <footer className="py-10">
+        <footer className="py-10 footer-grid-pattern">
           <div className="max-w-7xl mx-auto px-4 md:px-6">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border-t border-black/10 pt-6">
+            {/* System Status Row */}
+            <div className="system-status-row pb-6 border-b border-black/05">
+              <div className="status-item">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-70 animate-ping" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-600" />
+                </span>
+                <span>All Systems Operational</span>
+              </div>
+              <div className="status-item">
+                <span className="text-black/30">URA_FEED</span>
+                <span className="text-emerald-600">SYNC</span>
+              </div>
+              <div className="status-item">
+                <span className="text-black/30">LATENCY</span>
+                <span>&lt;50ms</span>
+              </div>
+              <div className="status-item hidden md:flex">
+                <span className="text-black/30">UPTIME</span>
+                <span>99.9%</span>
+              </div>
+            </div>
+
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pt-6">
               <div>
                 <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">Build</div>
                 <div className="mt-1 text-sm text-black/50">LandingV3 · monochrome + emerald signals</div>
@@ -1613,14 +1619,14 @@ export default function LandingV3() {
                 <button
                   type="button"
                   onClick={onAnyCTA}
-                  className="px-4 py-2 border border-black/10 text-black font-medium hover:border-black/20 hover:bg-black/[0.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
+                  className="px-4 py-2 border border-black/10 text-black font-medium hover:border-black/20 hover:bg-black/[0.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 btn-scan-sweep"
                 >
                   Login
                 </button>
                 <button
                   type="button"
                   onClick={onAnyCTA}
-                  className="px-4 py-2 bg-black text-[#fafafa] font-medium hover:bg-black/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
+                  className="px-4 py-2 bg-black text-[#fafafa] font-medium hover:bg-black/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 btn-scan-sweep"
                 >
                   Enter
                 </button>
