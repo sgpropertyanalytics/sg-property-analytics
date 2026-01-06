@@ -241,10 +241,9 @@ function CommandBar({ onExecute }) {
       <AnimatePresence>
         {isOpen && filtered.length ? (
           <motion.div
-            initial={{ opacity: 0, y: 4 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 4 }}
-            transition={{ duration: 0.1 }}
+            exit={{ opacity: 0, y: 8 }}
             className="absolute left-0 right-0 mt-2 border border-black/10 bg-[#fafafa]"
           >
             {filtered.map((s, i) => (
@@ -710,20 +709,20 @@ function DotMatrixMap() {
 
 function CapabilityCard({ icon: Icon, title, desc }) {
   return (
-    <div className="group border border-black/10 bg-[#fafafa] p-6 hover:border-black/30 transition-all duration-100 cursor-pointer">
+    <div className="group border border-black/10 bg-[#fafafa] p-6 hover:border-black/20 transition-colors">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40 group-hover:text-black/60 transition-colors duration-100">Capability</div>
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">Capability</div>
           <div className="mt-2 text-lg font-bold tracking-tight text-black">{title}</div>
         </div>
-        <div className="border border-black/10 p-2 group-hover:border-black/20 group-hover:bg-black/[0.02] transition-all duration-100">
-          <Icon className="h-5 w-5 text-black/30 group-hover:text-black/50 transition-colors duration-100" />
+        <div className="border border-black/10 p-2">
+          <Icon className="h-5 w-5 text-black/30" />
         </div>
       </div>
       <div className="mt-3 text-sm leading-relaxed text-black/50">{desc}</div>
       <div className="mt-5 flex items-center justify-between">
-        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/30 group-hover:text-black/50 transition-colors duration-100">Inspect</div>
-        <ChevronRight className="h-4 w-4 text-black/20 group-hover:text-black/40 group-hover:translate-x-0.5 transition-all duration-100" />
+        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/30">Inspect</div>
+        <ChevronRight className="h-4 w-4 text-black/20 group-hover:translate-x-0.5 transition-transform" />
       </div>
     </div>
   );
@@ -832,14 +831,14 @@ export default function LandingV3() {
               <button
                 type="button"
                 onClick={onAnyCTA}
-                className="px-4 py-2 border border-black/20 text-black font-medium hover:bg-black hover:text-white transition-all duration-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
+                className="px-4 py-2 border border-black/10 text-black font-medium hover:border-black/20 hover:bg-black/[0.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
               >
                 Log In
               </button>
               <button
                 type="button"
                 onClick={onAnyCTA}
-                className="px-4 py-2 bg-black text-[#fafafa] font-medium hover:bg-transparent hover:text-black border border-black transition-all duration-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
+                className="px-4 py-2 bg-black text-[#fafafa] font-medium hover:bg-black/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
               >
                 Request Access
               </button>
@@ -858,7 +857,7 @@ export default function LandingV3() {
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ duration: 0.15 }}
+                    transition={{ duration: 0.5 }}
                     className="flex items-center gap-3"
                   >
                     <MonoPill leftDot={<LiveDot />}>Live URA Data</MonoPill>
@@ -870,8 +869,8 @@ export default function LandingV3() {
                   <motion.h1
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ duration: 0.2, delay: 0.05 }}
-                    className="mt-6 text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-[-0.04em] leading-[0.92]"
+                    transition={{ duration: 0.6, delay: 0.05 }}
+                    className="mt-6 text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[0.96]"
                   >
                     <span className="text-black">Singapore Condo</span>{' '}
                     <span className="text-black/30">Market Intelligence</span>
@@ -880,7 +879,7 @@ export default function LandingV3() {
                   <motion.p
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ duration: 0.15, delay: 0.08 }}
+                    transition={{ duration: 0.6, delay: 0.12 }}
                     className="mt-6 text-base sm:text-lg leading-relaxed text-black/50 max-w-xl"
                   >
                     Data-driven price benchmarking across projects, locations, and market segments — based on 100,000+ private property transactions.
@@ -889,7 +888,7 @@ export default function LandingV3() {
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ duration: 0.15, delay: 0.12 }}
+                    transition={{ duration: 0.6, delay: 0.24 }}
                     className="mt-6"
                   >
                     <CommandBar onExecute={onAnyCTA} />
@@ -898,7 +897,7 @@ export default function LandingV3() {
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ duration: 0.2, delay: 0.16 }}
+                    transition={{ duration: 0.6, delay: 0.3 }}
                     className="mt-8"
                   >
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
@@ -912,7 +911,7 @@ export default function LandingV3() {
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ duration: 0.25, delay: 0.1 }}
+                    transition={{ duration: 0.8, delay: 0.2 }}
                   >
                     <ParticleGlobe />
                   </motion.div>
@@ -1047,10 +1046,10 @@ export default function LandingV3() {
                     <button
                       type="button"
                       onClick={onAnyCTA}
-                      className="group inline-flex items-center gap-2 px-4 py-2 border border-black/20 hover:bg-black hover:text-white transition-all duration-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
+                      className="group inline-flex items-center gap-2 px-4 py-2 border border-black/10 hover:border-black/20 hover:bg-black/[0.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
                     >
                       Proceed
-                      <ArrowRight className="h-4 w-4 text-black/30 group-hover:text-white group-hover:translate-x-0.5 transition-all duration-100" />
+                      <ArrowRight className="h-4 w-4 text-black/30 group-hover:translate-x-0.5 transition-transform" />
                     </button>
                   </div>
                 </div>
@@ -1098,14 +1097,14 @@ export default function LandingV3() {
                     <button
                       type="button"
                       onClick={onAnyCTA}
-                      className="w-full px-5 py-3 bg-[#fafafa] text-black font-medium border border-[#fafafa] hover:bg-transparent hover:text-[#fafafa] transition-all duration-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#fafafa]/30"
+                      className="w-full px-5 py-3 bg-[#fafafa] text-black font-medium hover:bg-[#fafafa]/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#fafafa]/30"
                     >
                       Continue to Login
                     </button>
                     <button
                       type="button"
                       onClick={onAnyCTA}
-                      className="w-full px-5 py-3 border border-[#fafafa]/40 text-[#fafafa] font-medium hover:bg-[#fafafa] hover:text-black transition-all duration-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#fafafa]/30"
+                      className="w-full px-5 py-3 border border-[#fafafa]/20 text-[#fafafa] font-medium hover:border-[#fafafa]/35 hover:bg-[#fafafa]/[0.03] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#fafafa]/30"
                     >
                       Request Access
                     </button>
@@ -1136,14 +1135,14 @@ export default function LandingV3() {
                 <button
                   type="button"
                   onClick={onAnyCTA}
-                  className="px-4 py-2 border border-black/20 text-black font-medium hover:bg-black hover:text-white transition-all duration-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
+                  className="px-4 py-2 border border-black/10 text-black font-medium hover:border-black/20 hover:bg-black/[0.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
                 >
                   Login
                 </button>
                 <button
                   type="button"
                   onClick={onAnyCTA}
-                  className="px-4 py-2 bg-black text-[#fafafa] font-medium hover:bg-transparent hover:text-black border border-black transition-all duration-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
+                  className="px-4 py-2 bg-black text-[#fafafa] font-medium hover:bg-black/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
                 >
                   Enter
                 </button>
