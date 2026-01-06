@@ -1093,7 +1093,9 @@ function PulseTicker({ transactions, onTransactionClick, activeDistrict, isLoadi
             <span className="text-black/60">{tx.district}</span>
             <span className="text-black/30">]</span>
             <span className="mx-1.5">{tx.project}</span>
-            <span className="text-black/30">[</span>
+            <span className="text-black/30">|</span>
+            <span className="ml-1.5 text-black/50">{formatBedroom(tx.bedroom)}</span>
+            <span className="ml-1.5 text-black/30">[</span>
             <span>{formatPrice(tx.price)}</span>
             <span className="text-black/30">]</span>
             <span className="mx-4 text-black/20">//</span>
