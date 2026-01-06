@@ -919,10 +919,12 @@ export default function LandingV3() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.6, delay: 0.05 }}
-                    className="mt-6 text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[0.96]"
+                    className="mt-6 text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[0.96]"
                   >
-                    <span className="text-black">Singapore Condo</span>{' '}
-                    <span className="text-black/30">Market Intelligence</span>
+                    <span className="whitespace-nowrap">
+                      <span className="text-black">Singapore Condo</span>{' '}
+                      <span className="text-black/30">Market Intelligence</span>
+                    </span>
                   </motion.h1>
 
                   <motion.p
