@@ -456,7 +456,7 @@ function ParticleGlobe() {
 
       ctx.clearRect(0, 0, w, h);
 
-      const globeRadius = Math.min(w, h) * 0.44;
+      const globeRadius = Math.min(w, h) * 0.52;
 
       for (const [a, b] of arcs) {
         const steps = 14;
@@ -480,7 +480,7 @@ function ParticleGlobe() {
           if (i === 0) ctx.moveTo(pt.x, pt.y);
           else ctx.lineTo(pt.x, pt.y);
         }
-        ctx.strokeStyle = 'rgba(0,0,0,0.06)';
+        ctx.strokeStyle = 'rgba(0,0,0,0.15)';
         ctx.lineWidth = 1;
         ctx.setLineDash([2, 3]);
         ctx.stroke();
@@ -502,7 +502,7 @@ function ParticleGlobe() {
       for (const p of rendered) {
         const pr = project(p, w, h, globeRadius);
         const alpha = clamp((pr.z + 1.2) / 2.2, 0, 1);
-        const base = 0.05 + alpha * 0.28;
+        const base = 0.18 + alpha * 0.52;
         const size = p.kind === 'beacon' ? 2.1 : 1.15;
         const pulse = p.kind === 'beacon' ? (0.9 + 0.35 * Math.sin((s.t + p.seed) * 0.06)) : 1;
 
@@ -514,7 +514,7 @@ function ParticleGlobe() {
         if (p.kind === 'beacon') {
           ctx.beginPath();
           ctx.arc(pr.x, pr.y, 8 * pr.p * pulse, 0, Math.PI * 2);
-          ctx.strokeStyle = `rgba(0,0,0,${0.06 + alpha * 0.06})`;
+          ctx.strokeStyle = `rgba(0,0,0,${0.15 + alpha * 0.15})`;
           ctx.lineWidth = 1;
           ctx.stroke();
         }
