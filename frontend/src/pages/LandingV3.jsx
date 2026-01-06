@@ -720,8 +720,13 @@ function DotMatrixMap() {
 function CapabilityCard({ icon: Icon, title, desc, code }) {
   return (
     <div className="group relative border border-black/10 bg-[#fafafa] p-4 hover:border-black/20 transition-colors">
+      {/* HUD corner ticks */}
       <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
       <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
+      {/* Ruler tick marks */}
+      <div className="absolute top-0 left-1/4 w-px h-1 bg-black/20" />
+      <div className="absolute top-0 left-1/2 w-px h-1.5 bg-black/30" />
+      <div className="absolute top-0 left-3/4 w-px h-1 bg-black/20" />
       <div className="flex items-start justify-between gap-4">
         <div>
           <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">{code}</div>
@@ -741,6 +746,7 @@ function CapabilityCard({ icon: Icon, title, desc, code }) {
 }
 
 function InsightRow({ label, value, delta }) {
+  const isNegative = delta?.startsWith('-');
   return (
     <div className="flex items-center justify-between gap-6 border-t border-black/05 py-3 first:border-t-0">
       <div className="min-w-0">
@@ -748,7 +754,10 @@ function InsightRow({ label, value, delta }) {
       </div>
       <div className="flex items-center gap-4">
         <div className="font-mono text-xs text-black/60 tabular-nums">{value}</div>
-        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/30 tabular-nums">
+        <div 
+          className="font-mono text-[10px] uppercase tracking-[0.18em] tabular-nums"
+          style={{ color: isNegative ? '#FF5500' : 'rgba(0,0,0,0.3)' }}
+        >
           {delta}
         </div>
       </div>
@@ -977,6 +986,10 @@ export default function LandingV3() {
                 {/* HUD corner ticks */}
                 <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
                 <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
+                {/* Ruler tick marks along top edge */}
+                <div className="absolute top-0 left-1/4 w-px h-1 bg-black/20" />
+                <div className="absolute top-0 left-1/2 w-px h-1.5 bg-black/30" />
+                <div className="absolute top-0 left-3/4 w-px h-1 bg-black/20" />
                 <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">TX_COUNT</div>
                 <div className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-black tabular-nums">
                   <AnimatedNumber
@@ -989,6 +1002,9 @@ export default function LandingV3() {
               <div className="relative border border-black/10 bg-[#fafafa] p-4">
                 <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
                 <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
+                <div className="absolute top-0 left-1/4 w-px h-1 bg-black/20" />
+                <div className="absolute top-0 left-1/2 w-px h-1.5 bg-black/30" />
+                <div className="absolute top-0 left-3/4 w-px h-1 bg-black/20" />
                 <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">INTEGRITY</div>
                 <div className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-black tabular-nums">
                   <AnimatedNumber value={99.2} format={(n) => `${n.toFixed(1)}%`} />
@@ -998,6 +1014,9 @@ export default function LandingV3() {
               <div className="relative border border-black/10 bg-[#fafafa] p-4">
                 <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
                 <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
+                <div className="absolute top-0 left-1/4 w-px h-1 bg-black/20" />
+                <div className="absolute top-0 left-1/2 w-px h-1.5 bg-black/30" />
+                <div className="absolute top-0 left-3/4 w-px h-1 bg-black/20" />
                 <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">DISTRICTS</div>
                 <div className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-black tabular-nums">
                   <AnimatedNumber value={28} format={(n) => String(Math.round(n))} />
@@ -1007,6 +1026,9 @@ export default function LandingV3() {
               <div className="relative border border-black/10 bg-[#fafafa] p-4">
                 <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
                 <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
+                <div className="absolute top-0 left-1/4 w-px h-1 bg-black/20" />
+                <div className="absolute top-0 left-1/2 w-px h-1.5 bg-black/30" />
+                <div className="absolute top-0 left-3/4 w-px h-1 bg-black/20" />
                 <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">HISTORY</div>
                 <div className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-black tabular-nums">
                   <AnimatedNumber value={5} format={(n) => `${Math.round(n)}Y`} />
