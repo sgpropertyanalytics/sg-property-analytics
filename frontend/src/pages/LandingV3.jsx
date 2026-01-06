@@ -1133,12 +1133,12 @@ function GhostMap({ highlightedDistrict, activePulses, onPulseFade }) {
     return '#FFFFFF'; // Pure white - the "positive space" cutout
   };
 
-  // The Skeleton: Paper-thin lines for district boundaries
+  // The Skeleton: Whisper-thin lines for district boundaries
   const getDistrictStroke = (district) => {
     if (highlightedDistrict === district || hoveredDistrict === district) {
-      return '#94A3B8'; // Slate-400 - crisper on interaction
+      return '#CBD5E1'; // Slate-300 - crisper on interaction
     }
-    return '#CBD5E1'; // Slate-300 - faint schematic line
+    return '#E2E8F0'; // Slate-200 - barely-there pencil line
   };
 
   return (
@@ -1179,7 +1179,7 @@ function GhostMap({ highlightedDistrict, activePulses, onPulseFade }) {
           />
         ))}
 
-        {/* Hard Radar Ring - military-grade target lock animation */}
+        {/* Electric Glass Ripple - monochromatic pencil-sketch animation */}
         <AnimatePresence>
           {activePulses.map((pulse) => {
             const c = centroids.find(c => c.district === pulse.district)?.centroid;
@@ -1191,32 +1191,32 @@ function GhostMap({ highlightedDistrict, activePulses, onPulseFade }) {
                 <motion.circle
                   cx={x}
                   cy={y}
-                  r={2}
-                  fill="#0F766E"
-                  initial={{ opacity: 1 }}
+                  r={1.5}
+                  fill="rgba(100, 116, 139, 0.8)"
+                  initial={{ opacity: 0.8 }}
                   animate={{ opacity: 0 }}
-                  transition={{ duration: 0.5, ease: 'easeOut' }}
+                  transition={{ duration: 0.4, ease: 'easeOut' }}
                 />
-                {/* Expanding radar ring - sharp 1px vector */}
+                {/* Primary ripple - translucent glass ring */}
                 <motion.circle
                   cx={x}
                   cy={y}
                   fill="none"
-                  stroke="#0F766E"
-                  initial={{ r: 3, strokeWidth: 2, opacity: 1 }}
-                  animate={{ r: 25, strokeWidth: 0.5, opacity: 0 }}
-                  transition={{ duration: 1.5, ease: [0, 0, 0.2, 1] }}
+                  stroke="rgba(100, 116, 139, 0.6)"
+                  initial={{ r: 2, strokeWidth: 1.5, opacity: 0.8 }}
+                  animate={{ r: 30, strokeWidth: 0, opacity: 0 }}
+                  transition={{ duration: 2, ease: [0, 0, 0.2, 1] }}
                   onAnimationComplete={() => onPulseFade(pulse.id)}
                 />
-                {/* Second ring - delayed ripple */}
+                {/* Secondary ripple - delayed, wider expansion */}
                 <motion.circle
                   cx={x}
                   cy={y}
                   fill="none"
-                  stroke="#0F766E"
-                  initial={{ r: 3, strokeWidth: 1.5, opacity: 0.6 }}
-                  animate={{ r: 35, strokeWidth: 0.3, opacity: 0 }}
-                  transition={{ duration: 2, ease: [0, 0, 0.2, 1], delay: 0.2 }}
+                  stroke="rgba(100, 116, 139, 0.4)"
+                  initial={{ r: 2, strokeWidth: 1, opacity: 0.6 }}
+                  animate={{ r: 45, strokeWidth: 0, opacity: 0 }}
+                  transition={{ duration: 2.5, ease: [0, 0, 0.2, 1], delay: 0.15 }}
                 />
               </g>
             );
