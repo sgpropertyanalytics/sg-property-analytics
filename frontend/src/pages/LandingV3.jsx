@@ -1197,7 +1197,7 @@ function GhostMap({ highlightedDistrict, activePulses, onPulseFade }) {
 
       {/* Intel Tag - Fighter Jet HUD follower tooltip */}
       <AnimatePresence>
-        {hoveredDistrict && hoveredStats && (
+        {hoveredDistrict && (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -1223,25 +1223,25 @@ function GhostMap({ highlightedDistrict, activePulses, onPulseFade }) {
                 <span className="text-slate-500">[</span>
                 <span className="text-white font-medium">{hoveredDistrict}</span>
                 <span className="text-slate-500">]</span>
-                <span className="text-slate-300 truncate max-w-[140px]">{hoveredStats.name}</span>
+                <span className="text-slate-300 truncate max-w-[140px]">{hoveredStats?.name || 'SCANNING...'}</span>
               </div>
               {/* Stats line - 3M summary */}
               <div className="flex items-center gap-3 mt-1 text-[9px]">
                 <span className="text-slate-500">3M:</span>
                 <span>
                   <span className="text-slate-400">VOL:</span>
-                  <span className={hoveredStats.vol === 'HIGH' ? 'text-emerald-400 ml-1' : hoveredStats.vol === 'LOW' ? 'text-amber-400 ml-1' : 'text-slate-300 ml-1'}>
-                    {hoveredStats.vol}
+                  <span className={hoveredStats?.vol === 'HIGH' ? 'text-emerald-400 ml-1' : hoveredStats?.vol === 'LOW' ? 'text-amber-400 ml-1' : 'text-slate-300 ml-1'}>
+                    {hoveredStats?.vol || '---'}
                   </span>
                 </span>
                 <span>
                   <span className="text-slate-400">TX:</span>
-                  <span className="text-slate-200 ml-1">{hoveredStats.txCount}</span>
+                  <span className="text-slate-200 ml-1">{hoveredStats?.txCount ?? '---'}</span>
                 </span>
                 <span>
                   <span className="text-slate-400">Δ:</span>
-                  <span className={hoveredStats.psfDelta?.startsWith('+') ? 'text-emerald-400 ml-1' : hoveredStats.psfDelta?.startsWith('-') ? 'text-red-400 ml-1' : 'text-slate-300 ml-1'}>
-                    {hoveredStats.psfDelta || 'N/A'}
+                  <span className={hoveredStats?.psfDelta?.startsWith('+') ? 'text-emerald-400 ml-1' : hoveredStats?.psfDelta?.startsWith('-') ? 'text-red-400 ml-1' : 'text-slate-300 ml-1'}>
+                    {hoveredStats?.psfDelta || '---'}
                   </span>
                 </span>
               </div>
