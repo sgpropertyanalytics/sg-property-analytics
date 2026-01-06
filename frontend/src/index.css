@@ -401,6 +401,24 @@
 :root {
   font-family: var(--font-sans);
   line-height: 1.5;
+
+  /* Industrial Color Variables (for custom CSS classes) */
+  --color-paper: #F5F0E6;
+  --color-paper-dark: #E8E2D4;
+  --color-ink: #1A1A1A;
+  --color-ink-light: #3D3D3D;
+  --color-ink-muted: #6B6B6B;
+  --color-vermillion: #E65100;
+  --color-vermillion-dark: #BF4600;
+  --color-olive: #4A5D4A;
+  --color-olive-light: #6B7D6B;
+  --color-rule-line: rgba(26, 26, 26, 0.08);
+  --color-grid-line: rgba(26, 26, 26, 0.04);
+  --color-border-hard: rgba(26, 26, 26, 0.15);
+
+  /* Industrial Fonts */
+  --font-brand: "Space Mono", monospace;
+  --font-data-dense: "IBM Plex Mono", monospace;
 }
 
 body {
