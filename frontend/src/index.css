@@ -14,6 +14,39 @@
   /* Semantic card colors - warm-tinted white for sand/cream backgrounds */
   --color-card: #FFFCF5;
   --color-card-hover: #FFF9F0;
+
+  /* =========================================
+   * WHITE OPS / MUNITIONS-GRADE COLOR SYSTEM
+   * ========================================= */
+
+  /* Monochromatic Base */
+  --color-mono-ink: #000000;
+  --color-mono-dark: #171717;
+  --color-mono-mid: #525252;
+  --color-mono-light: #A3A3A3;
+  --color-mono-muted: #E5E7EB;
+  --color-mono-canvas: #FFFFFF;
+
+  /* Status Colors (Surgical Use) */
+  --color-status-live: #10B981;
+  --color-status-negative: #FF5500;
+
+  /* Brand Palette (Legacy) */
+  --color-brand-navy: #213448;
+  --color-brand-blue: #547792;
+  --color-brand-sky: #94B4C1;
+  --color-brand-sand: #EAE0CF;
+
+  /* Region Aliases */
+  --color-region-ccr: var(--color-brand-navy);
+  --color-region-rcr: var(--color-brand-blue);
+  --color-region-ocr: var(--color-brand-sky);
+
+  /* Supply Palette */
+  --color-supply-unsold: #6b4226;
+  --color-supply-upcoming: #9c6644;
+  --color-supply-gls: #c4a77d;
+  --color-supply-total: #e8dcc8;
 }
 
 /* Display font class for headlines */
@@ -27,6 +60,99 @@
   font-weight: 500;
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1;
+}
+
+/* =========================================
+ * WHITE OPS / MUNITIONS-GRADE UTILITY CLASSES
+ * ========================================= */
+
+/* HUD Corner Brackets - Apply to major cards/panels */
+.hud-corner {
+  position: relative;
+}
+.hud-corner::before {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-top: 2px solid var(--color-mono-ink);
+  border-left: 2px solid var(--color-mono-ink);
+  top: -1px;
+  left: -1px;
+  opacity: 0.8;
+}
+.hud-corner::after {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-bottom: 2px solid var(--color-mono-ink);
+  border-right: 2px solid var(--color-mono-ink);
+  bottom: -1px;
+  right: -1px;
+  opacity: 0.8;
+}
+
+/* Terminal Header Style - for chart/section titles */
+.terminal-header {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--color-mono-mid);
+}
+
+/* Weapon Card Base - hard edges, structural border */
+.weapon-card {
+  background: var(--color-mono-canvas);
+  border: 1px solid var(--color-mono-muted);
+  border-radius: 0;
+  position: relative;
+}
+
+/* Dashboard Grid Background - 80px crosshatch */
+.weapon-grid-bg {
+  background-image:
+    linear-gradient(0deg, rgba(0,0,0,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,0,0,0.02) 1px, transparent 1px);
+  background-size: 80px 80px;
+}
+
+/* Noise Texture Overlay - fractal noise for depth */
+.weapon-noise {
+  position: relative;
+}
+.weapon-noise::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23grain)'/%3E%3C/svg%3E");
+  opacity: 0.025;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Weapon Shadow - hard offset */
+.weapon-shadow {
+  box-shadow: 2px 2px 0px rgba(0,0,0,0.15);
+}
+.weapon-shadow-md {
+  box-shadow: 4px 4px 0px rgba(0,0,0,0.1);
+}
+
+/* Weapon Active State - inverted */
+.weapon-active {
+  background-color: var(--color-mono-dark);
+  color: var(--color-mono-canvas);
+}
+
+/* Weapon Border Variants */
+.weapon-border {
+  border: 1px solid var(--color-mono-muted);
+}
+.weapon-border-hard {
+  border: 1px solid var(--color-mono-dark);
 }
 
 /* Force modern sans-serif font instead of Times New Roman */

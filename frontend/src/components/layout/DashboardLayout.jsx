@@ -248,7 +248,7 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
         {/* Main Content - Wrapped with Suspense + ErrorBoundary */}
         {/* IMPORTANT: Suspense is HERE so nav rail stays mounted during lazy loading */}
         {/* min-w-0 on main and wrapper prevents nested grid overflow */}
-        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden flex flex-col">
+        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden flex flex-col weapon-grid-bg">
           <ErrorBoundary name="Page Content">
             <Suspense fallback={<ContentLoadingFallback />}>
               <div className="flex-1 min-w-0">
