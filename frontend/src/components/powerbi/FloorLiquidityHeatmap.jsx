@@ -204,9 +204,9 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
       height={400}
     >
     {/* Card owns its height explicitly - 400px fixed */}
-    <div className="bg-card rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden flex flex-col" style={{ height: 400 }}>
+    <div className="weapon-card hud-corner overflow-hidden flex flex-col" style={{ height: 400 }}>
       {/* Header */}
-      <div className="px-6 py-4 border-b border-[#94B4C1]/30">
+      <div className="px-6 py-4 border-b border-mono-muted">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <h3 className="font-bold text-lg text-[#213448]">Which Floors Resell Faster</h3>
@@ -312,7 +312,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
           const districtAgg = projectsByDistrict.districtAggregates[district];
 
           return (
-            <div key={district} className="bg-card rounded-lg border border-[#94B4C1]/30">
+            <div key={district} className="weapon-card">
               {/* District Header */}
               <button
                 onClick={() => toggleDistrict(district)}

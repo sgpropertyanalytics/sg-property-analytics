@@ -255,13 +255,13 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, o
       staggerIndex={staggerIndex}
     >
       <div
-        className="bg-card rounded-lg border border-[#94B4C1]/30 overflow-hidden flex flex-col shadow-sm relative"
+        className="weapon-card hud-corner overflow-hidden flex flex-col relative"
         style={{ height: cardHeight }}
       >
         {/* Debug overlay - shows API call info when Ctrl+Shift+D is pressed */}
         <DebugOverlay />
         {/* Header - refined typography */}
-        <div className="px-5 py-4 border-b border-[#94B4C1]/20 shrink-0">
+        <div className="px-5 py-4 border-b border-mono-muted shrink-0">
           <div className="flex items-baseline justify-between">
             <h3 className="text-base font-semibold text-[#213448] tracking-tight">
               Resale Volume & Quantum

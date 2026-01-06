@@ -539,7 +539,7 @@ function ProjectDetailPanelInner({
               )}
 
               {/* Trend Chart */}
-              <div className="bg-card rounded-lg border border-[#94B4C1]/50 p-4">
+              <div className="weapon-card p-4">
                 <h3 className="font-semibold text-[#213448] mb-4">Price Trend Over Time</h3>
                 <div style={{ height: 250 }}>
                   {trendData.length > 0 ? (
@@ -553,7 +553,7 @@ function ProjectDetailPanelInner({
               </div>
 
               {/* Bedroom Breakdown */}
-              <div className="bg-card rounded-lg border border-[#94B4C1]/50 p-4">
+              <div className="weapon-card p-4">
                 <h3 className="font-semibold text-[#213448] mb-4">Price by Bedroom Type</h3>
                 <div style={{ height: 200 }}>
                   {priceData.length > 0 ? (
@@ -612,7 +612,7 @@ function ProjectDetailPanelInner({
               </div>
 
               {/* Price Distribution Histogram */}
-              <div className="bg-card rounded-lg border border-[#94B4C1]/50 p-4">
+              <div className="weapon-card p-4">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-semibold text-[#213448]">Price Distribution</h3>
                   {histogramModeBucket && (

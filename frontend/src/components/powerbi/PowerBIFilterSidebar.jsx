@@ -124,7 +124,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
           {/* Property Filters - Region + District + Bedroom */}
           <div className="flex items-center gap-3 flex-shrink-0 min-w-0">
             {/* Region Segmented Track */}
-            <div className="inline-flex bg-white/60 backdrop-blur-sm border border-gray-300/80 rounded-xl shadow-sm overflow-hidden divide-x divide-gray-200/80">
+            <div className="inline-flex bg-white/60 backdrop-blur-sm border border-mono-muted rounded-none overflow-hidden divide-x divide-gray-200/80">
               {/* "All" button - dark blue when active (default state) */}
               <button
                 type="button"
@@ -173,7 +173,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
             />
 
             {/* Bedroom Segmented Track */}
-            <div className="inline-flex bg-white/60 backdrop-blur-sm border border-gray-300/80 rounded-xl shadow-sm overflow-hidden divide-x divide-gray-200/80">
+            <div className="inline-flex bg-white/60 backdrop-blur-sm border border-mono-muted rounded-none overflow-hidden divide-x divide-gray-200/80">
               {/* "All" button - dark blue when active */}
               <button
                 type="button"
@@ -208,7 +208,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
           <div className="hidden lg:block w-px h-7 bg-[#94B4C1]/50 flex-shrink-0" />
 
           {/* Time Controls - Period Presets */}
-          <div className="inline-flex bg-white/60 backdrop-blur-sm border border-gray-300/80 rounded-xl shadow-sm overflow-hidden divide-x divide-gray-200/80 flex-shrink-0">
+          <div className="inline-flex bg-white/60 backdrop-blur-sm border border-mono-muted rounded-none overflow-hidden divide-x divide-gray-200/80 flex-shrink-0">
             {TIMEFRAME_OPTIONS.map(opt => (
               <button
                 type="button"

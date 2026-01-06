@@ -166,9 +166,9 @@ export function SupplyBreakdownTable({
       empty={tableData.districts.length === 0}
       skeleton="table"
     >
-      <div className="bg-card rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden">
+      <div className="weapon-card hud-corner overflow-hidden">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-[#94B4C1]/30">
+        <div className="px-6 py-4 border-b border-mono-muted">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
               <h3 className="font-bold text-lg text-[#213448]">Supply Pipeline Breakdown</h3>

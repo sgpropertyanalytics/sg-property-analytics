@@ -224,7 +224,7 @@ function DistrictComparisonChartBase({
 
   // Render
   return (
-    <div className="bg-card rounded-lg border border-[#94B4C1]/50 shadow-sm overflow-hidden">
+    <div className="weapon-card hud-corner overflow-hidden">
       {/* Header */}
       <div className="px-4 py-3 border-b border-gray-100">
         <h3 className="text-base font-semibold text-gray-900">

@@ -113,13 +113,14 @@ export function InlineCard({
   // Size-based styling
   // Default: px-4 py-3 (Bloomberg standard padding)
   // Compact: px-3 py-2 (for tighter layouts, still respects min-width)
+  // Weapon aesthetic: rounded-none for hard edges
   const sizeStyles = {
     default: {
-      container: 'rounded-lg px-4 py-3',
+      container: 'rounded-none px-4 py-3',
       value: 'text-lg md:text-xl font-medium',  // medium weight for IBM Plex Mono
     },
     compact: {
-      container: 'rounded-lg px-3 py-2',
+      container: 'rounded-none px-3 py-2',
       value: 'text-sm md:text-base font-medium',  // medium weight for IBM Plex Mono
     },
   };

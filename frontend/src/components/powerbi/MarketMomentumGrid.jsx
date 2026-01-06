@@ -109,9 +109,9 @@ export function MarketMomentumGrid({ saleType = SaleType.RESALE }) {
       skeleton="grid"
       height={400}
     >
-    <div className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden">
+    <div className="weapon-card hud-corner overflow-hidden">
       {/* Header */}
-      <div className="px-3 md:px-4 py-3 border-b border-[#94B4C1]/30">
+      <div className="px-3 md:px-4 py-3 border-b border-mono-muted">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>
             <h3 className="text-sm font-semibold text-[#213448]">Median PSF Trend by District</h3>

@@ -334,12 +334,12 @@ function BeadsChartBase({
       debugInfo={debugInfo}
     >
       <div
-        className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col relative"
+        className="weapon-card hud-corner overflow-hidden flex flex-col relative"
         style={{ height: cardHeight }}
       >
         <DebugOverlay />
         {/* Header - shrink-0 */}
-        <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">
+        <div className="px-4 py-3 border-b border-mono-muted shrink-0">
           <h3 className="font-semibold text-[#213448]">
             Volume-Weighted Median Price by Region & Bedroom
           </h3>
