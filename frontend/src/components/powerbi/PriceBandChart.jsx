@@ -19,17 +19,15 @@ import { Line } from 'react-chartjs-2';
 import { isFloorDirection, FloorDirectionLabels } from '../../schemas/apiContract';
 import { ChartSlot } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
+import { BRAND } from '../../constants/colors';
 import { VerdictBadge, VerdictBadgeLarge } from './VerdictBadge';
 
-// Colors
+// Colors from centralized colors.js + chart-specific fills
 const COLORS = {
-  navy: '#213448',
-  oceanBlue: '#547792',
-  skyBlue: '#94B4C1',
-  sand: '#EAE0CF',
+  ...BRAND,  // navy, blue, sky, sand
   protectedFill: 'rgba(16, 185, 129, 0.12)', // Light green
   cautionFill: 'rgba(239, 68, 68, 0.12)',    // Light red
-  unitMarker: '#547792',
+  unitMarker: BRAND.blue,
 };
 
 /**
@@ -285,11 +283,11 @@ function PriceBandChartBase({
       height={height}
     >
     <div
-      className="bg-card rounded-lg border border-[#94B4C1]/50 flex flex-col overflow-hidden"
+      className="weapon-card hud-corner flex flex-col overflow-hidden"
       style={{ height: cardHeight }}
     >
       {/* Header */}
-      <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">
+      <div className="px-4 py-3 border-b border-mono-muted shrink-0">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <h3 className="font-semibold text-[#213448] truncate">

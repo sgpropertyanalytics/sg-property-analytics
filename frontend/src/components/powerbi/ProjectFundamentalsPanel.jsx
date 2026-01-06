@@ -30,7 +30,7 @@ function StatCard({ label, value, subtext, isUnavailable = false }) {
 // Loading state with frost overlay
 function ProjectFundamentalsSkeleton() {
   return (
-    <div className="bg-card rounded-xl border border-[#94B4C1]/30 overflow-hidden">
+    <div className="weapon-card overflow-hidden">
       <FrostOverlay height={180} showSpinner showProgress />
     </div>
   );
@@ -100,7 +100,7 @@ export default function ProjectFundamentalsPanel({
   const unitsData = formatUnits();
 
   return (
-    <div className="bg-card rounded-xl border border-[#94B4C1]/30 p-4 md:p-6">
+    <div className="weapon-card p-4 md:p-6">
       {/* Header */}
       <h3 className="text-sm font-semibold text-[#213448] uppercase tracking-wide mb-3 md:mb-4">
         Property Fundamentals

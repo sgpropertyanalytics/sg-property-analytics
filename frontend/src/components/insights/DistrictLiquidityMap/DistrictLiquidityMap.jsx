@@ -343,7 +343,7 @@ function DistrictLiquidityMapBase({
 
         {/* Legend - Liquidity Tiers (top-left) - smaller on mobile */}
         <div className="absolute top-2 left-2 sm:top-4 sm:left-4 z-20">
-          <div className="bg-white/95 backdrop-blur-sm rounded-lg border border-[#94B4C1]/50 shadow-md p-2 sm:p-2.5 w-[140px] sm:w-[180px]">
+          <div className="bg-white/95 backdrop-blur-sm rounded-none border border-mono-muted shadow-weapon p-2 sm:p-2.5 w-[140px] sm:w-[180px]">
             {/* Header with methodology tooltip */}
             <div className="flex items-center justify-between mb-2">
               <p className="text-[9px] text-[#547792] uppercase tracking-wider font-semibold">

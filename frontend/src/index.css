@@ -6,10 +6,15 @@
 @import "@fontsource/geist-sans/600.css";
 @import "@fontsource/geist-sans/700.css";
 
+/* JetBrains Mono for terminal/weapon aesthetic */
+@import "@fontsource/jetbrains-mono/400.css";
+@import "@fontsource/jetbrains-mono/500.css";
+@import "@fontsource/jetbrains-mono/700.css";
+
 @theme {
-  --font-display: "Geist Sans", system-ui, -apple-system, sans-serif;
+  --font-display: "JetBrains Mono", "Geist Sans", system-ui, -apple-system, sans-serif;
   --font-sans: "Inter", system-ui, -apple-system, sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --font-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace;
 
   /* Semantic card colors - warm-tinted white for sand/cream backgrounds */
   --color-card: #FFFCF5;

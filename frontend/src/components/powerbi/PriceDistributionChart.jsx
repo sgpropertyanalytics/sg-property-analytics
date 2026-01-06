@@ -271,11 +271,11 @@ function PriceDistributionChartBase({
       staggerIndex={staggerIndex}
     >
       <div
-        className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
+        className="weapon-card hud-corner overflow-hidden flex flex-col"
         style={{ height: cardHeight }}
       >
       {/* Header - shrink-0 */}
-      <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">
+      <div className="px-4 py-3 border-b border-mono-muted shrink-0">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-[#213448]">Price Distribution</h3>
           {/* Toggle for luxury tail */}

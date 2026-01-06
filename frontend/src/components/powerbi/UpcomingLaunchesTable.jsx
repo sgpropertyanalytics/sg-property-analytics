@@ -190,7 +190,7 @@ export function UpcomingLaunchesTable({
           </div>
         ) : (
           safeData.map((project, idx) => (
-            <div key={project.id || idx} className="p-3 bg-card rounded-lg border border-[#94B4C1]/30 active:bg-[#EAE0CF]/20">
+            <div key={project.id || idx} className="p-3 weapon-card active:bg-mono-muted/20">
               <div className="flex justify-between items-start gap-3">
                 {/* Left: Project info */}
                 <div className="min-w-0 flex-1">

@@ -23,6 +23,7 @@
 const ALLOWED_FILES = [
   // Config and constants
   'constants/index.js',
+  'constants/colors.js',  // Centralized color system
   'constants/chartOptions.js',
   'design-rules.js',
   'tailwind.config.js',
@@ -72,14 +73,23 @@ const ALLOWED_FILES = [
 ];
 
 // Color to semantic name mapping for suggestions
+// Updated for White Ops design system - prefer importing from colors.js
 const COLOR_MAPPING = {
-  // Primary brand colors
-  '#213448': 'navy (CCR) - import REGION_BADGE_CLASSES.CCR',
-  '#547792': 'blue (RCR) - import REGION_BADGE_CLASSES.RCR',
-  '#94b4c1': 'sky (OCR) - import REGION_BADGE_CLASSES.OCR',
-  '#94B4C1': 'sky (OCR) - import REGION_BADGE_CLASSES.OCR',
-  '#eae0cf': 'sand - use bg-[#EAE0CF] from constants',
-  '#EAE0CF': 'sand - use bg-[#EAE0CF] from constants',
+  // Primary brand colors (from BRAND in colors.js)
+  '#213448': 'BRAND.navy - import { BRAND } from "../../constants/colors"',
+  '#547792': 'BRAND.blue - import { BRAND } from "../../constants/colors"',
+  '#94b4c1': 'BRAND.sky - import { BRAND } from "../../constants/colors"',
+  '#94B4C1': 'BRAND.sky - import { BRAND } from "../../constants/colors"',
+  '#eae0cf': 'BRAND.sand - import { BRAND } from "../../constants/colors"',
+  '#EAE0CF': 'BRAND.sand - import { BRAND } from "../../constants/colors"',
+
+  // Region colors (from REGION in colors.js)
+  // CCR/RCR/OCR same as BRAND but semantic import: REGION.CCR, REGION.RCR, REGION.OCR
+
+  // Supply pipeline colors (from SUPPLY in colors.js)
+  '#6b4226': 'SUPPLY.unsold - import { SUPPLY } from "../../constants/colors"',
+  '#9c6644': 'SUPPLY.upcoming - import { SUPPLY } from "../../constants/colors"',
+  '#c4a77d': 'SUPPLY.gls - import { SUPPLY } from "../../constants/colors"',
 
   // Bloomberg Terminal typography colors (from chartOptions.js)
   '#0f172a': 'slate-900 (chart ticks) - use CHART_AXIS_DEFAULTS or text-slate-900',

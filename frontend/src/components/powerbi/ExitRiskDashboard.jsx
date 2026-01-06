@@ -139,7 +139,7 @@ function TurnoverBar({ label, value, maxValue = 30 }) {
 // Loading state with frost overlay
 function ExitRiskDashboardSkeleton() {
   return (
-    <div className="bg-card rounded-xl border border-[#94B4C1]/30 overflow-hidden">
+    <div className="weapon-card overflow-hidden">
       <FrostOverlay height={280} showSpinner showProgress />
     </div>
   );
@@ -172,7 +172,7 @@ export default function ExitRiskDashboard({
   const riskBadge = getRiskBadgeStyles(overallRisk);
 
   return (
-    <div className="bg-card rounded-xl border border-[#94B4C1]/30 p-6">
+    <div className="weapon-card p-6">
       {/* Header */}
       <h3 className="text-sm font-semibold text-[#213448] uppercase tracking-wide mb-6">
         Liquidity Assessment

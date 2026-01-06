@@ -142,9 +142,9 @@ export function BudgetActivityHeatmap({
       skeleton="grid"
       height={280}
     >
-    <div className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden">
+    <div className="weapon-card hud-corner overflow-hidden">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-[#94B4C1]/30">
+      <div className="px-4 py-3 border-b border-mono-muted">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h4 className="font-semibold text-[#213448]">

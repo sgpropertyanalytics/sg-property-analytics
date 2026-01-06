@@ -10,6 +10,7 @@ import { getDashboard } from '../../api/client';
 import { KeyInsightBox, ChartSlot } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 import { REGIONS } from '../../constants';
+import { REGION } from '../../constants/colors';
 import {
   transformBeadsChartSeries,
   formatPrice,
@@ -18,12 +19,8 @@ import {
 } from '../../adapters';
 import { niceMaxMillion } from '../../utils/niceAxisMax';
 
-// Region colors for strings and labels (outside component to avoid dependency issues)
-const REGION_COLORS = {
-  CCR: '#213448', // Navy
-  RCR: '#547792', // Blue
-  OCR: '#94B4C1', // Sky
-};
+// Region colors from centralized colors.js
+const REGION_COLORS = REGION;
 
 /**
  * Beads on String Chart - Volume-Weighted Median Prices by Region & Bedroom
@@ -334,12 +331,12 @@ function BeadsChartBase({
       debugInfo={debugInfo}
     >
       <div
-        className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col relative"
+        className="weapon-card hud-corner overflow-hidden flex flex-col relative"
         style={{ height: cardHeight }}
       >
         <DebugOverlay />
         {/* Header - shrink-0 */}
-        <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">
+        <div className="px-4 py-3 border-b border-mono-muted shrink-0">
           <h3 className="font-semibold text-[#213448]">
             Volume-Weighted Median Price by Region & Bedroom
           </h3>

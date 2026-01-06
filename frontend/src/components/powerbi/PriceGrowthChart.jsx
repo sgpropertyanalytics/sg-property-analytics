@@ -15,16 +15,12 @@ import React, { useMemo, useRef } from 'react';
 import { Line } from 'react-chartjs-2';
 import { ChartSlot } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
+import { BRAND } from '../../constants/colors';
 import { ChartFrame } from '../common/ChartFrame';
 import { getTxnField, TxnField } from '../../schemas/apiContract';
 
-// Colors
-const COLORS = {
-  navy: '#213448',
-  oceanBlue: '#547792',
-  skyBlue: '#94B4C1',
-  sand: '#EAE0CF',
-};
+// Colors from centralized colors.js
+const COLORS = BRAND;
 
 // Helper: Calculate median
 const median = (arr) => {
@@ -318,11 +314,11 @@ function PriceGrowthChartBase({
       height={height}
     >
     <div
-      className="bg-card rounded-lg border border-[#94B4C1]/50 flex flex-col overflow-hidden"
+      className="weapon-card hud-corner flex flex-col overflow-hidden"
       style={{ height }}
     >
       {/* Header */}
-      <div className="px-4 py-3 border-b border-[#94B4C1]/30 shrink-0">
+      <div className="px-4 py-3 border-b border-mono-muted shrink-0">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <h3 className="font-semibold text-[#213448] truncate">

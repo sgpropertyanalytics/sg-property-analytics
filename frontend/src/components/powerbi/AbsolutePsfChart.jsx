@@ -12,6 +12,7 @@ import { TIME_GROUP_BY } from '../../context/PowerBIFilter';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { PreviewChartOverlay, ChartSlot, InlineCard, InlineCardRow } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
+import { REGION } from '../../constants/colors';
 import {
   transformCompressionSeries,
   logFetchDebug,
@@ -22,12 +23,8 @@ import {
 // Time level labels for display
 const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
 
-// Region colors (consistent with brand)
-const REGION_COLORS = {
-  CCR: '#213448',
-  RCR: '#547792',
-  OCR: '#94B4C1',
-};
+// Region colors from centralized colors.js
+const REGION_COLORS = REGION;
 
 /**
  * Absolute PSF by Region Chart
@@ -264,11 +261,11 @@ function AbsolutePsfChartBase({ height = 300, saleType = null, sharedData = null
       staggerIndex={staggerIndex}
     >
       <div
-        className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden flex flex-col"
+        className="weapon-card hud-corner overflow-hidden flex flex-col"
         style={{ height: cardHeight }}
       >
         {/* Header */}
-        <div className="px-3 py-2.5 md:px-4 md:py-3 border-b border-[#94B4C1]/30 shrink-0">
+        <div className="px-3 py-2.5 md:px-4 md:py-3 border-b border-mono-muted shrink-0">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <h3 className="font-semibold text-[#213448] text-sm md:text-base">

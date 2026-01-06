@@ -15,14 +15,11 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useSupplyData } from '../../context/SupplyDataContext';
 import { ChartFrame } from '../common/ChartFrame';
 import { DISTRICT_NAMES, getRegionForDistrict, getRegionBadgeClass } from '../../constants';
+import { SUPPLY } from '../../constants/colors';
 import { SupplyField, getSupplyField } from '../../schemas/apiContract';
 
-// Colors for volume bars (muted warm tones)
-const COLORS = {
-  unsold: '#6b4226',    // Muted chocolate brown
-  upcoming: '#9c6644',  // Muted terracotta
-  gls: '#c4a77d',       // Muted camel/tan
-};
+// Colors from centralized colors.js (muted warm tones)
+const COLORS = SUPPLY;
 
 /**
  * Supply Breakdown Table Component
@@ -166,9 +163,9 @@ export function SupplyBreakdownTable({
       empty={tableData.districts.length === 0}
       skeleton="table"
     >
-      <div className="bg-card rounded-xl shadow-sm border border-[#94B4C1]/30 overflow-hidden">
+      <div className="weapon-card hud-corner overflow-hidden">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-[#94B4C1]/30">
+        <div className="px-6 py-4 border-b border-mono-muted">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
               <h3 className="font-bold text-lg text-[#213448]">Supply Pipeline Breakdown</h3>

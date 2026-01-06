@@ -11,12 +11,13 @@ import {
   truncateProjectName,
 } from '../../adapters';
 import { CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
+import { BRAND } from '../../constants/colors';
 
-// Color palette - age band differentiated
+// Color palette from centralized colors.js - age band differentiated
 const COLORS = {
-  selected: '#213448',        // Navy - selected project
-  sameAgeBand: '#547792',     // Blue - same age cohort
-  otherBand: '#94B4C1',       // Sky - other age cohorts
+  selected: BRAND.navy,        // Navy - selected project
+  sameAgeBand: BRAND.blue,     // Blue - same age cohort
+  otherBand: BRAND.sky,        // Sky - other age cohorts
   selectedHover: '#2d4660',
   sameAgeBandHover: '#6889a6',
   otherBandHover: '#a8c5d4',
@@ -224,7 +225,7 @@ function DistrictComparisonChartBase({
 
   // Render
   return (
-    <div className="bg-card rounded-lg border border-[#94B4C1]/50 shadow-sm overflow-hidden">
+    <div className="weapon-card hud-corner overflow-hidden">
       {/* Header */}
       <div className="px-4 py-3 border-b border-gray-100">
         <h3 className="text-base font-semibold text-gray-900">

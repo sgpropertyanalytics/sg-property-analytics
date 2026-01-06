@@ -234,7 +234,7 @@ function HoverCard({ district, data }) {
       transition={{ duration: 0.15 }}
       className="absolute z-50 pointer-events-none top-[180px] sm:top-[280px] left-2 sm:left-4"
     >
-      <div className="bg-white rounded-lg shadow-xl border border-[#94B4C1]/50 p-2 sm:p-3 w-[140px] sm:w-[165px]">
+      <div className="bg-white rounded-none shadow-weapon border border-mono-muted p-2 sm:p-3 w-[140px] sm:w-[165px]">
         {/* Header */}
         <div className="flex items-center justify-between mb-2">
           <span className="font-bold text-[#213448] text-sm">
