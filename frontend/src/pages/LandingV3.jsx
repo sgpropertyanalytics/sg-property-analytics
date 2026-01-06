@@ -758,6 +758,10 @@ export default function LandingV3() {
   const navigate = useNavigate();
 
   const onAnyCTA = () => navigate('/login');
+  const [isGridHot, setIsGridHot] = useState(false);
+
+  const onSectionEnter = () => setIsGridHot(true);
+  const onSectionLeave = () => setIsGridHot(false);
 
   const terminalLines = useMemo(
     () => [
