@@ -456,13 +456,7 @@ function ParticleGlobe() {
 
       ctx.clearRect(0, 0, w, h);
 
-      const globeRadius = Math.min(w, h) * 0.36;
-
-      ctx.beginPath();
-      ctx.arc(w / 2, h / 2, globeRadius * 1.02, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(0,0,0,0.06)';
-      ctx.lineWidth = 1;
-      ctx.stroke();
+      const globeRadius = Math.min(w, h) * 0.44;
 
       for (const [a, b] of arcs) {
         const steps = 14;
@@ -508,7 +502,7 @@ function ParticleGlobe() {
       for (const p of rendered) {
         const pr = project(p, w, h, globeRadius);
         const alpha = clamp((pr.z + 1.2) / 2.2, 0, 1);
-        const base = 0.08 + alpha * 0.38;
+        const base = 0.05 + alpha * 0.28;
         const size = p.kind === 'beacon' ? 2.1 : 1.15;
         const pulse = p.kind === 'beacon' ? (0.9 + 0.35 * Math.sin((s.t + p.seed) * 0.06)) : 1;
 
