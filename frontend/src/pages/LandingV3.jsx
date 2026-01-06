@@ -681,7 +681,12 @@ function DotMatrixMap() {
   }, []);
 
   return (
-    <div className="border border-black/10 bg-[#fafafa]">
+    <div className="relative border border-black/10 bg-[#fafafa]">
+      <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
+      <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
+      <div className="absolute top-0 left-1/4 w-px h-1 bg-black/20" />
+      <div className="absolute top-0 left-1/2 w-px h-1.5 bg-black/30" />
+      <div className="absolute top-0 left-3/4 w-px h-1 bg-black/20" />
       <div className="px-3 py-2 border-b border-black/05 flex items-center justify-between">
         <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">MAP</div>
         <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/30">SINGAPORE FOCUS</div>
@@ -983,7 +988,7 @@ export default function LandingV3() {
               rightSlot={<MonoPill>PREVIEW_MODE</MonoPill>}
             />
 
-            <div className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-3">
               <div className="relative border border-black/10 bg-[#fafafa] p-4">
                 {/* HUD corner ticks */}
                 <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
@@ -1080,8 +1085,13 @@ export default function LandingV3() {
           <div className="max-w-7xl mx-auto px-4 md:px-6">
             <SectionTitle eyebrow="READOUT" title="MARKET_SIGNALS" muted="realtime" />
 
-            <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-4">
-              <div className="lg:col-span-7 border border-black/10 bg-[#fafafa]">
+            <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-3">
+              <div className="lg:col-span-7 relative border border-black/10 bg-[#fafafa]">
+                <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
+                <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
+                <div className="absolute top-0 left-1/4 w-px h-1 bg-black/20" />
+                <div className="absolute top-0 left-1/2 w-px h-1.5 bg-black/30" />
+                <div className="absolute top-0 left-3/4 w-px h-1 bg-black/20" />
                 <div className="px-4 py-3 border-b border-black/05 flex items-center justify-between">
                   <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">Metrics</div>
                   <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/30">
@@ -1129,23 +1139,28 @@ export default function LandingV3() {
                 </div>
               </div>
 
-              <div className="lg:col-span-5 grid grid-cols-1 gap-4">
+              <div className="lg:col-span-5 grid grid-cols-1 gap-3">
                 <DotMatrixMap />
-                <div className="border border-black/10 bg-[#fafafa] p-6">
+                <div className="relative border border-black/10 bg-[#fafafa] p-4">
+                  <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
+                  <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
+                  <div className="absolute top-0 left-1/4 w-px h-1 bg-black/20" />
+                  <div className="absolute top-0 left-1/2 w-px h-1.5 bg-black/30" />
+                  <div className="absolute top-0 left-3/4 w-px h-1 bg-black/20" />
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">Access</div>
-                      <div className="mt-2 text-lg font-bold tracking-tight text-black">Terminal clearance required</div>
+                      <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">ACCESS</div>
+                      <div className="mt-2 text-base font-bold tracking-tight text-black">Terminal clearance required</div>
                       <div className="mt-2 text-sm leading-relaxed text-black/50">
                         Login to unlock market overview, district heatmaps, exit risk, and valuation tools.
                       </div>
                     </div>
                     <div className="border border-black/10 p-2">
-                      <Lock className="h-5 w-5 text-black/30" />
+                      <Lock className="h-4 w-4 text-black/30" />
                     </div>
                   </div>
-                  <div className="mt-5 flex items-center justify-between">
-                    <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/30">Auth</div>
+                  <div className="mt-4 flex items-center justify-between">
+                    <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/30">AUTH</div>
                     <button
                       type="button"
                       onClick={onAnyCTA}
