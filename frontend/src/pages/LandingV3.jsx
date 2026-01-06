@@ -1097,9 +1097,11 @@ function PulseTicker({ transactions, onTransactionClick, activeDistrict, isLoadi
 }
 
 // Ghost Map - SVG-based Singapore district map with pulsing dots
+// 3D Tactical Overlay: Sea (white grid) → Landmass (Slate-100 fill) → Skeleton (line hierarchy)
 function GhostMap({ highlightedDistrict, activePulses, onPulseFade }) {
   const [geoData, setGeoData] = useState(null);
   const [centroids, setCentroids] = useState(null);
+  const [hoveredDistrict, setHoveredDistrict] = useState(null);
 
   useEffect(() => {
     import('../data/singaporeDistrictsGeoJSON').then(m => setGeoData(m.singaporeDistrictsGeoJSON.features));
@@ -1108,14 +1110,37 @@ function GhostMap({ highlightedDistrict, activePulses, onPulseFade }) {
 
   if (!geoData || !centroids) {
     return (
-      <div className="h-[280px] border border-black/10 bg-[#fafafa] flex items-center justify-center">
+      <div className="h-[280px] border border-black/10 bg-white flex items-center justify-center">
         <div className="font-mono text-[10px] text-black/40">LOADING_MAP...</div>
       </div>
     );
   }
 
+  // Layer 2: The Landmass fill color based on state
+  const getDistrictFill = (district) => {
+    if (highlightedDistrict === district) return '#E2E8F0'; // Slate-200 - active highlight
+    if (hoveredDistrict === district) return '#E2E8F0'; // Slate-200 - hover
+    return '#F1F5F9'; // Slate-100 - default landmass ("thick paper")
+  };
+
+  // Layer 3: The Skeleton stroke color based on state
+  const getDistrictStroke = (district) => {
+    if (highlightedDistrict === district || hoveredDistrict === district) {
+      return '#94A3B8'; // Slate-400 - crisper on interaction
+    }
+    return '#CBD5E1'; // Slate-300 - subtle division
+  };
+
   return (
-    <div className="relative border border-black/10 bg-[#fafafa]">
+    <div
+      className="relative border border-black/10"
+      style={{
+        // Layer 1: The Sea - white with faint blueprint grid
+        backgroundColor: '#FFFFFF',
+        backgroundImage: 'radial-gradient(#E2E8F0 1px, transparent 1px)',
+        backgroundSize: '20px 20px',
+      }}
+    >
       {/* HUD corners */}
       <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
       <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
@@ -1124,20 +1149,29 @@ function GhostMap({ highlightedDistrict, activePulses, onPulseFade }) {
       <div className="absolute top-0 left-1/2 w-px h-1.5 bg-black/30" />
       <div className="absolute top-0 left-3/4 w-px h-1 bg-black/20" />
 
-      <svg viewBox={`0 0 ${SVG_SIZE.width} ${SVG_SIZE.height}`} className="w-full h-auto">
-        {/* District boundaries - ghost style */}
+      <svg
+        viewBox={`0 0 ${SVG_SIZE.width} ${SVG_SIZE.height}`}
+        className="w-full h-auto"
+        style={{
+          // Coastline container - hard dark edge around entire shape
+          filter: 'drop-shadow(0px 0px 1px #64748B)',
+        }}
+      >
+        {/* District paths - Landmass (fill) + Skeleton (strokes) */}
         {geoData.map((f) => (
           <path
             key={f.properties.district}
             d={coordsToPath(f.geometry.coordinates)}
-            fill={highlightedDistrict === f.properties.district ? 'rgba(0,0,0,0.03)' : 'transparent'}
-            stroke="rgba(0,0,0,0.08)"
+            fill={getDistrictFill(f.properties.district)}
+            stroke={getDistrictStroke(f.properties.district)}
             strokeWidth="0.5"
-            className="transition-colors duration-300"
+            className="transition-all duration-200 ease-out cursor-crosshair"
+            onMouseEnter={() => setHoveredDistrict(f.properties.district)}
+            onMouseLeave={() => setHoveredDistrict(null)}
           />
         ))}
 
-        {/* Pulsing dots */}
+        {/* Pulsing dots - phosphor green */}
         <AnimatePresence>
           {activePulses.map((pulse) => {
             const c = centroids.find(c => c.district === pulse.district)?.centroid;
@@ -1152,7 +1186,7 @@ function GhostMap({ highlightedDistrict, activePulses, onPulseFade }) {
                 fill="#10B981"
                 initial={{ opacity: 1, scale: 1 }}
                 animate={{ opacity: 0, scale: 3 }}
-                transition={{ duration: 10, ease: 'easeOut' }}
+                transition={{ duration: 3, ease: 'easeOut' }}
                 onAnimationComplete={() => onPulseFade(pulse.id)}
                 style={{ filter: 'drop-shadow(0 0 6px rgba(16,185,129,0.8))' }}
               />
