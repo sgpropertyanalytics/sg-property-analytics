@@ -8,7 +8,6 @@ import {
   Command,
   Database,
   Globe,
-  Keyboard,
   Lock,
   Radar,
   ShieldCheck,
@@ -237,18 +236,7 @@ function CommandBar({ onExecute }) {
         </button>
       </div>
 
-      <div className="mt-2 flex items-center justify-between">
-        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">
-          Suggestions
-        </div>
-        <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-black/30">
-          <Keyboard className="h-3.5 w-3.5" />
-          <span>
-            Ctrl+K
-            <span className="hidden sm:inline"> to focus</span>
-          </span>
-        </div>
-      </div>
+
 
       <AnimatePresence>
         {isOpen && filtered.length ? (
@@ -584,7 +572,20 @@ function ParticleGlobe() {
 
 function StatusPanel() {
   const [clock, setClock] = useState(() => formatSgClock(new Date()));
+  const [txCount, setTxCount] = useState(103247);
+  const [integrity, setIntegrity] = useState(99.2);
+  const [syncAgo, setSyncAgo] = useState(0);
+  
   useInterval(() => setClock(formatSgClock(new Date())), 1000);
+  
+  useInterval(() => {
+    setTxCount(prev => prev + Math.floor(Math.random() * 3));
+    setIntegrity(prev => {
+      const delta = (Math.random() - 0.5) * 0.02;
+      return Math.min(99.9, Math.max(99.0, prev + delta));
+    });
+    setSyncAgo(prev => (prev + 1) % 60);
+  }, 2000);
 
   return (
     <div className="border border-black/10 bg-[#fafafa]">
@@ -607,17 +608,30 @@ function StatusPanel() {
         <div className="border border-black/10 px-3 py-2">
           <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">PIPELINE</div>
           <div className="mt-1 flex items-center gap-2">
-            <div className="h-2 w-2 bg-black/20" />
-            <div className="font-mono text-xs text-black/60">HEALTHY</div>
+            <span className="relative inline-flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full bg-emerald-500 opacity-50 animate-ping" style={{ animationDuration: '2s' }} />
+              <span className="relative inline-flex h-2 w-2 bg-emerald-600" />
+            </span>
+            <div className="font-mono text-xs text-black/60">STREAMING</div>
           </div>
         </div>
         <div className="border border-black/10 px-3 py-2">
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">LAST SYNC</div>
-          <div className="mt-1 font-mono text-xs text-black/60 tabular-nums">2026-01-06 11:58</div>
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">TRANSACTIONS</div>
+          <div className="mt-1 font-mono text-xs text-black/60 tabular-nums">{txCount.toLocaleString('en-SG')}</div>
         </div>
         <div className="border border-black/10 px-3 py-2">
           <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">INTEGRITY</div>
-          <div className="mt-1 font-mono text-xs text-black/60 tabular-nums">99.2%</div>
+          <div className="mt-1 font-mono text-xs text-black/60 tabular-nums">{integrity.toFixed(1)}%</div>
+        </div>
+      </div>
+      <div className="px-3 py-2 border-t border-black/05 flex items-center justify-between">
+        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/30">
+          LAST SYNC: {syncAgo}s ago
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-1 h-1 bg-emerald-500 animate-pulse" />
+          <div className="w-1 h-1 bg-emerald-500 animate-pulse" style={{ animationDelay: '0.2s' }} />
+          <div className="w-1 h-1 bg-emerald-500 animate-pulse" style={{ animationDelay: '0.4s' }} />
         </div>
       </div>
     </div>
@@ -737,11 +751,15 @@ export default function LandingV3() {
       'AUTH: GUEST // CLEARANCE: NONE',
       'MODE: READ-ONLY PREVIEW',
       '',
+      '> init system.boot … OK',
       '> handshake ura.endpoint … OK',
       '> pipeline.validate integrity=99.2% … OK',
+      '> cache.warmup districts=28 … OK',
       '> stream.transactions sale_type=RESALE … RUNNING',
+      '> index.projects count=1,247 … OK',
+      '> verify.data_quality … PASSED',
       '',
-      'Tip: Press Ctrl+K to run a command.',
+      'System ready. Type a command above.',
     ],
     [],
   );
