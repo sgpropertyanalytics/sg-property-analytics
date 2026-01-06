@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AnimatePresence, motion, useInView, useScroll, useTransform } from 'framer-motion';
+import { AnimatePresence, motion, useInView } from 'framer-motion';
 import {
   ArrowRight,
   ChevronDown,
@@ -97,7 +97,7 @@ function LiveDot() {
 
 function AnimatedNumber({ value, format = (n) => String(n), durationMs = 1100 }) {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, amount: 0.45 });
+  const isInView = useInView(ref, { once: true, amount: 0.1 });
   const [display, setDisplay] = useState(0);
 
   useEffect(() => {
@@ -148,10 +148,11 @@ function CommandBar({ onExecute }) {
 
   const suggestions = useMemo(
     () => [
+      'view market data',
+      'open market overview',
       'scan district d09 resale 2br',
       'compare ccr vs ocr psf 12m',
       'stream latest resale prints',
-      'open market overview',
       'validate ura pipeline health',
       'find mispricing: 721 sqft > $2,480 psf',
     ],
@@ -229,10 +230,10 @@ function CommandBar({ onExecute }) {
         <button
           type="button"
           onClick={() => execute(value || filtered[0] || '')}
-          className="group flex items-center gap-2 px-4 border-l border-black/10 hover:border-black/20 hover:bg-black/[0.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
+          className="group flex items-center gap-2 px-4 bg-black hover:bg-black/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
         >
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">Run</span>
-          <ArrowRight className="h-4 w-4 text-black/30 group-hover:translate-x-0.5 transition-transform" />
+          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-white">Enter Terminal</span>
+          <ArrowRight className="h-4 w-4 text-white group-hover:translate-x-0.5 transition-transform" />
         </button>
       </div>
 
@@ -262,7 +263,10 @@ function CommandBar({ onExecute }) {
                 key={s}
                 type="button"
                 onMouseEnter={() => setActiveIndex(i)}
-                onClick={() => execute(s)}
+                onClick={() => {
+                  setValue(s);
+                  setIsOpen(false);
+                }}
                 className={`w-full px-3 py-2 flex items-center justify-between gap-3 text-left hover:bg-black/[0.02] border-t first:border-t-0 border-black/05 ${
                   i === activeIndex ? 'bg-black/[0.02]' : ''
                 }`}
@@ -312,16 +316,12 @@ function TerminalOutput({ lines, isLive = true }) {
     }
   }, [currentLineIndex, currentCharIndex, lines]);
 
-  useEffect(() => {
-    if (containerRef.current) {
-      containerRef.current.scrollTop = containerRef.current.scrollHeight;
-    }
-  }, [visibleLines, currentTyping]);
+
 
   return (
     <div 
       ref={containerRef}
-      className="font-mono text-xs leading-relaxed text-black/40"
+      className="font-mono text-xs leading-relaxed text-black/40 h-[180px] overflow-hidden"
     >
       {visibleLines.map((line, i) => (
         <div key={i} className={line.startsWith('→') ? 'text-emerald-600' : 'text-black/40'}>
@@ -456,7 +456,7 @@ function ParticleGlobe() {
 
       ctx.clearRect(0, 0, w, h);
 
-      const globeRadius = Math.min(w, h) * 0.52;
+      const globeRadius = Math.min(w, h) * 0.58;
 
       for (const [a, b] of arcs) {
         const steps = 14;
@@ -503,21 +503,13 @@ function ParticleGlobe() {
         const pr = project(p, w, h, globeRadius);
         const alpha = clamp((pr.z + 1.2) / 2.2, 0, 1);
         const base = 0.18 + alpha * 0.52;
-        const size = p.kind === 'beacon' ? 2.1 : 1.15;
-        const pulse = p.kind === 'beacon' ? (0.9 + 0.35 * Math.sin((s.t + p.seed) * 0.06)) : 1;
+        const size = 1.6;
+        const pulse = 1;
 
         ctx.beginPath();
         ctx.arc(pr.x, pr.y, size * pr.p * pulse, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(0,0,0,${base})`;
         ctx.fill();
-
-        if (p.kind === 'beacon') {
-          ctx.beginPath();
-          ctx.arc(pr.x, pr.y, 8 * pr.p * pulse, 0, Math.PI * 2);
-          ctx.strokeStyle = `rgba(0,0,0,${0.15 + alpha * 0.15})`;
-          ctx.lineWidth = 1;
-          ctx.stroke();
-        }
       }
 
       rafRef.current = requestAnimationFrame(draw);
@@ -737,9 +729,6 @@ function InsightRow({ label, value, delta }) {
 
 export default function LandingV3() {
   const navigate = useNavigate();
-  const { scrollY } = useScroll();
-  const heroFade = useTransform(scrollY, [0, 420], [1, 0]);
-  const heroY = useTransform(scrollY, [0, 420], [0, -24]);
 
   const onAnyCTA = () => navigate('/login');
 
@@ -794,7 +783,7 @@ export default function LandingV3() {
       />
 
       {/* NAV */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#fafafa]/80 backdrop-blur-sm border-b border-black/10">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#fafafa] border-b border-black/10">
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-3">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3 min-w-0">
@@ -841,12 +830,12 @@ export default function LandingV3() {
         {/* HERO */}
         <section className="pt-24 md:pt-28">
           <div className="max-w-7xl mx-auto px-4 md:px-6">
-            <motion.div style={{ opacity: heroFade, y: heroY }}>
+            <div>
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
                 <div className="lg:col-span-6">
                   <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
                     transition={{ duration: 0.5 }}
                     className="flex items-center gap-3"
                   >
@@ -857,8 +846,8 @@ export default function LandingV3() {
                   </motion.div>
 
                   <motion.h1
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
                     transition={{ duration: 0.6, delay: 0.05 }}
                     className="mt-6 text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[0.96]"
                   >
@@ -867,8 +856,8 @@ export default function LandingV3() {
                   </motion.h1>
 
                   <motion.p
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
                     transition={{ duration: 0.6, delay: 0.12 }}
                     className="mt-6 text-base sm:text-lg leading-relaxed text-black/50 max-w-xl"
                   >
@@ -876,49 +865,38 @@ export default function LandingV3() {
                   </motion.p>
 
                   <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
                     transition={{ duration: 0.6, delay: 0.24 }}
-                    className="mt-8 flex flex-wrap items-center gap-3"
+                    className="mt-6"
                   >
-                    <button
-                      type="button"
-                      onClick={onAnyCTA}
-                      className="group inline-flex items-center gap-2 px-6 py-3 bg-black text-white font-mono text-sm hover:bg-black/80 transition-all"
-                    >
-                      View Market Data
-                      <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={onAnyCTA}
-                      className="px-6 py-3 border border-black/20 text-black font-mono text-sm hover:border-black hover:bg-black/5 transition-all"
-                    >
-                      Documentation
-                    </button>
+                    <CommandBar onExecute={onAnyCTA} />
                   </motion.div>
 
                   <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
                     transition={{ duration: 0.6, delay: 0.3 }}
-                    className="mt-8 pt-8 border-t border-black/10"
+                    className="mt-4"
                   >
-                    <TerminalOutput lines={terminalLines} isLive />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <TerminalOutput lines={terminalLines} isLive />
+                      <StatusPanel />
+                    </div>
                   </motion.div>
                 </div>
 
                 <div className="lg:col-span-6">
                   <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
                     transition={{ duration: 0.8, delay: 0.2 }}
                   >
                     <ParticleGlobe />
                   </motion.div>
                 </div>
               </div>
-            </motion.div>
+            </div>
           </div>
 
         </section>
