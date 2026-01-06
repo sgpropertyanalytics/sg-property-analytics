@@ -1106,43 +1106,12 @@ function PulseTicker({ transactions, onTransactionClick, activeDistrict, isLoadi
   );
 }
 
-// District 3-month summary stats (mock data for landing preview)
-const DISTRICT_STATS = {
-  D01: { name: 'RAFFLES PLACE / MARINA', vol: 'MED', txCount: 42, psfDelta: '+2.1%', medianPsf: 2850 },
-  D02: { name: 'TANJONG PAGAR / CHINATOWN', vol: 'HIGH', txCount: 67, psfDelta: '+1.8%', medianPsf: 2420 },
-  D03: { name: 'ALEXANDRA / QUEENSTOWN', vol: 'MED', txCount: 38, psfDelta: '-0.5%', medianPsf: 1980 },
-  D04: { name: 'HARBOURFRONT / TELOK BLANGAH', vol: 'LOW', txCount: 21, psfDelta: '+0.9%', medianPsf: 1850 },
-  D05: { name: 'BUONA VISTA / PASIR PANJANG', vol: 'MED', txCount: 45, psfDelta: '+1.2%', medianPsf: 1920 },
-  D06: { name: 'CITY HALL / CLARKE QUAY', vol: 'LOW', txCount: 18, psfDelta: '+3.1%', medianPsf: 2680 },
-  D07: { name: 'BUGIS / BEACH ROAD', vol: 'MED', txCount: 34, psfDelta: '+2.4%', medianPsf: 2150 },
-  D08: { name: 'FARRER PARK / LITTLE INDIA', vol: 'HIGH', txCount: 58, psfDelta: '+1.5%', medianPsf: 1780 },
-  D09: { name: 'ORCHARD / RIVER VALLEY', vol: 'MED', txCount: 29, psfDelta: '+4.2%', medianPsf: 3120 },
-  D10: { name: 'ARDMORE / BUKIT TIMAH', vol: 'HIGH', txCount: 71, psfDelta: '-1.2%', medianPsf: 2890 },
-  D11: { name: 'NEWTON / NOVENA', vol: 'HIGH', txCount: 63, psfDelta: '+2.8%', medianPsf: 2340 },
-  D12: { name: 'BALESTIER / TOA PAYOH', vol: 'MED', txCount: 47, psfDelta: '+0.6%', medianPsf: 1650 },
-  D13: { name: 'MACPHERSON / POTONG PASIR', vol: 'MED', txCount: 39, psfDelta: '+1.1%', medianPsf: 1580 },
-  D14: { name: 'EUNOS / GEYLANG', vol: 'HIGH', txCount: 82, psfDelta: '+0.3%', medianPsf: 1420 },
-  D15: { name: 'EAST COAST / KATONG', vol: 'HIGH', txCount: 94, psfDelta: '+2.6%', medianPsf: 1890 },
-  D16: { name: 'BEDOK / UPPER EAST COAST', vol: 'HIGH', txCount: 76, psfDelta: '+1.4%', medianPsf: 1520 },
-  D17: { name: 'CHANGI / LOYANG', vol: 'LOW', txCount: 23, psfDelta: '+0.8%', medianPsf: 1380 },
-  D18: { name: 'TAMPINES / PASIR RIS', vol: 'HIGH', txCount: 88, psfDelta: '+1.9%', medianPsf: 1340 },
-  D19: { name: 'PUNGGOL / SENGKANG', vol: 'HIGH', txCount: 102, psfDelta: '+2.2%', medianPsf: 1280 },
-  D20: { name: 'ANG MO KIO / BISHAN', vol: 'MED', txCount: 51, psfDelta: '+1.7%', medianPsf: 1620 },
-  D21: { name: 'CLEMENTI / UPPER BUKIT TIMAH', vol: 'HIGH', txCount: 68, psfDelta: '+3.1%', medianPsf: 1850 },
-  D22: { name: 'JURONG / BOON LAY', vol: 'HIGH', txCount: 79, psfDelta: '+2.4%', medianPsf: 1420 },
-  D23: { name: 'BUKIT BATOK / HILLVIEW', vol: 'HIGH', txCount: 85, psfDelta: '+1.8%', medianPsf: 1380 },
-  D24: { name: 'LIM CHU KANG / TENGAH', vol: 'LOW', txCount: 12, psfDelta: '+0.5%', medianPsf: 1250 },
-  D25: { name: 'WOODLANDS / ADMIRALTY', vol: 'MED', txCount: 44, psfDelta: '+1.3%', medianPsf: 1180 },
-  D26: { name: 'MANDAI / UPPER THOMSON', vol: 'HIGH', txCount: 91, psfDelta: '+3.8%', medianPsf: 1650 },
-  D27: { name: 'SEMBAWANG / YISHUN', vol: 'HIGH', txCount: 73, psfDelta: '+1.6%', medianPsf: 1220 },
-  D28: { name: 'SELETAR / YIO CHU KANG', vol: 'MED', txCount: 36, psfDelta: '+2.1%', medianPsf: 1350 },
-};
-
 // Ghost Map - SVG-based Singapore district map with pulsing dots
 // Laser-cut acrylic concept: Pale blue-grey sea + White land "cutout" + Technical grey lines
 function GhostMap({ highlightedDistrict, activePulses, onPulseFade }) {
   const [geoData, setGeoData] = useState(null);
   const [centroids, setCentroids] = useState(null);
+  const [districtStats, setDistrictStats] = useState({});
   const [hoveredDistrict, setHoveredDistrict] = useState(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const containerRef = useRef(null);
@@ -1150,6 +1119,24 @@ function GhostMap({ highlightedDistrict, activePulses, onPulseFade }) {
   useEffect(() => {
     import('../data/singaporeDistrictsGeoJSON').then(m => setGeoData(m.singaporeDistrictsGeoJSON.features));
     import('../data/districtCentroids').then(m => setCentroids(m.DISTRICT_CENTROIDS));
+  }, []);
+
+  // Fetch real district stats from API
+  useEffect(() => {
+    const fetchDistrictStats = async () => {
+      try {
+        const response = await fetch('/api/landing/district-stats');
+        if (response.ok) {
+          const result = await response.json();
+          if (result.data) {
+            setDistrictStats(result.data);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch district stats:', error);
+      }
+    };
+    fetchDistrictStats();
   }, []);
 
   // Track mouse position relative to container
@@ -1186,8 +1173,8 @@ function GhostMap({ highlightedDistrict, activePulses, onPulseFade }) {
     return '#E2E8F0'; // Slate-200 - barely-there pencil line
   };
 
-  // Get stats for hovered district
-  const hoveredStats = hoveredDistrict ? DISTRICT_STATS[hoveredDistrict] : null;
+  // Get stats for hovered district (from API)
+  const hoveredStats = hoveredDistrict ? districtStats[hoveredDistrict] : null;
 
   return (
     <div
@@ -1253,8 +1240,8 @@ function GhostMap({ highlightedDistrict, activePulses, onPulseFade }) {
                 </span>
                 <span>
                   <span className="text-slate-400">Δ:</span>
-                  <span className={hoveredStats.psfDelta.startsWith('+') ? 'text-emerald-400 ml-1' : 'text-red-400 ml-1'}>
-                    {hoveredStats.psfDelta}
+                  <span className={hoveredStats.psfDelta?.startsWith('+') ? 'text-emerald-400 ml-1' : hoveredStats.psfDelta?.startsWith('-') ? 'text-red-400 ml-1' : 'text-slate-300 ml-1'}>
+                    {hoveredStats.psfDelta || 'N/A'}
                   </span>
                 </span>
               </div>
