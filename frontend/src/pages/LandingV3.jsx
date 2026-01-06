@@ -1255,10 +1255,9 @@ function GhostMap({ highlightedDistrict, activePulses, onPulseFade }) {
 
       <svg
         viewBox={`0 0 ${SVG_SIZE.width} ${SVG_SIZE.height}`}
-        className="w-full max-w-full h-auto"
-        style={{ maxHeight: '300px' }}
+        className="w-full h-auto"
       >
-        {/* Outer coastline boundary - connects all district edges */}
+        {/* Outer coastline fill - covers gaps between districts */}
         <path
           d={`
             M 65,245
@@ -1277,10 +1276,9 @@ function GhostMap({ highlightedDistrict, activePulses, onPulseFade }) {
             Q 110,265 65,245
             Z
           `}
-          fill="none"
+          fill="#FFFFFF"
           stroke="#E2E8F0"
           strokeWidth="0.75"
-          strokeDasharray="none"
         />
 
         {/* District paths - White land cutouts with paper-thin shadow */}
