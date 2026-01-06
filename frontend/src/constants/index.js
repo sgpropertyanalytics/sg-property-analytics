@@ -70,37 +70,22 @@ export const isDistrictInRegion = (district, region) => {
   return getRegionForDistrict(district) === region.toUpperCase();
 };
 
-/**
- * Region badge styling utilities
- * Centralizes the CCR/RCR/OCR badge color logic used across components.
- */
-export const REGION_BADGE_CLASSES = {
-  CCR: 'bg-[#213448] text-white',
-  RCR: 'bg-[#547792] text-white',
-  OCR: 'bg-[#94B4C1] text-[#213448]',
-  SAND: 'bg-[#EAE0CF] text-[#213448]',
-};
+// =============================================================================
+// COLOR SYSTEM - Import from centralized colors.js
+// =============================================================================
 
-/**
- * Core theme colors for data visuals and component styling.
- * Use these in components to avoid raw hex values inline.
- */
-export const THEME_COLORS = {
-  navy: '#213448',
-  blue: '#547792',
-  sky: '#94B4C1',
-  sand: '#EAE0CF',
-};
-
-/**
- * Get Tailwind classes for a region badge
- * @param {string} region - Region code (CCR, RCR, OCR) - case insensitive
- * @returns {string} Tailwind CSS classes for the badge
- */
-export const getRegionBadgeClass = (region) => {
-  const r = (region || '').toUpperCase();
-  return REGION_BADGE_CLASSES[r] || REGION_BADGE_CLASSES.OCR;
-};
+export {
+  MONO,
+  STATUS,
+  BRAND,
+  REGION,
+  SUPPLY,
+  CHART,
+  THEME_COLORS,
+  REGION_BADGE_CLASSES,
+  getRegionColor,
+  getRegionBadgeClass,
+} from './colors';
 
 /**
  * Check if a region uses dark background (for text contrast decisions)

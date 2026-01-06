@@ -41,9 +41,9 @@ export const NAV_WIDTH_EXPANDED = 256; // px - icons + labels
 export const NAV_WIDTH_COLLAPSED = 72; // px - icons only
 export const NAV_WIDTH = NAV_WIDTH_EXPANDED; // backwards compat
 
-// Premium physics: "Heavy Door" bezier curve
-// Starts fast (snappy response), brakes smooth (weighty finish)
-const TRANSITION_CLASS = "transition-all duration-500 ease-[cubic-bezier(0.2,0,0,1)]";
+// WEAPON AESTHETIC: Instant snap - no "premium physics"
+// Machine precision, no ease, instant response
+const TRANSITION_CLASS = "transition-none";
 
 export const NAV_GROUPS = [
   {
@@ -86,11 +86,12 @@ export const NAV_ITEMS = NAV_GROUPS.flatMap(g => g.items);
 function NavItem({ item, isActive, onClick, collapsed = false }) {
   const isComingSoon = item.comingSoon;
 
-  // Base styles for layout and transition
+  // Base styles for layout - WEAPON: hard edges, structural borders
   const baseStyles = `
-    group relative w-full min-h-[44px] px-3 py-2 rounded-md
+    group relative w-full min-h-[44px] px-3 py-2 rounded-none
     flex items-center text-left min-w-0
-    text-sm font-medium
+    text-sm font-medium font-mono uppercase tracking-wider
+    border-b border-[#547792]/20
     ${TRANSITION_CLASS}
     outline-none select-none
     focus-visible:ring-2 focus-visible:ring-[#547792] focus-visible:ring-offset-2 focus-visible:ring-offset-[#213448]
@@ -114,9 +115,9 @@ function NavItem({ item, isActive, onClick, collapsed = false }) {
       aria-current={isActive ? 'page' : undefined}
       aria-label={item.label}
     >
-      {/* Active indicator bar - blue accent, positioned inside left edge */}
+      {/* Active indicator bar - WEAPON: hard edge, full height */}
       {isActive && (
-        <span className="absolute left-0 top-1.5 bottom-1.5 w-1 bg-[#547792] rounded-r-full" />
+        <span className="absolute left-0 top-0 bottom-0 w-1 bg-[#547792]" />
       )}
 
       {/* Icon - full opacity when active, dimmed when inactive */}
@@ -139,12 +140,12 @@ function NavItem({ item, isActive, onClick, collapsed = false }) {
         {item.label}
       </span>
 
-      {/* Coming Soon badge - styled to match design system */}
+      {/* Coming Soon badge - WEAPON: hard edges */}
       {isComingSoon && !collapsed && (
         <span className={`
           flex-shrink-0 ml-auto
           text-[10px] font-bold tracking-wide
-          px-1.5 py-0.5 rounded
+          px-1.5 py-0.5 rounded-none
           bg-[#1E293B] text-[#94B4C1]/80
           border border-[#547792]/40
           ${TRANSITION_CLASS}
@@ -154,20 +155,19 @@ function NavItem({ item, isActive, onClick, collapsed = false }) {
         </span>
       )}
 
-      {/* Tooltip - Only shows on hover when collapsed */}
+      {/* Tooltip - WEAPON: hard edges, instant */}
       {collapsed && (
         <div className="
           absolute left-full ml-2 z-50
           hidden group-hover:block
           px-2 py-1.5
-          text-xs font-medium text-white
-          bg-[#213448] border border-[#547792]/50
-          rounded-md shadow-xl
+          text-xs font-mono uppercase tracking-wider text-white
+          bg-[#171717] border border-[#547792]/50
+          rounded-none weapon-shadow
           whitespace-nowrap
-          animate-in fade-in slide-in-from-left-1 duration-200
         ">
           {item.label}
-          {isComingSoon && <span className="ml-1 text-[#94B4C1]/60">(Coming Soon)</span>}
+          {isComingSoon && <span className="ml-1 text-[#94B4C1]/60">(SOON)</span>}
         </div>
       )}
     </button>
@@ -231,7 +231,7 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
         className={`group relative mb-6 flex items-center w-full min-h-[44px] min-w-0 active:scale-[0.98] select-none ${TRANSITION_CLASS} ${collapsed ? 'justify-center px-0' : 'gap-3 px-2'}`}
         aria-label="Go to Home"
       >
-        <div className="w-10 h-10 rounded-lg bg-[#547792]/30 flex items-center justify-center transition-all duration-200 group-hover:bg-[#547792]/50 group-active:bg-[#547792]/60 group-hover:scale-105 group-active:scale-100 flex-shrink-0">
+        <div className="w-10 h-10 rounded-none bg-[#547792]/30 flex items-center justify-center transition-none group-hover:bg-[#547792]/50 group-active:bg-[#547792]/60 flex-shrink-0">
           <svg className="w-6 h-6 text-[#EAE0CF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
           </svg>
@@ -245,19 +245,18 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
           Home
         </span>
 
-        {/* Tooltip when collapsed */}
+        {/* Tooltip when collapsed - WEAPON: hard edges */}
         {collapsed && (
           <div className="
             absolute left-full ml-2 z-50
             hidden group-hover:block
             px-2 py-1.5
-            text-xs font-medium text-white
-            bg-[#213448] border border-[#547792]/50
-            rounded-md shadow-xl
+            text-xs font-mono uppercase tracking-wider text-white
+            bg-[#171717] border border-[#547792]/50
+            rounded-none weapon-shadow
             whitespace-nowrap
-            animate-in fade-in slide-in-from-left-1 duration-200
           ">
-            Home
+            HOME
           </div>
         )}
       </button>
@@ -277,9 +276,9 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
                 <button
                   onClick={() => toggleGroup(group.id)}
                   className={`
-                    w-full px-3 py-2 rounded-lg
+                    w-full px-3 py-2 rounded-none
                     flex items-center gap-2 text-left min-w-0
-                    transition-colors duration-150
+                    transition-none
                     select-none
                     ${hasActiveItem
                       ? 'text-[#94B4C1]/80'
@@ -338,10 +337,10 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
         {/* Separator */}
         <div className="border-t border-[#547792]/30 mb-3 mx-2" />
 
-        {/* Methodology Link - matches inactive nav item styling */}
+        {/* Methodology Link - WEAPON: hard edges, rack-mount style */}
         <button
           onClick={() => startTransition(() => navigate('/methodology'))}
-          className={`group relative w-full min-h-[44px] px-3 py-2 rounded-lg flex items-center text-left min-w-0 text-[#94B4C1] hover:text-white hover:bg-white/5 active:bg-white/10 active:scale-[0.98] ${TRANSITION_CLASS} select-none ${collapsed ? 'justify-center' : 'gap-3'}`}
+          className={`group relative w-full min-h-[44px] px-3 py-2 rounded-none border-b border-[#547792]/20 flex items-center text-left min-w-0 text-[#94B4C1] hover:text-white hover:bg-white/5 active:bg-white/10 font-mono uppercase tracking-wider text-sm ${TRANSITION_CLASS} select-none ${collapsed ? 'justify-center' : 'gap-3'}`}
           aria-label="Methodology"
         >
           <span className="text-base flex-shrink-0 opacity-70 group-hover:opacity-100">ℹ️</span>
@@ -353,19 +352,18 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
             Methodology
           </span>
 
-          {/* Tooltip when collapsed */}
+          {/* Tooltip when collapsed - WEAPON: hard edges */}
           {collapsed && (
             <div className="
               absolute left-full ml-2 z-50
               hidden group-hover:block
               px-2 py-1.5
-              text-xs font-medium text-white
-              bg-[#213448] border border-[#547792]/50
-              rounded-md shadow-xl
+              text-xs font-mono uppercase tracking-wider text-white
+              bg-[#171717] border border-[#547792]/50
+              rounded-none weapon-shadow
               whitespace-nowrap
-              animate-in fade-in slide-in-from-left-1 duration-200
             ">
-              Methodology
+              METHODOLOGY
             </div>
           )}
         </button>
