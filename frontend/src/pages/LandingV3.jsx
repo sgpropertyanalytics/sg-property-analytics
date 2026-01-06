@@ -717,21 +717,23 @@ function DotMatrixMap() {
   );
 }
 
-function CapabilityCard({ icon: Icon, title, desc }) {
+function CapabilityCard({ icon: Icon, title, desc, code }) {
   return (
-    <div className="group border border-black/10 bg-[#fafafa] p-6 hover:border-black/20 transition-colors">
+    <div className="group relative border border-black/10 bg-[#fafafa] p-4 hover:border-black/20 transition-colors">
+      <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
+      <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
       <div className="flex items-start justify-between gap-4">
         <div>
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">Capability</div>
-          <div className="mt-2 text-lg font-bold tracking-tight text-black">{title}</div>
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">{code}</div>
+          <div className="mt-2 text-base font-bold tracking-tight text-black">{title}</div>
         </div>
         <div className="border border-black/10 p-2">
-          <Icon className="h-5 w-5 text-black/30" />
+          <Icon className="h-4 w-4 text-black/30" />
         </div>
       </div>
-      <div className="mt-3 text-sm leading-relaxed text-black/50">{desc}</div>
-      <div className="mt-5 flex items-center justify-between">
-        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/30">Inspect</div>
+      <div className="mt-2 text-sm leading-relaxed text-black/50">{desc}</div>
+      <div className="mt-4 flex items-center justify-between">
+        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/30">INSPECT</div>
         <ChevronRight className="h-4 w-4 text-black/20 group-hover:translate-x-0.5 transition-transform" />
       </div>
     </div>
@@ -814,9 +816,9 @@ export default function LandingV3() {
         }
       `}</style>
 
-      {/* Subtle crosshatch grid @ 80px */}
+      {/* Subtle crosshatch grid @ 80px - brightens on section hover */}
       <div
-        className="pointer-events-none fixed inset-0 z-0 opacity-[0.015]"
+        className={`pointer-events-none fixed inset-0 z-0 transition-opacity duration-300 ${isGridHot ? 'opacity-[0.04]' : 'opacity-[0.015]'}`}
         style={{
           backgroundImage:
             'linear-gradient(to right, rgba(0,0,0,1) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,1) 1px, transparent 1px)',
@@ -961,75 +963,88 @@ export default function LandingV3() {
         </section>
 
         {/* STATS */}
-        <section className="pt-24 md:pt-32 pb-14 md:pb-18">
+        <section className="pt-24 md:pt-32 pb-14 md:pb-18" onMouseEnter={onSectionEnter} onMouseLeave={onSectionLeave}>
           <div className="max-w-7xl mx-auto px-4 md:px-6">
             <SectionTitle
-              eyebrow="Coverage"
-              title="Signal depth"
-              muted="with auditability"
-              rightSlot={<MonoPill>All outputs are preview-mode</MonoPill>}
+              eyebrow="COVERAGE"
+              title="SIGNAL_DEPTH"
+              muted="auditable"
+              rightSlot={<MonoPill>PREVIEW_MODE</MonoPill>}
             />
 
-            <div className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="border border-black/10 bg-[#fafafa] p-6">
-                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">Transactions</div>
-                <div className="mt-3 text-2xl md:text-3xl font-bold tracking-tight text-black">
+            <div className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="relative border border-black/10 bg-[#fafafa] p-4">
+                {/* HUD corner ticks */}
+                <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
+                <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
+                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">TX_COUNT</div>
+                <div className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-black tabular-nums">
                   <AnimatedNumber
                     value={103379}
                     format={(n) => Math.round(n).toLocaleString('en-SG')}
                   />
                 </div>
-                <div className="mt-1 text-sm text-black/50">Resale-focused tape</div>
+                <div className="mt-1 font-mono text-[10px] text-black/40">RESALE_TAPE</div>
               </div>
-              <div className="border border-black/10 bg-[#fafafa] p-6">
-                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">Integrity</div>
-                <div className="mt-3 text-2xl md:text-3xl font-bold tracking-tight text-black">
+              <div className="relative border border-black/10 bg-[#fafafa] p-4">
+                <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
+                <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
+                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">INTEGRITY</div>
+                <div className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-black tabular-nums">
                   <AnimatedNumber value={99.2} format={(n) => `${n.toFixed(1)}%`} />
                 </div>
-                <div className="mt-1 text-sm text-black/50">Outlier-gated metrics</div>
+                <div className="mt-1 font-mono text-[10px] text-black/40">OUTLIER_GATED</div>
               </div>
-              <div className="border border-black/10 bg-[#fafafa] p-6">
-                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">Districts</div>
-                <div className="mt-3 text-2xl md:text-3xl font-bold tracking-tight text-black">
+              <div className="relative border border-black/10 bg-[#fafafa] p-4">
+                <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
+                <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
+                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">DISTRICTS</div>
+                <div className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-black tabular-nums">
                   <AnimatedNumber value={28} format={(n) => String(Math.round(n))} />
                 </div>
-                <div className="mt-1 text-sm text-black/50">CCR / RCR / OCR</div>
+                <div className="mt-1 font-mono text-[10px] text-black/40">CCR/RCR/OCR</div>
               </div>
-              <div className="border border-black/10 bg-[#fafafa] p-6">
-                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">History</div>
-                <div className="mt-3 text-2xl md:text-3xl font-bold tracking-tight text-black">
+              <div className="relative border border-black/10 bg-[#fafafa] p-4">
+                <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
+                <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
+                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">HISTORY</div>
+                <div className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-black tabular-nums">
                   <AnimatedNumber value={5} format={(n) => `${Math.round(n)}Y`} />
                 </div>
-                <div className="mt-1 text-sm text-black/50">Depth for cycles</div>
+                <div className="mt-1 font-mono text-[10px] text-black/40">CYCLE_DEPTH</div>
               </div>
             </div>
           </div>
         </section>
 
         {/* CAPABILITIES */}
-        <section className="py-14 md:py-18">
+        <section className="py-14 md:py-18" onMouseEnter={onSectionEnter} onMouseLeave={onSectionLeave}>
           <div className="max-w-7xl mx-auto px-4 md:px-6">
-            <SectionTitle eyebrow="Tools" title="Capabilities" muted="built for analysts" />
+            <SectionTitle eyebrow="SYSTEM" title="CAPABILITIES_MANIFEST" muted="analyst_tools" />
 
-            <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
               <CapabilityCard
                 icon={Radar}
+                code="UNDERWRITE"
                 title="Deal Underwriting"
                 desc="Benchmark PSF by district, project, and unit type with repeatable assumptions."
               />
               <CapabilityCard
                 icon={Database}
+                code="TX_TAPE"
                 title="Raw Transaction Tape"
                 desc="Scan prints like a feed: district · size · psf · timestamp. No hidden smoothing."
               />
               <CapabilityCard
                 icon={ShieldCheck}
+                code="INTEGRITY"
                 title="Integrity Gating"
                 desc="Signal quality checks baked into the workflow — thin data flags and audit trails."
               />
               <CapabilityCard
                 icon={Zap}
-                title="Fast Navigation"
+                code="LOW_LATENCY"
+                title="Query Engine"
                 desc="Command-first UX for power users: run queries without leaving the keyboard."
               />
             </div>
@@ -1037,9 +1052,9 @@ export default function LandingV3() {
         </section>
 
         {/* INSIGHTS */}
-        <section className="py-14 md:py-18">
+        <section className="py-14 md:py-18" onMouseEnter={onSectionEnter} onMouseLeave={onSectionLeave}>
           <div className="max-w-7xl mx-auto px-4 md:px-6">
-            <SectionTitle eyebrow="Readout" title="Market insights" muted="as signals" />
+            <SectionTitle eyebrow="READOUT" title="MARKET_SIGNALS" muted="realtime" />
 
             <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-4">
               <div className="lg:col-span-7 border border-black/10 bg-[#fafafa]">
