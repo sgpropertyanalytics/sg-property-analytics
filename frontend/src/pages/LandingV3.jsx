@@ -20,7 +20,6 @@ import {
   DISTRICT_GROWTH_DATA,
   MOMENTUM_GRID_DATA,
   MAX_DISTRICT_PRICE,
-  SIGNAL_EVENTS,
 } from './landingPreviewData';
 
 const CANVAS = '#fafafa';
@@ -1038,31 +1037,58 @@ function coordsToPath(coords) {
   }).join(' ') + ' Z';
 }
 
-// Pulse Ticker - auto-scrolling horizontal event feed
-function PulseTicker({ signals, onSignalClick, activeDistrict }) {
-  const doubled = useMemo(() => [...signals, ...signals], [signals]);
+// Format price for display (e.g., $1.85M, $850K)
+function formatPrice(price) {
+  if (price >= 1_000_000) {
+    return `$${(price / 1_000_000).toFixed(2)}M`;
+  }
+  return `$${(price / 1_000).toFixed(0)}K`;
+}
 
-  const formatSignal = (s) => {
-    const sigma = s.sigma ? ' σ' : '';
-    const value = s.delta || s.status || s.score || s.level || '';
-    return `[${s.time}] ${s.region}_${s.type} [${value}${sigma}]`;
-  };
+// Format bedroom count (e.g., 2BR, 3BR)
+function formatBedroom(bedroom) {
+  if (bedroom === 5) return '5BR+';
+  return `${bedroom}BR`;
+}
+
+// Pulse Ticker - auto-scrolling horizontal event feed with real transaction data
+function PulseTicker({ transactions, onTransactionClick, activeDistrict, isLoading }) {
+  const doubled = useMemo(() => {
+    if (!transactions?.length) return [];
+    return [...transactions, ...transactions];
+  }, [transactions]);
+
+  if (isLoading) {
+    return (
+      <div className="overflow-hidden border border-black/10 bg-[#fafafa] h-10 flex items-center justify-center">
+        <div className="font-mono text-[11px] text-black/40">LOADING_FEED...</div>
+      </div>
+    );
+  }
+
+  if (!transactions?.length) {
+    return (
+      <div className="overflow-hidden border border-black/10 bg-[#fafafa] h-10 flex items-center justify-center">
+        <div className="font-mono text-[11px] text-black/40">NO_SIGNAL</div>
+      </div>
+    );
+  }
 
   return (
     <div className="overflow-hidden border border-black/10 bg-[#fafafa] h-10">
       <div className="flex items-center h-full gap-12 animate-ticker whitespace-nowrap px-4">
-        {doubled.map((signal, idx) => (
+        {doubled.map((tx, idx) => (
           <button
-            key={`${signal.id}-${idx}`}
+            key={`${tx.project}-${idx}`}
             type="button"
-            onClick={() => onSignalClick(signal.district)}
+            onClick={() => onTransactionClick(tx.district)}
             className={`font-mono text-[11px] tracking-wide transition-colors ${
-              activeDistrict === signal.district
+              activeDistrict === tx.district
                 ? 'text-emerald-600'
                 : 'text-black/60 hover:text-black/80'
             }`}
           >
-            {formatSignal(signal)}
+            {tx.project} · {formatBedroom(tx.bedroom)} · {formatPrice(tx.price)}
           </button>
         ))}
       </div>
@@ -1147,10 +1173,32 @@ function GhostMap({ highlightedDistrict, activePulses, onPulseFade }) {
 function LiveSignalEcosystem() {
   const [highlightedDistrict, setHighlightedDistrict] = useState(null);
   const [activePulses, setActivePulses] = useState([]);
+  const [transactions, setTransactions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const sectionRef = useRef(null);
   const isInView = useInView(sectionRef, { once: true, amount: 0.2 });
 
-  const handleSignalClick = (district) => {
+  // Fetch recent transactions from API
+  useEffect(() => {
+    const fetchRecentActivity = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch('/api/landing/recent-activity');
+        if (response.ok) {
+          const result = await response.json();
+          setTransactions(result.data || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch recent activity:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchRecentActivity();
+  }, []);
+
+  const handleTransactionClick = (district) => {
     setHighlightedDistrict(district);
     setActivePulses(prev => [...prev, { id: `p_${Date.now()}`, district }]);
     setTimeout(() => setHighlightedDistrict(null), 3000);
@@ -1182,9 +1230,10 @@ function LiveSignalEcosystem() {
       {/* Ticker */}
       <motion.div variants={itemVariants}>
         <PulseTicker
-          signals={SIGNAL_EVENTS}
-          onSignalClick={handleSignalClick}
+          transactions={transactions}
+          onTransactionClick={handleTransactionClick}
           activeDistrict={highlightedDistrict}
+          isLoading={isLoading}
         />
       </motion.div>
 
