@@ -319,41 +319,26 @@ function TerminalOutput({ lines, isLive = true }) {
   }, [visibleLines, currentTyping]);
 
   return (
-    <div className="border border-black/10 bg-[#fafafa]">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-black/05">
-        <div className="flex items-center gap-2">
-          <Terminal className="h-4 w-4 text-black/30" />
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">
-            Session Log
-          </div>
+    <div 
+      ref={containerRef}
+      className="font-mono text-xs leading-relaxed text-black/40"
+    >
+      {visibleLines.map((line, i) => (
+        <div key={i} className={line.startsWith('→') ? 'text-emerald-600' : 'text-black/40'}>
+          {line}
         </div>
-        <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">
-          {isLive ? <LiveDot /> : null}
-          <span>{isLive ? 'Live' : 'Static'}</span>
+      ))}
+      {currentTyping && (
+        <div className={currentTyping.startsWith('→') ? 'text-emerald-600' : 'text-black/40'}>
+          {currentTyping}
+          <span className={`inline-block ${cursorOn ? 'opacity-100' : 'opacity-0'}`}>_</span>
         </div>
-      </div>
-
-      <div 
-        ref={containerRef}
-        className="px-3 py-3 font-mono text-xs leading-relaxed text-black/50 h-[180px] overflow-y-auto"
-      >
-        {visibleLines.map((line, i) => (
-          <div key={i} className={line.startsWith('→') ? 'text-emerald-600' : 'text-black/50'}>
-            {line}
-          </div>
-        ))}
-        {currentTyping && (
-          <div className={currentTyping.startsWith('→') ? 'text-emerald-600' : 'text-black/50'}>
-            {currentTyping}
-            <span className={`inline-block w-[8px] ml-0.5 ${cursorOn ? 'bg-black/60' : 'bg-transparent'}`}>▊</span>
-          </div>
-        )}
-        {currentLineIndex >= lines.length && (
-          <div className="text-emerald-600">
-            $ ready<span className={`inline-block w-[8px] ml-0.5 ${cursorOn ? 'bg-emerald-600' : 'bg-transparent'}`}>▊</span>
-          </div>
-        )}
-      </div>
+      )}
+      {currentLineIndex >= lines.length && (
+        <div className="text-emerald-600">
+          $ ready<span className={`inline-block ${cursorOn ? 'opacity-100' : 'opacity-0'}`}>_</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -596,6 +581,15 @@ function ParticleGlobe() {
       onMouseUp={onMouseUp}
     >
       <canvas ref={canvasRef} className="absolute inset-0" />
+      <div className="absolute top-4 right-4 text-right">
+        <div className="font-mono text-[10px] uppercase tracking-wider text-black/20">
+          GLOBAL_NETWORK
+        </div>
+        <div className="mt-1 flex items-center justify-end gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="font-mono text-[10px] uppercase tracking-wider text-emerald-600">LIVE</span>
+        </div>
+      </div>
     </div>
   );
 }
@@ -884,54 +878,39 @@ export default function LandingV3() {
                     transition={{ duration: 0.6, delay: 0.12 }}
                     className="mt-6 text-base sm:text-lg leading-relaxed text-black/50 max-w-xl"
                   >
-                    An analyst-grade terminal for Singapore private condo pricing. Raw prints, integrity gating, and
-                    decision-ready signals — not marketing.
+                    Data-driven price benchmarking across projects, locations, and market segments — based on 100,000+ private property transactions.
                   </motion.p>
 
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.18 }}
-                    className="mt-8 grid grid-cols-1 gap-4"
-                  >
-                    <CommandBar onExecute={() => onAnyCTA()} />
-                  </motion.div>
-
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: 0.24 }}
-                    className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4"
+                    className="mt-8 flex flex-wrap items-center gap-3"
                   >
-                    <TerminalOutput lines={terminalLines} isLive />
-                    <StatusPanel />
+                    <button
+                      type="button"
+                      onClick={onAnyCTA}
+                      className="group inline-flex items-center gap-2 px-6 py-3 bg-black text-white font-mono text-sm hover:bg-black/80 transition-all"
+                    >
+                      View Market Data
+                      <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={onAnyCTA}
+                      className="px-6 py-3 border border-black/20 text-black font-mono text-sm hover:border-black hover:bg-black/5 transition-all"
+                    >
+                      Documentation
+                    </button>
                   </motion.div>
 
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: 0.3 }}
-                    className="mt-6 flex flex-wrap items-center gap-2"
+                    className="mt-8 pt-8 border-t border-black/10"
                   >
-                    <button
-                      type="button"
-                      onClick={onAnyCTA}
-                      className="group inline-flex items-center gap-2 px-5 py-3 bg-black text-[#fafafa] font-medium hover:bg-black/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
-                    >
-                      Enter Terminal
-                      <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={onAnyCTA}
-                      className="inline-flex items-center gap-2 px-5 py-3 border border-black/10 text-black font-medium hover:border-black/20 hover:bg-black/[0.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
-                    >
-                      Login
-                      <ChevronDown className="h-4 w-4 text-black/30" />
-                    </button>
-                    <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/30">
-                      Buttons route to <span className="text-black/40">/login</span>
-                    </div>
+                    <TerminalOutput lines={terminalLines} isLive />
                   </motion.div>
                 </div>
 
@@ -940,16 +919,8 @@ export default function LandingV3() {
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.8, delay: 0.2 }}
-                    className="relative"
                   >
                     <ParticleGlobe />
-                    <div className="absolute bottom-4 left-4 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-black/30">
-                      <LiveDot />
-                      <span>Live Signal</span>
-                    </div>
-                    <div className="absolute bottom-4 right-4 font-mono text-[10px] uppercase tracking-[0.18em] text-black/20">
-                      LAT 1.3521 · LON 103.8198
-                    </div>
                   </motion.div>
                 </div>
               </div>
