@@ -309,7 +309,7 @@ function TerminalOutput({ lines, isLive = true }) {
   return (
     <div 
       ref={containerRef}
-      className="font-mono text-xs leading-relaxed text-black/40 h-[180px] overflow-hidden"
+      className="font-mono text-xs leading-relaxed text-black/40 h-[240px] overflow-hidden"
     >
       {visibleLines.map((line, i) => (
         <div key={i} className={line.startsWith('→') ? 'text-emerald-600' : 'text-black/40'}>
@@ -591,7 +591,7 @@ function StatusPanel() {
   }, []);
 
   return (
-    <div className="border border-black/10 bg-[#fafafa]">
+    <div className="border border-black/10 bg-[#fafafa] h-[240px] flex flex-col">
       <div className="px-3 py-2 border-b border-black/05 flex items-center justify-between">
         <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">
           System Status
@@ -600,7 +600,7 @@ function StatusPanel() {
           SG {clock}
         </div>
       </div>
-      <div className="p-3 grid grid-cols-2 gap-3">
+      <div className="p-3 grid grid-cols-2 gap-3 flex-1">
         <div className="border border-black/10 px-3 py-2">
           <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">URA LINK</div>
           <div className="mt-1 flex items-center gap-2">
@@ -620,14 +620,14 @@ function StatusPanel() {
         </div>
         <div className="border border-black/10 px-3 py-2">
           <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">TRANSACTIONS</div>
-          <div className="mt-1 font-mono text-xs text-black/60 tabular-nums">{txCount.toLocaleString('en-SG')}</div>
+          <div className="mt-1 font-mono text-xs text-black/60 tabular-nums transition-all duration-300">{txCount.toLocaleString('en-SG')}</div>
         </div>
         <div className="border border-black/10 px-3 py-2">
           <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">INTEGRITY</div>
-          <div className="mt-1 font-mono text-xs text-black/60 tabular-nums">{integrity.toFixed(1)}%</div>
+          <div className="mt-1 font-mono text-xs text-black/60 tabular-nums transition-all duration-300">{integrity.toFixed(1)}%</div>
         </div>
       </div>
-      <div className="px-3 py-2 border-t border-black/05 flex items-center justify-between">
+      <div className="px-3 py-2 border-t border-black/05 flex items-center justify-between mt-auto">
         <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/30">
           LAST SYNC: {syncAgo}s ago
         </div>
@@ -849,7 +849,7 @@ export default function LandingV3() {
 
       <main className="relative z-10">
         {/* HERO */}
-        <section className="pt-24 md:pt-28">
+        <section className="pt-24 md:pt-28 pb-16 md:pb-24">
           <div className="max-w-7xl mx-auto px-4 md:px-6">
             <div>
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
@@ -898,9 +898,9 @@ export default function LandingV3() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.6, delay: 0.3 }}
-                    className="mt-4"
+                    className="mt-8"
                   >
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
                       <TerminalOutput lines={terminalLines} isLive />
                       <StatusPanel />
                     </div>
@@ -923,7 +923,7 @@ export default function LandingV3() {
         </section>
 
         {/* STATS */}
-        <section className="py-14 md:py-18">
+        <section className="pt-24 md:pt-32 pb-14 md:pb-18">
           <div className="max-w-7xl mx-auto px-4 md:px-6">
             <SectionTitle
               eyebrow="Coverage"
