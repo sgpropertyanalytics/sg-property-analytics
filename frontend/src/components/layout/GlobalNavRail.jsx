@@ -96,8 +96,8 @@ function NavItem({ item, isActive, onClick, collapsed = false }) {
   `;
 
    // State-specific styles (INDUSTRIAL MACHINE - "Server Rack LED")
-   // Active: Emerald LED + green glow spill
-   const activeStyles = 'nav-led-glow text-white border-b border-mono-edge ring-1 ring-mono-edge';
+   // Active: nav-item-active triggers ::before pseudo-element (emerald LED + green glow)
+   const activeStyles = 'nav-item-active text-white border-b border-mono-edge ring-1 ring-mono-edge';
    // Inactive: Dimmed switches (#525252 / stone-600) with instant light-on hover
    const inactiveStyles = 'text-[#525252] hover:text-white hover:bg-white/[0.05] transition-none';
    const comingSoonStyles = 'text-mono-mid cursor-not-allowed opacity-60';
@@ -121,10 +121,8 @@ function NavItem({ item, isActive, onClick, collapsed = false }) {
       aria-current={isActive ? 'page' : undefined}
       aria-label={item.label}
     >
-      {/* The Physical LED - Emerald Green with breathing glow (Server Rack Indicator) */}
-      {isActive && (
-        <span className="nav-led-active" />
-      )}
+      {/* The Physical LED - Emerald Green with breathing glow (Server Rack Indicator)
+          Rendered via CSS ::before pseudo-element on .nav-item-active class */}
 
       {/* Icon - full opacity when active, dimmed when inactive (INDUSTRIAL MACHINE) */}
        <span className={`
