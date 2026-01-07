@@ -454,7 +454,7 @@ function NewVsResaleChartBase({ height = 350 }) {
       debugInfo={debugInfo}
     >
       <div
-        className="weapon-card hud-corner overflow-hidden flex flex-col"
+        className="weapon-card hud-corner weapon-shadow overflow-hidden flex flex-col"
         style={{ height: cardHeight }}
       >
       {/* Header - shrink-0 */}

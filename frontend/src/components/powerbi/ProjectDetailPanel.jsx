@@ -404,25 +404,25 @@ function ProjectDetailPanelInner({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="weapon-card weapon-shadow max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-[#94B4C1]/30 flex items-start justify-between">
+        <div className="px-6 py-4 border-b border-brand-sky/30 flex items-start justify-between">
           <div>
-            <h2 className="text-xl font-semibold text-[#213448]">
+            <h2 className="text-xl font-semibold text-brand-navy">
               {selectedProject.name}
             </h2>
             {districtName && (
-              <p className="text-sm text-[#547792] mt-1">
+              <p className="text-sm text-brand-blue mt-1">
                 {selectedProject.district} - {districtName.split(',')[0]}
               </p>
             )}
           </div>
           <button
             onClick={clearSelectedProject}
-            className="p-2 hover:bg-[#EAE0CF] rounded-lg transition-colors"
+            className="p-2 hover:bg-brand-sand rounded-none transition-none"
             title="Close"
           >
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#547792]">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-brand-blue">
               <path d="M15 5L5 15" />
               <path d="M5 5l10 10" />
             </svg>
@@ -433,7 +433,7 @@ function ProjectDetailPanelInner({
         <div className="flex-1 overflow-y-auto p-6">
           {loading ? (
             <div className="flex items-center justify-center h-64">
-              <div className="text-[#547792]">Loading project data...</div>
+              <div className="text-brand-blue">Loading project data...</div>
             </div>
           ) : status === 'error' ? (
             <div className="flex items-center justify-center h-64">
@@ -448,7 +448,7 @@ function ProjectDetailPanelInner({
             <div className="space-y-6">
               {/* Inventory Stats - Show when total units available */}
               {inventoryData?.total_units ? (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="bg-green-50 border border-green-200 rounded-none p-4">
                   <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                     <div>
                       <p className="text-sm text-green-700">Total Units</p>
@@ -498,28 +498,28 @@ function ProjectDetailPanelInner({
                 <>
                   {/* Summary Stats - Fallback when no inventory data */}
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="bg-[#EAE0CF]/30 rounded-lg p-4">
+                    <div className="bg-brand-sand/30 rounded-none p-4">
                       <p className="text-sm text-[#547792]">Cumulative New Sales</p>
                       <p className="text-2xl font-semibold text-[#213448]">
                         {salesByType.newSale.toLocaleString()}
                       </p>
                       <p className="text-xs text-[#547792] mt-1">Units sold by developer</p>
                     </div>
-                    <div className="bg-[#EAE0CF]/30 rounded-lg p-4">
+                    <div className="bg-brand-sand/30 rounded-none p-4">
                       <p className="text-sm text-[#547792]">Cumulative Resales</p>
                       <p className="text-2xl font-semibold text-[#213448]">
                         {salesByType.resale.toLocaleString()}
                       </p>
                       <p className="text-xs text-[#547792] mt-1">Secondary market</p>
                     </div>
-                    <div className="bg-[#EAE0CF]/30 rounded-lg p-4">
+                    <div className="bg-brand-sand/30 rounded-none p-4">
                       <p className="text-sm text-[#547792]">Total Observations</p>
                       <p className="text-2xl font-semibold text-[#213448]">
                         {(salesByType.newSale + salesByType.resale).toLocaleString()}
                       </p>
                       <p className="text-xs text-[#547792] mt-1">All time</p>
                     </div>
-                    <div className="bg-[#EAE0CF]/30 rounded-lg p-4">
+                    <div className="bg-brand-sand/30 rounded-none p-4">
                       <p className="text-sm text-[#547792]">Median PSF</p>
                       <p className="text-2xl font-semibold text-[#213448]">
                         ${overallMedianPsf.toLocaleString()}
@@ -529,7 +529,7 @@ function ProjectDetailPanelInner({
                   </div>
 
                   {/* Inventory Data Not Available Note */}
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                  <div className="bg-gray-50 border border-gray-200 rounded-none p-3">
                     <p className="text-xs text-gray-600">
                       <strong>Note:</strong> Total units data not available for this project.
                       Unsold inventory cannot be calculated without total project units from URA/PropertyGuru/EdgeProp.
@@ -539,8 +539,8 @@ function ProjectDetailPanelInner({
               )}
 
               {/* Trend Chart */}
-              <div className="weapon-card p-4">
-                <h3 className="font-semibold text-[#213448] mb-4">Price Trend Over Time</h3>
+              <div className="weapon-card hud-corner weapon-shadow p-4">
+                <h3 className="font-semibold text-brand-navy mb-4">Price Trend Over Time</h3>
                 <div style={{ height: 250 }}>
                   {trendData.length > 0 ? (
                     <Line data={trendChartData} options={trendChartOptions} />
@@ -553,8 +553,8 @@ function ProjectDetailPanelInner({
               </div>
 
               {/* Bedroom Breakdown */}
-              <div className="weapon-card p-4">
-                <h3 className="font-semibold text-[#213448] mb-4">Price by Bedroom Type</h3>
+              <div className="weapon-card hud-corner weapon-shadow p-4">
+                <h3 className="font-semibold text-brand-navy mb-4">Price by Bedroom Type</h3>
                 <div style={{ height: 200 }}>
                   {priceData.length > 0 ? (
                     <Bar data={bedroomChartData} options={bedroomChartOptions} />
@@ -612,11 +612,11 @@ function ProjectDetailPanelInner({
               </div>
 
               {/* Price Distribution Histogram */}
-              <div className="weapon-card p-4">
+              <div className="weapon-card hud-corner weapon-shadow p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-semibold text-[#213448]">Price Distribution</h3>
+                  <h3 className="font-semibold text-brand-navy">Price Distribution</h3>
                   {histogramModeBucket && (
-                    <span className="text-xs text-[#213448]">Mode: {histogramModeBucket.label}</span>
+                    <span className="text-xs text-brand-navy">Mode: {histogramModeBucket.label}</span>
                   )}
                 </div>
                 {histogramBuckets.length > 0 && (

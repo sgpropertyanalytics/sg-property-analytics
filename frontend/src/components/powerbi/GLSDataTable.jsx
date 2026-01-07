@@ -183,7 +183,7 @@ export function GLSDataTable({ height = 400 }) {
   }, [safeData]);
 
   return (
-    <div ref={containerRef} id="gls-data-table" className="weapon-card hud-corner overflow-hidden">
+    <div ref={containerRef} id="gls-data-table" className="weapon-card hud-corner weapon-shadow overflow-hidden">
       {/* Header */}
       <div className="px-4 py-3 border-b border-mono-muted">
         <div className="flex items-center justify-between mb-2">

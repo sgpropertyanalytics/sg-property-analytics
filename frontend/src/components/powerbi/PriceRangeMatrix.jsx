@@ -89,7 +89,7 @@ export function PriceRangeMatrix({
       skeleton="grid"
       height={300}
     >
-    <div className="weapon-card hud-corner overflow-hidden">
+    <div className="weapon-card hud-corner weapon-shadow overflow-hidden">
       {/* Header */}
       <div className="terminal-header px-4 py-3 border-b border-mono-muted">
         <div className="flex items-center justify-between">

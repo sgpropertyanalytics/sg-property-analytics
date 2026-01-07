@@ -331,7 +331,7 @@ function BeadsChartBase({
       debugInfo={debugInfo}
     >
       <div
-        className="weapon-card hud-corner overflow-hidden flex flex-col relative"
+        className="weapon-card hud-corner weapon-shadow overflow-hidden flex flex-col relative"
         style={{ height: cardHeight }}
       >
         <DebugOverlay />

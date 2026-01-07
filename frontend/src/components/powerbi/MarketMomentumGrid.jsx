@@ -109,7 +109,7 @@ export function MarketMomentumGrid({ saleType = SaleType.RESALE }) {
       skeleton="grid"
       height={400}
     >
-    <div className="weapon-card hud-corner overflow-hidden">
+    <div className="weapon-card hud-corner weapon-shadow overflow-hidden">
       {/* Header */}
       <div className="px-3 md:px-4 py-3 border-b border-mono-muted">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
