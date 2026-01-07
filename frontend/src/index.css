@@ -31,8 +31,8 @@
   /* Machined metal borders */
 
   /* ----- CANVAS (Light Content) ----- */
-  --color-canvas: #FAFAFA;
-  /* Main content background */
+  --color-canvas: #F5F7FA;
+  /* Main content background - The Grey Wall */
   --color-canvas-paper: #FFFFFF;
   /* Cards, modals */
   --color-canvas-grid: #E5E7EB;
