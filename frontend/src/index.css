@@ -996,33 +996,18 @@ input[type="range"].slider-thumb::-moz-range-progress {
 
 /* ====== Server Rack LED - Active Nav Indicator ====== */
 
-/* LED Breathing animation - opacity transitions (100% → 60% → 100%) */
-@keyframes led-breathe {
-  0%, 100% {
-    opacity: 1;
-    box-shadow: 0 0 5px rgba(16, 185, 129, 0.5);
-  }
-  50% {
-    opacity: 0.6;
-    box-shadow: 0 0 12px rgba(16, 185, 129, 0.8);
-  }
-}
-
-/* The Physical LED - Emerald Green with breathing glow (CSS Pseudo-element) */
-.nav-item-active::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background-color: #10B981; /* Emerald 500 */
-  animation: led-breathe 3s ease-in-out infinite;
-  z-index: 10;
-}
-
-/* The Green Glow Spill (subtle gradient overlay) */
-.nav-item-active {
-  background: linear-gradient(90deg, rgba(16, 185, 129, 0.1) 0%, transparent 100%);
-}
+/*
+ * Physical LED implementation using Tailwind utility classes (GlobalNavRail.jsx):
+ *
+ * The Source:     border-l-[3px] border-emerald-500
+ * The Spill:      bg-gradient-to-r from-emerald-500/10 to-transparent
+ * The Reflection: shadow-[inset_10px_0_15px_-3px_rgba(16,185,129,0.2)]
+ * Icon Glow:      text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]
+ *
+ * This approach treats the LED as an actual light source with physics:
+ * - Border = the physical bulb
+ * - Gradient = light hitting dust/air
+ * - Inset shadow = light reflecting off metal chassis floor
+ * - Drop shadow = icon illuminated by LED
+ */
 
