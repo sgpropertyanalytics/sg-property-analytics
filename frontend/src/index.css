@@ -51,6 +51,12 @@
   --color-region-rcr: var(--color-brand-blue);
   --color-region-ocr: var(--color-brand-sky);
 
+  /* Liquidity Palette (Exit Risk / Turnover zones) */
+  --color-liquidity-low: #F59E0B;      /* Soft amber - Low Liquidity */
+  --color-liquidity-healthy: #10B981;  /* Muted green - Healthy Liquidity */
+  --color-liquidity-high: #EF4444;     /* Muted red - Elevated Turnover */
+  --color-liquidity-unknown: #94B4C1;  /* Sky blue - Unknown */
+
   /* Supply Palette */
   --color-supply-unsold: #6b4226;
   --color-supply-upcoming: #9c6644;
