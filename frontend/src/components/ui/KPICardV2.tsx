@@ -1,6 +1,5 @@
 import React from 'react';
 import { HelpTooltip } from './HelpTooltip';
-import { getKpiField, KpiField } from '../../schemas/apiContract';
 import { FrostOverlay } from '../common/loading';
 
 /**
@@ -46,9 +45,9 @@ interface KPICardV2Props {
 
 // Badge color mapping
 const BADGE_COLORS = {
-  green: 'text-green-600',
-  red: 'text-red-600',
-  gray: 'text-gray-500',
+  green: 'text-status-live',
+  red: 'text-status-negative',
+  gray: 'text-mono-light',
 } as const;
 
 /**
@@ -88,9 +87,9 @@ export function KPIHeroContent({
   change,
   previous,
 }: KPIHeroContentProps) {
-  const changeColor = change?.direction === 'up' ? 'text-green-600'
-    : change?.direction === 'down' ? 'text-red-600'
-    : 'text-gray-500';
+  const changeColor = change?.direction === 'up' ? 'text-status-live'
+    : change?.direction === 'down' ? 'text-status-negative'
+    : 'text-mono-light';
   const arrow = change?.direction === 'up' ? '▲'
     : change?.direction === 'down' ? '▼'
     : '—';
@@ -102,11 +101,15 @@ export function KPIHeroContent({
     <>
       {/* Main value row with badge */}
       <div
-        className="text-[22px] sm:text-[28px] font-bold text-[#213448] font-mono tabular-nums truncate"
+        className="text-[22px] sm:text-[28px] font-data font-bold text-mono-ink tracking-tight truncate"
         title={badge ? `${value} ${badge.text}` : String(value)}
       >
         {value}
-        {unit && <span className="text-sm sm:text-base font-normal ml-0.5">{unit}</span>}
+        {unit && (
+          <span className="ml-1 text-[10px] sm:text-xs font-mono uppercase tracking-[0.18em] text-mono-mid">
+            {unit}
+          </span>
+        )}
         {badge && (
           <span className={`ml-1.5 text-xs font-bold uppercase tracking-wider whitespace-nowrap ${BADGE_COLORS[badge.color]}`}>
             {badge.text.split(' ')[0]}
@@ -121,7 +124,7 @@ export function KPIHeroContent({
       )}
       {/* Previous value row */}
       {previous && (
-        <div className="text-[10px] sm:text-xs text-gray-500">
+        <div className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.18em] text-mono-light">
           {previous.label || 'Prev:'} {previous.value}
         </div>
       )}
@@ -150,9 +153,8 @@ export function KPICardV2({
     return (
       <div
         className={`
-          bg-card border border-[#94B4C1]/50 rounded-lg overflow-hidden
+          weapon-card hud-corner weapon-shadow overflow-hidden
           min-h-40
-          shadow-sm
           ${className}
         `.trim()}
       >
@@ -164,9 +166,9 @@ export function KPICardV2({
   return (
     <div
       className={`
-        bg-card border border-[#94B4C1]/50 rounded-lg p-4 sm:p-5
+        weapon-card hud-corner weapon-shadow p-4 sm:p-5
         min-h-40 flex flex-col
-        shadow-sm hover:shadow-md transition-shadow duration-200
+        transition-none
         ${className}
       `.trim()}
     >
@@ -174,7 +176,7 @@ export function KPICardV2({
       <div className="flex-shrink-0 mb-2">
         <div>
           <div className="flex items-center gap-1">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#547792]">
+            <span className="terminal-header text-mono-mid">
               {title}
             </span>
             {combinedTooltip && (
@@ -193,7 +195,8 @@ export function KPICardV2({
       <div className="flex-1 flex items-end pb-2 min-w-0">
         {typeof value === 'string' ? (
           <div className="truncate" title={badge ? `${value} ${badge.text}` : value}>
-            <span className="text-[22px] sm:text-[32px] font-medium text-[#0f172a] font-mono tabular-nums leading-none">
+             <span className="text-[22px] sm:text-[32px] font-data font-semibold text-mono-ink leading-none">
+
               {value}
             </span>
             {badge && (

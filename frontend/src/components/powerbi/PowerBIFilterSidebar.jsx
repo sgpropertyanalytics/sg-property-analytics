@@ -119,7 +119,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
   // Single row layout: Property filters | Time Duration | Granularity | Reset
   if (layout === 'horizontal') {
     return (
-      <div className="-mx-3 md:-mx-4 lg:-mx-6 px-3 md:px-4 lg:px-6 py-3 bg-[#EAE0CF]/70 backdrop-blur-md border-b border-[#94B4C1]/30 shadow-sm">
+      <div className="-mx-3 md:-mx-4 lg:-mx-6 px-3 md:px-4 lg:px-6 py-3 bg-card/85 backdrop-blur-sm border-b border-mono-muted weapon-noise">
         <div className="flex flex-wrap lg:flex-nowrap items-center justify-start gap-3">
           {/* Property Filters - Region + District + Bedroom */}
           <div className="flex items-center gap-3 flex-shrink-0 min-w-0">
@@ -129,7 +129,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
               <button
                 type="button"
                 onClick={() => setSegments([])}
-                className={`px-4 py-2 text-sm font-medium transition-all min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#213448] focus-visible:ring-inset ${
+                className={`px-4 py-2 text-sm font-medium transition-none min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#213448] focus-visible:ring-inset ${
                   filters.segments.length === 0
                     ? 'bg-[#213448] text-white shadow-inner'
                     : 'bg-transparent text-slate-500 hover:bg-white/50 hover:text-slate-900'
@@ -142,7 +142,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                   type="button"
                   key={seg}
                   onClick={(e) => handleFilterClick(e, seg, filters.segments, setSegments, toggleSegment)}
-                  className={`px-4 py-2 text-sm font-medium transition-all min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#213448] focus-visible:ring-inset ${
+                  className={`px-4 py-2 text-sm font-medium transition-none min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#213448] focus-visible:ring-inset ${
                     filters.segments.includes(seg)
                       ? 'bg-[#213448] text-white shadow-inner'
                       : 'bg-transparent text-slate-500 hover:bg-white/50 hover:text-slate-900'
@@ -178,7 +178,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
               <button
                 type="button"
                 onClick={() => setBedroomTypes([])}
-                className={`px-3 py-2 text-sm font-medium transition-all min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#213448] focus-visible:ring-inset ${
+                className={`px-3 py-2 text-sm font-medium transition-none min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#213448] focus-visible:ring-inset ${
                   filters.bedroomTypes.length === 0
                     ? 'bg-[#213448] text-white shadow-inner'
                     : 'bg-transparent text-slate-500 hover:bg-white/50 hover:text-slate-900'
@@ -191,7 +191,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                   type="button"
                   key={br}
                   onClick={(e) => handleFilterClick(e, br, filters.bedroomTypes, setBedroomTypes, toggleBedroomType)}
-                  className={`px-3 py-2 text-sm font-medium transition-all min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#213448] focus-visible:ring-inset ${
+                  className={`px-3 py-2 text-sm font-medium transition-none min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#213448] focus-visible:ring-inset ${
                     filters.bedroomTypes.includes(br)
                       ? 'bg-[#213448] text-white shadow-inner'
                       : 'bg-transparent text-slate-500 hover:bg-white/50 hover:text-slate-900'
@@ -215,7 +215,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                 key={opt.id}
                 onClick={(e) => { e.preventDefault(); handlePresetClick(opt.id); }}
                 disabled={filterOptions.loading}
-                className={`px-3 py-2 text-sm font-medium transition-all min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#213448] focus-visible:ring-inset ${
+                className={`px-3 py-2 text-sm font-medium transition-none min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#213448] focus-visible:ring-inset ${
                   filterOptions.loading
                     ? 'bg-gray-100/80 text-gray-400 cursor-wait'
                     : currentPreset === opt.id
@@ -238,7 +238,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
           {activeFilterCount > 0 && (
             <button
               onClick={handleResetFilters}
-              className="min-h-[44px] px-3 py-2 text-sm font-medium text-[#547792] hover:text-[#213448] hover:underline transition-colors flex-shrink-0 ml-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#213448] focus-visible:ring-offset-2 rounded"
+              className="min-h-[44px] px-3 py-2 text-sm font-medium text-[#547792] hover:text-[#213448] hover:underline transition-none flex-shrink-0 ml-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#213448] focus-visible:ring-offset-2 rounded"
             >
               Reset
             </button>
@@ -260,14 +260,14 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
             </svg>
             <span className="font-semibold text-[#213448]">Filters</span>
             {activeFilterCount > 0 && (
-              <span className="bg-[#547792] text-white text-xs px-2 py-0.5 rounded-full">
+              <span className="bg-[#547792] text-white text-xs px-2 py-0.5 rounded-none">
                 {activeFilterCount}
               </span>
             )}
           </div>
           <button
             onClick={onClose}
-            className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-[#EAE0CF]/30 active:bg-[#EAE0CF]/50 transition-colors"
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-none hover:bg-[#EAE0CF]/30 active:bg-[#EAE0CF]/50 transition-none"
             aria-label="Close filters"
           >
             <svg className="w-6 h-6 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -301,7 +301,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                     type="button"
                     key={seg}
                     onClick={(e) => handleFilterClick(e, seg, filters.segments, setSegments, toggleSegment)}
-                    className={`min-h-[44px] py-2.5 text-sm rounded-md border transition-colors ${
+                    className={`min-h-[44px] py-2.5 text-sm rounded-none border transition-none ${
                       filters.segments.includes(seg)
                         ? 'bg-[#547792] text-white border-[#547792]'
                         : filters.segments.length === 0
@@ -354,7 +354,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                   type="button"
                   key={br}
                   onClick={(e) => handleFilterClick(e, br, filters.bedroomTypes, setBedroomTypes, toggleBedroomType)}
-                  className={`min-h-[44px] py-2 text-sm rounded-md border transition-colors ${
+                  className={`min-h-[44px] py-2 text-sm rounded-none border transition-none ${
                     filters.bedroomTypes.includes(br)
                       ? 'bg-[#547792] text-white border-[#547792]'
                       : filters.bedroomTypes.length === 0
@@ -390,7 +390,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                   key={opt.id}
                   onClick={(e) => { e.preventDefault(); handlePresetClick(opt.id); }}
                   disabled={filterOptions.loading}
-                  className={`min-h-[44px] py-2 text-sm rounded-md border transition-colors ${
+                  className={`min-h-[44px] py-2 text-sm rounded-none border transition-none ${
                     filterOptions.loading
                       ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-wait'
                       : currentPreset === opt.id
@@ -422,11 +422,11 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
             <button
               type="button"
               onClick={(e) => { e.preventDefault(); setShowAdvanced(!showAdvanced); }}
-              className="flex items-center gap-1 mt-3 text-xs text-[#547792] hover:text-[#213448] transition-colors"
+              className="flex items-center gap-1 mt-3 text-xs text-[#547792] hover:text-[#213448] transition-none"
             >
               <span>Custom dates</span>
               <svg
-                className={`w-3 h-3 transition-transform ${showAdvanced ? 'rotate-180' : ''}`}
+                className={`w-3 h-3 transition-none ${showAdvanced ? 'rotate-180' : ''}`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -442,7 +442,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                     type="month"
                     value={timeFilter.start ? timeFilter.start.substring(0, 7) : ''}
                     onChange={(e) => handleCustomDateChange(e.target.value ? `${e.target.value}-01` : null, timeFilter.end)}
-                    className="flex-1 px-2 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-2 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-none focus:outline-none focus:ring-2 focus:ring-blue-500"
                     min={filterOptions.dateRange.min ? filterOptions.dateRange.min.substring(0, 7) : undefined}
                     max={filterOptions.dateRange.max ? filterOptions.dateRange.max.substring(0, 7) : undefined}
                   />
@@ -461,7 +461,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                         handleCustomDateChange(timeFilter.start, null);
                       }
                     }}
-                    className="flex-1 px-2 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-2 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-none focus:outline-none focus:ring-2 focus:ring-blue-500"
                     min={filterOptions.dateRange.min ? filterOptions.dateRange.min.substring(0, 7) : undefined}
                     max={filterOptions.dateRange.max ? filterOptions.dateRange.max.substring(0, 7) : undefined}
                   />
@@ -490,14 +490,14 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
             {activeFilterCount > 0 && (
               <button
                 onClick={handleResetFilters}
-                className="flex-1 min-h-[48px] px-4 py-3 rounded-lg border border-[#94B4C1] text-[#547792] font-medium hover:border-[#547792] active:bg-[#EAE0CF]/30 transition-colors"
+                className="flex-1 min-h-[48px] px-4 py-3 rounded-none border border-[#94B4C1] text-[#547792] font-medium hover:border-[#547792] active:bg-[#EAE0CF]/30 transition-none"
               >
                 Reset
               </button>
             )}
             <button
               onClick={onClose}
-              className="flex-1 min-h-[48px] px-4 py-3 rounded-lg bg-[#213448] text-white font-medium hover:bg-[#547792] active:scale-[0.98] transition-all"
+              className="flex-1 min-h-[48px] px-4 py-3 rounded-none bg-[#213448] text-white font-medium hover:bg-[#547792] active:scale-[0.98] transition-none"
             >
               Apply
             </button>
@@ -518,7 +518,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
           </svg>
         </div>
         {activeFilterCount > 0 && (
-          <span className="mt-2 bg-[#547792] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+          <span className="mt-2 bg-[#547792] text-white text-xs rounded-none w-5 h-5 flex items-center justify-center">
             {activeFilterCount}
           </span>
         )}
@@ -536,7 +536,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
           </svg>
           <span className="font-semibold text-[#213448]">Filters</span>
           {activeFilterCount > 0 && (
-            <span className="bg-[#547792] text-white text-xs px-2 py-0.5 rounded-full">
+            <span className="bg-[#547792] text-white text-xs px-2 py-0.5 rounded-none">
               {activeFilterCount}
             </span>
           )}
@@ -546,7 +546,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
           <button
             type="button"
             onClick={(e) => { e.preventDefault(); handleResetFilters(); }}
-            className="text-xs text-[#547792] hover:text-[#213448] px-2 py-1 rounded hover:bg-[#94B4C1]/30 transition-colors"
+            className="text-xs text-[#547792] hover:text-[#213448] px-2 py-1 rounded hover:bg-[#94B4C1]/30 transition-none"
           >
             Reset
           </button>
@@ -580,7 +580,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                   type="button"
                   key={seg}
                   onClick={(e) => handleFilterClick(e, seg, filters.segments, setSegments, toggleSegment)}
-                  className={`min-h-[44px] py-2.5 text-sm rounded-md border transition-colors ${
+                  className={`min-h-[44px] py-2.5 text-sm rounded-none border transition-none ${
                     filters.segments.includes(seg)
                       ? 'bg-[#547792] text-white border-[#547792]'
                       : filters.segments.length === 0
@@ -635,7 +635,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                 type="button"
                 key={br}
                 onClick={(e) => handleFilterClick(e, br, filters.bedroomTypes, setBedroomTypes, toggleBedroomType)}
-                className={`min-h-[44px] py-2 text-sm rounded-md border transition-colors ${
+                className={`min-h-[44px] py-2 text-sm rounded-none border transition-none ${
                   filters.bedroomTypes.includes(br)
                     ? 'bg-[#547792] text-white border-[#547792]'
                     : filters.bedroomTypes.length === 0
@@ -673,7 +673,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                 key={opt.id}
                 onClick={(e) => { e.preventDefault(); handlePresetClick(opt.id); }}
                 disabled={filterOptions.loading}
-                className={`min-h-[44px] py-2 text-sm rounded-md border transition-colors ${
+                className={`min-h-[44px] py-2 text-sm rounded-none border transition-none ${
                   filterOptions.loading
                     ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-wait'
                     : currentPreset === opt.id
@@ -710,11 +710,11 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
           <button
             type="button"
             onClick={(e) => { e.preventDefault(); setShowAdvanced(!showAdvanced); }}
-            className="flex items-center gap-1 mt-3 text-xs text-[#547792] hover:text-[#213448] transition-colors"
+            className="flex items-center gap-1 mt-3 text-xs text-[#547792] hover:text-[#213448] transition-none"
           >
             <span>Custom dates</span>
             <svg
-              className={`w-3 h-3 transition-transform ${showAdvanced ? 'rotate-180' : ''}`}
+              className={`w-3 h-3 transition-none ${showAdvanced ? 'rotate-180' : ''}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -732,7 +732,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                   type="month"
                   value={timeFilter.start ? timeFilter.start.substring(0, 7) : ''}
                   onChange={(e) => handleCustomDateChange(e.target.value ? `${e.target.value}-01` : null, timeFilter.end)}
-                  className="flex-1 px-2 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 px-2 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-none focus:outline-none focus:ring-2 focus:ring-blue-500"
                   min={filterOptions.dateRange.min ? filterOptions.dateRange.min.substring(0, 7) : undefined}
                   max={filterOptions.dateRange.max ? filterOptions.dateRange.max.substring(0, 7) : undefined}
                 />
@@ -753,7 +753,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                       handleCustomDateChange(timeFilter.start, null);
                     }
                   }}
-                  className="flex-1 px-2 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 px-2 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-none focus:outline-none focus:ring-2 focus:ring-blue-500"
                   min={filterOptions.dateRange.min ? filterOptions.dateRange.min.substring(0, 7) : undefined}
                   max={filterOptions.dateRange.max ? filterOptions.dateRange.max.substring(0, 7) : undefined}
                 />
@@ -771,15 +771,15 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
       </div>
 
       {/* Footer */}
-      <div className="px-4 py-3 border-t border-[#94B4C1] bg-[#EAE0CF]">
+      <div className="px-4 py-3 border-t border-mono-muted bg-mono-canvas">
         <button
           type="button"
           onClick={(e) => { e.preventDefault(); handleResetFilters(); }}
           disabled={activeFilterCount === 0}
-          className={`w-full min-h-[44px] py-2.5 text-sm rounded-md transition-colors ${
+          className={`w-full min-h-[44px] px-4 py-2.5 rounded-none border transition-none font-mono text-[11px] uppercase tracking-[0.18em] ${
             activeFilterCount > 0
-              ? 'bg-[#213448] text-white hover:bg-[#547792]'
-              : 'bg-[#94B4C1]/30 text-[#547792] cursor-not-allowed'
+              ? 'bg-mono-dark text-white border-mono-dark hover:bg-mono-ink'
+              : 'bg-mono-muted/40 text-mono-light border-mono-muted cursor-not-allowed'
           }`}
         >
           Reset All Filters
@@ -793,23 +793,25 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
 
 function FilterSection({ title, icon, expanded, onToggle, activeCount, children }) {
   return (
-    <div className="border-b border-[#94B4C1]/50">
+    <div className="border-b border-mono-muted">
       <button
         type="button"
         onClick={(e) => { e.preventDefault(); onToggle(); }}
-        className="w-full px-4 py-3 flex items-center justify-between hover:bg-[#94B4C1]/20 transition-colors"
+        className="w-full px-4 py-3 flex items-center justify-between hover:bg-mono-muted/40 transition-none"
       >
-        <div className="flex items-center gap-2">
-          <span className="text-[#547792]">{icon}</span>
-          <span className="font-medium text-[#213448]">{title}</span>
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-mono-mid flex-shrink-0">{icon}</span>
+          <span className="min-w-0 truncate font-mono text-[11px] uppercase tracking-[0.18em] text-mono-dark">
+            {title}
+          </span>
           {activeCount > 0 && (
-            <span className="bg-[#547792]/20 text-[#213448] text-xs px-1.5 py-0.5 rounded">
+            <span className="flex-shrink-0 bg-mono-muted/60 text-mono-dark text-[10px] font-mono uppercase tracking-[0.18em] px-1.5 py-0.5 rounded-none border border-mono-muted">
               {activeCount}
             </span>
           )}
         </div>
         <svg
-          className={`w-4 h-4 text-[#547792] transition-transform ${expanded ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 text-mono-mid transition-none flex-shrink-0 ${expanded ? 'rotate-180' : ''}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -829,7 +831,7 @@ function FilterSection({ title, icon, expanded, onToggle, activeCount, children 
 function FilterGroup({ label, children }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-[#547792] mb-1.5">{label}</label>
+      <label className="terminal-header mb-1.5">{label}</label>
       {children}
     </div>
   );
@@ -879,12 +881,12 @@ function MultiSelectDropdown({ options, selected, onChange, placeholder, searcha
 
   // Styles differ based on segmentedStyle prop
   const buttonClasses = segmentedStyle
-    ? `${compact ? 'min-w-[140px]' : 'w-full'} min-w-0 px-3 py-2 min-h-[44px] text-sm font-medium border border-gray-300/80 rounded-lg bg-white/60 backdrop-blur-sm text-left flex items-center justify-between shadow-sm focus:outline-none focus:ring-2 focus:ring-[#213448]`
-    : `${compact ? 'min-w-[140px]' : 'w-full'} min-w-0 px-3 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-md bg-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-blue-500`;
+    ? `${compact ? 'min-w-[140px]' : 'w-full'} min-w-0 px-3 py-2 min-h-[44px] text-sm font-medium border border-gray-300/80 rounded-none bg-white/60 backdrop-blur-sm text-left flex items-center justify-between shadow-sm focus:outline-none focus:ring-2 focus:ring-[#213448]`
+    : `${compact ? 'min-w-[140px]' : 'w-full'} min-w-0 px-3 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-none bg-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-blue-500`;
 
   const dropdownClasses = segmentedStyle
-    ? `absolute z-50 ${compact ? 'w-64' : 'w-full'} mt-1 bg-white/95 backdrop-blur-sm border border-gray-300/80 rounded-lg shadow-lg max-h-60 overflow-hidden`
-    : `absolute z-50 ${compact ? 'w-64' : 'w-full'} mt-1 bg-white border border-slate-300 rounded-md shadow-lg max-h-60 overflow-hidden`;
+    ? `absolute z-50 ${compact ? 'w-64' : 'w-full'} mt-1 bg-white/95 backdrop-blur-sm border border-gray-300/80 rounded-none shadow-lg max-h-60 overflow-hidden`
+    : `absolute z-50 ${compact ? 'w-64' : 'w-full'} mt-1 bg-white border border-slate-300 rounded-none shadow-lg max-h-60 overflow-hidden`;
 
   return (
     <div className={`relative multi-select-dropdown ${compact ? '' : 'w-full'}`}>
@@ -897,7 +899,7 @@ function MultiSelectDropdown({ options, selected, onChange, placeholder, searcha
           {getDisplayText()}
         </span>
         <svg
-          className={`w-4 h-4 text-slate-400 transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 text-slate-400 transition-none flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
