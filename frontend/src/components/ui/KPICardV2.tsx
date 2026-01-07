@@ -101,7 +101,7 @@ export function KPIHeroContent({
     <>
       {/* Main value row with badge */}
       <div
-        className="text-2xl sm:text-3xl font-data font-bold text-mono-ink tracking-tight truncate"
+        className="text-[22px] sm:text-[28px] font-data font-bold text-mono-ink tracking-tight truncate"
         title={badge ? `${value} ${badge.text}` : String(value)}
       >
         {value}
@@ -196,7 +196,7 @@ export function KPICardV2({
       <div className="flex-1 flex items-end pb-2 min-w-0">
         {typeof value === 'string' ? (
           <div className="truncate" title={badge ? `${value} ${badge.text}` : value}>
-            <span className="text-3xl sm:text-4xl font-bold text-gray-900 leading-none tracking-tight">
+            <span className="text-[28px] sm:text-[36px] font-bold text-gray-900 leading-none tracking-tight">
 
               {value}
             </span>
