@@ -12,6 +12,9 @@
 // =============================================================================
 
 export const MONO = {
+  void: '#0A0A0A',      // The void - nav background (denser than dark)
+  surface: '#1A1A1A',   // Elevated surfaces on void
+  edge: '#333333',      // Machined metal borders
   ink: '#000000',       // Pure black - headers, borders, emphasis
   dark: '#171717',      // Near-black - active states (inverted BG)
   mid: '#525252',       // Medium gray - body text
