@@ -264,12 +264,12 @@ function NewVsResaleChartBase({ height = 350 }) {
       {
         label: SaleTypeLabels[SaleType.NEW_SALE],
         data: newLaunchPrice,
-        borderColor: '#213448',  // Deep Navy - primary palette color
+        borderColor: '#0F172A',  // Deep Navy - primary palette color
         backgroundColor: 'rgba(33, 52, 72, 0.1)',
         borderWidth: 2,
         pointRadius: 0,
         pointHoverRadius: 4,
-        pointHoverBackgroundColor: '#213448',
+        pointHoverBackgroundColor: '#0F172A',
         pointHoverBorderColor: '#fff',
         tension: 0.3,
         fill: false,
@@ -278,13 +278,13 @@ function NewVsResaleChartBase({ height = 350 }) {
       {
         label: PropertyAgeBucketLabels[PropertyAgeBucket.RECENTLY_TOP],
         data: resalePrice,
-        borderColor: '#547792',  // Ocean Blue - secondary palette color
+        borderColor: '#334155',  // Ocean Blue - secondary palette color
         backgroundColor: 'rgba(84, 119, 146, 0.1)',
         borderWidth: 2,
         borderDash: [5, 5],
         pointRadius: 0,
         pointHoverRadius: 4,
-        pointHoverBackgroundColor: '#547792',
+        pointHoverBackgroundColor: '#334155',
         pointHoverBorderColor: '#fff',
         tension: 0.3,
         fill: false,
@@ -464,7 +464,7 @@ function NewVsResaleChartBase({ height = 350 }) {
             New Sale vs Recently TOP (4-7 yrs)
             {/* Subtle spinner when fetching new data in background */}
             {isFetching && (
-              <span className="w-3 h-3 border-2 border-brand-blue/30 border-t-[#547792] rounded-full animate-spin" />
+              <span className="w-3 h-3 border-2 border-brand-blue/30 border-t-slate-700 rounded-full animate-spin" />
             )}
           </h3>
           <p className="text-xs text-brand-blue mt-0.5">
@@ -554,13 +554,13 @@ function NewVsResaleChartBase({ height = 350 }) {
       <div className="flex justify-center gap-6 py-2 shrink-0">
         <div className="flex items-center gap-2">
           <svg width="32" height="8">
-            <line x1="0" y1="4" x2="32" y2="4" stroke="#213448" strokeWidth={2} />
+            <line x1="0" y1="4" x2="32" y2="4" stroke="#0F172A" strokeWidth={2} />
           </svg>
           <span className="text-xs text-[#374151]">{SaleTypeLabels[SaleType.NEW_SALE]}</span>
         </div>
         <div className="flex items-center gap-2">
           <svg width="32" height="8">
-            <line x1="0" y1="4" x2="32" y2="4" stroke="#547792" strokeWidth={2} strokeDasharray="8 4" />
+            <line x1="0" y1="4" x2="32" y2="4" stroke="#334155" strokeWidth={2} strokeDasharray="8 4" />
           </svg>
           <span className="text-xs text-[#374151]">{PropertyAgeBucketLabels[PropertyAgeBucket.RECENTLY_TOP]}</span>
         </div>

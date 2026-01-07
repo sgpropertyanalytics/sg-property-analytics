@@ -108,13 +108,13 @@ export function ProjectDeepDiveContent() {
   const activeStartPercent = ((ACTIVE_RANGE_MIN - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100;
   const activeEndPercent = ((ACTIVE_RANGE_MAX - BUDGET_MIN) / (BUDGET_MAX - BUDGET_MIN)) * 100;
   const sliderGradient = `linear-gradient(to right,
-    #94B4C1 0%,
-    #94B4C1 ${activeStartPercent * 0.5}%,
-    #547792 ${activeStartPercent}%,
-    #213448 ${(activeStartPercent + activeEndPercent) / 2}%,
-    #547792 ${activeEndPercent}%,
-    #94B4C1 ${activeEndPercent + (100 - activeEndPercent) * 0.5}%,
-    #94B4C1 100%)`;
+    #64748B 0%,
+    #64748B ${activeStartPercent * 0.5}%,
+    #334155 ${activeStartPercent}%,
+    #0F172A ${(activeStartPercent + activeEndPercent) / 2}%,
+    #334155 ${activeEndPercent}%,
+    #64748B ${activeEndPercent + (100 - activeEndPercent) * 0.5}%,
+    #64748B 100%)`;
 
   return (
     <div className="min-h-full">
@@ -391,14 +391,14 @@ export function ProjectDeepDiveContent() {
             <div ref={newLaunchesRef} className="space-y-4">
               <div className="flex items-center justify-center py-3">
                 <div className="flex items-center gap-3">
-                  <div className="h-px w-16 bg-gradient-to-r from-transparent to-[#94B4C1]/50" />
+                  <div className="h-px w-16 bg-gradient-to-r from-transparent to-slate-500/50" />
                   <div className="flex items-center gap-2 px-5 py-2 bg-brand-sand/40 border border-brand-sky/30 rounded-full">
                     <span className="text-sm font-semibold text-brand-navy tracking-wide">Upcoming New Launches</span>
                     <svg className="w-4 h-4 text-brand-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </div>
-                  <div className="h-px w-16 bg-gradient-to-l from-transparent to-[#94B4C1]/50" />
+                  <div className="h-px w-16 bg-gradient-to-l from-transparent to-slate-500/50" />
                 </div>
               </div>
 
@@ -420,14 +420,14 @@ export function ProjectDeepDiveContent() {
             <div className="space-y-4">
               <div className="flex items-center justify-center py-3">
                 <div className="flex items-center gap-3">
-                  <div className="h-px w-16 bg-gradient-to-r from-transparent to-[#94B4C1]/50" />
+                  <div className="h-px w-16 bg-gradient-to-r from-transparent to-slate-500/50" />
                   <div className="flex items-center gap-2 px-5 py-2 bg-brand-sand/40 border border-brand-sky/30 rounded-full">
                     <span className="text-sm font-semibold text-brand-navy tracking-wide">Remaining New Launches</span>
                     <svg className="w-4 h-4 text-brand-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </div>
-                  <div className="h-px w-16 bg-gradient-to-l from-transparent to-[#94B4C1]/50" />
+                  <div className="h-px w-16 bg-gradient-to-l from-transparent to-slate-500/50" />
                 </div>
               </div>
 
