@@ -25,6 +25,9 @@
    * ========================================= */
 
   /* Monochromatic Base */
+  --color-mono-void: #0A0A0A;      /* The void - nav background (denser than dark) */
+  --color-mono-surface: #1A1A1A;   /* Elevated surfaces on void */
+  --color-mono-edge: #333333;      /* Machined metal borders */
   --color-mono-ink: #000000;
   --color-mono-dark: #171717;
   --color-mono-mid: #525252;
