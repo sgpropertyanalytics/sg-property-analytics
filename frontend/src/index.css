@@ -27,10 +27,10 @@
   --color-void-surface: #1A1A1A;  /* Elevated cards on void */
   --color-void-edge: #333333;     /* Machined metal borders */
 
-  /* ----- CANVAS (Warm Aged Paper System) ----- */
-  --color-canvas: #F0EDE8;        /* Warm stone - page background */
-  --color-canvas-paper: #FAF9F7;  /* Warm off-white - section containers */
-  --color-canvas-grid: #E8E4DE;   /* Warm grid borders (stone-200) */
+  /* ----- CANVAS (Engineering Paper System) ----- */
+  --color-canvas: #F2EFE9;        /* Warm stone - page background */
+  --color-canvas-paper: transparent; /* Wireframe: no fill, borders only */
+  --color-canvas-grid: #A8A29E;   /* Stone-400 - visible structural borders */
 
   /* ----- INK (Data/Text - The "Print") ----- */
   --color-ink: #0F172A;           /* Slate 900 - Primary data, headers */
@@ -91,9 +91,9 @@
   --color-brand-sky: #64748B;    /* slate-500 */
   --color-brand-sand: #E5E7EB;   /* slate-200 */
 
-  /* Card colors (Warm Cream - eye comfort) */
-  --color-card: #FFFCF5;          /* Warm cream - cards, panels */
-  --color-card-hover: #FAF7F0;    /* Slightly darker warm cream */
+  /* Card colors (Wireframe - transparent with borders) */
+  --color-card: transparent;      /* No fill - wireframe aesthetic */
+  --color-card-hover: rgba(255, 79, 0, 0.05); /* Subtle orange tint on hover */
 }
 
 /* Display font class for headlines */
@@ -149,12 +149,18 @@
   color: var(--color-mono-mid);
 }
 
-/* Content Card Base - modern SaaS contained layout */
+/* Content Card Base - Industrial Wireframe aesthetic */
 .weapon-card {
-  background: var(--color-card);
-  border: 1px solid var(--color-mono-muted);
-  border-radius: 0.75rem; /* rounded-xl for modern SaaS aesthetic */
+  background: transparent;
+  border: 1px solid var(--color-canvas-grid); /* Stone-400 structural border */
+  border-radius: 0; /* Sharp edges - no rounded corners */
   position: relative;
+  transition: border-color 0.15s ease;
+}
+
+.weapon-card:hover {
+  border-color: #FF4F00; /* Safety Orange on hover */
+  cursor: crosshair;
 }
 
 /* Dashboard Grid Background - 80px crosshatch */
@@ -180,21 +186,16 @@
   z-index: 0;
 }
 
-/* Weapon Shadow - enhanced hard offset (visible on warm stone canvas) */
+/* Weapon Shadow - disabled for wireframe aesthetic (borders provide separation) */
+/* Keep classes for backwards compatibility but render as none */
 .weapon-shadow {
-  box-shadow:
-    3px 3px 0px rgba(15, 23, 42, 0.08),
-    1px 1px 0px rgba(15, 23, 42, 0.05);
+  box-shadow: none;
 }
 .weapon-shadow-md {
-  box-shadow:
-    4px 4px 0px rgba(15, 23, 42, 0.10),
-    2px 2px 0px rgba(15, 23, 42, 0.06);
+  box-shadow: none;
 }
 .weapon-shadow-lg {
-  box-shadow:
-    6px 6px 0px rgba(15, 23, 42, 0.12),
-    3px 3px 0px rgba(15, 23, 42, 0.08);
+  box-shadow: none;
 }
 
 /* Weapon Active State - inverted */
@@ -218,9 +219,13 @@
 }
 
 body {
-  @apply bg-mono-canvas text-mono-ink;
+  @apply text-mono-ink;
   margin: 0;
   -webkit-font-smoothing: antialiased;
+  /* Engineering Paper Background */
+  background-color: #F2EFE9;
+  background-image: linear-gradient(90deg, rgba(87, 83, 78, 0.08) 1px, transparent 1px);
+  background-size: 120px 100%;
 }
 
 
