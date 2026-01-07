@@ -85,11 +85,11 @@
   --color-mono-muted: var(--color-canvas-grid);
   --color-mono-canvas: var(--color-canvas);
 
-  /* Legacy BRAND - kept for backward compat */
-  --color-brand-navy: #213448;
-  --color-brand-blue: #547792;
-  --color-brand-sky: #94B4C1;
-  --color-brand-sand: #EAE0CF;
+  /* Brand colors (Institutional Print / Slate) */
+  --color-brand-navy: #0F172A;   /* slate-900 */
+  --color-brand-blue: #334155;   /* slate-700 */
+  --color-brand-sky: #64748B;    /* slate-500 */
+  --color-brand-sand: #E5E7EB;   /* slate-200 */
 
   /* Legacy card colors */
   --color-card: var(--color-canvas-paper);

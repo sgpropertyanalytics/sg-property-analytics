@@ -75,13 +75,18 @@ export const isDistrictInRegion = (district, region) => {
 // =============================================================================
 
 export {
-  MONO,
-  STATUS,
-  BRAND,
+  // Core palettes (Institutional Print / Slate)
+  VOID,
+  CANVAS,
+  INK,
   REGION,
+  SIGNAL,
+  DELTA,
   SUPPLY,
+  LIQUIDITY,
+  STATUS,
   CHART,
-  THEME_COLORS,
+  // Helpers
   REGION_BADGE_CLASSES,
   getRegionColor,
   getRegionBadgeClass,

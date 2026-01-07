@@ -249,10 +249,11 @@ RCR: D03, D04, D05, D08, D12, D13, D14, D15, D20
 OCR: D16-D19, D21-D28
 ```
 
-### Colors
+### Colors (Institutional Print / Slate)
 ```
-Navy: #213448 | Blue: #547792 | Sky: #94B4C1 | Sand: #EAE0CF
-CCR: Navy | RCR: Blue | OCR: Sky
+Primary: #0F172A (slate-900) | Secondary: #334155 (slate-700) | Tertiary: #64748B (slate-500) | Background: #E5E7EB (slate-200)
+CCR: slate-900 | RCR: slate-700 | OCR: slate-500
+Signal Accent: #F97316 (Bloomberg Orange)
 ```
 
 ---

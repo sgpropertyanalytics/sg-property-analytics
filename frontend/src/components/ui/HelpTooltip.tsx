@@ -57,7 +57,7 @@ export function HelpTooltip({ content }: HelpTooltipProps) {
       <span
         ref={refs.setReference}
         {...getReferenceProps()}
-        className="w-3.5 h-3.5 flex items-center justify-center text-[9px] text-[#94B4C1] hover:text-[#547792] cursor-help transition-colors border border-[#94B4C1] rounded-full"
+        className="w-3.5 h-3.5 flex items-center justify-center text-[9px] text-[#64748B] hover:text-[#334155] cursor-help transition-colors border border-[#64748B] rounded-full"
       >
         ?
       </span>
@@ -67,7 +67,7 @@ export function HelpTooltip({ content }: HelpTooltipProps) {
             ref={refs.setFloating}
             style={floatingStyles}
             {...getFloatingProps()}
-            className="z-[9999] w-64 max-w-[calc(100vw-2rem)] p-3 bg-[#213448] text-white text-xs leading-relaxed rounded shadow-lg whitespace-pre-line"
+            className="z-[9999] w-64 max-w-[calc(100vw-2rem)] p-3 bg-[#0F172A] text-white text-xs leading-relaxed rounded shadow-lg whitespace-pre-line"
           >
             {content}
           </div>
