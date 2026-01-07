@@ -8,32 +8,30 @@ import { AccountSettingsModal } from '../AccountSettingsModal';
  * GlobalNavRail - Primary Navigation Sidebar
  *
  * The far-left navigation component that provides app-wide page switching.
- * Uses Deep Navy (#213448) background with professional finance-tool aesthetics.
+ * Uses VOID palette (#0A0A0A) for Palantir/tactical aesthetic continuity.
  *
- * DESIGN SYSTEM (Senior UI Pattern):
+ * DESIGN SYSTEM (VOID THEME - Dark Nav):
  * ─────────────────────────────────────────────────────────────────────────────
+ * Colors:
+ * - Background: mono-void (#0A0A0A) - dense black, not default #171717
+ * - Borders: mono-edge (#333333) - machined metal effect
+ * - Text: mono-light (#A3A3A3) inactive → mono-canvas (#FAFAFA) active/hover
+ *
  * Section Headers ("Structural Dividers"):
- * - text-[11px] font-bold uppercase tracking-[0.12em] leading-none
- * - Color: text-[#94B4C1]/60 (muted - labels, not buttons)
- * - Uses typography and spacing to separate content, not borders
+ * - text-[10px] font-mono uppercase tracking-[0.18em]
+ * - Color: mono-mid → mono-light on active group
  *
  * NavItem ("Interactive Targets"):
- * - Active:  bg-white/10 text-white ring-1 ring-white/10 + blue accent bar
- * - Inactive: text-[#94B4C1] opacity-70 → hover:text-white hover:bg-white/5
- * - Coming Soon: opacity-50 cursor-not-allowed + SOON badge
- * - Focus: ring-2 ring-[#547792] ring-offset-2 ring-offset-[#213448]
+ * - Active:  bg-mono-surface + text-mono-canvas + ring-mono-edge + blue accent bar
+ * - Inactive: text-mono-light → hover:text-mono-canvas hover:bg-white/5
+ * - Focus: ring-white/20 ring-offset-mono-void
  *
- * Accent Bar (Active Indicator):
- * - w-1 bg-[#547792] positioned absolute left-0
- * - Cleaner than full border, matches professional finance tools
+ * HUD Corners:
+ * - Tactical frame brackets in all 4 corners (border-mono-edge)
  *
  * Width: Parent controls width (w-full). DashboardLayout sets:
  * - Desktop (lg+): 256px (w-64)
  * - Mobile drawer: 256px (w-64), max 85vw
- *
- * Structure:
- * - Market Intelligence: Market Overview, District Overview, New Launch Market, Supply & Inventory
- * - Project Tools: Explore, Value Check, Exit Risk
  */
 
 // Design token: Nav rail width (defined once, used in DashboardLayout)
@@ -86,26 +84,27 @@ export const NAV_ITEMS = NAV_GROUPS.flatMap(g => g.items);
 function NavItem({ item, isActive, onClick, collapsed = false }) {
   const isComingSoon = item.comingSoon;
 
-  // Base styles for layout - WEAPON: hard edges, structural borders
+  // Base styles for layout - WEAPON: hard edges, structural borders (VOID THEME)
   const baseStyles = `
     group relative w-full min-h-[44px] px-3 py-2 rounded-none
     flex items-center text-left min-w-0
     font-mono text-[11px] font-medium uppercase tracking-[0.18em]
-    border-b border-mono-muted
+    border-b border-mono-edge
     ${TRANSITION_CLASS}
     outline-none select-none
-    focus-visible:ring-2 focus-visible:ring-black/20 focus-visible:ring-offset-2 focus-visible:ring-offset-mono-canvas
+    focus-visible:ring-2 focus-visible:ring-white/20 focus-visible:ring-offset-2 focus-visible:ring-offset-mono-void
   `;
 
-   // State-specific styles
-   const activeStyles = 'bg-mono-ink text-mono-canvas border-b border-mono-ink ring-1 ring-white/15';
-   const inactiveStyles = 'text-mono-mid hover:text-mono-ink hover:bg-black/[0.03]';
-   const comingSoonStyles = 'text-mono-light cursor-not-allowed opacity-60';
+   // State-specific styles (VOID THEME - light text on dark)
+   const activeStyles = 'bg-mono-surface text-mono-canvas border-b border-mono-edge ring-1 ring-mono-edge';
+   const inactiveStyles = 'text-mono-light hover:text-mono-canvas hover:bg-white/[0.05]';
+   const comingSoonStyles = 'text-mono-mid cursor-not-allowed opacity-60';
 
+   // Badge styles (VOID THEME)
    const badgeBase = 'ml-auto flex-shrink-0 text-[10px] font-bold tracking-wide px-1.5 py-0.5 rounded-none border transition-none';
-   const badgeActive = 'bg-mono-canvas text-mono-ink border-mono-canvas';
-   const badgeInactive = 'bg-card text-mono-mid border-mono-muted group-hover:bg-mono-canvas group-hover:text-mono-ink';
-   const badgeComingSoon = 'bg-card text-mono-light border-mono-muted';
+   const badgeActive = 'bg-mono-canvas text-mono-void border-mono-canvas';
+   const badgeInactive = 'bg-mono-surface text-mono-light border-mono-edge group-hover:bg-mono-canvas group-hover:text-mono-void';
+   const badgeComingSoon = 'bg-mono-surface text-mono-mid border-mono-edge';
 
   return (
     <button
@@ -124,10 +123,10 @@ function NavItem({ item, isActive, onClick, collapsed = false }) {
         <span className="absolute left-0 top-0 bottom-0 w-1 bg-brand-blue" />
       )}
 
-      {/* Icon - full opacity when active, dimmed when inactive */}
+      {/* Icon - full opacity when active, dimmed when inactive (VOID THEME) */}
        <span className={`
          text-sm flex-shrink-0 transition-none
-         ${isActive ? 'text-mono-canvas' : 'text-mono-mid group-hover:text-mono-ink'}
+         ${isActive ? 'text-mono-canvas' : 'text-mono-light group-hover:text-mono-canvas'}
        `}>
 
         {item.icon}
@@ -222,25 +221,30 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
 
   return (
       <nav
-        className={`bg-mono-canvas w-full flex flex-col py-4 flex-shrink-0 h-full overflow-y-auto overflow-x-visible transition-none border-r border-mono-muted weapon-noise ${collapsed ? 'px-2' : 'px-3'} ${isPending ? 'opacity-90' : ''}`}
+        className={`relative bg-mono-void w-full flex flex-col py-4 flex-shrink-0 h-full overflow-y-auto overflow-x-visible transition-none border-r border-mono-edge ${collapsed ? 'px-2' : 'px-3'} ${isPending ? 'opacity-90' : ''}`}
         aria-label="Main navigation"
       >
+        {/* HUD corners - tactical frame */}
+        <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-mono-edge pointer-events-none" />
+        <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-mono-edge pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-mono-edge pointer-events-none" />
+        <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-mono-edge pointer-events-none" />
 
 
-      {/* Logo / Home - Links to Market Overview */}
+      {/* Logo / Home - Links to Market Overview (VOID THEME) */}
       <button
         onClick={() => startTransition(() => navigate('/market-overview'))}
-        className={`group relative mb-6 flex items-center w-full min-h-[44px] min-w-0 select-none ${TRANSITION_CLASS} ${collapsed ? 'justify-center px-0' : 'gap-3 px-2'} hover:bg-black/[0.02]`}
+        className={`group relative mb-6 flex items-center w-full min-h-[44px] min-w-0 select-none ${TRANSITION_CLASS} ${collapsed ? 'justify-center px-0' : 'gap-3 px-2'} hover:bg-white/[0.05]`}
         aria-label="Go to Home"
       >
-        <div className="w-10 h-10 rounded-none bg-card border border-mono-muted flex items-center justify-center transition-none group-hover:bg-black/[0.02] flex-shrink-0">
-          <svg className="w-6 h-6 text-black/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="w-10 h-10 rounded-none bg-mono-surface border border-mono-edge flex items-center justify-center transition-none group-hover:bg-white/[0.05] flex-shrink-0">
+          <svg className="w-6 h-6 text-mono-light group-hover:text-mono-canvas" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
           </svg>
         </div>
-        {/* Home label - staggered animation */}
+        {/* Home label - staggered animation (VOID THEME) */}
         <span className={`
-          font-mono text-[10px] uppercase tracking-[0.18em] text-black/70 whitespace-nowrap overflow-hidden
+          font-mono text-[10px] uppercase tracking-[0.18em] text-mono-light group-hover:text-mono-canvas whitespace-nowrap overflow-hidden
           ${TRANSITION_CLASS}
           ${collapsed ? 'w-0 opacity-0 -translate-x-4' : 'w-auto opacity-100 translate-x-0 delay-100'}
         `}>
@@ -271,7 +275,7 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
 
           return (
             <div key={group.id} className={groupIndex > 0 ? 'mt-6' : ''}>
-              {/* SectionHeader - The "Structural Divider"
+              {/* SectionHeader - The "Structural Divider" (VOID THEME)
                   Uses typography and spacing to separate content, not borders.
                   Design: text-[11px] uppercase tracking-[0.12em] - muted labels */}
                {!collapsed && (
@@ -283,8 +287,8 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
                      transition-none
                      select-none
                      ${hasActiveItem
-                       ? 'text-black/70'
-                       : 'text-black/60 hover:text-black/70'
+                       ? 'text-mono-light'
+                       : 'text-mono-mid hover:text-mono-light'
                      }
                    `}
                    aria-expanded={isExpanded}
@@ -304,9 +308,9 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
                )}
 
 
-              {/* Collapsed: Show separator line instead of header */}
+              {/* Collapsed: Show separator line instead of header (VOID THEME) */}
                {collapsed && (
-                 <div className="h-px bg-black/10 mx-2 my-2" />
+                 <div className="h-px bg-mono-edge mx-2 my-2" />
                )}
 
 
@@ -334,19 +338,19 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
         })}
       </div>
 
-      {/* Bottom section - Info links + User Profile */}
+      {/* Bottom section - Info links + User Profile (VOID THEME) */}
       <div className="mt-auto w-full">
         {/* Separator */}
-         <div className="border-t border-black/10 mb-3 mx-2" />
+         <div className="border-t border-mono-edge mb-3 mx-2" />
 
 
-        {/* Methodology Link - WEAPON: hard edges, rack-mount style */}
+        {/* Methodology Link - WEAPON: hard edges, rack-mount style (VOID THEME) */}
          <button
            onClick={() => startTransition(() => navigate('/methodology'))}
-           className={`group relative w-full min-h-[44px] px-3 py-2 rounded-none border-b border-black/10 flex items-center text-left min-w-0 font-mono text-[11px] font-medium uppercase tracking-[0.18em] text-black/70 hover:text-black hover:bg-black/[0.03] active:bg-black/[0.05] ${TRANSITION_CLASS} select-none ${collapsed ? 'justify-center' : 'gap-3'}`}
+           className={`group relative w-full min-h-[44px] px-3 py-2 rounded-none border-b border-mono-edge flex items-center text-left min-w-0 font-mono text-[11px] font-medium uppercase tracking-[0.18em] text-mono-light hover:text-mono-canvas hover:bg-white/[0.05] active:bg-white/[0.08] ${TRANSITION_CLASS} select-none ${collapsed ? 'justify-center' : 'gap-3'}`}
            aria-label="Methodology"
          >
-           <span className="text-sm flex-shrink-0 text-black/60 group-hover:text-black">ℹ️</span>
+           <span className="text-sm flex-shrink-0 text-mono-mid group-hover:text-mono-canvas">ℹ️</span>
 
           <span className={`
             text-sm font-medium whitespace-nowrap overflow-hidden
