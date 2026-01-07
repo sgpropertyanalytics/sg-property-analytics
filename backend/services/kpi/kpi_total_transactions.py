@@ -145,7 +145,7 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
             "direction": direction,
             "label": label
         },
-        insight=None,
+        insight="Resale transactions only",
         meta={
             "current_count": current_count,
             "previous_count": previous_count,
