@@ -114,10 +114,10 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
     # Format the primary value as PSF (frontend will add structured content)
     formatted_value = f"${round(current):,}"
 
-    # Build insight - only show if low confidence
-    insight = None
+    # Build insight - rolling context with confidence warning if needed
+    insight = "Rolling 3M Q-o-Q Median PSF"
     if confidence_label:
-        insight = f"[{confidence_label}]"
+        insight += f" [{confidence_label}]"
 
     return KPIResult(
         kpi_id="median_psf",

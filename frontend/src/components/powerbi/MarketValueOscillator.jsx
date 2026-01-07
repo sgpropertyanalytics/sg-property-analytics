@@ -390,19 +390,24 @@ function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawDat
             </InlineCardRow>
           </div>
 
-          {/* Insight Box */}
+          {/* Insight Box - Full interpretation guide */}
           <div className="shrink-0">
             <KeyInsightBox
-              title="How to Read this Chart"
+              title="How to Interpret this Chart"
               variant="info"
               compact
-              tooltip={`±0σ to ±1σ: Normal range, fair value
-+1σ to +2σ: Elevated premium, watch closely
-> +2σ: Extreme overvaluation
--1σ to -2σ: Compressed premium, improving value
-< -2σ: Extreme compression, potential opportunity`}
+              tooltip="Z-score measures how far current spreads deviate from historical norms. Based on resale transactions only, with outliers excluded."
             >
-              Shows relative price premium between regions using resale transactions, expressed as Z-score against historical spreads. A Z-score near 0 = fair value.
+              <p className="mb-2">
+                Shows relative price premium between regions (CCR–RCR and RCR–OCR) using <strong>resale transactions only</strong>, expressed as Z-score against historical spreads. A Z-score near 0 = fair value.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-0.5 text-xs">
+                <div><span className="font-semibold text-slate-500">±0σ to ±1.0σ</span> — Normal range, fair value.</div>
+                <div><span className="font-semibold text-amber-600">+1.0σ to +2.0σ</span> — Elevated premium, watch closely.</div>
+                <div><span className="font-semibold text-red-600">&gt; +2.0σ</span> — Extreme disparity, overvaluation.</div>
+                <div><span className="font-semibold text-sky-600">–1.0σ to –2.0σ</span> — Compressed premium, improving value.</div>
+                <div><span className="font-semibold text-emerald-600">&lt; –2.0σ</span> — Extreme compression, potential opportunity.</div>
+              </div>
             </KeyInsightBox>
           </div>
 

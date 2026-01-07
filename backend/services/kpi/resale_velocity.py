@@ -203,8 +203,11 @@ def map_result(row: Any, filters: Dict[str, Any]) -> KPIResult:
     else:
         pct_change = 0
 
-    # No footer insight - keep card clean
-    insight = None
+    # Footer insight: show the calculation formula
+    insight = (
+        f"{current_txns:,} txns ÷ {total_units:,} units × 4\n"
+        f"= {current_annualized:.1f}% annualized"
+    )
 
     return KPIResult(
         kpi_id="resale_velocity",
