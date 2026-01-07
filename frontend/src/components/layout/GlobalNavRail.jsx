@@ -84,23 +84,24 @@ export const NAV_ITEMS = NAV_GROUPS.flatMap(g => g.items);
 function NavItem({ item, isActive, onClick, collapsed = false }) {
   const isComingSoon = item.comingSoon;
 
-  // Base styles for layout - WEAPON: hard edges, structural borders (VOID THEME)
+  // Base styles for layout - INDUSTRIAL MACHINE: "Physical LED" with light physics
   const baseStyles = `
     group relative w-full min-h-[44px] px-3 py-2 rounded-none
     flex items-center text-left min-w-0
-    font-mono text-[11px] font-medium uppercase tracking-[0.18em]
+    font-mono text-[11px] font-medium uppercase tracking-tight
     border-b border-mono-edge
-    ${TRANSITION_CLASS}
+    border-l-[3px]
+    transition-all duration-200
     outline-none select-none
     focus-visible:ring-2 focus-visible:ring-white/20 focus-visible:ring-offset-2 focus-visible:ring-offset-mono-void
   `;
 
-   // State-specific styles (INDUSTRIAL MACHINE - "Server Rack LED")
-   // Active: nav-item-active triggers ::before pseudo-element (emerald LED + green glow)
-   const activeStyles = 'nav-item-active text-white border-b border-mono-edge ring-1 ring-mono-edge';
-   // Inactive: Dimmed switches (#525252 / stone-600) with instant light-on hover
-   const inactiveStyles = 'text-[#525252] hover:text-white hover:bg-white/[0.05] transition-none';
-   const comingSoonStyles = 'text-mono-mid cursor-not-allowed opacity-60';
+   // State-specific styles (INDUSTRIAL MACHINE - "Physical LED Light Source")
+   // Active: The Source (border) + The Spill (gradient) + The Reflection (inset shadow)
+   const activeStyles = 'border-emerald-500 text-white bg-gradient-to-r from-emerald-500/10 to-transparent shadow-[inset_10px_0_15px_-3px_rgba(16,185,129,0.2)]';
+   // Inactive: Dimmed switches with transparent border slot
+   const inactiveStyles = 'border-transparent text-zinc-500 hover:text-zinc-300 hover:bg-white/5';
+   const comingSoonStyles = 'border-transparent text-mono-mid cursor-not-allowed opacity-60';
 
    // Badge styles (VOID THEME)
    const badgeBase = 'ml-auto flex-shrink-0 text-[10px] font-bold tracking-wide px-1.5 py-0.5 rounded-none border transition-none';
@@ -121,15 +122,14 @@ function NavItem({ item, isActive, onClick, collapsed = false }) {
       aria-current={isActive ? 'page' : undefined}
       aria-label={item.label}
     >
-      {/* The Physical LED - Emerald Green with breathing glow (Server Rack Indicator)
-          Rendered via CSS ::before pseudo-element on .nav-item-active class */}
-
-      {/* Icon - full opacity when active, dimmed when inactive (INDUSTRIAL MACHINE) */}
-       <span className={`
-         text-sm flex-shrink-0 transition-none
-         ${isActive ? 'text-white' : 'text-[#525252] group-hover:text-white'}
-       `}>
-
+      {/* Icon - Light source glow when active, dimmed when inactive */}
+      <span className={`
+        text-sm flex-shrink-0 transition-all duration-200
+        ${isActive
+          ? 'text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]'
+          : 'opacity-70 text-zinc-500 group-hover:text-zinc-300'
+        }
+      `}>
         {item.icon}
       </span>
 
@@ -223,11 +223,21 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
 
   return (
       <nav
-        className={`relative bg-mono-void w-full flex flex-col py-4 flex-shrink-0 h-full overflow-y-auto overflow-x-visible transition-none ${collapsed ? 'px-2' : 'px-3'} ${isPending ? 'opacity-90' : ''}`}
-        style={{
-          borderRight: '3px solid #0A0A0A',
-          boxShadow: 'inset -1px 0 0 #525252'
-        }}
+        className={`
+          relative w-full h-full flex flex-col py-4 flex-shrink-0
+          overflow-y-auto overflow-x-visible
+          z-50
+          ${collapsed ? 'px-2' : 'px-3'}
+          ${isPending ? 'opacity-90' : ''}
+
+          /* THE CHASSIS TEXTURE - Vertical gradient mimics overhead server room lighting */
+          bg-zinc-950
+          bg-[linear-gradient(to_bottom,rgba(39,39,42,1),rgba(9,9,11,1))]
+
+          /* THE SEAM - Physical termination of metal casing */
+          border-r border-white/5
+          shadow-[6px_0_24px_-6px_rgba(0,0,0,0.7)]
+        `}
         aria-label="Main navigation"
       >
         {/* HUD corners - tactical frame */}
