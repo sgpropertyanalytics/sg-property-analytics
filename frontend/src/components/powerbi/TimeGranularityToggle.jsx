@@ -62,10 +62,10 @@ export function TimeGranularityToggle({ className = '', layout = 'default' }) {
             key={opt.value}
             type="button"
             onClick={() => handleChange(opt.value)}
-            className={`px-3 py-2 text-sm font-mono uppercase tracking-wider transition-none min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#213448] focus-visible:ring-inset ${
+            className={`px-3 py-2 text-sm font-mono uppercase tracking-wider transition-none min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-navy focus-visible:ring-inset ${
               timeGrouping === opt.value
-                ? 'bg-[#213448] text-white shadow-inner'
-                : 'bg-transparent text-slate-500 hover:bg-white/50 hover:text-slate-900'
+                ? 'bg-brand-navy text-white shadow-inner'
+                : 'bg-transparent text-mono-mid hover:bg-white/50 hover:text-mono-ink'
             }`}
           >
             {opt.label}
@@ -79,7 +79,7 @@ export function TimeGranularityToggle({ className = '', layout = 'default' }) {
   return (
     <div className={`relative ${className}`}>
       {/* Label above - matches FilterGroup pattern */}
-      <label className="block text-sm font-mono uppercase tracking-wider text-[#547792] mb-1.5">
+      <label className="block text-sm font-mono uppercase tracking-wider text-brand-blue mb-1.5">
         Group by
       </label>
 
@@ -93,7 +93,7 @@ export function TimeGranularityToggle({ className = '', layout = 'default' }) {
             className={`min-h-[44px] px-3 py-2 text-sm rounded-none border transition-none ${
               timeGrouping === opt.value
                 ? 'bg-mono-dark text-white border-mono-dark'
-                : 'bg-white text-[#213448] border-[#94B4C1] hover:border-mono-dark'
+                : 'bg-white text-brand-navy border-brand-sky hover:border-mono-dark'
             }`}
           >
             {opt.label}

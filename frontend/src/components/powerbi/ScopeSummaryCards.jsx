@@ -118,17 +118,17 @@ export default function ScopeSummaryCards({
             key={scopeKey}
             onClick={() => onScopeClick(scopeKey)}
             className={`
-              relative p-4 rounded-lg border-2 text-left transition-all
+              relative p-4 rounded-none border text-left transition-none
               ${isActive
-                ? `${interpretation.border} ${interpretation.bg} ring-2 ring-offset-1 ring-${interpretation.color.replace('text-', '')}`
-                : 'border-[#94B4C1]/50 bg-white hover:border-[#547792]/50 hover:bg-slate-50'
+                ? `${interpretation.border} ${interpretation.bg} ring-1 ring-mono-ink`
+                : 'border-mono-muted bg-card hover:border-mono-mid hover:bg-card-hover'
               }
             `}
           >
             {/* Active indicator */}
             {isActive && (
               <div className="absolute top-2 right-2">
-                <svg className="w-5 h-5 text-[#213448]" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-5 h-5 text-mono-ink" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
               </div>
@@ -136,8 +136,8 @@ export default function ScopeSummaryCards({
 
             {/* Header */}
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-[#547792]">{config.icon}</span>
-              <span className="font-semibold text-[#213448] text-sm">{config.title}</span>
+              <span className="text-brand-blue">{config.icon}</span>
+              <span className="font-semibold text-mono-ink text-sm">{config.title}</span>
             </div>
 
             {hasData ? (
@@ -151,22 +151,22 @@ export default function ScopeSummaryCards({
                 </div>
 
                 {/* Percentile */}
-                <div className="text-2xl font-bold text-[#213448] mb-1">
+                <div className="text-2xl font-bold font-mono tabular-nums text-mono-ink mb-1">
                   {percentile.rank}%
-                  <span className="text-xs font-normal text-[#547792] ml-1">percentile</span>
+                  <span className="text-xs font-normal text-mono-mid ml-1">percentile</span>
                 </div>
 
                 {/* Stats */}
-                <div className="text-xs text-[#547792] space-y-0.5">
+                <div className="text-xs text-mono-mid space-y-0.5">
                   <div className="flex justify-between">
                     <span>Median Price:</span>
-                    <span className="font-medium text-[#213448]">
+                    <span className="font-medium font-mono tabular-nums text-mono-ink">
                       {formatPrice(scope.median_price)}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span>{bedroom}BR Observations:</span>
-                    <span className="font-medium text-[#213448]">
+                    <span className="font-medium font-mono tabular-nums text-mono-ink">
                       {scope.transaction_count?.toLocaleString() || 0}
                     </span>
                   </div>
@@ -175,14 +175,14 @@ export default function ScopeSummaryCards({
             ) : (
               <div className="text-center py-2">
                 <span className="text-2xl">❓</span>
-                <p className="text-sm text-[#547792] mt-1">
+                <p className="text-sm text-mono-mid mt-1">
                   No {bedroom}BR transactions
                 </p>
               </div>
             )}
 
             {/* Description */}
-            <p className="text-[10px] text-[#94B4C1] mt-2">{config.description}</p>
+            <p className="text-[10px] text-mono-light mt-2">{config.description}</p>
           </button>
         );
       })}

@@ -1,3 +1,5 @@
+import { MONO } from './colors';
+
 /**
  * Base Chart.js options - MUST be spread into all chart options
  *
@@ -30,8 +32,7 @@ export const baseChartJsOptions = BASE_CHART_OPTIONS;
  * Bloomberg Terminal Typography for Chart Axes
  *
  * Uses IBM Plex Mono for numerical data on axes.
- * Numbers use slate-900 (#0f172a) for high contrast.
- * Axis titles use slate-500 (#64748b) for hierarchy.
+ * Colors use MONO palette from design system.
  */
 export const CHART_AXIS_FONT = {
   family: '"IBM Plex Mono", ui-monospace, monospace',
@@ -41,11 +42,11 @@ export const CHART_AXIS_FONT = {
 export const CHART_AXIS_DEFAULTS = {
   ticks: {
     font: CHART_AXIS_FONT,
-    color: '#0f172a',  // slate-900 - darker for data
+    color: MONO.ink,  // #000000 - pure black for data
   },
   title: {
     font: { ...CHART_AXIS_FONT, size: 11 },
-    color: '#64748b',  // slate-500 - lighter for labels
+    color: MONO.mid,  // #525252 - medium gray for labels
   },
 };
 
