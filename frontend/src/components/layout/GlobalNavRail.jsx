@@ -301,7 +301,7 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
                    `}
                    aria-expanded={isExpanded}
                  >
-                   <span className="font-mono text-[0.65rem] uppercase tracking-[0.15em] leading-none min-w-0 flex-1 font-bold">
+                   <span className="font-mono text-[10px] uppercase tracking-[0.15em] leading-none min-w-0 flex-1 font-bold tabular-nums">
                      {group.label}
                    </span>
                    <svg
