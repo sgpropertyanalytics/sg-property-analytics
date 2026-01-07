@@ -163,37 +163,7 @@ export const getRegionBadgeClass = (region) => {
 };
 
 // =============================================================================
-// DEPRECATED EXPORTS (Remove in Phase 5)
+// DEPRECATED EXPORTS REMOVED (Phase 5 Complete)
 // =============================================================================
-
-/**
- * @deprecated Use INK, REGION, CANVAS instead
- * Legacy palette kept for backward compatibility during migration
- */
-export const BRAND = {
-  navy: '#213448',      // Use REGION.CCR (#0F172A) instead
-  blue: '#547792',      // Use REGION.RCR (#334155) instead
-  sky: '#94B4C1',       // Use REGION.OCR (#64748B) instead
-  sand: '#EAE0CF',      // Use CANVAS.grid (#E5E7EB) instead
-};
-
-/**
- * @deprecated Use BRAND instead (itself deprecated)
- */
-export const THEME_COLORS = BRAND;
-
-/**
- * @deprecated Use VOID, CANVAS, INK instead
- * Legacy MONO palette - partial compatibility
- */
-export const MONO = {
-  void: VOID.base,
-  surface: VOID.surface,
-  edge: VOID.edge,
-  ink: INK.primary,
-  dark: VOID.surface,
-  mid: INK.mid,
-  light: INK.muted,
-  muted: CANVAS.grid,
-  canvas: CANVAS.base,
-};
+// BRAND, THEME_COLORS, and MONO exports have been removed.
+// All consumers now use: INK, REGION, CANVAS, VOID, SIGNAL, DELTA, SUPPLY

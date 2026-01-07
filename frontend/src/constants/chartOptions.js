@@ -1,4 +1,4 @@
-import { MONO } from './colors';
+import { INK } from './colors';
 
 /**
  * Base Chart.js options - MUST be spread into all chart options
@@ -32,7 +32,7 @@ export const baseChartJsOptions = BASE_CHART_OPTIONS;
  * Bloomberg Terminal Typography for Chart Axes
  *
  * Uses IBM Plex Mono for numerical data on axes.
- * Colors use MONO palette from design system.
+ * Colors use INK palette from design system.
  */
 export const CHART_AXIS_FONT = {
   family: '"IBM Plex Mono", ui-monospace, monospace',
@@ -42,11 +42,11 @@ export const CHART_AXIS_FONT = {
 export const CHART_AXIS_DEFAULTS = {
   ticks: {
     font: CHART_AXIS_FONT,
-    color: MONO.ink,  // #000000 - pure black for data
+    color: INK.primary,  // slate-900 - primary data
   },
   title: {
     font: { ...CHART_AXIS_FONT, size: 11 },
-    color: MONO.mid,  // #525252 - medium gray for labels
+    color: INK.mid,  // slate-600 - medium gray for labels
   },
 };
 

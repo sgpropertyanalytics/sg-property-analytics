@@ -11,16 +11,16 @@ import {
   truncateProjectName,
 } from '../../adapters';
 import { CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
-import { BRAND } from '../../constants/colors';
+import { REGION } from '../../constants/colors';
 
-// Color palette from centralized colors.js - age band differentiated
+// Color palette from centralized colors.js - age band differentiated (Slate)
 const COLORS = {
-  selected: BRAND.navy,        // Navy - selected project
-  sameAgeBand: BRAND.blue,     // Blue - same age cohort
-  otherBand: BRAND.sky,        // Sky - other age cohorts
-  selectedHover: '#2d4660',
-  sameAgeBandHover: '#6889a6',
-  otherBandHover: '#a8c5d4',
+  selected: REGION.CCR,        // slate-900 - selected project
+  sameAgeBand: REGION.RCR,     // slate-700 - same age cohort
+  otherBand: REGION.OCR,       // slate-500 - other age cohorts
+  selectedHover: '#1E293B',    // slate-800
+  sameAgeBandHover: '#475569', // slate-600
+  otherBandHover: '#94A3B8',   // slate-400
 };
 
 // Row height for alignment between table and chart
@@ -190,7 +190,7 @@ function DistrictComparisonChartBase({
           },
         },
         displayColors: false,
-        backgroundColor: 'rgba(33, 52, 72, 0.95)',
+        backgroundColor: 'rgba(15, 23, 42, 0.95)',  // slate-900
         titleColor: '#fff',
         bodyColor: '#fff',
         padding: 12,

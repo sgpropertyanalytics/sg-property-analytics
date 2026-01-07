@@ -2,7 +2,8 @@ import React, { useMemo } from 'react';
 // Chart.js components registered globally in chartSetup.js
 import { Bar } from 'react-chartjs-2';
 import { BASE_CHART_OPTIONS, CHART_AXIS_DEFAULTS } from '../constants/chartOptions';
-import { REGION_BADGE_CLASSES, THEME_COLORS } from '../constants';
+import { REGION_BADGE_CLASSES } from '../constants';
+import { REGION, CANVAS, INK } from '../constants/colors';
 
 /**
  * Lines of Code Trend Chart
@@ -46,13 +47,13 @@ export function LocTrendChart({ height = 280 }) {
         data: LOC_DATA.map(d => d.loc),
         backgroundColor: LOC_DATA.map((_, i) =>
           i === LOC_DATA.length - 1
-            ? 'rgba(33, 52, 72, 0.9)' // Navy for current
-            : 'rgba(84, 119, 146, 0.7)' // Slate blue for historical
+            ? 'rgba(15, 23, 42, 0.9)' // slate-900 for current
+            : 'rgba(51, 65, 85, 0.7)' // slate-700 for historical
         ),
         borderColor: LOC_DATA.map((_, i) =>
           i === LOC_DATA.length - 1
-            ? THEME_COLORS.navy
-            : THEME_COLORS.blue
+            ? REGION.CCR  // slate-900
+            : REGION.RCR  // slate-700
         ),
         borderWidth: 1,
         borderRadius: 4,
@@ -67,10 +68,10 @@ export function LocTrendChart({ height = 280 }) {
         display: false,
       },
       tooltip: {
-        backgroundColor: 'rgba(33, 52, 72, 0.95)',
-        titleColor: THEME_COLORS.sand,
-        bodyColor: THEME_COLORS.sky,
-        borderColor: 'rgba(148, 180, 193, 0.3)',
+        backgroundColor: 'rgba(15, 23, 42, 0.95)',  // slate-900
+        titleColor: CANVAS.grid,  // slate-200
+        bodyColor: INK.muted,     // slate-400
+        borderColor: 'rgba(100, 116, 139, 0.3)',  // slate-500
         borderWidth: 1,
         cornerRadius: 8,
         padding: 12,
@@ -107,7 +108,7 @@ export function LocTrendChart({ height = 280 }) {
           ...CHART_AXIS_DEFAULTS.title,
         },
         grid: {
-          color: 'rgba(148, 180, 193, 0.15)',
+          color: 'rgba(100, 116, 139, 0.15)',  // slate-500
           drawTicks: false,
         },
         ticks: {
