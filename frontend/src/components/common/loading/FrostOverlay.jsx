@@ -78,7 +78,7 @@ export const FrostOverlay = React.memo(function FrostOverlay({
 
       {/* Blueprint layer when no children - gives frost something to blur */}
       {!children && (
-        <div className="absolute inset-0 z-0 bg-card p-4 text-[#94B4C1]/50">
+        <div className="absolute inset-0 z-0 bg-card p-4 text-brand-sky/50">
           <ChartBlueprint />
         </div>
       )}
@@ -106,7 +106,7 @@ export const FrostOverlay = React.memo(function FrostOverlay({
             {showSpinner && (
               <div className="flex flex-col items-center gap-3">
                 <FrostSpinner size="md" />
-                <span className="text-sm text-[#547792] font-medium">
+                <span className="text-sm text-brand-blue font-medium">
                   Loading
                 </span>
               </div>

@@ -263,10 +263,10 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, o
         {/* Header - refined typography */}
         <div className="px-5 py-4 border-b border-mono-muted shrink-0">
           <div className="flex items-baseline justify-between">
-            <h3 className="text-base font-semibold text-[#213448] tracking-tight">
+            <h3 className="text-base font-semibold text-brand-navy tracking-tight">
               Resale Volume & Quantum
             </h3>
-            <span className="text-[10px] font-medium text-[#94B4C1] uppercase tracking-wider">
+            <span className="text-[10px] font-medium text-brand-sky uppercase tracking-wider">
               {TIME_LABELS[timeGrouping]}
             </span>
           </div>

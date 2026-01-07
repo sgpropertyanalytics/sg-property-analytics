@@ -73,17 +73,17 @@ export class ErrorBoundary extends React.Component {
       if (isCompact) {
         // Compact error UI for individual chart failures
         return (
-          <div className="flex items-center justify-center p-4 bg-[#EAE0CF]/30 rounded-lg border border-[#94B4C1]/30">
+          <div className="flex items-center justify-center p-4 bg-brand-sand/30 rounded-lg border border-brand-sky/30">
             <div className="text-center">
-              <div className="w-8 h-8 mx-auto mb-2 rounded-full bg-[#547792]/10 flex items-center justify-center">
-                <svg className="w-4 h-4 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-8 h-8 mx-auto mb-2 rounded-full bg-brand-blue/10 flex items-center justify-center">
+                <svg className="w-4 h-4 text-brand-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
               </div>
-              <p className="text-sm text-[#547792] mb-2">Failed to load {componentName}</p>
+              <p className="text-sm text-brand-blue mb-2">Failed to load {componentName}</p>
               <button
                 onClick={this.handleRetry}
-                className="px-3 py-1 text-xs font-medium text-white bg-[#547792] rounded-md hover:bg-[#213448] transition-colors"
+                className="px-3 py-1 text-xs font-medium text-white bg-brand-blue rounded-md hover:bg-brand-navy transition-colors"
               >
                 Retry
               </button>
@@ -95,7 +95,7 @@ export class ErrorBoundary extends React.Component {
       // Full error UI for page-level failures
       return (
         <div className="min-h-[300px] flex items-center justify-center p-6">
-          <div className="max-w-md w-full bg-white rounded-xl border border-[#94B4C1]/50 shadow-sm p-6">
+          <div className="max-w-md w-full bg-white rounded-xl border border-brand-sky/50 shadow-sm p-6">
             {/* Error icon */}
             <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-rose-50 flex items-center justify-center">
               <svg className="w-6 h-6 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -104,17 +104,17 @@ export class ErrorBoundary extends React.Component {
             </div>
 
             {/* Error message */}
-            <h3 className="text-lg font-semibold text-[#213448] text-center mb-2">
+            <h3 className="text-lg font-semibold text-brand-navy text-center mb-2">
               Something went wrong
             </h3>
-            <p className="text-sm text-[#547792] text-center mb-4">
+            <p className="text-sm text-brand-blue text-center mb-4">
               {componentName} encountered an error. This has been logged for investigation.
             </p>
 
             {/* Error details (development only) */}
             {process.env.NODE_ENV === 'development' && this.state.error && (
-              <details className="mb-4 p-3 bg-[#EAE0CF]/30 rounded-lg text-xs">
-                <summary className="cursor-pointer text-[#547792] font-medium">
+              <details className="mb-4 p-3 bg-brand-sand/30 rounded-lg text-xs">
+                <summary className="cursor-pointer text-brand-blue font-medium">
                   Error Details
                 </summary>
                 <pre className="mt-2 text-rose-600 overflow-auto max-h-32">
@@ -128,13 +128,13 @@ export class ErrorBoundary extends React.Component {
             <div className="flex gap-3 justify-center">
               <button
                 onClick={this.handleRetry}
-                className="px-4 py-2 text-sm font-medium text-white bg-[#547792] rounded-lg hover:bg-[#213448] transition-colors"
+                className="px-4 py-2 text-sm font-medium text-white bg-brand-blue rounded-lg hover:bg-brand-navy transition-colors"
               >
                 Try Again
               </button>
               <button
                 onClick={this.handleRefresh}
-                className="px-4 py-2 text-sm font-medium text-[#547792] bg-[#EAE0CF]/50 rounded-lg hover:bg-[#EAE0CF] transition-colors"
+                className="px-4 py-2 text-sm font-medium text-brand-blue bg-brand-sand/50 rounded-lg hover:bg-brand-sand transition-colors"
               >
                 Refresh Page
               </button>

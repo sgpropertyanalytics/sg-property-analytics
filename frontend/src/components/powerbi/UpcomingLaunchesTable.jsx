@@ -152,13 +152,13 @@ export function UpcomingLaunchesTable({
   ];
 
   return (
-    <div ref={containerRef} id="upcoming-launches-table" className={`bg-card ${compact ? '' : 'rounded-lg border border-[#94B4C1]/50'} overflow-hidden`}>
+    <div ref={containerRef} id="upcoming-launches-table" className={`bg-card ${compact ? '' : 'rounded-lg border border-brand-sky/50'} overflow-hidden`}>
       {/* Header - conditionally shown */}
       {showHeader && (
-        <div className="px-4 py-3 border-b border-[#94B4C1]/30 flex items-center justify-between">
+        <div className="px-4 py-3 border-b border-brand-sky/30 flex items-center justify-between">
           <div>
-            <h3 className="font-semibold text-[#213448]">Upcoming Launches</h3>
-            <p className="text-xs text-[#547792]">
+            <h3 className="font-semibold text-brand-navy">Upcoming Launches</h3>
+            <p className="text-xs text-brand-blue">
               {isLoading ? 'Loading...' : `${safeData.length} pre-launch projects`}
             </p>
           </div>
@@ -166,7 +166,7 @@ export function UpcomingLaunchesTable({
             <button
               type="button"
               onClick={(e) => { e.preventDefault(); handleRefresh(); }}
-              className="p-1.5 text-[#547792] hover:text-[#213448] hover:bg-[#EAE0CF] rounded transition-colors"
+              className="p-1.5 text-brand-blue hover:text-brand-navy hover:bg-brand-sand rounded transition-colors"
               title="Refresh data"
               disabled={isLoading}
             >
@@ -185,7 +185,7 @@ export function UpcomingLaunchesTable({
         ) : isLoading ? (
           <FrostOverlay height={height - 60} showSpinner showProgress />
         ) : safeData.length === 0 ? (
-          <div className="text-center py-8 text-[#547792] text-sm">
+          <div className="text-center py-8 text-brand-blue text-sm">
             No upcoming launches found.
           </div>
         ) : (
@@ -194,19 +194,19 @@ export function UpcomingLaunchesTable({
               <div className="flex justify-between items-start gap-3">
                 {/* Left: Project info */}
                 <div className="min-w-0 flex-1">
-                  <div className="font-medium text-[#213448] truncate">
+                  <div className="font-medium text-brand-navy truncate">
                     {project.project_name || '-'}
                   </div>
-                  <div className="text-xs text-[#547792] mt-0.5">
+                  <div className="text-xs text-brand-blue mt-0.5">
                     {project.developer && project.developer !== 'TBD' ? project.developer : '-'}
                   </div>
-                  <div className="text-xs text-[#547792] mt-0.5">
+                  <div className="text-xs text-brand-blue mt-0.5">
                     {project.total_units ? `${project.total_units.toLocaleString()} units` : '-'}
                   </div>
                 </div>
                 {/* Right: Date, Segment, PSF */}
                 <div className="flex-shrink-0 text-right">
-                  <div className="text-xs text-[#547792]">
+                  <div className="text-xs text-brand-blue">
                     {formatDate(project.expected_launch_date, project.launch_year)}
                   </div>
                   {project.market_segment && (
@@ -215,7 +215,7 @@ export function UpcomingLaunchesTable({
                     </span>
                   )}
                   {(project.indicative_psf_low || project.indicative_psf_high) && (
-                    <div className="text-xs text-[#213448] font-medium mt-1">
+                    <div className="text-xs text-brand-navy font-medium mt-1">
                       {formatPSFRange(project.indicative_psf_low, project.indicative_psf_high)} PSF
                     </div>
                   )}

@@ -277,14 +277,14 @@ function PriceDistributionChartBase({
       {/* Header - shrink-0 */}
       <div className="px-4 py-3 border-b border-mono-muted shrink-0">
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-[#213448]">Price Distribution</h3>
+          <h3 className="font-semibold text-brand-navy">Price Distribution</h3>
           {/* Toggle for luxury tail */}
           <button
             onClick={() => setShowFullRange(!showFullRange)}
             className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
               showFullRange
-                ? 'bg-[#213448] text-white border-[#213448]'
-                : 'bg-white text-[#547792] border-[#94B4C1] hover:bg-[#EAE0CF]/50'
+                ? 'bg-brand-navy text-white border-brand-navy'
+                : 'bg-white text-brand-blue border-brand-sky hover:bg-brand-sand/50'
             }`}
           >
             {showFullRange ? 'Hide luxury tail' : 'Show luxury tail'}
@@ -312,10 +312,10 @@ function PriceDistributionChartBase({
       <div className="shrink-0">
         <KeyInsightBox title="How to Interpret this Chart" variant="info" compact>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-0.5">
-            <div><span className="font-semibold text-[#213448]">Median</span> — The typical transaction price.</div>
-            <div><span className="font-semibold text-[#213448]">Q1–Q3</span> — Where the middle 50% of homes sell.</div>
-            <div><span className="font-semibold text-[#213448]">IQR</span> — How wide prices vary within the market.</div>
-            <div><span className="font-semibold text-[#213448]">Mode</span> — The most common price range.</div>
+            <div><span className="font-semibold text-brand-navy">Median</span> — The typical transaction price.</div>
+            <div><span className="font-semibold text-brand-navy">Q1–Q3</span> — Where the middle 50% of homes sell.</div>
+            <div><span className="font-semibold text-brand-navy">IQR</span> — How wide prices vary within the market.</div>
+            <div><span className="font-semibold text-brand-navy">Mode</span> — The most common price range.</div>
           </div>
         </KeyInsightBox>
       </div>
@@ -328,14 +328,14 @@ function PriceDistributionChartBase({
       </ChartSlot>
 
       {/* Footer - fixed height h-11 for consistent alignment */}
-      <div className="shrink-0 h-11 px-4 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 flex items-center justify-between gap-3 text-xs text-[#547792]">
+      <div className="shrink-0 h-11 px-4 bg-brand-sand/30 border-t border-brand-sky/30 flex items-center justify-between gap-3 text-xs text-brand-blue">
         <span className="truncate min-w-0 flex-1">
           {displayCount.toLocaleString()} transactions
           {!showFullRange && tail?.pct > 0 && (
             <span className="ml-1 text-amber-600">• Top {tail.pct}% hidden</span>
           )}
         </span>
-        <span className="shrink-0 text-[#94B4C1] hidden sm:block">
+        <span className="shrink-0 text-brand-sky hidden sm:block">
           {formatPrice(minPrice)} – {formatPrice(maxPrice)} ({bins.length} bins)
         </span>
       </div>

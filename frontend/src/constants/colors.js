@@ -12,6 +12,9 @@
 // =============================================================================
 
 export const MONO = {
+  void: '#0A0A0A',      // The void - nav background (denser than dark)
+  surface: '#1A1A1A',   // Elevated surfaces on void
+  edge: '#333333',      // Machined metal borders
   ink: '#000000',       // Pure black - headers, borders, emphasis
   dark: '#171717',      // Near-black - active states (inverted BG)
   mid: '#525252',       // Medium gray - body text
@@ -101,14 +104,13 @@ export const CHART = {
 export const THEME_COLORS = BRAND;
 
 /**
- * Region badge Tailwind classes (using hardcoded hex for Tailwind JIT)
- * These use raw hex because Tailwind needs static analysis
+ * Region badge Tailwind classes using design system tokens
  */
 export const REGION_BADGE_CLASSES = {
-  CCR: 'bg-[#213448] text-white',
-  RCR: 'bg-[#547792] text-white',
-  OCR: 'bg-[#94B4C1] text-[#213448]',
-  SAND: 'bg-[#EAE0CF] text-[#213448]',
+  CCR: 'bg-brand-navy text-white',
+  RCR: 'bg-brand-blue text-white',
+  OCR: 'bg-brand-sky text-brand-navy',
+  SAND: 'bg-brand-sand text-brand-navy',
 };
 
 // =============================================================================

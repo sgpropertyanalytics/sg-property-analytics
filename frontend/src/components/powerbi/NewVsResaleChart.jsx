@@ -398,14 +398,14 @@ function NewVsResaleChartBase({ height = 350 }) {
   const getTrendIcon = (trend) => {
     if (isPremiumTrend.widening(trend)) {
       return (
-        <svg className="w-4 h-4 text-[#213448]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4 text-brand-navy" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
         </svg>
       );
     }
     if (isPremiumTrend.narrowing(trend)) {
       return (
-        <svg className="w-4 h-4 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4 text-brand-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
         </svg>
       );
@@ -460,14 +460,14 @@ function NewVsResaleChartBase({ height = 350 }) {
       {/* Header - shrink-0 */}
       <div className="px-3 py-2.5 md:px-4 md:py-3 border-b border-mono-muted shrink-0">
         <div className="min-w-0">
-          <h3 className="font-semibold text-[#213448] text-sm md:text-base flex items-center gap-2">
+          <h3 className="font-semibold text-brand-navy text-sm md:text-base flex items-center gap-2">
             New Sale vs Recently TOP (4-7 yrs)
             {/* Subtle spinner when fetching new data in background */}
             {isFetching && (
-              <span className="w-3 h-3 border-2 border-[#547792]/30 border-t-[#547792] rounded-full animate-spin" />
+              <span className="w-3 h-3 border-2 border-brand-blue/30 border-t-[#547792] rounded-full animate-spin" />
             )}
           </h3>
-          <p className="text-xs text-[#547792] mt-0.5">
+          <p className="text-xs text-brand-blue mt-0.5">
             {getFilterSummary()} · by {TIME_LABELS[timeGrouping].toLowerCase()}
             {hasSignificantGaps && (
               <span className="ml-2 text-amber-600">
@@ -480,21 +480,21 @@ function NewVsResaleChartBase({ height = 350 }) {
         {/* Premium KPIs */}
         <div className="flex flex-wrap gap-2 mt-3">
           {summary.currentPremium !== null && summary.currentPremium !== undefined && (
-            <span className="px-3 py-1.5 rounded-full bg-[#213448]/10 text-[#213448] text-xs md:text-sm font-medium inline-flex items-center gap-1">
+            <span className="px-3 py-1.5 rounded-full bg-brand-navy/10 text-brand-navy text-xs md:text-sm font-medium inline-flex items-center gap-1">
               Current: {summary.currentPremium > 0 ? '+' : ''}{summary.currentPremium}%
               {getTrendIcon(summary.premiumTrend)}
             </span>
           )}
           {summary.avgPremium10Y !== null && summary.avgPremium10Y !== undefined && (
-            <span className="px-3 py-1.5 rounded-full bg-[#EAE0CF]/50 text-[#547792] text-xs md:text-sm">
+            <span className="px-3 py-1.5 rounded-full bg-brand-sand/50 text-brand-blue text-xs md:text-sm">
               Period Avg: {summary.avgPremium10Y > 0 ? '+' : ''}{summary.avgPremium10Y}%
             </span>
           )}
           {summary.premiumTrend && !isPremiumTrend.stable(summary.premiumTrend) && (
             <span className={`px-3 py-1.5 rounded-full text-xs md:text-sm ${
               isPremiumTrend.widening(summary.premiumTrend)
-                ? 'bg-[#213448]/10 text-[#213448]'
-                : 'bg-[#94B4C1]/30 text-[#547792]'
+                ? 'bg-brand-navy/10 text-brand-navy'
+                : 'bg-brand-sky/30 text-brand-blue'
             }`}>
               {PremiumTrendLabels[summary.premiumTrend] || summary.premiumTrend}
             </span>
@@ -539,7 +539,7 @@ function NewVsResaleChartBase({ height = 350 }) {
             <Line ref={chartRef} data={chartConfig} options={options} />
           </PreviewChartOverlay>
         ) : (
-          <div className="flex items-center justify-center h-full text-[#547792]">
+          <div className="flex items-center justify-center h-full text-brand-blue">
             <div className="text-center">
               <svg className="w-12 h-12 mx-auto mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />

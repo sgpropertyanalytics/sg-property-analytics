@@ -48,26 +48,26 @@ export default function Pricing() {
   // If already premium, show confirmation
   if (isPremium) {
     return (
-      <div className="min-h-screen bg-[#EAE0CF] py-16 px-4">
+      <div className="min-h-screen bg-brand-sand py-16 px-4">
         <div className="max-w-md mx-auto text-center">
-          <div className="bg-white rounded-2xl p-8 shadow-lg border border-[#94B4C1]/30">
+          <div className="bg-white rounded-2xl p-8 shadow-lg border border-brand-sky/30">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-[#213448] mb-2">You're a Premium Member</h2>
-            <p className="text-[#547792] mb-6">
+            <h2 className="text-2xl font-bold text-brand-navy mb-2">You're a Premium Member</h2>
+            <p className="text-brand-blue mb-6">
               You have full access to all property data and features.
             </p>
-            <p className="text-sm text-[#94B4C1] mb-4">
+            <p className="text-sm text-brand-sky mb-4">
               {subscription.ends_at && (
                 <>Subscription ends: {new Date(subscription.ends_at).toLocaleDateString('en-SG', { year: 'numeric', month: 'long', day: 'numeric' })}</>
               )}
             </p>
             <button
               onClick={() => navigate('/market-overview')}
-              className="w-full py-3 bg-[#213448] text-white rounded-xl hover:bg-[#547792] transition-colors"
+              className="w-full py-3 bg-brand-navy text-white rounded-xl hover:bg-brand-blue transition-colors"
             >
               Go to Dashboard
             </button>
@@ -78,14 +78,14 @@ export default function Pricing() {
   }
 
   return (
-    <div className="min-h-screen bg-[#EAE0CF] py-16 px-4">
+    <div className="min-h-screen bg-brand-sand py-16 px-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-3xl md:text-4xl font-bold text-[#213448] mb-4">
+          <h1 className="text-3xl md:text-4xl font-bold text-brand-navy mb-4">
             Unlock Full Property Intelligence
           </h1>
-          <p className="text-[#547792] text-lg max-w-xl mx-auto">
+          <p className="text-brand-blue text-lg max-w-xl mx-auto">
             Access exact prices, project names, unit sizes, and PSF data to make confident property decisions.
           </p>
         </div>
@@ -95,43 +95,43 @@ export default function Pricing() {
 
           {/* Quarterly Card - White (Vertically centered, resting on page) */}
           <div
-            className="flex-1 bg-white rounded-2xl p-8 border border-[#94B4C1]/50 flex flex-col min-h-[420px]"
+            className="flex-1 bg-white rounded-2xl p-8 border border-brand-sky/50 flex flex-col min-h-[420px]"
             style={{ boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}
           >
             <div className="flex-1 flex flex-col justify-center">
-              <h3 className="text-xl font-bold text-[#547792] mb-2">Quarterly</h3>
+              <h3 className="text-xl font-bold text-brand-blue mb-2">Quarterly</h3>
               <div className="mb-1">
-                <span className="text-4xl font-bold text-[#213448]">$33</span>
-                <span className="text-[#547792] ml-1">/mo</span>
+                <span className="text-4xl font-bold text-brand-navy">$33</span>
+                <span className="text-brand-blue ml-1">/mo</span>
               </div>
-              <p className="text-[#547792] text-sm mb-6">Billed $99 every 3 months</p>
+              <p className="text-brand-blue text-sm mb-6">Billed $99 every 3 months</p>
 
               {/* Quarterly-specific value props */}
               <div className="space-y-2.5">
                 <p className="flex items-start gap-2 text-sm">
-                  <svg className="w-5 h-5 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-5 h-5 text-brand-sky mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  <span className="text-[#213448] font-medium">Full access to all valuation tools</span>
+                  <span className="text-brand-navy font-medium">Full access to all valuation tools</span>
                 </p>
                 <p className="flex items-start gap-2 text-sm">
-                  <svg className="w-5 h-5 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-5 h-5 text-brand-sky mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  <span className="text-[#547792]">Flexible commitment, cancel anytime</span>
+                  <span className="text-brand-blue">Flexible commitment, cancel anytime</span>
                 </p>
                 <p className="flex items-start gap-2 text-sm">
-                  <svg className="w-5 h-5 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-5 h-5 text-brand-sky mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  <span className="text-[#547792]">Try before committing to a year</span>
+                  <span className="text-brand-blue">Try before committing to a year</span>
                 </p>
               </div>
             </div>
 
             <button
               onClick={() => handleSelectPlan('quarterly')}
-              className="w-full py-3 border-2 border-[#547792] text-[#547792] rounded-xl font-medium hover:bg-[#547792]/10 transition-colors mt-6"
+              className="w-full py-3 border-2 border-brand-blue text-brand-blue rounded-xl font-medium hover:bg-brand-blue/10 transition-colors mt-6"
             >
               Start Quarterly Plan
             </button>
@@ -139,7 +139,7 @@ export default function Pricing() {
 
           {/* Annual Card - Deep Navy (Subtly elevated - ~5-10% taller) */}
           <div
-            className="flex-1 bg-[#213448] rounded-2xl relative flex flex-col"
+            className="flex-1 bg-brand-navy rounded-2xl relative flex flex-col"
             style={{
               boxShadow: '0 16px 32px -8px rgba(0,0,0,0.18)',
               padding: '2rem',
@@ -147,7 +147,7 @@ export default function Pricing() {
           >
             {/* Most Popular Badge - Social proof */}
             <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-              <span className="bg-[#EAE0CF] text-[#213448] text-xs font-bold px-4 py-1.5 rounded-full shadow-md flex items-center gap-1.5">
+              <span className="bg-brand-sand text-brand-navy text-xs font-bold px-4 py-1.5 rounded-full shadow-md flex items-center gap-1.5">
                 <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                 </svg>
@@ -156,57 +156,57 @@ export default function Pricing() {
             </div>
 
             <div className="flex-1 pt-2">
-              <h3 className="text-xl font-bold text-[#EAE0CF] mb-2">Annual</h3>
+              <h3 className="text-xl font-bold text-brand-sand mb-2">Annual</h3>
               <div className="mb-1">
                 <span className="text-4xl font-bold text-white">$24</span>
-                <span className="text-[#94B4C1] ml-1">/mo</span>
+                <span className="text-brand-sky ml-1">/mo</span>
               </div>
-              <p className="text-[#94B4C1] text-sm mb-6">Billed $288 yearly · <span className="text-[#EAE0CF]">Save $108</span></p>
+              <p className="text-brand-sky text-sm mb-6">Billed $288 yearly · <span className="text-brand-sand">Save $108</span></p>
 
               {/* Outcomes List (Master List) */}
               <ul className="space-y-3">
                 <li className="flex items-start gap-2">
-                  <svg className="w-5 h-5 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-5 h-5 text-brand-sky mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  <span className="text-[#94B4C1]">Check whether you over/under paid relatively</span>
+                  <span className="text-brand-sky">Check whether you over/under paid relatively</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <svg className="w-5 h-5 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-5 h-5 text-brand-sky mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  <span className="text-[#94B4C1]">Track resale benchmarks within your project</span>
+                  <span className="text-brand-sky">Track resale benchmarks within your project</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <svg className="w-5 h-5 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-5 h-5 text-brand-sky mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  <span className="text-[#94B4C1]">Get alerts when similar units transact</span>
+                  <span className="text-brand-sky">Get alerts when similar units transact</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <svg className="w-5 h-5 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-5 h-5 text-brand-sky mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  <span className="text-[#94B4C1]">Validate exit plans with market timing cycles</span>
+                  <span className="text-brand-sky">Validate exit plans with market timing cycles</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <svg className="w-5 h-5 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-5 h-5 text-brand-sky mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  <span className="text-[#94B4C1]">Spot pricing hotspots using district heatmaps</span>
+                  <span className="text-brand-sky">Spot pricing hotspots using district heatmaps</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <svg className="w-5 h-5 text-[#94B4C1] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-5 h-5 text-brand-sky mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  <span className="text-[#94B4C1]">See how floor level impacts price</span>
+                  <span className="text-brand-sky">See how floor level impacts price</span>
                 </li>
               </ul>
             </div>
 
             <button
               onClick={() => handleSelectPlan('annual')}
-              className="w-full py-3.5 bg-[#EAE0CF] text-[#213448] rounded-xl font-bold hover:bg-white transition-colors mt-6"
+              className="w-full py-3.5 bg-brand-sand text-brand-navy rounded-xl font-bold hover:bg-white transition-colors mt-6"
             >
               Start Annual & Save $108
             </button>
@@ -215,7 +215,7 @@ export default function Pricing() {
 
         {/* Trust Signals */}
         <div className="mt-12 text-center">
-          <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-[#547792]">
+          <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-brand-blue">
             <div className="flex items-center gap-2">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -229,7 +229,7 @@ export default function Pricing() {
         <div className="mt-8 text-center">
           <button
             onClick={() => navigate('/market-overview')}
-            className="text-[#547792] hover:text-[#213448] underline text-sm"
+            className="text-brand-blue hover:text-brand-navy underline text-sm"
           >
             Continue with limited access
           </button>

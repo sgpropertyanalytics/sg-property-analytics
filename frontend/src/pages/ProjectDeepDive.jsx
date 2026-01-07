@@ -129,12 +129,12 @@ export function ProjectDeepDiveContent() {
 
         <div className="space-y-6 animate-fade-in">
           {/* Input Panel */}
-          <div className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden">
+          <div className="bg-card rounded-lg border border-brand-sky/50 overflow-hidden">
             <form onSubmit={handleSearch}>
               <div className="grid grid-cols-1 lg:grid-cols-2">
                 {/* LEFT: Budget Slider + Search */}
                 <div className="min-w-0 px-4 md:px-5 py-4 md:py-5 lg:pr-6">
-                  <p className="text-sm text-[#547792] mb-4">Target price (S$) - Show transactions within +/- $100K of this amount</p>
+                  <p className="text-sm text-brand-blue mb-4">Target price (S$) - Show transactions within +/- $100K of this amount</p>
 
                   {/* Slider with floating value */}
                   <div className="relative mb-4 pt-8 max-w-full overflow-hidden">
@@ -151,7 +151,7 @@ export function ProjectDeepDiveContent() {
                           }`}
                           style={!isNearLeft && !isNearRight ? { left: `${thumbPercent}%` } : undefined}
                         >
-                          <span className="text-2xl font-semibold text-[#213448]">
+                          <span className="text-2xl font-semibold text-brand-navy">
                             {formatBudgetDisplay(budget)}
                           </span>
                         </div>
@@ -177,7 +177,7 @@ export function ProjectDeepDiveContent() {
                         return (
                           <span
                             key={tick.value}
-                            className={`absolute text-xs text-[#547792] ${
+                            className={`absolute text-xs text-brand-blue ${
                               isFirst ? 'left-0 text-left' :
                               isLast ? 'right-0 text-right' :
                               'transform -translate-x-1/2'
@@ -195,7 +195,7 @@ export function ProjectDeepDiveContent() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full px-4 py-2.5 bg-[#213448] text-white text-sm font-medium rounded-md hover:bg-[#547792] focus:outline-none focus:ring-2 focus:ring-[#547792] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150"
+                    className="w-full px-4 py-2.5 bg-brand-navy text-white text-sm font-medium rounded-md hover:bg-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150"
                   >
                     {loading ? (
                       <span className="flex items-center justify-center gap-2">
@@ -216,27 +216,27 @@ export function ProjectDeepDiveContent() {
                 </div>
 
                 {/* RIGHT: Optional Filters */}
-                <div className="min-w-0 mt-6 lg:mt-0 lg:border-l lg:border-[#94B4C1]/30 bg-[#547792]/[0.03]">
+                <div className="min-w-0 mt-6 lg:mt-0 lg:border-l lg:border-brand-sky/30 bg-brand-blue/[0.03]">
                   {/* Mobile: Collapsible toggle */}
                   <button
                     type="button"
                     onClick={() => setFiltersExpanded(!filtersExpanded)}
-                    className="lg:hidden w-full flex items-center justify-between min-h-[48px] px-4 py-3 active:bg-[#EAE0CF]/50"
+                    className="lg:hidden w-full flex items-center justify-between min-h-[48px] px-4 py-3 active:bg-brand-sand/50"
                   >
                     <span className="flex items-center gap-2">
-                      <svg className="w-4 h-4 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 text-brand-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                       </svg>
-                      <span className="text-sm font-medium text-[#213448]">Filters</span>
+                      <span className="text-sm font-medium text-brand-navy">Filters</span>
                     </span>
                     <div className="flex items-center gap-2">
                       {activeFilterCount > 0 && (
-                        <span className="px-2 py-0.5 bg-[#547792]/20 text-[#213448] text-xs rounded-full">
+                        <span className="px-2 py-0.5 bg-brand-blue/20 text-brand-navy text-xs rounded-full">
                           {activeFilterCount}
                         </span>
                       )}
                       <svg
-                        className={`w-4 h-4 text-[#547792] transition-transform duration-200 ${filtersExpanded ? 'rotate-180' : ''}`}
+                        className={`w-4 h-4 text-brand-blue transition-transform duration-200 ${filtersExpanded ? 'rotate-180' : ''}`}
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -248,15 +248,15 @@ export function ProjectDeepDiveContent() {
 
                   {/* Desktop: Always visible / Mobile: Collapsible */}
                   <div className={`${filtersExpanded ? 'block' : 'hidden'} lg:block px-4 md:px-5 py-4 md:py-5 w-full`}>
-                    <p className="hidden lg:block text-[10px] uppercase tracking-wide text-[#547792]/60 mb-3 font-medium">Optional filters</p>
+                    <p className="hidden lg:block text-[10px] uppercase tracking-wide text-brand-blue/60 mb-3 font-medium">Optional filters</p>
                     <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
                       {/* Bedroom */}
                       <div>
-                        <label className="block text-xs font-medium text-[#547792] mb-1">Bedroom</label>
+                        <label className="block text-xs font-medium text-brand-blue mb-1">Bedroom</label>
                         <select
                           value={bedroom}
                           onChange={(e) => setBedroom(e.target.value)}
-                          className="w-full px-3 py-2 text-sm border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20"
+                          className="w-full px-3 py-2 text-sm border border-brand-sky/50 rounded focus:outline-none focus:ring-1 focus:ring-brand-blue focus:border-transparent text-brand-navy bg-brand-sand/20"
                         >
                           <option value="">All</option>
                           <option value="1">1BR</option>
@@ -269,14 +269,14 @@ export function ProjectDeepDiveContent() {
 
                       {/* Market Segment */}
                       <div>
-                        <label className="block text-xs font-medium text-[#547792] mb-1">Segment</label>
+                        <label className="block text-xs font-medium text-brand-blue mb-1">Segment</label>
                         <select
                           value={region}
                           onChange={(e) => {
                             setRegion(e.target.value);
                             setDistrict('');
                           }}
-                          className="w-full px-3 py-2 text-sm border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20"
+                          className="w-full px-3 py-2 text-sm border border-brand-sky/50 rounded focus:outline-none focus:ring-1 focus:ring-brand-blue focus:border-transparent text-brand-navy bg-brand-sand/20"
                         >
                           <option value="">All</option>
                           <option value="CCR">CCR</option>
@@ -287,11 +287,11 @@ export function ProjectDeepDiveContent() {
 
                       {/* District */}
                       <div>
-                        <label className="block text-xs font-medium text-[#547792] mb-1">District</label>
+                        <label className="block text-xs font-medium text-brand-blue mb-1">District</label>
                         <select
                           value={district}
                           onChange={(e) => setDistrict(e.target.value)}
-                          className="w-full px-3 py-2 text-sm border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20"
+                          className="w-full px-3 py-2 text-sm border border-brand-sky/50 rounded focus:outline-none focus:ring-1 focus:ring-brand-blue focus:border-transparent text-brand-navy bg-brand-sand/20"
                           disabled={filterOptions.loading}
                         >
                           <option value="">All</option>
@@ -303,11 +303,11 @@ export function ProjectDeepDiveContent() {
 
                       {/* Tenure */}
                       <div>
-                        <label className="block text-xs font-medium text-[#547792] mb-1">Tenure</label>
+                        <label className="block text-xs font-medium text-brand-blue mb-1">Tenure</label>
                         <select
                           value={tenure}
                           onChange={(e) => setTenure(e.target.value)}
-                          className="w-full px-3 py-2 text-sm border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20"
+                          className="w-full px-3 py-2 text-sm border border-brand-sky/50 rounded focus:outline-none focus:ring-1 focus:ring-brand-blue focus:border-transparent text-brand-navy bg-brand-sand/20"
                         >
                           <option value="">All</option>
                           {TENURE_OPTIONS.map(opt => (
@@ -318,11 +318,11 @@ export function ProjectDeepDiveContent() {
 
                       {/* Sale Type */}
                       <div>
-                        <label className="block text-xs font-medium text-[#547792] mb-1">Sale Type</label>
+                        <label className="block text-xs font-medium text-brand-blue mb-1">Sale Type</label>
                         <select
                           value={saleType}
                           onChange={(e) => setSaleType(e.target.value)}
-                          className="w-full px-3 py-2 text-sm border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20"
+                          className="w-full px-3 py-2 text-sm border border-brand-sky/50 rounded focus:outline-none focus:ring-1 focus:ring-brand-blue focus:border-transparent text-brand-navy bg-brand-sand/20"
                         >
                           <option value="">All</option>
                           {SALE_TYPE_OPTIONS.filter(opt => opt.value !== SaleType.SUB_SALE).map(opt => (
@@ -333,11 +333,11 @@ export function ProjectDeepDiveContent() {
 
                       {/* Property Age */}
                       <div>
-                        <label className="block text-xs font-medium text-[#547792] mb-1">Property Age</label>
+                        <label className="block text-xs font-medium text-brand-blue mb-1">Property Age</label>
                         <select
                           value={leaseAge}
                           onChange={(e) => setLeaseAge(e.target.value)}
-                          className="w-full px-3 py-2 text-sm border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20"
+                          className="w-full px-3 py-2 text-sm border border-brand-sky/50 rounded focus:outline-none focus:ring-1 focus:ring-brand-blue focus:border-transparent text-brand-navy bg-brand-sand/20"
                         >
                           <option value="">All</option>
                           <option value="0-5">New / Recently TOP (≤5 yrs)</option>
@@ -392,9 +392,9 @@ export function ProjectDeepDiveContent() {
               <div className="flex items-center justify-center py-3">
                 <div className="flex items-center gap-3">
                   <div className="h-px w-16 bg-gradient-to-r from-transparent to-[#94B4C1]/50" />
-                  <div className="flex items-center gap-2 px-5 py-2 bg-[#EAE0CF]/40 border border-[#94B4C1]/30 rounded-full">
-                    <span className="text-sm font-semibold text-[#213448] tracking-wide">Upcoming New Launches</span>
-                    <svg className="w-4 h-4 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="flex items-center gap-2 px-5 py-2 bg-brand-sand/40 border border-brand-sky/30 rounded-full">
+                    <span className="text-sm font-semibold text-brand-navy tracking-wide">Upcoming New Launches</span>
+                    <svg className="w-4 h-4 text-brand-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </div>
@@ -402,12 +402,12 @@ export function ProjectDeepDiveContent() {
                 </div>
               </div>
 
-              <div className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden">
-                <div className="px-4 py-3 border-b border-[#94B4C1]/30 flex items-center gap-3">
+              <div className="bg-card rounded-lg border border-brand-sky/50 overflow-hidden">
+                <div className="px-4 py-3 border-b border-brand-sky/30 flex items-center gap-3">
                   <span className="text-xl">🏗️</span>
                   <div>
-                    <h3 className="font-semibold text-[#213448]">Upcoming New Launches</h3>
-                    <p className="text-xs text-[#547792]">Projects expected to launch soon - not yet available for sale</p>
+                    <h3 className="font-semibold text-brand-navy">Upcoming New Launches</h3>
+                    <p className="text-xs text-brand-blue">Projects expected to launch soon - not yet available for sale</p>
                   </div>
                 </div>
                 <UpcomingLaunchesTable height={300} showHeader={false} compact={true} />
@@ -421,9 +421,9 @@ export function ProjectDeepDiveContent() {
               <div className="flex items-center justify-center py-3">
                 <div className="flex items-center gap-3">
                   <div className="h-px w-16 bg-gradient-to-r from-transparent to-[#94B4C1]/50" />
-                  <div className="flex items-center gap-2 px-5 py-2 bg-[#EAE0CF]/40 border border-[#94B4C1]/30 rounded-full">
-                    <span className="text-sm font-semibold text-[#213448] tracking-wide">Remaining New Launches</span>
-                    <svg className="w-4 h-4 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="flex items-center gap-2 px-5 py-2 bg-brand-sand/40 border border-brand-sky/30 rounded-full">
+                    <span className="text-sm font-semibold text-brand-navy tracking-wide">Remaining New Launches</span>
+                    <svg className="w-4 h-4 text-brand-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </div>
@@ -431,12 +431,12 @@ export function ProjectDeepDiveContent() {
                 </div>
               </div>
 
-              <div className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden">
-                <div className="px-4 py-3 border-b border-[#94B4C1]/30 flex items-center gap-3">
+              <div className="bg-card rounded-lg border border-brand-sky/50 overflow-hidden">
+                <div className="px-4 py-3 border-b border-brand-sky/30 flex items-center gap-3">
                   <span className="text-xl">🏢</span>
                   <div>
-                    <h3 className="font-semibold text-[#213448]">Remaining New Launches</h3>
-                    <p className="text-xs text-[#547792]">Already launched projects with unsold units within your budget</p>
+                    <h3 className="font-semibold text-brand-navy">Remaining New Launches</h3>
+                    <p className="text-xs text-brand-blue">Already launched projects with unsold units within your budget</p>
                   </div>
                 </div>
                 <HotProjectsTable
@@ -459,13 +459,13 @@ export function ProjectDeepDiveContent() {
 
           {/* Initial state - before search */}
           {!hasSearched && (
-            <div className="bg-card rounded-lg border border-[#94B4C1]/50 p-8 text-center">
+            <div className="bg-card rounded-lg border border-brand-sky/50 p-8 text-center">
               <div className="max-w-md mx-auto">
-                <svg className="w-16 h-16 mx-auto text-[#94B4C1] mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-16 h-16 mx-auto text-brand-sky mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
-                <h3 className="text-lg font-semibold text-[#213448] mb-2">Benchmark Transaction Prices</h3>
-                <p className="text-sm text-[#547792]">
+                <h3 className="text-lg font-semibold text-brand-navy mb-2">Benchmark Transaction Prices</h3>
+                <p className="text-sm text-brand-blue">
                   Drag the budget slider above to set your target price ceiling and click Search to view realized transaction prices.
                   Use the optional filters to narrow down by bedroom type, region, or district.
                 </p>

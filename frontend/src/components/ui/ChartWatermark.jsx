@@ -32,7 +32,7 @@ export function ChartWatermark({ children }) {
       {/* Watermark overlay - subtle, non-obstructive */}
       <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden">
         <span
-          className="text-[#94B4C1]/20 text-4xl md:text-5xl font-bold select-none whitespace-nowrap"
+          className="text-brand-sky/20 text-4xl md:text-5xl font-bold select-none whitespace-nowrap"
           style={{ transform: 'rotate(-15deg)' }}
         >
           PREVIEW

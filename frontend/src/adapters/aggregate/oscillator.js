@@ -169,11 +169,11 @@ export const getZScoreShortLabel = (z) => {
  * @returns {string} Tailwind color class (text-*)
  */
 export const getZScoreColor = (z) => {
-  if (z === null || z === undefined || isNaN(z)) return 'text-[#547792]';
+  if (z === null || z === undefined || isNaN(z)) return 'text-brand-blue';
 
   if (z > 2.0) return 'text-red-600';         // Extreme overvaluation
   if (z > 1.0) return 'text-amber-600';       // Elevated, watch closely
-  if (z > -1.0) return 'text-[#213448]';      // Normal range
+  if (z > -1.0) return 'text-brand-navy';      // Normal range
   if (z > -2.0) return 'text-emerald-500';    // Compressed premium (green = good for buyers)
   return 'text-emerald-600';                  // Extreme compression (darker green)
 };

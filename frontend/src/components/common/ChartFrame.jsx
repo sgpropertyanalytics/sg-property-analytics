@@ -73,7 +73,7 @@ export const ChartFrame = React.memo(function ChartFrame({
         // Disabled by user (not boot pending) - show neutral placeholder
         return (
           <div
-            className="flex items-center justify-center text-sm text-[#547792]"
+            className="flex items-center justify-center text-sm text-brand-blue"
             style={{ minHeight: height }}
           >
             Select filters to load data.
@@ -128,7 +128,7 @@ export const ChartFrame = React.memo(function ChartFrame({
                 staggerIndex={staggerIndex}
               >
                 <div
-                  className="flex items-center justify-center text-sm text-[#547792]"
+                  className="flex items-center justify-center text-sm text-brand-blue"
                   style={{ minHeight: height }}
                 >
                   No data for selected filters.
@@ -138,7 +138,7 @@ export const ChartFrame = React.memo(function ChartFrame({
           }
           return (
             <div
-              className="flex items-center justify-center text-sm text-[#547792]"
+              className="flex items-center justify-center text-sm text-brand-blue"
               style={{ minHeight: height }}
             >
               No data for selected filters.
@@ -201,7 +201,7 @@ export const ChartFrame = React.memo(function ChartFrame({
   if (empty && !loading && !isUpdating && !isPendingProp) {
     return (
       <div
-        className="flex items-center justify-center text-sm text-[#547792]"
+        className="flex items-center justify-center text-sm text-brand-blue"
         style={{ minHeight: height }}
       >
         No data for selected filters.

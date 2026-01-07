@@ -337,10 +337,10 @@ function BeadsChartBase({
         <DebugOverlay />
         {/* Header - shrink-0 */}
         <div className="px-4 py-3 border-b border-mono-muted shrink-0">
-          <h3 className="font-semibold text-[#213448]">
+          <h3 className="font-semibold text-brand-navy">
             Volume-Weighted Median Price by Region & Bedroom
           </h3>
-          <p className="text-xs text-[#547792] mt-0.5">
+          <p className="text-xs text-brand-blue mt-0.5">
             Bubble size = transaction count • Position = median price
           </p>
         </div>
@@ -349,10 +349,10 @@ function BeadsChartBase({
         <div className="shrink-0">
           <KeyInsightBox title="How to Interpret this Chart" variant="info" compact>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-0.5">
-              <div><span className="font-semibold text-[#213448]">X-Position</span> — Volume-weighted median price.</div>
-              <div><span className="font-semibold text-[#213448]">Bubble Size</span> — Number of transactions.</div>
-              <div><span className="font-semibold text-[#213448]">Color</span> — Bedroom type (1BR to 5BR).</div>
-              <div><span className="font-semibold text-[#213448]">String Line</span> — Price range for that region.</div>
+              <div><span className="font-semibold text-brand-navy">X-Position</span> — Volume-weighted median price.</div>
+              <div><span className="font-semibold text-brand-navy">Bubble Size</span> — Number of transactions.</div>
+              <div><span className="font-semibold text-brand-navy">Color</span> — Bedroom type (1BR to 5BR).</div>
+              <div><span className="font-semibold text-brand-navy">String Line</span> — Price range for that region.</div>
             </div>
           </KeyInsightBox>
         </div>
@@ -363,7 +363,7 @@ function BeadsChartBase({
         </ChartSlot>
 
         {/* Footer - h-11 matches PriceDistributionChart */}
-        <div className="shrink-0 h-11 px-4 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 flex items-center justify-between text-xs text-[#547792]">
+        <div className="shrink-0 h-11 px-4 bg-brand-sand/30 border-t border-brand-sky/30 flex items-center justify-between text-xs text-brand-blue">
           <span>
             {stats?.totalTransactions?.toLocaleString() || 0} transactions
           </span>

@@ -52,7 +52,7 @@ const DebugEmptyState = ({ debugInfo }) => {
 
   return (
     <div className="p-3">
-      <div className="text-sm text-[#547792] mb-2">No data for selected filters.</div>
+      <div className="text-sm text-brand-blue mb-2">No data for selected filters.</div>
       <div className="text-xs font-mono bg-black/85 text-green-400 rounded-lg border border-green-500/50 p-2">
         <div className="flex items-center justify-between mb-2">
           <span className="font-bold text-green-300">Debug Info</span>
@@ -115,7 +115,7 @@ export const QueryState = React.memo(function QueryState({ loading, error, onRet
     if (skeleton) {
       return <ChartSkeleton type={skeleton} height={height} />;
     }
-    return <div className="p-3 text-sm text-[#547792]">Loading…</div>;
+    return <div className="p-3 text-sm text-brand-blue">Loading…</div>;
   }
   if (error) return <ErrorState message={getQueryErrorMessage(error)} onRetry={onRetry} />;
   if (empty) {
@@ -123,7 +123,7 @@ export const QueryState = React.memo(function QueryState({ loading, error, onRet
     if (debugMode && debugInfo) {
       return <DebugEmptyState debugInfo={debugInfo} />;
     }
-    return <div className="p-3 text-sm text-[#547792]">No data for selected filters.</div>;
+    return <div className="p-3 text-sm text-brand-blue">No data for selected filters.</div>;
   }
   return children;
 });

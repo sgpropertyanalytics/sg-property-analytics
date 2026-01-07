@@ -77,7 +77,7 @@ export function PriceCorridorCell({ cellData, budget, compact = false }) {
             className="absolute transform -translate-x-1/2 text-xs whitespace-nowrap"
             style={{ left: `${budgetPosition}%` }}
           >
-            <span className="text-[#213448]">▼</span>
+            <span className="text-brand-navy">▼</span>
             {!compact && zoneStyle && (
               <span
                 className="ml-1 px-1 py-0.5 rounded text-[10px] font-medium"
@@ -94,17 +94,17 @@ export function PriceCorridorCell({ cellData, budget, compact = false }) {
       <div className="relative h-3 rounded-full overflow-hidden bg-gray-100 mb-2">
         {/* Bargain zone (left) */}
         <div
-          className="absolute top-0 bottom-0 left-0 bg-[#94B4C1]"
+          className="absolute top-0 bottom-0 left-0 bg-brand-sky"
           style={{ width: `${q1Pct}%` }}
         />
         {/* Fair zone (middle) */}
         <div
-          className="absolute top-0 bottom-0 bg-[#213448]"
+          className="absolute top-0 bottom-0 bg-brand-navy"
           style={{ left: `${q1Pct}%`, width: `${q3Pct - q1Pct}%` }}
         />
         {/* Premium zone (right) */}
         <div
-          className="absolute top-0 bottom-0 right-0 bg-[#EAE0CF]"
+          className="absolute top-0 bottom-0 right-0 bg-brand-sand"
           style={{ left: `${q3Pct}%` }}
         />
 
@@ -120,7 +120,7 @@ export function PriceCorridorCell({ cellData, budget, compact = false }) {
       {/* Price labels */}
       <div className="flex justify-between text-[10px] text-gray-600 mb-1">
         <span>{formatPriceShort(priceMin)}</span>
-        <span className="font-medium text-[#213448]">
+        <span className="font-medium text-brand-navy">
           {formatPriceShort(priceQ1)} - {formatPriceShort(priceQ3)}
         </span>
         <span>{formatPriceShort(priceMax)}</span>
@@ -148,15 +148,15 @@ export function PriceCorridorLegend() {
   return (
     <div className="flex items-center gap-4 text-xs text-gray-600">
       <div className="flex items-center gap-1">
-        <div className="w-3 h-3 rounded bg-[#94B4C1]" />
+        <div className="w-3 h-3 rounded bg-brand-sky" />
         <span>Bargain (&lt;Q1)</span>
       </div>
       <div className="flex items-center gap-1">
-        <div className="w-3 h-3 rounded bg-[#213448]" />
+        <div className="w-3 h-3 rounded bg-brand-navy" />
         <span>Fair (Q1-Q3)</span>
       </div>
       <div className="flex items-center gap-1">
-        <div className="w-3 h-3 rounded bg-[#EAE0CF] border border-gray-300" />
+        <div className="w-3 h-3 rounded bg-brand-sand border border-gray-300" />
         <span>Premium (&gt;Q3)</span>
       </div>
     </div>

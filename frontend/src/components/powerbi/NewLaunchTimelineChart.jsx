@@ -315,13 +315,13 @@ function NewLaunchTimelineChartBase({ height = 300 }) {
           <div className="px-3 py-2.5 md:px-4 md:py-3 border-b border-mono-muted shrink-0">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <h3 className="font-semibold text-[#213448] text-sm md:text-base flex items-center gap-2">
+                <h3 className="font-semibold text-brand-navy text-sm md:text-base flex items-center gap-2">
                   New Launch Activity
                   {isFetching && (
-                    <span className="w-3 h-3 border-2 border-[#547792]/30 border-t-[#547792] rounded-full animate-spin" />
+                    <span className="w-3 h-3 border-2 border-brand-blue/30 border-t-[#547792] rounded-full animate-spin" />
                   )}
                 </h3>
-                <p className="text-xs text-[#547792] mt-0.5">
+                <p className="text-xs text-brand-blue mt-0.5">
                   {getFilterSummary()} · by {TIME_LABELS[timeGrouping].toLowerCase()}
                 </p>
               </div>
@@ -330,8 +330,8 @@ function NewLaunchTimelineChartBase({ height = 300 }) {
                 onClick={() => setInclude2020(!include2020)}
                 className={`shrink-0 text-xs px-2.5 py-1 rounded-full border transition-colors ${
                   include2020
-                    ? 'bg-[#213448] text-white border-[#213448]'
-                    : 'bg-white text-[#547792] border-[#94B4C1] hover:bg-[#EAE0CF]/50'
+                    ? 'bg-brand-navy text-white border-brand-navy'
+                    : 'bg-white text-brand-blue border-brand-sky hover:bg-brand-sand/50'
                 }`}
               >
                 {include2020 ? 'Hide 2020' : 'Include 2020'}
@@ -341,19 +341,19 @@ function NewLaunchTimelineChartBase({ height = 300 }) {
             {/* Summary KPIs */}
             {hasData && (
               <div className="flex flex-wrap gap-2 mt-3">
-                <span className="px-3 py-1.5 rounded-full bg-[#94B4C1]/20 text-[#547792] text-xs md:text-sm font-medium">
+                <span className="px-3 py-1.5 rounded-full bg-brand-sky/20 text-brand-blue text-xs md:text-sm font-medium">
                   {totalProjectCount} projects
                 </span>
-                <span className="px-3 py-1.5 rounded-full bg-[#213448]/10 text-[#213448] text-xs md:text-sm">
+                <span className="px-3 py-1.5 rounded-full bg-brand-navy/10 text-brand-navy text-xs md:text-sm">
                   {totalUnitCount.toLocaleString()} units total
                 </span>
                 {avgUnitsPerProject > 0 && (
-                  <span className="px-3 py-1.5 rounded-full bg-[#EAE0CF]/50 text-[#547792] text-xs md:text-sm">
+                  <span className="px-3 py-1.5 rounded-full bg-brand-sand/50 text-brand-blue text-xs md:text-sm">
                     ~{avgUnitsPerProject} units/project
                   </span>
                 )}
                 {avgAbsorption != null && (
-                  <span className="px-3 py-1.5 rounded-full bg-[#213448]/10 text-[#213448] text-xs md:text-sm">
+                  <span className="px-3 py-1.5 rounded-full bg-brand-navy/10 text-brand-navy text-xs md:text-sm">
                     {avgAbsorption}% avg absorption
                   </span>
                 )}
@@ -376,7 +376,7 @@ function NewLaunchTimelineChartBase({ height = 300 }) {
                 <Chart ref={chartRef} type="bar" data={chartData} options={options} />
               </PreviewChartOverlay>
             ) : (
-              <div className="flex items-center justify-center h-full text-[#547792]">
+              <div className="flex items-center justify-center h-full text-brand-blue">
                 <div className="text-center">
                   <svg className="w-12 h-12 mx-auto mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -390,7 +390,7 @@ function NewLaunchTimelineChartBase({ height = 300 }) {
           {/* Custom SVG Legend */}
           <div className="flex justify-center gap-6 py-2 shrink-0">
             <div className="flex items-center gap-2">
-              <div className="w-4 h-3 rounded-sm bg-[#94B4C1]" />
+              <div className="w-4 h-3 rounded-sm bg-brand-sky" />
               <span className="text-xs text-[#374151]">Total Units</span>
             </div>
             <div className="flex items-center gap-2">

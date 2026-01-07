@@ -97,11 +97,11 @@ export function getScoreLabel(score) {
 export function getRegionBadge(region) {
   switch (region) {
     case 'CCR':
-      return 'bg-[#213448] text-white';
+      return 'bg-brand-navy text-white';
     case 'RCR':
-      return 'bg-[#547792] text-white';
+      return 'bg-brand-blue text-white';
     case 'OCR':
-      return 'bg-[#94B4C1] text-[#213448]';
+      return 'bg-brand-sky text-brand-navy';
     default:
       return 'bg-gray-200 text-gray-600';
   }
@@ -129,15 +129,15 @@ export function getFragilityBadge(fragility) {
 export function getTierBadgeStyle(tier) {
   switch (tier) {
     case 'Very High':
-      return 'bg-[#213448] text-white';
+      return 'bg-brand-navy text-white';
     case 'High':
-      return 'bg-[#547792] text-white';
+      return 'bg-brand-blue text-white';
     case 'Neutral':
-      return 'bg-[#94B4C1] text-[#213448]';
+      return 'bg-brand-sky text-brand-navy';
     case 'Low':
-      return 'bg-[#EAE0CF] text-[#547792]';
+      return 'bg-brand-sand text-brand-blue';
     case 'Very Low':
-      return 'bg-[#EAE0CF] text-[#94B4C1]';
+      return 'bg-brand-sand text-brand-sky';
     default:
       return 'bg-gray-100 text-gray-500';
   }

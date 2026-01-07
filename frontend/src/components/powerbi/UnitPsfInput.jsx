@@ -101,14 +101,14 @@ export function UnitPsfInput({
   return (
     <div className={compact ? '' : 'space-y-1'}>
       {showLabel && !compact && (
-        <label className="block text-sm font-medium text-[#213448]">
+        <label className="block text-sm font-medium text-brand-navy">
           {label}
         </label>
       )}
 
       <div className="relative">
         {/* Dollar sign prefix */}
-        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#547792] pointer-events-none">
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-blue pointer-events-none">
           $
         </span>
 
@@ -122,16 +122,16 @@ export function UnitPsfInput({
           placeholder={placeholder}
           className={`
             w-full pl-7 pr-10 py-2 rounded-lg border
-            text-[#213448] placeholder:text-[#94B4C1]
-            focus:outline-none focus:ring-2 focus:ring-[#547792]/30 focus:border-[#547792]
-            disabled:bg-[#EAE0CF]/50 disabled:cursor-not-allowed
-            ${error ? 'border-red-300 bg-red-50' : 'border-[#94B4C1]/50 bg-white'}
+            text-brand-navy placeholder:text-brand-sky
+            focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue
+            disabled:bg-brand-sand/50 disabled:cursor-not-allowed
+            ${error ? 'border-red-300 bg-red-50' : 'border-brand-sky/50 bg-white'}
             ${compact ? 'text-sm py-1.5' : ''}
           `}
         />
 
         {/* PSF suffix */}
-        <span className="absolute right-10 top-1/2 -translate-y-1/2 text-xs text-[#94B4C1] pointer-events-none">
+        <span className="absolute right-10 top-1/2 -translate-y-1/2 text-xs text-brand-sky pointer-events-none">
           psf
         </span>
 
@@ -140,7 +140,7 @@ export function UnitPsfInput({
           <button
             type="button"
             onClick={handleClear}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-[#94B4C1] hover:text-[#547792] transition-colors"
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-brand-sky hover:text-brand-blue transition-colors"
             title="Clear"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

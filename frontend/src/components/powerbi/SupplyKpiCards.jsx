@@ -54,7 +54,7 @@ export function SupplyKpiCards({
   if (error && !loading) {
     return (
       <div className="weapon-card p-4 text-center">
-        <p className="text-[#547792] text-sm">Unable to load supply metrics</p>
+        <p className="text-brand-blue text-sm">Unable to load supply metrics</p>
       </div>
     );
   }

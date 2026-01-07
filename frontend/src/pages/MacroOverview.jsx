@@ -203,12 +203,12 @@ export function MacroOverviewContent() {
         {/* Header */}
         <div className="mb-4 md:mb-6">
           <div className="min-w-0 mb-2">
-            <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-[#213448] hidden lg:block">
+            <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-brand-navy hidden lg:block">
               Market Overview
             </h1>
             {/* Data source info - shows last update, total records, new additions, and outliers removed */}
             {apiMetadata && (
-              <p className="text-[#547792] text-xs md:text-sm italic">
+              <p className="text-brand-blue text-xs md:text-sm italic">
                 Last updated: {apiMetadata.last_updated
                   ? new Date(apiMetadata.last_updated).toLocaleDateString('en-US', {
                       year: 'numeric',

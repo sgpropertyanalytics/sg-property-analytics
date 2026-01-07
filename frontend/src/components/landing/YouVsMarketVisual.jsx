@@ -34,11 +34,11 @@ export default function YouVsMarketVisual({ compact = false, fillHeight = false 
       className={`${compact ? "w-full" : "w-full max-w-2xl mx-auto"} ${fillHeight ? "h-full flex flex-col" : ""}`}
     >
       {/* Card container */}
-      <div className={`relative bg-white rounded-2xl shadow-2xl shadow-[#213448]/20 border border-[#94B4C1]/30 overflow-visible ${fillHeight ? "flex-1 flex flex-col" : ""}`}>
+      <div className={`relative bg-white rounded-2xl shadow-2xl shadow-[#213448]/20 border border-brand-sky/30 overflow-visible ${fillHeight ? "flex-1 flex flex-col" : ""}`}>
 
         {/* Floating Insight Annotation - desktop only */}
         <div className="absolute -right-12 top-10 bg-white/90 backdrop-blur shadow-xl border border-blue-100 p-3 rounded-lg max-w-[180px] z-20 hidden md:block">
-          <div className="text-xs font-bold text-[#213448] mb-1">⚠️ The "Overpaying" Gap</div>
+          <div className="text-xs font-bold text-brand-navy mb-1">⚠️ The "Overpaying" Gap</div>
           <p className="text-[10px] text-slate-500 leading-tight">
             Is your unit priced above the district median? Check the gap here.
           </p>
@@ -46,11 +46,11 @@ export default function YouVsMarketVisual({ compact = false, fillHeight = false 
         </div>
 
         {/* Header with Liquidity Badge */}
-        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-[#94B4C1]/20 bg-[#FDFBF7]">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-brand-sky/20 bg-[#FDFBF7]">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-xs text-[#547792] uppercase tracking-wider font-semibold">
+                <span className="text-xs text-brand-blue uppercase tracking-wider font-semibold">
                   Price Analysis
                 </span>
                 {/* Liquidity Badge */}
@@ -63,15 +63,15 @@ export default function YouVsMarketVisual({ compact = false, fillHeight = false 
                   {isHighLiquidity ? 'High Liquidity' : 'Thin Market'}
                 </span>
               </div>
-              <div className="text-base sm:text-lg font-bold text-[#213448] truncate">
+              <div className="text-base sm:text-lg font-bold text-brand-navy truncate">
                 The Continuum, D15
               </div>
             </div>
             <div className="text-right flex-shrink-0">
-              <div className="text-[10px] sm:text-xs text-[#547792] uppercase tracking-wider font-semibold mb-1">
+              <div className="text-[10px] sm:text-xs text-brand-blue uppercase tracking-wider font-semibold mb-1">
                 Unit Type
               </div>
-              <div className="text-xs sm:text-sm font-medium text-[#547792]">
+              <div className="text-xs sm:text-sm font-medium text-brand-blue">
                 3BR • 1,100 sqft
               </div>
             </div>
@@ -97,7 +97,7 @@ export default function YouVsMarketVisual({ compact = false, fillHeight = false 
                       transition={{ delay: 1, duration: 0.5 }}
                       className="mb-1 flex flex-col items-center"
                     >
-                      <div className="px-2 py-0.5 bg-[#213448] text-[#EAE0CF] text-[10px] font-bold rounded shadow-lg whitespace-nowrap">
+                      <div className="px-2 py-0.5 bg-brand-navy text-brand-sand text-[10px] font-bold rounded shadow-lg whitespace-nowrap">
                         YOU
                       </div>
                       <div className="w-0 h-0 border-l-[5px] border-r-[5px] border-t-[6px] border-l-transparent border-r-transparent border-t-[#213448]" />
@@ -113,8 +113,8 @@ export default function YouVsMarketVisual({ compact = false, fillHeight = false 
                       isUser
                         ? 'bg-gradient-to-t from-[#213448] to-[#547792]'
                         : isMedian
-                          ? 'bg-[#547792]'
-                          : 'bg-[#94B4C1]/70'
+                          ? 'bg-brand-blue'
+                          : 'bg-brand-sky/70'
                     }`}
                   />
                 </div>
@@ -123,26 +123,26 @@ export default function YouVsMarketVisual({ compact = false, fillHeight = false 
           </div>
 
           {/* X-axis labels - show only key values */}
-          <div className="flex justify-between mb-4 text-[10px] text-[#547792]">
+          <div className="flex justify-between mb-4 text-[10px] text-brand-blue">
             <span>$1,650</span>
-            <span className="text-[#547792] font-medium">$1,800 (median)</span>
-            <span className="text-[#213448] font-bold">$1,950 (you)</span>
+            <span className="text-brand-blue font-medium">$1,800 (median)</span>
+            <span className="text-brand-navy font-bold">$1,950 (you)</span>
             <span>$2,000</span>
           </div>
 
           {/* Legend */}
           <div className="flex flex-wrap items-center gap-4 mb-4 text-xs">
             <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded-sm bg-[#94B4C1]/70" />
-              <span className="text-[#547792]">Other buyers</span>
+              <div className="w-3 h-3 rounded-sm bg-brand-sky/70" />
+              <span className="text-brand-blue">Other buyers</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded-sm bg-[#547792]" />
-              <span className="text-[#547792]">Market median</span>
+              <div className="w-3 h-3 rounded-sm bg-brand-blue" />
+              <span className="text-brand-blue">Market median</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded-sm bg-[#213448]" />
-              <span className="text-[#213448] font-medium">Your unit</span>
+              <div className="w-3 h-3 rounded-sm bg-brand-navy" />
+              <span className="text-brand-navy font-medium">Your unit</span>
             </div>
           </div>
 
@@ -158,12 +158,12 @@ export default function YouVsMarketVisual({ compact = false, fillHeight = false 
                 <AlertTriangle className="w-5 h-5 text-amber-600" />
               </div>
               <div>
-                <div className="font-bold text-[#213448] mb-1">
+                <div className="font-bold text-brand-navy mb-1">
                   Priced {userPremium}% Above Market
                 </div>
-                <div className="text-sm text-[#547792]">
+                <div className="text-sm text-brand-blue">
                   Recent buyers in this project paid $1,800 PSF on average.
-                  <span className="text-[#213448] font-medium"> Consider negotiating.</span>
+                  <span className="text-brand-navy font-medium"> Consider negotiating.</span>
                 </div>
               </div>
             </div>
@@ -171,8 +171,8 @@ export default function YouVsMarketVisual({ compact = false, fillHeight = false 
         </div>
 
         {/* Footer */}
-        <div className="px-4 sm:px-6 py-2 sm:py-3 bg-[#FDFBF7] border-t border-[#94B4C1]/20">
-          <div className="flex items-center justify-between text-[10px] sm:text-xs text-[#547792]">
+        <div className="px-4 sm:px-6 py-2 sm:py-3 bg-[#FDFBF7] border-t border-brand-sky/20">
+          <div className="flex items-center justify-between text-[10px] sm:text-xs text-brand-blue">
             <span>Based on {transactionCount} transactions (last 12 months)</span>
             <span className="flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />

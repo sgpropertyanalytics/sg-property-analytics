@@ -31,7 +31,7 @@ export function SuppressedValue({
   if (suppressed || value === null || value === undefined) {
     return (
       <span
-        className={`text-[#94B4C1] ${className}`}
+        className={`text-brand-sky ${className}`}
         title={showTooltip ? `Hidden due to insufficient sample size (minimum ${kRequired} observations required)` : undefined}
       >
         —
@@ -56,7 +56,7 @@ export function SuppressedValue({
  */
 export function SuppressedRow({ suppressed, children, className = '' }) {
   const baseClass = suppressed
-    ? 'opacity-60 bg-[#EAE0CF]/20 pointer-events-none'
+    ? 'opacity-60 bg-brand-sand/20 pointer-events-none'
     : '';
 
   return (
@@ -80,7 +80,7 @@ export function ObservationCount({
 
   return (
     <span
-      className={`${isBelowThreshold ? 'text-amber-600' : 'text-[#547792]'} ${className}`}
+      className={`${isBelowThreshold ? 'text-amber-600' : 'text-brand-blue'} ${className}`}
       title={isBelowThreshold ? `Below minimum threshold of ${kRequired}` : `${count} observations`}
     >
       {count?.toLocaleString() || '—'}

@@ -499,32 +499,32 @@ function ProjectDetailPanelInner({
                   {/* Summary Stats - Fallback when no inventory data */}
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="bg-brand-sand/30 rounded-none p-4">
-                      <p className="text-sm text-[#547792]">Cumulative New Sales</p>
-                      <p className="text-2xl font-semibold text-[#213448]">
+                      <p className="text-sm text-brand-blue">Cumulative New Sales</p>
+                      <p className="text-2xl font-semibold text-brand-navy">
                         {salesByType.newSale.toLocaleString()}
                       </p>
-                      <p className="text-xs text-[#547792] mt-1">Units sold by developer</p>
+                      <p className="text-xs text-brand-blue mt-1">Units sold by developer</p>
                     </div>
                     <div className="bg-brand-sand/30 rounded-none p-4">
-                      <p className="text-sm text-[#547792]">Cumulative Resales</p>
-                      <p className="text-2xl font-semibold text-[#213448]">
+                      <p className="text-sm text-brand-blue">Cumulative Resales</p>
+                      <p className="text-2xl font-semibold text-brand-navy">
                         {salesByType.resale.toLocaleString()}
                       </p>
-                      <p className="text-xs text-[#547792] mt-1">Secondary market</p>
+                      <p className="text-xs text-brand-blue mt-1">Secondary market</p>
                     </div>
                     <div className="bg-brand-sand/30 rounded-none p-4">
-                      <p className="text-sm text-[#547792]">Total Observations</p>
-                      <p className="text-2xl font-semibold text-[#213448]">
+                      <p className="text-sm text-brand-blue">Total Observations</p>
+                      <p className="text-2xl font-semibold text-brand-navy">
                         {(salesByType.newSale + salesByType.resale).toLocaleString()}
                       </p>
-                      <p className="text-xs text-[#547792] mt-1">All time</p>
+                      <p className="text-xs text-brand-blue mt-1">All time</p>
                     </div>
                     <div className="bg-brand-sand/30 rounded-none p-4">
-                      <p className="text-sm text-[#547792]">Median PSF</p>
-                      <p className="text-2xl font-semibold text-[#213448]">
+                      <p className="text-sm text-brand-blue">Median PSF</p>
+                      <p className="text-2xl font-semibold text-brand-navy">
                         ${overallMedianPsf.toLocaleString()}
                       </p>
-                      <p className="text-xs text-[#547792] mt-1">Current filter</p>
+                      <p className="text-xs text-brand-blue mt-1">Current filter</p>
                     </div>
                   </div>
 
@@ -545,7 +545,7 @@ function ProjectDetailPanelInner({
                   {trendData.length > 0 ? (
                     <Line data={trendChartData} options={trendChartOptions} />
                   ) : (
-                    <div className="flex items-center justify-center h-full text-[#547792]">
+                    <div className="flex items-center justify-center h-full text-brand-blue">
                       No trend data available
                     </div>
                   )}
@@ -559,19 +559,19 @@ function ProjectDetailPanelInner({
                   {priceData.length > 0 ? (
                     <Bar data={bedroomChartData} options={bedroomChartOptions} />
                   ) : (
-                    <div className="flex items-center justify-center h-full text-[#547792]">
+                    <div className="flex items-center justify-center h-full text-brand-blue">
                       No bedroom data available
                     </div>
                   )}
                 </div>
                 {/* Price Stats Table by Bedroom */}
                 {priceData.length > 0 && (
-                  <div className="mt-4 border-t border-[#94B4C1]/30 pt-3">
-                    <h4 className="text-xs font-medium text-[#547792] mb-2">Price Statistics by Bedroom</h4>
+                  <div className="mt-4 border-t border-brand-sky/30 pt-3">
+                    <h4 className="text-xs font-medium text-brand-blue mb-2">Price Statistics by Bedroom</h4>
                     <div className="overflow-x-auto">
                       <table className="w-full text-xs">
                         <thead>
-                          <tr className="text-[#547792] border-b border-[#94B4C1]/30">
+                          <tr className="text-brand-blue border-b border-brand-sky/30">
                             <th className="text-left py-1 pr-2">Type</th>
                             <th className="text-right py-1 px-1">Units</th>
                             <th className="text-right py-1 px-1">25th %</th>
@@ -589,16 +589,16 @@ function ProjectDetailPanelInner({
                             const isSuppressed = count < K_PROJECT_THRESHOLD;
                             const formatPrice = (v) => v ? `$${(v / 1000000).toFixed(2)}M` : '-';
                             return (
-                              <tr key={bedroom} className={`border-b border-[#94B4C1]/20 ${isSuppressed ? 'opacity-60' : 'hover:bg-[#EAE0CF]/20'}`}>
-                                <td className="py-1.5 pr-2 font-medium text-[#213448]">{bedroom >= 5 ? '5BR' : `${bedroom}BR`}</td>
-                                <td className="py-1.5 px-1 text-right text-[#547792]">{count.toLocaleString()}</td>
-                                <td className="py-1.5 px-1 text-right text-[#547792]">
+                              <tr key={bedroom} className={`border-b border-brand-sky/20 ${isSuppressed ? 'opacity-60' : 'hover:bg-brand-sand/20'}`}>
+                                <td className="py-1.5 pr-2 font-medium text-brand-navy">{bedroom >= 5 ? '5BR' : `${bedroom}BR`}</td>
+                                <td className="py-1.5 px-1 text-right text-brand-blue">{count.toLocaleString()}</td>
+                                <td className="py-1.5 px-1 text-right text-brand-blue">
                                   <SuppressedValue value={price25th} suppressed={isSuppressed} kRequired={K_PROJECT_THRESHOLD} formatter={formatPrice} />
                                 </td>
-                                <td className="py-1.5 px-1 text-right font-medium text-[#213448]">
+                                <td className="py-1.5 px-1 text-right font-medium text-brand-navy">
                                   <SuppressedValue value={medianPrice} suppressed={isSuppressed} kRequired={K_PROJECT_THRESHOLD} formatter={formatPrice} />
                                 </td>
-                                <td className="py-1.5 pl-1 text-right text-[#547792]">
+                                <td className="py-1.5 pl-1 text-right text-brand-blue">
                                   <SuppressedValue value={price75th} suppressed={isSuppressed} kRequired={K_PROJECT_THRESHOLD} formatter={formatPrice} />
                                 </td>
                               </tr>
@@ -620,7 +620,7 @@ function ProjectDetailPanelInner({
                   )}
                 </div>
                 {histogramBuckets.length > 0 && (
-                  <p className="text-xs text-[#547792] mb-3">
+                  <p className="text-xs text-brand-blue mb-3">
                     {formatPriceLabel(histogramMinPrice)} - {formatPriceLabel(histogramMaxPrice)} ({histogramBuckets.length} bins @ {formatPriceLabel(histogramBucketSize)})
                   </p>
                 )}
@@ -628,20 +628,20 @@ function ProjectDetailPanelInner({
                   {histogramBuckets.length > 0 ? (
                     <Bar data={histogramChartData} options={histogramChartOptions} />
                   ) : (
-                    <div className="flex items-center justify-center h-full text-[#547792]">
+                    <div className="flex items-center justify-center h-full text-brand-blue">
                       No price distribution data available
                     </div>
                   )}
                 </div>
                 {histogramTotal > 0 && (
-                  <p className="text-xs text-[#547792] mt-2 text-center">
+                  <p className="text-xs text-brand-blue mt-2 text-center">
                     Total: {histogramTotal.toLocaleString()} observations
                   </p>
                 )}
               </div>
 
               {/* Info Note */}
-              <p className="text-xs text-[#547792] text-center">
+              <p className="text-xs text-brand-blue text-center">
                 This view shows data specific to {selectedProject.name}.
                 Other dashboard charts are not affected by this selection.
               </p>
