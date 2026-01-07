@@ -15,19 +15,7 @@
  * - map: Singapore outline with district markers
  */
 
-import { INK, CANVAS } from '../../constants/colors';
-
 // Shimmer styles are in index.css
-// Skeleton colors derived from design system
-const SKELETON = {
-  border: CANVAS.grid,        // #E5E7EB - slate-200
-  borderLight: `${CANVAS.grid}40`, // 25% opacity
-  borderMuted: `${CANVAS.grid}1F`, // 12% opacity
-  line: INK.muted,            // #94A3B8 - slate-400
-  lineDark: INK.dense,        // #1E293B - slate-800
-  background: '#FAFAFA',      // canvas base
-  mapFill: '#F0EBE3',         // warm canvas
-};
 
 export function ChartSkeleton({ type = 'default', height = 300, className = '' }) {
   const baseClass = `chart-skeleton bg-card rounded-lg border border-brand-sky/50 overflow-hidden ${className}`;
@@ -53,7 +41,7 @@ export function ChartSkeleton({ type = 'default', height = 300, className = '' }
 // Shared header skeleton
 function SkeletonHeader({ hasSubtitle = true }) {
   return (
-    <div className="px-4 py-3 border-b border-slate-200/25 shrink-0">
+    <div className="px-4 py-3 border-b border-[#d4d0c8]/25 shrink-0">
       <div className="skeleton-shimmer h-5 w-48 rounded" />
       {hasSubtitle && (
         <div className="skeleton-shimmer h-3 w-32 rounded mt-2" />
@@ -65,7 +53,7 @@ function SkeletonHeader({ hasSubtitle = true }) {
 // Shared footer skeleton
 function SkeletonFooter() {
   return (
-    <div className="shrink-0 h-11 px-4 bg-slate-100/40 border-t border-slate-200/30 flex items-center justify-between">
+    <div className="shrink-0 h-11 px-4 bg-[#f5f2ed]/40 border-t border-[#d4d0c8]/30 flex items-center justify-between">
       <div className="skeleton-shimmer h-3 w-24 rounded" />
       <div className="skeleton-shimmer h-3 w-32 rounded" />
     </div>
@@ -104,7 +92,7 @@ function BarSkeleton({ height, className }) {
         </div>
 
         {/* X-axis line */}
-        <div className="absolute bottom-3 left-12 right-4 h-px bg-slate-200/30" />
+        <div className="absolute bottom-3 left-12 right-4 h-px bg-[#d4d0c8]/30" />
 
         {/* X-axis labels */}
         <div className="absolute bottom-0 left-12 right-4 flex justify-around">
@@ -145,7 +133,7 @@ function LineSkeleton({ height, className }) {
                 y1={i * 45}
                 x2="400"
                 y2={i * 45}
-                stroke={SKELETON.border}
+                stroke="#d4d0c8"
                 strokeOpacity="0.2"
                 strokeDasharray="4 4"
               />
@@ -172,7 +160,7 @@ function LineSkeleton({ height, className }) {
             <path
               d="M 0 120 Q 50 110 100 115 T 200 95 T 300 80 T 400 70"
               fill="none"
-              stroke={SKELETON.border}
+              stroke="#d4d0c8"
               strokeWidth="2"
               strokeOpacity="0.35"
               strokeDasharray="6 3"
@@ -180,19 +168,19 @@ function LineSkeleton({ height, className }) {
 
             <defs>
               <linearGradient id="lineGradientSkeleton" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor={SKELETON.line} stopOpacity="0.35">
+                <stop offset="0%" stopColor="#94A3B8" stopOpacity="0.35">
                   <animate attributeName="stop-opacity" values="0.2;0.5;0.2" dur="3.5s" repeatCount="indefinite" />
                 </stop>
-                <stop offset="50%" stopColor={SKELETON.lineDark} stopOpacity="0.45">
+                <stop offset="50%" stopColor="#334155" stopOpacity="0.45">
                   <animate attributeName="stop-opacity" values="0.3;0.6;0.3" dur="3.5s" repeatCount="indefinite" />
                 </stop>
-                <stop offset="100%" stopColor={SKELETON.line} stopOpacity="0.35">
+                <stop offset="100%" stopColor="#94A3B8" stopOpacity="0.35">
                   <animate attributeName="stop-opacity" values="0.2;0.5;0.2" dur="3.5s" repeatCount="indefinite" />
                 </stop>
               </linearGradient>
               <linearGradient id="areaGradientSkeleton" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor={SKELETON.line} stopOpacity="0.08" />
-                <stop offset="100%" stopColor={SKELETON.line} stopOpacity="0.01" />
+                <stop offset="0%" stopColor="#94A3B8" stopOpacity="0.08" />
+                <stop offset="100%" stopColor="#94A3B8" stopOpacity="0.01" />
               </linearGradient>
             </defs>
           </svg>
@@ -277,7 +265,7 @@ function GridSkeleton({ height, className }) {
           {Array.from({ length: rows * cols }).map((_, i) => (
             <div
               key={i}
-              className="skeleton-shimmer rounded border border-slate-200/15"
+              className="skeleton-shimmer rounded border border-[#d4d0c8]/15"
               style={{ animationDelay: `${(i % cols) * 0.12 + Math.floor(i / cols) * 0.08}s` }}
             />
           ))}
@@ -300,7 +288,7 @@ function TableSkeleton({ height, className }) {
       {/* Table area */}
       <div className="flex-1 overflow-hidden">
         {/* Table header */}
-        <div className="flex gap-4 px-4 py-2.5 bg-slate-100/30 border-b border-slate-200/25">
+        <div className="flex gap-4 px-4 py-2.5 bg-[#f5f2ed]/30 border-b border-[#d4d0c8]/25">
           <div className="skeleton-shimmer h-3.5 w-20 rounded" />
           <div className="skeleton-shimmer h-3.5 w-32 rounded flex-1" />
           <div className="skeleton-shimmer h-3.5 w-16 rounded" />
@@ -313,7 +301,7 @@ function TableSkeleton({ height, className }) {
           {Array.from({ length: rows }).map((_, rowIdx) => (
             <div
               key={rowIdx}
-              className="flex gap-4 py-2.5 border-b border-slate-200/[0.12]"
+              className="flex gap-4 py-2.5 border-b border-[#d4d0c8]/12"
             >
               <div className="skeleton-shimmer h-3.5 w-20 rounded" style={{ animationDelay: `${rowIdx * 0.1}s` }} />
               <div className="skeleton-shimmer h-3.5 w-32 rounded flex-1" style={{ animationDelay: `${rowIdx * 0.1 + 0.05}s` }} />
@@ -335,7 +323,7 @@ function MapSkeleton({ height, className }) {
   return (
     <div className={className} style={{ height }}>
       {/* Map header with filter placeholders */}
-      <div className="px-4 py-3 border-b border-slate-200/25 shrink-0">
+      <div className="px-4 py-3 border-b border-[#d4d0c8]/25 shrink-0">
         <div className="flex items-center justify-between">
           <div>
             <div className="skeleton-shimmer h-5 w-40 rounded" />
@@ -350,7 +338,7 @@ function MapSkeleton({ height, className }) {
       </div>
 
       {/* Map area */}
-      <div className="flex-1 relative bg-slate-50" style={{ height: height - 100 }}>
+      <div className="flex-1 relative bg-[#fcfcfb]" style={{ height: height - 100 }}>
         <svg
           className="w-full h-full p-6"
           viewBox="0 0 400 280"
@@ -369,7 +357,7 @@ function MapSkeleton({ height, className }) {
                Q 90 200 80 170
                Q 75 155 80 140"
             fill="url(#mapGradientSkeleton)"
-            stroke={SKELETON.border}
+            stroke="#d4d0c8"
             strokeWidth="1.5"
             className="skeleton-map-shape"
           />
@@ -377,7 +365,7 @@ function MapSkeleton({ height, className }) {
           {/* District region outlines */}
           <path
             d="M 180 90 L 180 200 M 260 85 L 260 210"
-            stroke={SKELETON.border}
+            stroke="#d4d0c8"
             strokeWidth="1"
             strokeOpacity="0.25"
             strokeDasharray="4 4"
@@ -411,13 +399,13 @@ function MapSkeleton({ height, className }) {
 
           <defs>
             <linearGradient id="mapGradientSkeleton" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor={SKELETON.mapFill} stopOpacity="0.5">
+              <stop offset="0%" stopColor="#f0ebe3" stopOpacity="0.5">
                 <animate attributeName="stop-opacity" values="0.3;0.6;0.3" dur="3.5s" repeatCount="indefinite" />
               </stop>
-              <stop offset="50%" stopColor={SKELETON.border} stopOpacity="0.4">
+              <stop offset="50%" stopColor="#e8e2d8" stopOpacity="0.4">
                 <animate attributeName="stop-opacity" values="0.25;0.5;0.25" dur="3.5s" repeatCount="indefinite" />
               </stop>
-              <stop offset="100%" stopColor={SKELETON.border} stopOpacity="0.3">
+              <stop offset="100%" stopColor="#d4d0c8" stopOpacity="0.3">
                 <animate attributeName="stop-opacity" values="0.15;0.4;0.15" dur="3.5s" repeatCount="indefinite" />
               </stop>
             </linearGradient>
@@ -425,7 +413,7 @@ function MapSkeleton({ height, className }) {
         </svg>
 
         {/* Legend placeholder */}
-        <div className="absolute bottom-4 right-4 bg-white/90 rounded-lg p-3 border border-slate-200/20">
+        <div className="absolute bottom-4 right-4 bg-white/90 rounded-lg p-3 border border-[#d4d0c8]/20">
           <div className="skeleton-shimmer h-3 w-16 rounded mb-2" />
           <div className="flex items-center gap-1">
             {[0, 1, 2, 3, 4].map((i) => (

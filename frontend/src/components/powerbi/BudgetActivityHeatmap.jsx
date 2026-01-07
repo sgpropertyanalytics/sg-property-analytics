@@ -11,7 +11,6 @@ import {
   getBudgetHeatmapRowField,
 } from '../../schemas/apiContract';
 import { ChartFrame } from '../common/ChartFrame';
-import { INK, REGION, CANVAS } from '../../constants/colors';
 
 // Time window presets: label → months
 const TIME_PRESETS = {
@@ -21,27 +20,24 @@ const TIME_PRESETS = {
   '5Y': 60,
 };
 
-// Heatmap color constants (from design system)
-const HEAT_EMPTY = '#F8F9FA';
-
 /**
  * Color scale for heatmap intensity based on percentage
- * 0% = light gray, higher % = darker (slate-200 → slate-700 → slate-900)
+ * 0% = light gray, higher % = darker (sand → ocean blue → deep navy)
  */
 const getHeatColor = (pct) => {
-  if (pct === null || pct === undefined) return HEAT_EMPTY;
-  if (pct === 0) return HEAT_EMPTY;
+  if (pct === null || pct === undefined) return '#F8F9FA'; // Suppressed/empty
+  if (pct === 0) return '#F8F9FA';
 
-  // Gradient: CANVAS.grid (slate-200) → REGION.RCR (slate-700) → REGION.CCR (slate-900)
+  // Gradient: #E5E7EB (slate-200) → #334155 (slate-700) → #0F172A (slate-900)
   // Map pct (0-100) to intensity (0-1)
   const intensity = Math.min(pct / 60, 1); // 60%+ gets max color
 
   if (intensity < 0.5) {
     // Blend slate-200 → slate-700
-    return interpolateColor(CANVAS.grid, REGION.RCR, intensity * 2);
+    return interpolateColor('#E5E7EB', '#334155', intensity * 2);
   } else {
     // Blend slate-700 → slate-900
-    return interpolateColor(REGION.RCR, REGION.CCR, (intensity - 0.5) * 2);
+    return interpolateColor('#334155', '#0F172A', (intensity - 0.5) * 2);
   }
 };
 
@@ -68,9 +64,9 @@ const interpolateColor = (color1, color2, factor) => {
  * Get text color based on background brightness
  */
 const getTextColor = (pct) => {
-  if (pct === null || pct === undefined || pct === 0) return INK.mid; // slate-600
+  if (pct === null || pct === undefined || pct === 0) return '#475569';
   if (pct > 35) return '#FFFFFF';
-  return INK.primary; // slate-900
+  return '#0F172A';
 };
 
 /**
@@ -243,10 +239,10 @@ export function BudgetActivityHeatmap({
                     const isSuppressed = cellData.suppressed;
 
                     const bgColor = isSuppressed || isLowSample
-                      ? HEAT_EMPTY
+                      ? '#F8F9FA'
                       : getHeatColor(pct);
                     const textColor = isSuppressed || isLowSample
-                      ? INK.muted // slate-400
+                      ? '#94A3B8'
                       : getTextColor(pct);
 
                     // Tooltip content
@@ -323,14 +319,14 @@ export function BudgetActivityHeatmap({
             <div className="flex items-center gap-1">
               <div
                 className="w-4 h-3 rounded border border-brand-sky/30"
-                style={{ backgroundColor: HEAT_EMPTY }}
+                style={{ backgroundColor: '#F8F9FA' }}
               />
               <span>Low</span>
             </div>
             <div
               className="w-12 h-3 rounded"
               style={{
-                background: `linear-gradient(to right, ${CANVAS.grid}, ${REGION.RCR}, ${REGION.CCR})`,
+                background: 'linear-gradient(to right, #E5E7EB, #334155, #0F172A)',
               }}
             />
             <span>High</span>
