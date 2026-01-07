@@ -1008,8 +1008,9 @@ input[type="range"].slider-thumb::-moz-range-progress {
   }
 }
 
-/* The Physical LED - Emerald Green with breathing glow */
-.nav-led-active {
+/* The Physical LED - Emerald Green with breathing glow (CSS Pseudo-element) */
+.nav-item-active::before {
+  content: '';
   position: absolute;
   left: 0;
   top: 0;
@@ -1021,7 +1022,7 @@ input[type="range"].slider-thumb::-moz-range-progress {
 }
 
 /* The Green Glow Spill (subtle gradient overlay) */
-.nav-led-glow {
+.nav-item-active {
   background: linear-gradient(90deg, rgba(16, 185, 129, 0.1) 0%, transparent 100%);
 }
 
