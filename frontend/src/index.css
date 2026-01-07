@@ -23,82 +23,52 @@
    * ========================================= */
 
   /* ----- VOID (Dark Frame) ----- */
-  --color-void: #0A0A0A;
-  /* Nav background */
-  --color-void-surface: #1A1A1A;
-  /* Elevated cards on void */
-  --color-void-edge: #333333;
-  /* Machined metal borders */
+  --color-void: #0A0A0A;          /* Nav background */
+  --color-void-surface: #1A1A1A;  /* Elevated cards on void */
+  --color-void-edge: #333333;     /* Machined metal borders */
 
   /* ----- CANVAS (Light Content) ----- */
-  --color-canvas: #F5F7FA;
-  /* Main content background - The Grey Wall */
-  --color-canvas-paper: #FFFFFF;
-  /* Cards, modals */
-  --color-canvas-grid: #E5E7EB;
-  /* Chart grids, subtle borders */
+  --color-canvas: #FAFAFA;        /* Main content background */
+  --color-canvas-paper: #FFFFFF;  /* Cards, modals */
+  --color-canvas-grid: #E5E7EB;   /* Chart grids, subtle borders */
 
   /* ----- INK (Data/Text - The "Print") ----- */
-  --color-ink: #0F172A;
-  /* Slate 900 - Primary data, headers */
-  --color-ink-dense: #1E293B;
-  /* Slate 800 - Secondary emphasis */
-  --color-ink-mid: #475569;
-  /* Slate 600 - Body text */
-  --color-ink-muted: #94A3B8;
-  /* Slate 400 - Ghost data, historical */
-  --color-ink-light: #CBD5E1;
-  /* Slate 300 - Subtle borders */
+  --color-ink: #0F172A;           /* Slate 900 - Primary data, headers */
+  --color-ink-dense: #1E293B;     /* Slate 800 - Secondary emphasis */
+  --color-ink-mid: #475569;       /* Slate 600 - Body text */
+  --color-ink-muted: #94A3B8;     /* Slate 400 - Ghost data, historical */
+  --color-ink-light: #CBD5E1;     /* Slate 300 - Subtle borders */
 
   /* ----- REGION (Monochrome Hierarchy) ----- */
-  --color-region-ccr: #0F172A;
-  /* Slate 900 - Premium/Core */
-  --color-region-rcr: #334155;
-  /* Slate 700 - Mid-tier */
-  --color-region-ocr: #64748B;
-  /* Slate 500 - Suburban */
+  --color-region-ccr: #0F172A;    /* Slate 900 - Premium/Core */
+  --color-region-rcr: #334155;    /* Slate 700 - Mid-tier */
+  --color-region-ocr: #64748B;    /* Slate 500 - Suburban */
 
   /* ----- SIGNAL (Accent - "The Tie") ----- */
-  --color-signal-accent: #F97316;
-  /* Orange 500 - Buttons, highlights */
-  --color-signal-a11y: #EA580C;
-  /* Orange 600 - Accessible text */
-  --color-signal-focus: #2563EB;
-  /* Blue 600 - Focus rings */
+  --color-signal-accent: #F97316;    /* Orange 500 - Buttons, highlights */
+  --color-signal-a11y: #EA580C;      /* Orange 600 - Accessible text */
+  --color-signal-focus: #2563EB;     /* Blue 600 - Focus rings */
 
   /* ----- DELTA (Financial +/-) ----- */
-  --color-delta-positive: #059669;
-  /* Emerald 600 - Gains */
-  --color-delta-negative: #DC2626;
-  /* Red 600 - Losses */
-  --color-delta-neutral: #64748B;
-  /* Slate 500 - No change */
+  --color-delta-positive: #059669;   /* Emerald 600 - Gains */
+  --color-delta-negative: #DC2626;   /* Red 600 - Losses */
+  --color-delta-neutral: #64748B;    /* Slate 500 - No change */
 
   /* ----- SUPPLY (Full Slate) ----- */
-  --color-supply-unsold: #0F172A;
-  /* Slate 900 */
-  --color-supply-upcoming: #334155;
-  /* Slate 700 */
-  --color-supply-gls: #64748B;
-  /* Slate 500 */
-  --color-supply-total: #94A3B8;
-  /* Slate 400 */
+  --color-supply-unsold: #0F172A;    /* Slate 900 */
+  --color-supply-upcoming: #334155;  /* Slate 700 */
+  --color-supply-gls: #64748B;       /* Slate 500 */
+  --color-supply-total: #94A3B8;     /* Slate 400 */
 
   /* ----- LIQUIDITY (Exit Risk) ----- */
-  --color-liquidity-low: #F59E0B;
-  /* Amber 500 */
-  --color-liquidity-healthy: #059669;
-  /* Emerald 600 */
-  --color-liquidity-high: #DC2626;
-  /* Red 600 */
-  --color-liquidity-unknown: #94A3B8;
-  /* Slate 400 */
+  --color-liquidity-low: #F59E0B;       /* Amber 500 */
+  --color-liquidity-healthy: #059669;   /* Emerald 600 */
+  --color-liquidity-high: #DC2626;      /* Red 600 */
+  --color-liquidity-unknown: #94A3B8;   /* Slate 400 */
 
   /* ----- STATUS (Operational) ----- */
-  --color-status-live: #059669;
-  /* Emerald 600 */
-  --color-status-negative: #DC2626;
-  /* Red 600 */
+  --color-status-live: #059669;      /* Emerald 600 */
+  --color-status-negative: #DC2626;  /* Red 600 */
 
   /* =========================================
    * DEPRECATED (Remove in Phase 5)
@@ -116,14 +86,10 @@
   --color-mono-canvas: var(--color-canvas);
 
   /* Brand colors (Institutional Print / Slate) */
-  --color-brand-navy: #0F172A;
-  /* slate-900 */
-  --color-brand-blue: #334155;
-  /* slate-700 */
-  --color-brand-sky: #64748B;
-  /* slate-500 */
-  --color-brand-sand: #E5E7EB;
-  /* slate-200 */
+  --color-brand-navy: #0F172A;   /* slate-900 */
+  --color-brand-blue: #334155;   /* slate-700 */
+  --color-brand-sky: #64748B;    /* slate-500 */
+  --color-brand-sand: #E5E7EB;   /* slate-200 */
 
   /* Legacy card colors */
   --color-card: var(--color-canvas-paper);
@@ -151,7 +117,6 @@
 .hud-corner {
   position: relative;
 }
-
 .hud-corner::before {
   content: '';
   position: absolute;
@@ -163,7 +128,6 @@
   left: -1px;
   opacity: 0.8;
 }
-
 .hud-corner::after {
   content: '';
   position: absolute;
@@ -189,16 +153,15 @@
 .weapon-card {
   background: var(--color-card);
   border: 1px solid var(--color-mono-muted);
-  border-radius: 0px;
-  /* Hard edges for weapon/terminal aesthetic */
+  border-radius: 0.75rem; /* rounded-xl for modern SaaS aesthetic */
   position: relative;
 }
 
 /* Dashboard Grid Background - 80px crosshatch */
 .weapon-grid-bg {
   background-image:
-    linear-gradient(0deg, rgba(0, 0, 0, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 0, 0, 0.02) 1px, transparent 1px);
+    linear-gradient(0deg, rgba(0,0,0,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,0,0,0.02) 1px, transparent 1px);
   background-size: 80px 80px;
 }
 
@@ -206,7 +169,6 @@
 .weapon-noise {
   position: relative;
 }
-
 .weapon-noise::after {
   content: '';
   position: absolute;
@@ -220,11 +182,10 @@
 
 /* Weapon Shadow - hard offset */
 .weapon-shadow {
-  box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.15);
+  box-shadow: 2px 2px 0px rgba(0,0,0,0.15);
 }
-
 .weapon-shadow-md {
-  box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.1);
+  box-shadow: 4px 4px 0px rgba(0,0,0,0.1);
 }
 
 /* Weapon Active State - inverted */
@@ -237,7 +198,6 @@
 .weapon-border {
   border: 1px solid var(--color-mono-muted);
 }
-
 .weapon-border-hard {
   border: 1px solid var(--color-mono-dark);
 }
@@ -252,25 +212,6 @@ body {
   @apply bg-mono-canvas text-mono-ink;
   margin: 0;
   -webkit-font-smoothing: antialiased;
-}
-
-/* =========================================
- * PHASE 2 LAYOUT: Terminal Shell Components
- * ========================================= */
-
-/* The main container that centers the UI on large screens */
-.terminal-container {
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.05),
-    0 20px 50px -12px rgba(0, 0, 0, 0.5);
-}
-
-/* Background grid for the terminal feel */
-.weapon-guide-lines {
-  background-image:
-    linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
-  background-size: 100px 100px;
 }
 
 
@@ -288,7 +229,6 @@ canvas {
   from {
     transform: translateX(100%);
   }
-
   to {
     transform: translateX(0);
   }
@@ -303,7 +243,6 @@ canvas {
   from {
     transform: translateX(-100%);
   }
-
   to {
     transform: translateX(0);
   }
@@ -319,7 +258,6 @@ canvas {
     opacity: 0;
     transform: scale(0.8);
   }
-
   to {
     opacity: 1;
     transform: scale(1);
@@ -335,7 +273,6 @@ canvas {
   from {
     opacity: 0;
   }
-
   to {
     opacity: 1;
   }
@@ -351,7 +288,6 @@ canvas {
     opacity: 0;
     transform: translateY(8px);
   }
-
   to {
     opacity: 1;
     transform: translateY(0);
@@ -369,12 +305,13 @@ input[type="range"].slider-thumb {
   -webkit-appearance: none;
   appearance: none;
   background: linear-gradient(to right,
-      var(--color-ink-muted) 0%,
-      var(--color-ink-muted) 15%,
-      var(--color-ink) 15%,
-      var(--color-ink) 85%,
-      var(--color-ink-muted) 85%,
-      var(--color-ink-muted) 100%);
+    var(--color-ink-muted) 0%,
+    var(--color-ink-muted) 15%,
+    var(--color-ink) 15%,
+    var(--color-ink) 85%,
+    var(--color-ink-muted) 85%,
+    var(--color-ink-muted) 100%
+  );
   background-size: 100% 100%;
   border-radius: 0.5rem;
   height: 8px;
@@ -465,7 +402,6 @@ input[type="range"].slider-thumb::-moz-range-progress {
   0% {
     transform: translateY(0);
   }
-
   100% {
     transform: translateY(-50%);
   }
@@ -487,7 +423,6 @@ input[type="range"].slider-thumb::-moz-range-progress {
   0% {
     background-position: -200% 0;
   }
-
   100% {
     background-position: 200% 0;
   }
@@ -495,12 +430,14 @@ input[type="range"].slider-thumb::-moz-range-progress {
 
 /* Base shimmer effect - slow, smooth animation (3.5s) */
 .skeleton-shimmer {
-  background: linear-gradient(90deg,
-      #f0ebe3 0%,
-      #faf8f5 25%,
-      #f0ebe3 50%,
-      #faf8f5 75%,
-      #f0ebe3 100%);
+  background: linear-gradient(
+    90deg,
+    #f0ebe3 0%,
+    #faf8f5 25%,
+    #f0ebe3 50%,
+    #faf8f5 75%,
+    #f0ebe3 100%
+  );
   background-size: 200% 100%;
   animation: shimmer 3.5s ease-in-out infinite;
 }
@@ -520,12 +457,9 @@ input[type="range"].slider-thumb::-moz-range-progress {
 
 /* Pulse animation for variety */
 @keyframes skeleton-pulse {
-
-  0%,
-  100% {
+  0%, 100% {
     opacity: 0.6;
   }
-
   50% {
     opacity: 1;
   }
@@ -539,12 +473,9 @@ input[type="range"].slider-thumb::-moz-range-progress {
 
 /* Update pulse animation for the indicator */
 @keyframes update-pulse {
-
-  0%,
-  100% {
+  0%, 100% {
     opacity: 0.7;
   }
-
   50% {
     opacity: 1;
   }
@@ -567,7 +498,6 @@ input[type="range"].slider-thumb::-moz-range-progress {
   from {
     transform: rotate(0deg);
   }
-
   to {
     transform: rotate(360deg);
   }
@@ -608,7 +538,6 @@ input[type="range"].slider-thumb::-moz-range-progress {
   0% {
     transform: translateX(-100%);
   }
-
   100% {
     transform: translateX(400%);
   }
@@ -642,27 +571,11 @@ input[type="range"].slider-thumb::-moz-range-progress {
 
 /* Glitch effect for headlines on hover */
 @keyframes glitch {
-
-  0%,
-  100% {
-    transform: translate(0);
-  }
-
-  20% {
-    transform: translate(-2px, 2px);
-  }
-
-  40% {
-    transform: translate(-2px, -2px);
-  }
-
-  60% {
-    transform: translate(2px, 2px);
-  }
-
-  80% {
-    transform: translate(2px, -2px);
-  }
+  0%, 100% { transform: translate(0); }
+  20% { transform: translate(-2px, 2px); }
+  40% { transform: translate(-2px, -2px); }
+  60% { transform: translate(2px, 2px); }
+  80% { transform: translate(2px, -2px); }
 }
 
 .glitch-hover:hover {
@@ -671,13 +584,8 @@ input[type="range"].slider-thumb::-moz-range-progress {
 
 /* Scan line sweep effect for cards on hover */
 @keyframes scanSweep {
-  0% {
-    top: -100%;
-  }
-
-  100% {
-    top: 100%;
-  }
+  0% { top: -100%; }
+  100% { top: 100%; }
 }
 
 .scan-line-hover {
@@ -705,20 +613,9 @@ input[type="range"].slider-thumb::-moz-range-progress {
 
 /* Data stream animation for numbers */
 @keyframes dataStream {
-  0% {
-    opacity: 0.7;
-    transform: translateY(2px);
-  }
-
-  50% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  100% {
-    opacity: 0.7;
-    transform: translateY(-2px);
-  }
+  0% { opacity: 0.7; transform: translateY(2px); }
+  50% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0.7; transform: translateY(-2px); }
 }
 
 .animate-data-stream {
@@ -731,7 +628,6 @@ input[type="range"].slider-thumb::-moz-range-progress {
     opacity: 0;
     transform: translateY(16px);
   }
-
   to {
     opacity: 1;
     transform: translateY(0);
@@ -755,7 +651,6 @@ input[type="range"].slider-thumb::-moz-range-progress {
     transform: scale(1);
     opacity: 0.8;
   }
-
   100% {
     transform: scale(2.5);
     opacity: 0;
@@ -767,7 +662,6 @@ input[type="range"].slider-thumb::-moz-range-progress {
     transform: scale(1);
     opacity: 0.6;
   }
-
   100% {
     transform: scale(3);
     opacity: 0;
@@ -814,10 +708,12 @@ input[type="range"].slider-thumb::-moz-range-progress {
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg,
-      transparent,
-      rgba(255, 255, 255, 0.2),
-      transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
   transition: left 0.5s ease;
 }
 
@@ -854,9 +750,11 @@ input[type="range"].slider-thumb::-moz-range-progress {
   position: absolute;
   inset: -20%;
   border-radius: 50%;
-  background: radial-gradient(circle,
-      rgba(0, 0, 0, 0.05) 0%,
-      transparent 70%);
+  background: radial-gradient(
+    circle,
+    rgba(0, 0, 0, 0.05) 0%,
+    transparent 70%
+  );
   pointer-events: none;
 }
 
@@ -902,7 +800,6 @@ input[type="range"].slider-thumb::-moz-range-progress {
 /* ====== Phase 8: Comprehensive Reduced Motion Support ====== */
 
 @media (prefers-reduced-motion: reduce) {
-
   /* Disable all custom animations */
   .glitch-hover:hover,
   .scan-line-hover:hover::before,
@@ -974,13 +871,8 @@ input[type="range"].slider-thumb::-moz-range-progress {
 
 /* Ticker auto-scroll animation */
 @keyframes ticker-scroll {
-  0% {
-    transform: translateX(0);
-  }
-
-  100% {
-    transform: translateX(-50%);
-  }
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }
 
 .animate-ticker {
@@ -993,15 +885,8 @@ input[type="range"].slider-thumb::-moz-range-progress {
 
 /* System heartbeat LED - slow breathing glow */
 @keyframes heartbeat-glow {
-
-  0%,
-  100% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0.5;
-  }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 .heartbeat-led {
@@ -1012,3 +897,4 @@ input[type="range"].slider-thumb::-moz-range-progress {
   box-shadow: 0 0 4px rgba(16, 185, 129, 0.6);
   animation: heartbeat-glow 4s ease-in-out infinite;
 }
+

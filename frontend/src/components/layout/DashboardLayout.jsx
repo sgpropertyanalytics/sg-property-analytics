@@ -1,7 +1,6 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useLocation, Outlet } from 'react-router-dom';
 import { GlobalNavRail, NAV_ITEMS, NAV_WIDTH_EXPANDED, NAV_WIDTH_COLLAPSED } from './GlobalNavRail';
-import { TerminalShell } from './TerminalShell';
 import { ErrorBoundary } from '../ui';
 import { UpgradeFooterCTA } from '../ui/UpgradeFooterCTA';
 import { useSubscription } from '../../context/SubscriptionContext';
@@ -152,11 +151,11 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
   const handleMobileNavClose = () => setMobileNavOpen(false);
 
   return (
-    <div className="flex h-screen bg-[#F5F7FA] overflow-hidden text-mono-ink">
+    <div className="flex h-screen bg-mono-canvas overflow-hidden text-mono-ink">
       {/* ===== GLOBAL NAV RAIL (Primary Sidebar) ===== */}
       {/* Desktop: Collapsible with premium physics animation | Mobile: Hidden */}
       <div
-        className="hidden lg:flex flex-shrink-0 relative overflow-visible z-20"
+        className="hidden lg:flex flex-shrink-0 relative overflow-visible"
         style={{
           width: isNavCollapsed ? NAV_WIDTH_COLLAPSED : NAV_WIDTH_EXPANDED,
           transition: 'none'
@@ -197,11 +196,11 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
           >
             <GlobalNavRail activePage={activePage} />
             {/* Close button overlay */}
-            <button
-              onClick={handleMobileNavClose}
-              className="absolute top-4 right-4 p-2 rounded-none bg-mono-ink text-mono-canvas hover:bg-mono-dark min-h-[44px] min-w-[44px] flex items-center justify-center active:bg-mono-ink active:scale-[0.98]"
-              aria-label="Close navigation"
-            >
+              <button
+                onClick={handleMobileNavClose}
+                className="absolute top-4 right-4 p-2 rounded-none bg-mono-ink text-mono-canvas hover:bg-mono-dark min-h-[44px] min-w-[44px] flex items-center justify-center active:bg-mono-ink active:scale-[0.98]"
+                aria-label="Close navigation"
+              >
 
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -213,7 +212,7 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
 
       {/* ===== MAIN CONTENT AREA ===== */}
       {/* min-w-0 prevents flex children from overflowing - critical for nested grids */}
-      <div className="flex-1 min-w-0 flex flex-col overflow-hidden bg-[#F5F7FA]">
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
         {/* Mobile Header */}
         <header className="lg:hidden sticky top-0 z-40 bg-mono-canvas px-3 py-2 flex-shrink-0 border-b border-mono-muted weapon-noise">
           <div className="flex items-center justify-between gap-2">
@@ -238,37 +237,32 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
           </div>
 
           {/* Mobile Page Indicator */}
-          <div className="mt-2 flex justify-center">
-            <div className="inline-flex rounded-none bg-card border border-mono-muted px-3 py-1.5">
+            <div className="mt-2 flex justify-center">
+               <div className="inline-flex rounded-none bg-card border border-mono-muted px-3 py-1.5">
 
-              <span className="text-black/70 font-mono text-[10px] uppercase tracking-[0.18em]">
+                <span className="text-black/70 font-mono text-[10px] uppercase tracking-[0.18em]">
                 {NAV_ITEMS.find(item => item.id === activePage)?.label || 'Market Core'}
               </span>
             </div>
           </div>
         </header>
 
-        {/* Main Content - Wrapped in Terminal Shell for Containment */}
-        {/* The Shell provides the "Monitor" frame */}
-        <div className="flex-1 min-w-0 overflow-hidden relative">
-          <TerminalShell className="h-full">
-            {/* Inner scrollable area within the terminal screen */}
-            <main className="flex-1 w-full h-full overflow-y-auto overflow-x-hidden custom-scrollbar bg-transparent">
-              <div className="min-h-full flex flex-col">
-                <ErrorBoundary name="Page Content">
-                  <Suspense fallback={<ContentLoadingFallback />}>
-                    <div className="flex-1 p-4 lg:p-6">
-                      {content}
-                    </div>
-                  </Suspense>
-                </ErrorBoundary>
-
-                {/* Upgrade CTA - At the bottom of the data tape */}
-                <UpgradeFooterCTA />
+        {/* Main Content - Wrapped with Suspense + ErrorBoundary */}
+        {/* IMPORTANT: Suspense is HERE so nav rail stays mounted during lazy loading */}
+        {/* min-w-0 on main and wrapper prevents nested grid overflow */}
+        {/* Card-based layout: gray-50 canvas creates contrast for white content cards */}
+        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden flex flex-col bg-gray-50">
+          <ErrorBoundary name="Page Content">
+            <Suspense fallback={<ContentLoadingFallback />}>
+              <div className="flex-1 min-w-0">
+                {content}
               </div>
-            </main>
-          </TerminalShell>
-        </div>
+            </Suspense>
+          </ErrorBoundary>
+
+          {/* Upgrade CTA - Sticky footer for free users */}
+          <UpgradeFooterCTA />
+        </main>
       </div>
 
       {/* Pricing Modal - Global paywall trigger */}

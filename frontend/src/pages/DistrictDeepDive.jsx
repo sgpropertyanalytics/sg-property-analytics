@@ -36,13 +36,13 @@ export function DistrictDeepDiveContent() {
 
   return (
     <div className="h-full overflow-auto">
-      <div>
+      <div className="p-3 md:p-4 lg:p-6">
         {/* Header */}
         <div className="mb-4 md:mb-6">
-          <h1 className="text-lg md:text-xl lg:text-2xl font-display font-semibold uppercase tracking-tight text-mono-ink">
+          <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-brand-navy">
             District Overview
           </h1>
-          <p className="text-mono-mid text-[10px] font-mono uppercase tracking-[0.1em] mt-1">
+          <p className="text-brand-blue text-sm mt-1">
             District-level market analysis
           </p>
         </div>
