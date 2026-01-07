@@ -994,3 +994,34 @@ input[type="range"].slider-thumb::-moz-range-progress {
   animation: heartbeat-glow 4s ease-in-out infinite;
 }
 
+/* ====== Server Rack LED - Active Nav Indicator ====== */
+
+/* LED Breathing animation - opacity transitions (100% → 60% → 100%) */
+@keyframes led-breathe {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 5px rgba(16, 185, 129, 0.5);
+  }
+  50% {
+    opacity: 0.6;
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.8);
+  }
+}
+
+/* The Physical LED - Emerald Green with breathing glow */
+.nav-led-active {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background-color: #10B981; /* Emerald 500 */
+  animation: led-breathe 3s ease-in-out infinite;
+  z-index: 10;
+}
+
+/* The Green Glow Spill (subtle gradient overlay) */
+.nav-led-glow {
+  background: linear-gradient(90deg, rgba(16, 185, 129, 0.1) 0%, transparent 100%);
+}
+
