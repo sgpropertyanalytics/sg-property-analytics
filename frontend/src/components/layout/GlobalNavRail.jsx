@@ -95,9 +95,11 @@ function NavItem({ item, isActive, onClick, collapsed = false }) {
     focus-visible:ring-2 focus-visible:ring-white/20 focus-visible:ring-offset-2 focus-visible:ring-offset-mono-void
   `;
 
-   // State-specific styles (VOID THEME - light text on dark)
-   const activeStyles = 'bg-mono-surface text-mono-canvas border-b border-mono-edge ring-1 ring-mono-edge';
-   const inactiveStyles = 'text-mono-light hover:text-mono-canvas hover:bg-white/[0.05]';
+   // State-specific styles (INDUSTRIAL MACHINE - "Server Rack LED")
+   // Active: Emerald LED + green glow spill
+   const activeStyles = 'nav-led-glow text-white border-b border-mono-edge ring-1 ring-mono-edge';
+   // Inactive: Dimmed switches (#525252 / stone-600) with instant light-on hover
+   const inactiveStyles = 'text-[#525252] hover:text-white hover:bg-white/[0.05] transition-none';
    const comingSoonStyles = 'text-mono-mid cursor-not-allowed opacity-60';
 
    // Badge styles (VOID THEME)
@@ -119,14 +121,15 @@ function NavItem({ item, isActive, onClick, collapsed = false }) {
       aria-current={isActive ? 'page' : undefined}
       aria-label={item.label}
     >
+      {/* The Physical LED - Emerald Green with breathing glow (Server Rack Indicator) */}
       {isActive && (
-        <span className="absolute left-0 top-0 bottom-0 w-1 bg-brand-blue" />
+        <span className="nav-led-active" />
       )}
 
-      {/* Icon - full opacity when active, dimmed when inactive (VOID THEME) */}
+      {/* Icon - full opacity when active, dimmed when inactive (INDUSTRIAL MACHINE) */}
        <span className={`
          text-sm flex-shrink-0 transition-none
-         ${isActive ? 'text-mono-canvas' : 'text-mono-light group-hover:text-mono-canvas'}
+         ${isActive ? 'text-white' : 'text-[#525252] group-hover:text-white'}
        `}>
 
         {item.icon}
@@ -144,11 +147,12 @@ function NavItem({ item, isActive, onClick, collapsed = false }) {
         {item.label}
       </span>
 
-       {(!collapsed && (isActive || isComingSoon)) && (
+       {/* "COMING SOON" badge for unfinished features only */}
+       {(!collapsed && isComingSoon) && (
          <span
-           className={`${badgeBase} ${isActive ? badgeActive : isComingSoon ? badgeComingSoon : badgeInactive} ${collapsed ? 'opacity-0 w-0' : 'opacity-100'}`}
+           className={`${badgeBase} ${badgeComingSoon} ${collapsed ? 'opacity-0 w-0' : 'opacity-100'}`}
          >
-           {isComingSoon ? 'SOON' : 'ACTIVE'}
+           SOON
          </span>
        )}
 
@@ -221,7 +225,11 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
 
   return (
       <nav
-        className={`relative bg-mono-void w-full flex flex-col py-4 flex-shrink-0 h-full overflow-y-auto overflow-x-visible transition-none border-r border-mono-edge ${collapsed ? 'px-2' : 'px-3'} ${isPending ? 'opacity-90' : ''}`}
+        className={`relative bg-mono-void w-full flex flex-col py-4 flex-shrink-0 h-full overflow-y-auto overflow-x-visible transition-none ${collapsed ? 'px-2' : 'px-3'} ${isPending ? 'opacity-90' : ''}`}
+        style={{
+          borderRight: '3px solid #0A0A0A',
+          boxShadow: 'inset -1px 0 0 #525252'
+        }}
         aria-label="Main navigation"
       >
         {/* HUD corners - tactical frame */}
@@ -275,9 +283,9 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
 
           return (
             <div key={group.id} className={groupIndex > 0 ? 'mt-6' : ''}>
-              {/* SectionHeader - The "Structural Divider" (VOID THEME)
-                  Uses typography and spacing to separate content, not borders.
-                  Design: text-[11px] uppercase tracking-[0.12em] - muted labels */}
+              {/* SectionHeader - "Stamped Metal" Labels (INDUSTRIAL MACHINE)
+                  Laser-etched labels on server rack casing.
+                  Typography: Condensed, tight tracking, stone-600 (#525252) */}
                {!collapsed && (
                  <button
                    onClick={() => toggleGroup(group.id)}
@@ -288,12 +296,12 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
                      select-none
                      ${hasActiveItem
                        ? 'text-mono-light'
-                       : 'text-mono-mid hover:text-mono-light'
+                       : 'text-[#525252] hover:text-mono-light'
                      }
                    `}
                    aria-expanded={isExpanded}
                  >
-                   <span className="font-mono text-[10px] uppercase tracking-[0.18em] leading-none min-w-0 flex-1">
+                   <span className="font-mono text-[0.65rem] uppercase tracking-[0.15em] leading-none min-w-0 flex-1 font-bold">
                      {group.label}
                    </span>
                    <svg
