@@ -168,19 +168,19 @@ function LineSkeleton({ height, className }) {
 
             <defs>
               <linearGradient id="lineGradientSkeleton" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#94B4C1" stopOpacity="0.35">
+                <stop offset="0%" stopColor="#94A3B8" stopOpacity="0.35">
                   <animate attributeName="stop-opacity" values="0.2;0.5;0.2" dur="3.5s" repeatCount="indefinite" />
                 </stop>
-                <stop offset="50%" stopColor="#547792" stopOpacity="0.45">
+                <stop offset="50%" stopColor="#334155" stopOpacity="0.45">
                   <animate attributeName="stop-opacity" values="0.3;0.6;0.3" dur="3.5s" repeatCount="indefinite" />
                 </stop>
-                <stop offset="100%" stopColor="#94B4C1" stopOpacity="0.35">
+                <stop offset="100%" stopColor="#94A3B8" stopOpacity="0.35">
                   <animate attributeName="stop-opacity" values="0.2;0.5;0.2" dur="3.5s" repeatCount="indefinite" />
                 </stop>
               </linearGradient>
               <linearGradient id="areaGradientSkeleton" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#94B4C1" stopOpacity="0.08" />
-                <stop offset="100%" stopColor="#94B4C1" stopOpacity="0.01" />
+                <stop offset="0%" stopColor="#94A3B8" stopOpacity="0.08" />
+                <stop offset="100%" stopColor="#94A3B8" stopOpacity="0.01" />
               </linearGradient>
             </defs>
           </svg>

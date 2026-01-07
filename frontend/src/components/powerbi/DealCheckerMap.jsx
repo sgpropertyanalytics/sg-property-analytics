@@ -161,7 +161,7 @@ export default function DealCheckerMap({
             id="radius-fill-2km"
             type="fill"
             paint={{
-              'fill-color': '#94B4C1',
+              'fill-color': '#64748B',
               'fill-opacity': 0.05
             }}
           />
@@ -170,7 +170,7 @@ export default function DealCheckerMap({
             id="radius-line-2km"
             type="line"
             paint={{
-              'line-color': '#94B4C1',
+              'line-color': '#64748B',
               'line-width': 1.5,
               'line-dasharray': [6, 4]
             }}
@@ -186,7 +186,7 @@ export default function DealCheckerMap({
             id="radius-fill-1km"
             type="fill"
             paint={{
-              'fill-color': '#547792',
+              'fill-color': '#334155',
               'fill-opacity': 0.08
             }}
           />
@@ -195,7 +195,7 @@ export default function DealCheckerMap({
             id="radius-line-1km"
             type="line"
             paint={{
-              'line-color': '#547792',
+              'line-color': '#334155',
               'line-width': 2
             }}
           />
@@ -325,7 +325,7 @@ export default function DealCheckerMap({
           <div
             className="h-1.5 w-full rounded-none"
             style={{
-              background: 'linear-gradient(to right, #EF4444, #F97316, #FACC15, #94B4C1)',
+              background: 'linear-gradient(to right, #EF4444, #F97316, #FACC15, #64748B)',
             }}
           />
           <div className="flex justify-between mt-0.5">

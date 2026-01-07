@@ -11,10 +11,10 @@ import { useAuth } from '../context/AuthContext';
  * User has clicked "View Market Data" and is unlocking their preview.
  *
  * Color Palette (from CLAUDE.md):
- * - Deep Navy (#213448) - Headings, primary text, left panel bg
- * - Ocean Blue (#547792) - Secondary text, labels, borders
- * - Sky Blue (#94B4C1) - Icons, disabled states, subtle accents
- * - Sand/Cream (#EAE0CF) - Accent text, highlights, right panel bg
+ * - Slate 900 (#0F172A) - Headings, primary text, left panel bg
+ * - Slate 700 (#334155) - Secondary text, labels, borders
+ * - Slate 500 (#64748B) - Icons, disabled states, subtle accents
+ * - Slate 200 (#E5E7EB) - Accent text, highlights, right panel bg
  */
 function Login() {
   const navigate = useNavigate();
@@ -239,7 +239,7 @@ function Login() {
           <div className="mt-4 text-center">
             <button
               onClick={() => setShowEmailForm(!showEmailForm)}
-              className="text-sm text-brand-blue hover:text-brand-navy transition-colors underline underline-offset-2 decoration-[#94B4C1] hover:decoration-[#213448]"
+              className="text-sm text-brand-blue hover:text-brand-navy transition-colors underline underline-offset-2 decoration-slate-400 hover:decoration-slate-900"
             >
               Or continue with email
             </button>

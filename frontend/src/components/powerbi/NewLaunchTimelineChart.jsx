@@ -166,8 +166,8 @@ function NewLaunchTimelineChartBase({ height = 300 }) {
         type: 'bar',
         label: 'Total Units',
         data: totalUnits,
-        backgroundColor: 'rgba(148, 180, 193, 0.7)', // Sky #94B4C1
-        borderColor: '#547792',
+        backgroundColor: 'rgba(100, 116, 139, 0.7)', // Sky #94B4C1
+        borderColor: '#334155',
         borderWidth: 1,
         borderRadius: 3,
         yAxisID: 'y',
@@ -177,12 +177,12 @@ function NewLaunchTimelineChartBase({ height = 300 }) {
         type: 'line',
         label: 'Avg Absorption',
         data: absorptionRates,
-        borderColor: '#213448', // Navy
+        borderColor: '#0F172A', // Navy
         backgroundColor: 'rgba(33, 52, 72, 0.05)',
         borderWidth: 2.5,
         pointRadius: 0,
         pointHoverRadius: 5,
-        pointHoverBackgroundColor: '#213448',
+        pointHoverBackgroundColor: '#0F172A',
         pointHoverBorderColor: '#fff',
         tension: 0.3,
         yAxisID: 'y1',
@@ -318,7 +318,7 @@ function NewLaunchTimelineChartBase({ height = 300 }) {
                 <h3 className="font-semibold text-brand-navy text-sm md:text-base flex items-center gap-2">
                   New Launch Activity
                   {isFetching && (
-                    <span className="w-3 h-3 border-2 border-brand-blue/30 border-t-[#547792] rounded-full animate-spin" />
+                    <span className="w-3 h-3 border-2 border-brand-blue/30 border-t-slate-700 rounded-full animate-spin" />
                   )}
                 </h3>
                 <p className="text-xs text-brand-blue mt-0.5">
@@ -395,7 +395,7 @@ function NewLaunchTimelineChartBase({ height = 300 }) {
             </div>
             <div className="flex items-center gap-2">
               <svg width="24" height="8">
-                <line x1="0" y1="4" x2="24" y2="4" stroke="#213448" strokeWidth={2.5} />
+                <line x1="0" y1="4" x2="24" y2="4" stroke="#0F172A" strokeWidth={2.5} />
               </svg>
               <span className="text-xs text-[#374151]">Avg Absorption %</span>
             </div>
