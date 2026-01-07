@@ -104,7 +104,7 @@ export function TimeGranularityToggle({ className = '', layout = 'default' }) {
       {/* One-time helper tooltip - auto-dismisses after 5s, smaller on mobile */}
       {showHelper && (
         <div
-          className="absolute left-0 top-full mt-2 p-2 sm:p-2.5 bg-[#213448] text-white text-[10px] sm:text-xs rounded-none shadow-lg z-50 w-48 sm:w-56"
+          className="absolute left-0 top-full mt-2 p-2 sm:p-2.5 bg-brand-navy text-white text-[10px] sm:text-xs rounded-none shadow-lg z-50 w-48 sm:w-56"
           style={{ animation: 'fadeIn 0.2s ease-out' }}
         >
           <div className="flex items-start justify-between gap-2">
@@ -114,7 +114,7 @@ export function TimeGranularityToggle({ className = '', layout = 'default' }) {
             <button
               type="button"
               onClick={dismissHelper}
-              className="text-[#94B4C1] hover:text-white transition-none shrink-0"
+              className="text-brand-sky hover:text-white transition-none shrink-0"
               aria-label="Dismiss"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -123,7 +123,7 @@ export function TimeGranularityToggle({ className = '', layout = 'default' }) {
             </button>
           </div>
           {/* Arrow pointing up */}
-          <div className="absolute -top-1.5 left-4 w-3 h-3 bg-[#213448] transform rotate-45" />
+          <div className="absolute -top-1.5 left-4 w-3 h-3 bg-brand-navy transform rotate-45" />
         </div>
       )}
 

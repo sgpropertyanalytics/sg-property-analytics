@@ -10,14 +10,6 @@
  */
 import { FrostOverlay } from '../common/loading';
 
-// Liquidity zone colors (institutional, muted palette)
-const _LIQUIDITY_COLORS = {
-  low: '#F59E0B',      // Soft amber - Low Liquidity
-  healthy: '#10B981',  // Muted green - Healthy Liquidity (optimal)
-  high: '#EF4444',     // Muted red - Elevated Turnover
-  unknown: '#94B4C1',  // Sky blue - Unknown
-};
-
 // Get liquidity zone from turnover value
 const getLiquidityZone = (turnover) => {
   if (turnover === null || turnover === undefined) return 'unknown';

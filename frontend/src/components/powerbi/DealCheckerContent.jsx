@@ -359,8 +359,8 @@ export default function DealCheckerContent() {
       {/* IMPORTANT: Do NOT add overflow-hidden here - it clips the project dropdown */}
       <div className="weapon-card hud-corner">
         <div className="px-4 py-3 border-b border-mono-muted">
-          <h3 className="font-semibold text-[#213448]">Check Your Deal</h3>
-          <p className="text-xs text-[#547792] mt-0.5">
+          <h3 className="font-semibold text-brand-navy">Check Your Deal</h3>
+          <p className="text-xs text-brand-blue mt-0.5">
             Enter your property details to see how your price compares
           </p>
         </div>
@@ -370,7 +370,7 @@ export default function DealCheckerContent() {
           <div className="grid grid-cols-1 lg:grid-cols-2">
             {/* LEFT: Project Selector + Check Deal Button */}
             <div className="min-w-0 px-4 md:px-5 py-4 md:py-5 lg:pr-6" ref={dropdownRef}>
-              <label className="block text-xs font-medium text-[#547792] mb-1">
+              <label className="block text-xs font-medium text-brand-blue mb-1">
                 Select your Project <span className="text-red-500">*</span>
               </label>
               <div className="relative mb-4">
@@ -378,53 +378,53 @@ export default function DealCheckerContent() {
                   type="button"
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   disabled={projectOptionsLoading}
-                  className="w-full px-3 py-2.5 text-sm border border-[#94B4C1]/50 rounded text-left bg-[#EAE0CF]/20 focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent flex items-center justify-between"
+                  className="w-full px-3 py-2.5 text-sm border border-brand-sky/50 rounded-none text-left bg-brand-sand/20 focus:outline-none focus:ring-1 focus:ring-brand-blue focus:border-transparent flex items-center justify-between"
                 >
-                  <span className={projectName ? 'text-[#213448] truncate font-medium' : 'text-[#94B4C1]'}>
+                  <span className={projectName ? 'text-brand-navy truncate font-medium' : 'text-brand-sky'}>
                     {projectName
                       ? `${projectName}${selectedProjectInfo?.district ? ` (${selectedProjectInfo.district})` : ''}`
                       : projectOptionsLoading
                         ? <span className="truncate">{loadingText}</span>
                         : 'Search projects...'}
                   </span>
-                  <svg className={`w-4 h-4 text-[#547792] transition-transform flex-shrink-0 ml-2 ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className={`w-4 h-4 text-brand-blue transition-none flex-shrink-0 ml-2 ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
 
                 {/* Dropdown Panel */}
                 {isDropdownOpen && (
-                  <div className="absolute z-50 w-full mt-1 bg-white border border-[#94B4C1]/50 rounded-lg shadow-lg max-h-80 overflow-hidden">
-                    <div className="p-2 border-b border-[#94B4C1]/30">
+                  <div className="absolute z-50 w-full mt-1 bg-white border border-brand-sky/50 rounded-none shadow-lg max-h-80 overflow-hidden">
+                    <div className="p-2 border-b border-brand-sky/30">
                       <input
                         type="text"
                         placeholder="Type to search..."
                         value={projectSearch}
                         onChange={(e) => setProjectSearch(e.target.value)}
-                        className="w-full px-3 py-2 border border-[#94B4C1]/50 rounded text-sm focus:outline-none focus:ring-1 focus:ring-[#547792] text-[#213448]"
+                        className="w-full px-3 py-2 border border-brand-sky/50 rounded-none text-sm focus:outline-none focus:ring-1 focus:ring-brand-blue text-brand-navy"
                         autoFocus
                       />
                     </div>
                     <div className="max-h-60 overflow-y-auto">
                       {filteredProjects.length === 0 ? (
-                        <div className="px-3 py-4 text-sm text-[#94B4C1] text-center">No projects found</div>
+                        <div className="px-3 py-4 text-sm text-brand-sky text-center">No projects found</div>
                       ) : (
                         filteredProjects.slice(0, 100).map(p => (
                           <button
                             key={p.name}
                             type="button"
                             onClick={() => handleProjectSelect(p)}
-                            className={`w-full px-3 py-2 text-left text-sm hover:bg-[#EAE0CF]/50 flex justify-between items-center ${
-                              projectName === p.name ? 'bg-[#EAE0CF]/30 text-[#213448] font-medium' : 'text-[#547792]'
+                            className={`w-full px-3 py-2 text-left text-sm hover:bg-brand-sand/50 flex justify-between items-center ${
+                              projectName === p.name ? 'bg-brand-sand/30 text-brand-navy font-medium' : 'text-brand-blue'
                             }`}
                           >
                             <span className="truncate">{p.name}</span>
-                            <span className="text-xs text-[#94B4C1] ml-2 flex-shrink-0">{p.district}</span>
+                            <span className="text-xs text-brand-sky ml-2 flex-shrink-0">{p.district}</span>
                           </button>
                         ))
                       )}
                       {filteredProjects.length > 100 && (
-                        <div className="px-3 py-2 text-xs text-[#94B4C1] text-center border-t border-[#94B4C1]/30">
+                        <div className="px-3 py-2 text-xs text-brand-sky text-center border-t border-brand-sky/30">
                           +{filteredProjects.length - 100} more
                         </div>
                       )}
@@ -434,7 +434,7 @@ export default function DealCheckerContent() {
 
                 {projectOptionsLoading && (
                   <div className="absolute right-8 top-1/2 transform -translate-y-1/2">
-                    <svg className="w-4 h-4 animate-spin text-[#547792]" fill="none" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 animate-spin text-brand-blue" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                     </svg>
@@ -446,7 +446,7 @@ export default function DealCheckerContent() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full px-4 py-2.5 bg-[#213448] text-white text-sm font-medium rounded-md hover:bg-[#547792] focus:outline-none focus:ring-2 focus:ring-[#547792] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150"
+                className="w-full px-4 py-2.5 bg-brand-navy text-white text-sm font-medium rounded-none hover:bg-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-none"
               >
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
@@ -467,19 +467,19 @@ export default function DealCheckerContent() {
             </div>
 
             {/* RIGHT: Optional Filters with shaded background */}
-            <div className="min-w-0 mt-6 lg:mt-0 lg:border-l lg:border-[#94B4C1]/30 bg-[#547792]/[0.03]">
+            <div className="min-w-0 mt-6 lg:mt-0 lg:border-l lg:border-brand-sky/30 bg-brand-blue/[0.03]">
               <div className="px-4 md:px-5 py-4 md:py-5 w-full">
-                <p className="text-[10px] uppercase tracking-wide text-[#547792]/60 mb-3 font-medium">Property Details</p>
+                <p className="text-[10px] uppercase tracking-wide text-brand-blue/60 mb-3 font-medium">Property Details</p>
                 <div className="grid grid-cols-3 gap-3">
                   {/* Bedroom */}
                   <div>
-                    <label className="block text-xs font-medium text-[#547792] mb-1">
+                    <label className="block text-xs font-medium text-brand-blue mb-1">
                       Bedroom <span className="text-red-500">*</span>
                     </label>
                     <select
                       value={bedroom}
                       onChange={(e) => setBedroom(e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20"
+                      className="w-full px-3 py-2 text-sm border border-brand-sky/50 rounded-none focus:outline-none focus:ring-1 focus:ring-brand-blue focus:border-transparent text-brand-navy bg-brand-sand/20"
                     >
                       <option value="">All</option>
                       <option value="1">1 BR</option>
@@ -492,7 +492,7 @@ export default function DealCheckerContent() {
 
                   {/* Unit Size */}
                   <div>
-                    <label className="block text-xs font-medium text-[#547792] mb-1">
+                    <label className="block text-xs font-medium text-brand-blue mb-1">
                       Size (sqft)
                     </label>
                     <input
@@ -500,13 +500,13 @@ export default function DealCheckerContent() {
                       value={sqft}
                       onChange={handleSqftChange}
                       placeholder="1,200"
-                      className="w-full px-3 py-2 text-sm border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20 placeholder-[#94B4C1]"
+                      className="w-full px-3 py-2 text-sm border border-brand-sky/50 rounded-none focus:outline-none focus:ring-1 focus:ring-brand-blue focus:border-transparent text-brand-navy bg-brand-sand/20 placeholder-brand-sky"
                     />
                   </div>
 
                   {/* Price */}
                   <div>
-                    <label className="block text-xs font-medium text-[#547792] mb-1">
+                    <label className="block text-xs font-medium text-brand-blue mb-1">
                       Price ($) <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -514,7 +514,7 @@ export default function DealCheckerContent() {
                       value={price}
                       onChange={handlePriceChange}
                       placeholder="2,500,000"
-                      className="w-full px-3 py-2 text-sm border border-[#94B4C1]/50 rounded focus:outline-none focus:ring-1 focus:ring-[#547792] focus:border-transparent text-[#213448] bg-[#EAE0CF]/20 placeholder-[#94B4C1]"
+                      className="w-full px-3 py-2 text-sm border border-brand-sky/50 rounded-none focus:outline-none focus:ring-1 focus:ring-brand-blue focus:border-transparent text-brand-navy bg-brand-sand/20 placeholder-brand-sky"
                     />
                   </div>
                 </div>
@@ -560,8 +560,8 @@ export default function DealCheckerContent() {
           {/* Map - Full Width (similar to District Deep Dive) */}
           <div className="weapon-card hud-corner overflow-hidden">
             <div className="px-3 sm:px-4 py-2 sm:py-3 border-b border-mono-muted">
-              <h3 className="text-base sm:text-lg font-bold text-[#213448]">Nearby Projects Map</h3>
-              <p className="text-[10px] sm:text-xs text-[#547792]">
+              <h3 className="text-base sm:text-lg font-bold text-brand-navy">Nearby Projects Map</h3>
+              <p className="text-[10px] sm:text-xs text-brand-blue">
                 {bedroom}BR transactions • Only projects with {K_PROJECT_THRESHOLD}+ observations shown
               </p>
             </div>
@@ -579,21 +579,21 @@ export default function DealCheckerContent() {
               <div className="px-4 py-3 border-b border-mono-muted">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-semibold text-[#213448]">Projects Within 2km</h3>
-                    <p className="text-xs text-[#547792]">
+                    <h3 className="font-semibold text-brand-navy">Projects Within 2km</h3>
+                    <p className="text-xs text-brand-blue">
                       {bedroom}BR transactions • Only projects with {K_PROJECT_THRESHOLD}+ observations shown
                     </p>
                   </div>
                   {/* Volume gradient legend */}
                   <div className="flex items-center gap-2">
-                    <span className="text-[9px] text-[#547792] uppercase tracking-wide">Volume</span>
+                    <span className="text-[9px] text-brand-blue uppercase tracking-wide">Volume</span>
                     <div
-                      className="h-2 w-16 rounded-sm"
+                      className="h-2 w-16 rounded-none"
                       style={{
                         background: 'linear-gradient(to right, #EF4444, #F97316, #FACC15, #94B4C1)',
                       }}
                     />
-                    <div className="flex gap-2 text-[8px] text-[#547792]">
+                    <div className="flex gap-2 text-[8px] text-brand-blue">
                       <span>High</span>
                       <span>Low</span>
                     </div>
@@ -615,25 +615,25 @@ export default function DealCheckerContent() {
                     return (
                       <div
                         key={p.project_name}
-                        className={`p-3 rounded-lg border border-[#94B4C1]/30 ${!isWithin1km ? 'opacity-70' : ''}`}
+                        className={`p-3 rounded-none border border-brand-sky/30 ${!isWithin1km ? 'opacity-70' : ''}`}
                         style={{ backgroundColor: isUserProject ? 'rgba(33, 52, 72, 0.05)' : volumeColor }}
                       >
                         <div className="flex justify-between items-start gap-2">
                           <div className="min-w-0 flex-1">
-                            <div className="font-medium text-[#213448] truncate">
+                            <div className="font-medium text-brand-navy truncate">
                               {p.project_name}
-                              {isUserProject && <span className="ml-1 text-xs text-[#547792]">(yours)</span>}
+                              {isUserProject && <span className="ml-1 text-xs text-brand-blue">(yours)</span>}
                             </div>
-                            <div className="text-xs text-[#94B4C1]">{p.district}</div>
+                            <div className="text-xs text-brand-sky">{p.district}</div>
                           </div>
                           <div className="text-right flex-shrink-0">
-                            <div className="text-sm font-medium text-[#213448]">
+                            <div className="text-sm font-medium text-brand-navy">
                               {p.distance_km === 0 ? '-' : `${(p.distance_km * 1000).toFixed(0)}m`}
                             </div>
                           </div>
                         </div>
                         {/* Row 1: BR, Age, Obs */}
-                        <div className="flex items-center gap-3 mt-2 text-xs text-[#547792]">
+                        <div className="flex items-center gap-3 mt-2 text-xs text-brand-blue">
                           <span>{p.bedroom || '-'}BR</span>
                           <span>
                             Age: {getAgeBandLabel(p.median_age, { isFreehold: p.is_freehold })}
@@ -641,7 +641,7 @@ export default function DealCheckerContent() {
                           <span>{(p.transaction_count || 0).toLocaleString()} obs</span>
                         </div>
                         {/* Row 2: Sqft or Volume label */}
-                        <div className="flex justify-between items-center mt-1 text-xs text-[#547792]">
+                        <div className="flex justify-between items-center mt-1 text-xs text-brand-blue">
                           <span>{p.median_sqft?.toLocaleString() || '-'} sqft</span>
                           {isSuppressed ? (
                             volumeLabel && (
@@ -656,13 +656,13 @@ export default function DealCheckerContent() {
                         {/* Row 2: P25 / Median / P75 - only show if Obs >= K */}
                         {!isSuppressed && (
                           <div className="flex justify-between mt-1 text-xs">
-                            <span className="text-[#94B4C1]">
+                            <span className="text-brand-sky">
                               P25: ${p.p25_price ? (p.p25_price / 1000000).toFixed(2) : '-'}M
                             </span>
-                            <span className="font-medium text-[#213448]">
+                            <span className="font-medium text-brand-navy">
                               ${p.median_price ? (p.median_price / 1000000).toFixed(2) : '-'}M
                             </span>
-                            <span className="text-[#94B4C1]">
+                            <span className="text-brand-sky">
                               P75: ${p.p75_price ? (p.p75_price / 1000000).toFixed(2) : '-'}M
                             </span>
                           </div>
@@ -777,11 +777,11 @@ export default function DealCheckerContent() {
                           className={`${!isUserProject ? 'hover:brightness-95' : ''} ${!isWithin1km ? 'opacity-70' : ''} transition-all`}
                         >
                           <td className="px-3 py-2 border-b border-slate-100">
-                            <span className="font-medium text-[#213448]">{p.project_name}</span>
+                            <span className="font-medium text-brand-navy">{p.project_name}</span>
                             {isUserProject && (
-                              <span className="ml-2 text-xs text-[#547792]">(yours)</span>
+                              <span className="ml-2 text-xs text-brand-blue">(yours)</span>
                             )}
-                            <div className="text-xs text-[#94B4C1]">{p.district}</div>
+                            <div className="text-xs text-brand-sky">{p.district}</div>
                           </td>
                           <td className="px-3 py-2 border-b border-slate-100 text-right text-slate-600 whitespace-nowrap">
                             {p.distance_km === 0 ? '-' : `${(p.distance_km * 1000).toFixed(0)}m`}
@@ -842,11 +842,11 @@ export default function DealCheckerContent() {
       {!result && !loading && (
         <div className="weapon-card p-8 text-center">
           <div className="max-w-md mx-auto">
-            <svg className="w-16 h-16 mx-auto text-[#94B4C1] mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-16 h-16 mx-auto text-brand-sky mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
             </svg>
-            <h3 className="text-lg font-semibold text-[#213448] mb-2">Check Your Property Deal</h3>
-            <p className="text-sm text-[#547792]">
+            <h3 className="text-lg font-semibold text-brand-navy mb-2">Check Your Property Deal</h3>
+            <p className="text-sm text-brand-blue">
               Select your project, bedroom type, and price paid to see how your purchase compares
               to similar transactions in the same project and within 1-2km radius.
             </p>
