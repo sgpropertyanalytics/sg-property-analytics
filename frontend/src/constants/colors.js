@@ -104,14 +104,13 @@ export const CHART = {
 export const THEME_COLORS = BRAND;
 
 /**
- * Region badge Tailwind classes (using hardcoded hex for Tailwind JIT)
- * These use raw hex because Tailwind needs static analysis
+ * Region badge Tailwind classes using design system tokens
  */
 export const REGION_BADGE_CLASSES = {
-  CCR: 'bg-[#213448] text-white',
-  RCR: 'bg-[#547792] text-white',
-  OCR: 'bg-[#94B4C1] text-[#213448]',
-  SAND: 'bg-[#EAE0CF] text-[#213448]',
+  CCR: 'bg-brand-navy text-white',
+  RCR: 'bg-brand-blue text-white',
+  OCR: 'bg-brand-sky text-brand-navy',
+  SAND: 'bg-brand-sand text-brand-navy',
 };
 
 // =============================================================================
