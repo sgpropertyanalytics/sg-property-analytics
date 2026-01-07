@@ -998,30 +998,39 @@ input[type="range"].slider-thumb::-moz-range-progress {
 
 /*
  * CHASSIS DESIGN (GlobalNavRail nav container):
- * The "Tungsten Shift" - Warm charcoal that harmonizes with beige paper.
+ * ATMOSPHERIC PERSPECTIVE - "Smoked Obsidian" approach
+ * Reduces heaviness by 50% while keeping dark hacker aesthetic
  *
- * THREE-PART SOLUTION:
+ * THE PHYSICS OF LIGHTNESS:
  *
- * 1. THE COLOR SHIFT - From "Void" to "Tungsten":
- *    bg-[#1C1917] (Stone-950)
- *    - Warm charcoal instead of cold black zinc-950
- *    - Contains red/orange undertones that match beige paper
- *    - Stops fighting the warm background
+ * 1. THE OBSIDIAN BLEND - "Heavy Iron" not "Black Void":
+ *    bg-[#262321]/95
+ *    - #262321 derived by darkening beige (#F2EFE9) by 85%
+ *    - Contains exact same yellow/orange DNA as paper
+ *    - 95% opacity creates translucency (not solid wall)
+ *    - Lower contrast ratio = easier on eyes
  *
- * 2. THE GASKET - Bridging border between chassis and paper:
- *    border-r border-[#44403C] (Stone-800)
- *    - Mid-tone between black chassis and beige paper
- *    - Like industrial machinery gasket/frame
- *    - Softens the "hard cut" between zones
+ * 2. THE ATMOSPHERE - Frosted Dark Glass Effect:
+ *    backdrop-blur-md
+ *    - Subtle see-through of beige background
+ *    - Creates "translucent material" perception
+ *    - Reduces visual weight dramatically
+ *    - Sidebar mechanically belongs to same environment
  *
- * 3. THE SHADOW - Chassis depth with Stone tones:
- *    shadow-[10px_0_30px_-10px_rgba(28,25,23,0.7)]
- *    - Uses Stone rgba values for warmth
- *    - 10px offset = physical depth
- *    - 30px blur = soft realistic edge
- *    - 0.7 opacity = heavy, anchored shadow
+ * 3. THE SOFT SEAM - Warm Brown Shadow (not black):
+ *    shadow-[10px_0_40px_-10px_rgba(40,35,30,0.6)]
+ *    - No hard border (removed)
+ *    - Colored shadow like coffee staining paper
+ *    - Wider blur (40px) for softer edge
+ *    - Lower opacity (0.6) for atmospheric depth
  *
- * 4. THE HACKER DENSITY - System Metrics footer:
+ * 4. THE TYPOGRAPHY - Reducing Glare:
+ *    - Active text: text-[#E7E5E4] (warm off-white, not harsh white)
+ *    - Inactive text: text-[#A8A29E] (warm stone, not cold zinc)
+ *    - Reduces "glare" against lighter sidebar background
+ *    - Maintains readability while feeling softer
+ *
+ * 5. THE HACKER DENSITY - System Metrics footer:
  *    - Shows latency, build version, system status
  *    - Tiny mono text (10px) with Stone-500 color (#78716C)
  *    - Adds texture, breaks up heavy black block

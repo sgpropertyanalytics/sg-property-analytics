@@ -98,9 +98,10 @@ function NavItem({ item, isActive, onClick, collapsed = false }) {
 
    // State-specific styles (INDUSTRIAL MACHINE - "Physical LED Light Source")
    // Active: The Source (border) + The Spill (gradient) + The Reflection (inset shadow)
-   const activeStyles = 'border-emerald-500 text-white bg-gradient-to-r from-emerald-500/10 to-transparent shadow-[inset_10px_0_15px_-3px_rgba(16,185,129,0.2)]';
-   // Inactive: Dimmed switches with transparent border slot
-   const inactiveStyles = 'border-transparent text-zinc-500 hover:text-zinc-300 hover:bg-white/5';
+   // Text: Warm off-white (#E7E5E4) to reduce glare against lighter sidebar
+   const activeStyles = 'border-emerald-500 text-[#E7E5E4] bg-gradient-to-r from-emerald-500/10 to-transparent shadow-[inset_10px_0_15px_-3px_rgba(16,185,129,0.2)]';
+   // Inactive: Warm stone (#A8A29E) instead of cold zinc for atmospheric harmony
+   const inactiveStyles = 'border-transparent text-[#A8A29E] hover:text-[#E7E5E4] hover:bg-white/5';
    const comingSoonStyles = 'border-transparent text-mono-mid cursor-not-allowed opacity-60';
 
    // Badge styles (VOID THEME)
@@ -127,7 +128,7 @@ function NavItem({ item, isActive, onClick, collapsed = false }) {
         text-sm flex-shrink-0 transition-all duration-200
         ${isActive
           ? 'text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]'
-          : 'opacity-70 text-zinc-500 group-hover:text-zinc-300'
+          : 'opacity-70 text-[#A8A29E] group-hover:text-[#E7E5E4]'
         }
       `}>
         {item.icon}
@@ -227,19 +228,22 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
           relative w-full h-full flex flex-col py-4 flex-shrink-0
           overflow-y-auto overflow-x-visible
           z-50
+          transition-all duration-300 ease-in-out
           ${collapsed ? 'px-2' : 'px-3'}
           ${isPending ? 'opacity-90' : ''}
 
-          /* THE COLOR - Warm Charcoal (Stone-950) instead of Cold Black */
-          /* Stone has red/orange undertones that harmonize with beige paper */
-          bg-[#1C1917]
+          /* THE OBSIDIAN BLEND - Atmospheric Perspective */
+          /* Heavy Iron (#262321) at 95% opacity - derived by darkening beige by 85% */
+          /* Contains same yellow/orange DNA as paper for perfect blending */
+          bg-[#262321]/95
 
-          /* THE GASKET - Bridging border between chassis and paper */
-          /* Stone-800 (#44403C) is mid-tone that softens the hard cut */
-          border-r border-[#44403C]
+          /* THE ATMOSPHERE - Frosted Dark Glass Effect */
+          /* Subtle see-through creates "translucent material" not "solid wall" */
+          backdrop-blur-md
 
-          /* THE SHADOW - Uses Stone tones for warmth */
-          shadow-[10px_0_30px_-10px_rgba(28,25,23,0.7)]
+          /* THE SOFT SEAM - Warm Brown Shadow (not black) */
+          /* Colored shadow like coffee staining paper, not artificial drop shadow */
+          shadow-[10px_0_40px_-10px_rgba(40,35,30,0.6)]
         `}
         aria-label="Main navigation"
       >
