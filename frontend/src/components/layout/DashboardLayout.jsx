@@ -151,7 +151,7 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
   const handleMobileNavClose = () => setMobileNavOpen(false);
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex h-screen bg-mono-canvas overflow-hidden text-mono-ink">
       {/* ===== GLOBAL NAV RAIL (Primary Sidebar) ===== */}
       {/* Desktop: Collapsible with premium physics animation | Mobile: Hidden */}
       <div
@@ -196,11 +196,12 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
           >
             <GlobalNavRail activePage={activePage} />
             {/* Close button overlay */}
-            <button
-              onClick={handleMobileNavClose}
-              className="absolute top-4 right-4 p-2 rounded-none bg-[#547792]/30 text-[#EAE0CF] hover:bg-[#547792]/50 min-h-[44px] min-w-[44px] flex items-center justify-center active:bg-[#547792]/60 active:scale-[0.98]"
-              aria-label="Close navigation"
-            >
+              <button
+                onClick={handleMobileNavClose}
+                className="absolute top-4 right-4 p-2 rounded-none bg-mono-ink text-mono-canvas hover:bg-mono-dark min-h-[44px] min-w-[44px] flex items-center justify-center active:bg-mono-ink active:scale-[0.98]"
+                aria-label="Close navigation"
+              >
+
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -213,7 +214,7 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
       {/* min-w-0 prevents flex children from overflowing - critical for nested grids */}
       <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
         {/* Mobile Header */}
-        <header className="lg:hidden sticky top-0 z-40 bg-gray-50 px-3 py-2 flex-shrink-0 border-b border-black/10 weapon-noise">
+        <header className="lg:hidden sticky top-0 z-40 bg-mono-canvas px-3 py-2 flex-shrink-0 border-b border-mono-muted weapon-noise">
           <div className="flex items-center justify-between gap-2">
             {/* Hamburger Menu */}
             <button
@@ -237,7 +238,8 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
 
           {/* Mobile Page Indicator */}
             <div className="mt-2 flex justify-center">
-              <div className="inline-flex rounded-none bg-white border border-black/10 px-3 py-1.5">
+               <div className="inline-flex rounded-none bg-card border border-mono-muted px-3 py-1.5">
+
                 <span className="text-black/70 font-mono text-[10px] uppercase tracking-[0.18em]">
                 {NAV_ITEMS.find(item => item.id === activePage)?.label || 'Market Core'}
               </span>
@@ -248,7 +250,7 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
         {/* Main Content - Wrapped with Suspense + ErrorBoundary */}
         {/* IMPORTANT: Suspense is HERE so nav rail stays mounted during lazy loading */}
         {/* min-w-0 on main and wrapper prevents nested grid overflow */}
-        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden flex flex-col bg-gray-50 weapon-grid-bg weapon-noise">
+        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden flex flex-col bg-mono-canvas weapon-grid-bg weapon-noise">
           <ErrorBoundary name="Page Content">
             <Suspense fallback={<ContentLoadingFallback />}>
               <div className="flex-1 min-w-0">

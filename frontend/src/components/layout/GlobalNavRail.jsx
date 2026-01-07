@@ -91,16 +91,21 @@ function NavItem({ item, isActive, onClick, collapsed = false }) {
     group relative w-full min-h-[44px] px-3 py-2 rounded-none
     flex items-center text-left min-w-0
     font-mono text-[11px] font-medium uppercase tracking-[0.18em]
-    border-b border-black/10
+    border-b border-mono-muted
     ${TRANSITION_CLASS}
     outline-none select-none
-    focus-visible:ring-2 focus-visible:ring-black/20 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-50
+    focus-visible:ring-2 focus-visible:ring-black/20 focus-visible:ring-offset-2 focus-visible:ring-offset-mono-canvas
   `;
 
-  // State-specific styles
-  const activeStyles = 'bg-black text-white';
-  const inactiveStyles = 'text-black/70 hover:text-black hover:bg-black/[0.03]';
-  const comingSoonStyles = 'text-black/30 cursor-not-allowed opacity-60';
+   // State-specific styles
+   const activeStyles = 'bg-mono-ink text-mono-canvas border-b border-mono-ink ring-1 ring-white/15';
+   const inactiveStyles = 'text-mono-mid hover:text-mono-ink hover:bg-black/[0.03]';
+   const comingSoonStyles = 'text-mono-light cursor-not-allowed opacity-60';
+
+   const badgeBase = 'ml-auto flex-shrink-0 text-[10px] font-bold tracking-wide px-1.5 py-0.5 rounded-none border transition-none';
+   const badgeActive = 'bg-mono-canvas text-mono-ink border-mono-canvas';
+   const badgeInactive = 'bg-card text-mono-mid border-mono-muted group-hover:bg-mono-canvas group-hover:text-mono-ink';
+   const badgeComingSoon = 'bg-card text-mono-light border-mono-muted';
 
   return (
     <button
@@ -116,14 +121,15 @@ function NavItem({ item, isActive, onClick, collapsed = false }) {
       aria-label={item.label}
     >
       {isActive && (
-        <span className="absolute left-0 top-0 bottom-0 w-1 bg-black" />
+        <span className="absolute left-0 top-0 bottom-0 w-1 bg-brand-blue" />
       )}
 
       {/* Icon - full opacity when active, dimmed when inactive */}
-      <span className={`
-        text-sm flex-shrink-0 transition-none
-        ${isActive ? 'text-white' : 'text-black/60 group-hover:text-black'}
-      `}>
+       <span className={`
+         text-sm flex-shrink-0 transition-none
+         ${isActive ? 'text-mono-canvas' : 'text-mono-mid group-hover:text-mono-ink'}
+       `}>
+
         {item.icon}
       </span>
 
@@ -139,18 +145,11 @@ function NavItem({ item, isActive, onClick, collapsed = false }) {
         {item.label}
       </span>
 
-      {/* Coming Soon badge - WEAPON: hard edges */}
-       {isComingSoon && !collapsed && (
-         <span className={`
-           flex-shrink-0 ml-auto
-           text-[10px] font-bold tracking-wide
-           px-1.5 py-0.5 rounded-none
-           bg-white text-black/60
-           border border-black/10
-           ${TRANSITION_CLASS}
-           ${collapsed ? 'opacity-0 w-0' : 'opacity-100'}
-         `}>
-           SOON
+       {(!collapsed && (isActive || isComingSoon)) && (
+         <span
+           className={`${badgeBase} ${isActive ? badgeActive : isComingSoon ? badgeComingSoon : badgeInactive} ${collapsed ? 'opacity-0 w-0' : 'opacity-100'}`}
+         >
+           {isComingSoon ? 'SOON' : 'ACTIVE'}
          </span>
        )}
 
@@ -222,10 +221,11 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
   };
 
   return (
-     <nav
-       className={`bg-gray-50 w-full flex flex-col py-4 flex-shrink-0 h-full overflow-y-auto overflow-x-visible transition-none border-r border-black/10 ${collapsed ? 'px-2' : 'px-3'} ${isPending ? 'opacity-90' : ''}`}
-       aria-label="Main navigation"
-     >
+      <nav
+        className={`bg-mono-canvas w-full flex flex-col py-4 flex-shrink-0 h-full overflow-y-auto overflow-x-visible transition-none border-r border-mono-muted weapon-noise ${collapsed ? 'px-2' : 'px-3'} ${isPending ? 'opacity-90' : ''}`}
+        aria-label="Main navigation"
+      >
+
 
       {/* Logo / Home - Links to Market Overview */}
       <button
@@ -233,7 +233,7 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
         className={`group relative mb-6 flex items-center w-full min-h-[44px] min-w-0 select-none ${TRANSITION_CLASS} ${collapsed ? 'justify-center px-0' : 'gap-3 px-2'} hover:bg-black/[0.02]`}
         aria-label="Go to Home"
       >
-        <div className="w-10 h-10 rounded-none bg-white border border-black/10 flex items-center justify-center transition-none group-hover:bg-black/[0.02] flex-shrink-0">
+        <div className="w-10 h-10 rounded-none bg-card border border-mono-muted flex items-center justify-center transition-none group-hover:bg-black/[0.02] flex-shrink-0">
           <svg className="w-6 h-6 text-black/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
           </svg>

@@ -30,7 +30,8 @@
   --color-mono-mid: #525252;
   --color-mono-light: #A3A3A3;
   --color-mono-muted: #E5E7EB;
-  --color-mono-canvas: #FFFFFF;
+  --color-mono-canvas: #FAFAFA;
+
 
   /* Status Colors (Surgical Use) */
   --color-status-live: #10B981;
@@ -109,7 +110,7 @@
 
 /* Weapon Card Base - hard edges, structural border */
 .weapon-card {
-  background: var(--color-mono-canvas);
+  background: var(--color-card);
   border: 1px solid var(--color-mono-muted);
   border-radius: 0;
   position: relative;
@@ -167,10 +168,13 @@
 }
 
 body {
-  @apply bg-gray-50 text-gray-900;
+  @apply bg-mono-canvas text-mono-ink;
   margin: 0;
   -webkit-font-smoothing: antialiased;
 }
+
+
+
 
 /* Make chart canvases responsive */
 canvas {
