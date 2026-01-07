@@ -21,11 +21,11 @@ function PageHeaderBase({ title, subtitle, children }) {
     <div className="flex flex-row justify-between items-start w-full mb-4 md:mb-6 gap-4">
       {/* SLOT 1: LEFT (Identity) */}
       <div className="flex flex-col gap-1 max-w-3xl min-w-0">
-        <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-brand-navy leading-tight">
+        <h1 className="text-lg md:text-xl lg:text-2xl font-display font-semibold uppercase tracking-tight text-mono-ink leading-tight">
           {title}
         </h1>
         {subtitle && (
-          <p className="text-brand-blue text-sm italic truncate">
+          <p className="text-mono-mid text-[10px] font-mono uppercase tracking-[0.1em] truncate">
             {subtitle}
           </p>
         )}
