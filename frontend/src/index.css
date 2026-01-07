@@ -27,10 +27,10 @@
   --color-void-surface: #1A1A1A;  /* Elevated cards on void */
   --color-void-edge: #333333;     /* Machined metal borders */
 
-  /* ----- CANVAS (Light Content) ----- */
-  --color-canvas: #FAFAFA;        /* Main content background */
-  --color-canvas-paper: #FFFFFF;  /* Cards, modals */
-  --color-canvas-grid: #E5E7EB;   /* Chart grids, subtle borders */
+  /* ----- CANVAS (Warm Aged Paper System) ----- */
+  --color-canvas: #F0EDE8;        /* Warm stone - page background */
+  --color-canvas-paper: #FAF9F7;  /* Warm off-white - section containers */
+  --color-canvas-grid: #E8E4DE;   /* Warm grid borders (stone-200) */
 
   /* ----- INK (Data/Text - The "Print") ----- */
   --color-ink: #0F172A;           /* Slate 900 - Primary data, headers */
@@ -91,9 +91,9 @@
   --color-brand-sky: #64748B;    /* slate-500 */
   --color-brand-sand: #E5E7EB;   /* slate-200 */
 
-  /* Legacy card colors */
-  --color-card: var(--color-canvas-paper);
-  --color-card-hover: var(--color-canvas);
+  /* Card colors (Warm Cream - eye comfort) */
+  --color-card: #FFFCF5;          /* Warm cream - cards, panels */
+  --color-card-hover: #FAF7F0;    /* Slightly darker warm cream */
 }
 
 /* Display font class for headlines */
@@ -180,12 +180,21 @@
   z-index: 0;
 }
 
-/* Weapon Shadow - hard offset */
+/* Weapon Shadow - enhanced hard offset (visible on warm stone canvas) */
 .weapon-shadow {
-  box-shadow: 2px 2px 0px rgba(0,0,0,0.15);
+  box-shadow:
+    3px 3px 0px rgba(15, 23, 42, 0.08),
+    1px 1px 0px rgba(15, 23, 42, 0.05);
 }
 .weapon-shadow-md {
-  box-shadow: 4px 4px 0px rgba(0,0,0,0.1);
+  box-shadow:
+    4px 4px 0px rgba(15, 23, 42, 0.10),
+    2px 2px 0px rgba(15, 23, 42, 0.06);
+}
+.weapon-shadow-lg {
+  box-shadow:
+    6px 6px 0px rgba(15, 23, 42, 0.12),
+    3px 3px 0px rgba(15, 23, 42, 0.08);
 }
 
 /* Weapon Active State - inverted */
