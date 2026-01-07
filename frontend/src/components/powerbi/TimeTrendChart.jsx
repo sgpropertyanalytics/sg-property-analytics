@@ -255,7 +255,7 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, o
       staggerIndex={staggerIndex}
     >
       <div
-        className="weapon-card hud-corner overflow-hidden flex flex-col relative"
+        className="weapon-card hud-corner weapon-shadow overflow-hidden flex flex-col relative"
         style={{ height: cardHeight }}
       >
         {/* Debug overlay - shows API call info when Ctrl+Shift+D is pressed */}

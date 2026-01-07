@@ -283,7 +283,7 @@ function PriceBandChartBase({
       height={height}
     >
     <div
-      className="weapon-card hud-corner flex flex-col overflow-hidden"
+      className="weapon-card hud-corner weapon-shadow flex flex-col overflow-hidden"
       style={{ height: cardHeight }}
     >
       {/* Header */}

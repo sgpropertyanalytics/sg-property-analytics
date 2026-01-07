@@ -204,7 +204,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
       height={400}
     >
     {/* Card owns its height explicitly - 400px fixed */}
-    <div className="weapon-card hud-corner overflow-hidden flex flex-col" style={{ height: 400 }}>
+    <div className="weapon-card hud-corner weapon-shadow overflow-hidden flex flex-col" style={{ height: 400 }}>
       {/* Header */}
       <div className="px-6 py-4 border-b border-mono-muted">
         <div className="flex items-center justify-between flex-wrap gap-4">

@@ -204,7 +204,7 @@ function GrowthDumbbellChartBase({ saleType = SaleType.RESALE, enabled = true })
       skeleton="bar"
       height={400}
     >
-    <div className="weapon-card hud-corner overflow-hidden">
+    <div className="weapon-card hud-corner weapon-shadow overflow-hidden">
       {/* Header with title */}
       <div className="px-4 py-3 border-b border-mono-muted">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">

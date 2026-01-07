@@ -142,7 +142,7 @@ export function BudgetActivityHeatmap({
       skeleton="grid"
       height={280}
     >
-    <div className="weapon-card hud-corner overflow-hidden">
+    <div className="weapon-card hud-corner weapon-shadow overflow-hidden">
       {/* Header */}
       <div className="px-4 py-3 border-b border-mono-muted">
         <div className="flex items-start justify-between gap-4">

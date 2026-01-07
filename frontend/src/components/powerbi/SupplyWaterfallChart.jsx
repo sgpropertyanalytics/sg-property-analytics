@@ -116,7 +116,7 @@ function SupplyWaterfallChartBase({
       height={height}
     >
       <div
-        className="weapon-card hud-corner overflow-hidden flex flex-col"
+        className="weapon-card hud-corner weapon-shadow overflow-hidden flex flex-col"
         style={{ height }}
       >
         {/* Header */}
