@@ -250,8 +250,8 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
         {/* Main Content - Wrapped with Suspense + ErrorBoundary */}
         {/* IMPORTANT: Suspense is HERE so nav rail stays mounted during lazy loading */}
         {/* min-w-0 on main and wrapper prevents nested grid overflow */}
-        {/* Card-based layout: gray-50 canvas creates contrast for white content cards */}
-        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden flex flex-col bg-gray-50">
+        {/* Warm stone canvas (#F0EDE8) creates depth for warm cream cards */}
+        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden flex flex-col bg-canvas">
           <ErrorBoundary name="Page Content">
             <Suspense fallback={<ContentLoadingFallback />}>
               <div className="flex-1 min-w-0">

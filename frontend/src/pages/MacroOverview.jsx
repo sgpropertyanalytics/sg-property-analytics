@@ -16,6 +16,8 @@ import { useData } from '../context/DataContext';
 import { transformCompressionSeries } from '../adapters';
 // Standardized responsive UI components (layout wrappers only)
 import { ErrorBoundary, ChartWatermark, KPICardV2, KPICardV2Group, KPIHeroContent } from '../components/ui';
+// Containment primitives (L0 → L1 → L2 layer system for visual hierarchy)
+import { PageCanvas, ContentSection, ControlRibbon } from '../components/layout';
 // Desktop-first chart height with mobile guardrail
 // Phase 2: Using TanStack Query via useAppQuery wrapper
 import { useChartHeight, MOBILE_CAPS, useAppQuery } from '../hooks';
@@ -197,50 +199,50 @@ export function MacroOverviewContent() {
   };
 
   return (
-    <div className="min-h-full">
-      {/* Main Content Area - scrolling handled by parent DashboardLayout */}
-      {/* Background provided by DashboardLayout (bg-gray-50) */}
-      <div className="p-4 md:p-6 lg:p-8">
-        {/* Header */}
-        <div className="mb-4 md:mb-6">
-          <div className="min-w-0 mb-2">
-            <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-brand-navy hidden lg:block">
-              Market Overview
-            </h1>
-            {/* Data source info - shows last update, total records, new additions, and outliers removed */}
-            {apiMetadata && (
-              <p className="text-brand-blue text-xs md:text-sm italic">
-                Last updated: {apiMetadata.last_updated
-                  ? new Date(apiMetadata.last_updated).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric'
-                    })
-                  : 'N/A'}
-                {apiMetadata.total_records > 0 && (
-                  <> | Total records: {apiMetadata.total_records.toLocaleString()}</>
-                )}
-                {apiMetadata.records_added_last_ingestion > 0 && (
-                  <> (+{apiMetadata.records_added_last_ingestion.toLocaleString()} new)</>
-                )}
-                {apiMetadata.outliers_excluded > 0 && (
-                  <> | Statistical outliers removed: {apiMetadata.outliers_excluded.toLocaleString()}</>
-                )}
-              </p>
-            )}
-          </div>
-
-          {/* Breadcrumb navigation */}
-          <DrillBreadcrumb />
+    <PageCanvas>
+      {/* Header - Outside containment for page-level context */}
+      <div className="mb-4 md:mb-6">
+        <div className="min-w-0 mb-2">
+          <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-ink hidden lg:block">
+            Market Overview
+          </h1>
+          {/* Data source info - shows last update, total records, new additions, and outliers removed */}
+          {apiMetadata && (
+            <p className="text-ink-mid text-xs md:text-sm italic">
+              Last updated: {apiMetadata.last_updated
+                ? new Date(apiMetadata.last_updated).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                  })
+                : 'N/A'}
+              {apiMetadata.total_records > 0 && (
+                <> | Total records: {apiMetadata.total_records.toLocaleString()}</>
+              )}
+              {apiMetadata.records_added_last_ingestion > 0 && (
+                <> (+{apiMetadata.records_added_last_ingestion.toLocaleString()} new)</>
+              )}
+              {apiMetadata.outliers_excluded > 0 && (
+                <> | Statistical outliers removed: {apiMetadata.outliers_excluded.toLocaleString()}</>
+              )}
+            </p>
+          )}
         </div>
 
-        {/* Filter Bar - Unified component (desktop: sticky horizontal, mobile: drawer) */}
-        <FilterBar />
+        {/* Breadcrumb navigation */}
+        <DrillBreadcrumb />
+      </div>
 
-        {/* Analytics View - Dashboard with charts */}
-        <div className="animate-view-enter">
-              {/* KPI Summary Cards - Using standardized KPICardV2 */}
-              <KPICardV2Group columns={4} className="mb-4 md:mb-6">
+      {/* Filter Bar - Contained in sticky ribbon */}
+      <ControlRibbon>
+        <FilterBar />
+      </ControlRibbon>
+
+      {/* Analytics View - Dashboard with charts */}
+      <div className="animate-view-enter">
+        {/* KPI Section - Key metrics in contained section */}
+        <ContentSection title="KEY METRICS">
+          <KPICardV2Group columns={4}>
                 {/* Card 1: Market Momentum */}
                 <KPICardV2
                   title="Market Momentum"
@@ -332,11 +334,14 @@ export function MacroOverviewContent() {
                   tooltip={getKpi('resale_velocity')?.meta?.description}
                   loading={kpis.loading}
                 />
-              </KPICardV2Group>
+          </KPICardV2Group>
+        </ContentSection>
 
-              {/* Charts Grid - Responsive: 1 col mobile, 2 cols desktop */}
-              {/* Each chart wrapped with ErrorBoundary to prevent cascade failures */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-4 md:mb-6">
+        {/* Charts Section - Market trend analysis */}
+        <ContentSection title="MARKET TRENDS">
+          {/* Charts Grid - Responsive: 1 col mobile, 2 cols desktop */}
+          {/* Each chart wrapped with ErrorBoundary to prevent cascade failures */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
                 {/* Time Trend Chart - Full width on all screens */}
                 <div className="lg:col-span-2">
                   <ErrorBoundary name="Time Trend Chart" compact>
@@ -438,10 +443,8 @@ export function MacroOverviewContent() {
                     </ErrorBoundary>
                   </div>
                 </div>
-
-              </div>
-
-        </div>
+          </div>
+        </ContentSection>
       </div>
 
       {/* Transaction Detail Modal */}
@@ -454,7 +457,7 @@ export function MacroOverviewContent() {
 
       {/* Project Detail Panel - Drill-through view (does NOT affect global charts) */}
       <ProjectDetailPanel />
-    </div>
+    </PageCanvas>
   );
 }
 
