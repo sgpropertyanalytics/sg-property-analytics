@@ -31,10 +31,10 @@ const MarketValueOscillator = lazy(() => import('../components/powerbi/MarketVal
 // Lazy loading fallback - matches chart container style
 const ChartLoadingFallback = ({ height }) => (
   <div
-    className="bg-card rounded-none border border-mono-muted animate-pulse flex items-center justify-center"
+    className="bg-white rounded-xl border border-gray-200 animate-pulse flex items-center justify-center"
     style={{ height: height || 380 }}
   >
-    <div className="text-mono-light text-sm">Loading chart...</div>
+    <div className="text-slate-400 text-sm">Loading chart...</div>
   </div>
 );
 
@@ -197,9 +197,10 @@ export function MacroOverviewContent() {
   };
 
   return (
-    <div className="min-h-full bg-mono-canvas">
+    <div className="min-h-full">
       {/* Main Content Area - scrolling handled by parent DashboardLayout */}
-      <div className="p-3 md:p-4 lg:p-6">
+      {/* Background provided by DashboardLayout (bg-gray-50) */}
+      <div className="p-4 md:p-6 lg:p-8">
         {/* Header */}
         <div className="mb-4 md:mb-6">
           <div className="min-w-0 mb-2">

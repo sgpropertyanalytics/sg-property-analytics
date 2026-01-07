@@ -149,11 +149,11 @@
   color: var(--color-mono-mid);
 }
 
-/* Weapon Card Base - hard edges, structural border */
+/* Content Card Base - modern SaaS contained layout */
 .weapon-card {
   background: var(--color-card);
   border: 1px solid var(--color-mono-muted);
-  border-radius: 0;
+  border-radius: 0.75rem; /* rounded-xl for modern SaaS aesthetic */
   position: relative;
 }
 
