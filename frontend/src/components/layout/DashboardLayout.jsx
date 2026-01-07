@@ -17,8 +17,8 @@ function ContentLoadingFallback() {
   return (
     <div className="h-full min-h-[50vh] flex items-center justify-center bg-transparent animate-fade-in">
       <div className="flex flex-col items-center gap-3">
-        <div className="w-8 h-8 border-2 border-brand-blue border-t-transparent rounded-none animate-spin" />
-        <span className="text-sm text-brand-blue">Loading...</span>
+        <div className="w-8 h-8 border-2 border-slate-600 border-t-transparent rounded-full animate-spin" />
+        <span className="text-sm text-slate-600">Loading...</span>
       </div>
     </div>
   );
@@ -250,7 +250,8 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
         {/* Main Content - Wrapped with Suspense + ErrorBoundary */}
         {/* IMPORTANT: Suspense is HERE so nav rail stays mounted during lazy loading */}
         {/* min-w-0 on main and wrapper prevents nested grid overflow */}
-        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden flex flex-col bg-mono-canvas weapon-grid-bg weapon-noise">
+        {/* Card-based layout: gray-50 canvas creates contrast for white content cards */}
+        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden flex flex-col bg-gray-50">
           <ErrorBoundary name="Page Content">
             <Suspense fallback={<ContentLoadingFallback />}>
               <div className="flex-1 min-w-0">

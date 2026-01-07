@@ -13,29 +13,73 @@ Unified design system covering visual design, layout patterns, and validation.
 
 # PART 1: VISUAL DESIGN
 
-## 1.1 Color Palette
+## 1.1 Color Palette — Institutional Print / Slate
 
-| Color | Hex | Usage |
-|-------|-----|-------|
-| Deep Navy | `#213448` | Headings, primary text, CCR |
-| Ocean Blue | `#547792` | Secondary text, labels, RCR |
-| Sky Blue | `#94B4C1` | Borders, icons, OCR, disabled |
-| Sand/Cream | `#EAE0CF` | Backgrounds, hover states |
+**Philosophy:** "Financial Print / Blueprint Strategy" — Charts look like high-end architectural blueprints or printed financial reports. The Suit: Slate + Void. The Tie: Bloomberg Orange.
+
+### Core Palettes
+
+| Palette | Token | Hex | Usage |
+|---------|-------|-----|-------|
+| **INK** | `INK.primary` | `#0F172A` (slate-900) | Primary data, headers, chart bars |
+| | `INK.dense` | `#1E293B` (slate-800) | Secondary emphasis |
+| | `INK.mid` | `#475569` (slate-600) | Body text |
+| | `INK.muted` | `#94A3B8` (slate-400) | Ghost data, placeholders |
+| | `INK.light` | `#CBD5E1` (slate-300) | Subtle borders |
+| **VOID** | `VOID.base` | `#0A0A0A` | Nav background (darkest) |
+| | `VOID.surface` | `#1A1A1A` | Elevated cards on void |
+| | `VOID.edge` | `#333333` | Machined metal borders |
+| **CANVAS** | `CANVAS.base` | `#FAFAFA` | Main content background |
+| | `CANVAS.paper` | `#FFFFFF` | Cards, modals |
+| | `CANVAS.grid` | `#E5E7EB` | Chart grids, subtle borders |
+| **SIGNAL** | `SIGNAL.accent` | `#F97316` (orange-500) | Buttons, highlights, CTAs |
+| | `SIGNAL.accentA11y` | `#EA580C` (orange-600) | Text/borders (accessible) |
+| | `SIGNAL.focus` | `#2563EB` (blue-600) | Focus rings |
+| **DELTA** | `DELTA.positive` | `#059669` (emerald-600) | Gains, positive change |
+| | `DELTA.negative` | `#DC2626` (red-600) | Losses, negative change |
+
+### Region Colors (Monochrome Hierarchy)
+
+| Region | Hex | Tailwind | Meaning |
+|--------|-----|----------|---------|
+| **CCR** | `#0F172A` | `slate-900` | Premium/Core (darkest) |
+| **RCR** | `#334155` | `slate-700` | Mid-tier |
+| **OCR** | `#64748B` | `slate-500` | Suburban (lightest) |
 
 ```tsx
 // Tailwind patterns
-text-[#213448]              // Primary
-text-[#547792]              // Secondary
-border-[#94B4C1]/50         // Borders
-bg-[#EAE0CF]/30             // Backgrounds
-bg-white rounded-lg border border-[#94B4C1]/50  // Cards
+text-slate-900              // Primary (INK.primary)
+text-slate-600              // Body (INK.mid)
+text-slate-400              // Muted (INK.muted)
+border-slate-200            // Borders (CANVAS.grid)
+bg-slate-50                 // Backgrounds (CANVAS.base)
+bg-white                    // Cards (CANVAS.paper)
+text-orange-500             // Accent (SIGNAL.accent)
 ```
 
 ### Chart Colors
 
 ```javascript
-const regionColors = { CCR: '#213448', RCR: '#547792', OCR: '#94B4C1' };
-const bedroomColors = { 1: '#f7be81', 2: '#4f81bd', 3: '#28527a', 4: '#112b3c', 5: '#9bbb59' };
+import { REGION, INK, SIGNAL, DELTA } from '../constants/colors';
+
+// Region palette (monochrome hierarchy)
+const regionColors = { CCR: REGION.CCR, RCR: REGION.RCR, OCR: REGION.OCR };
+
+// For financial +/-
+const deltaColors = { positive: DELTA.positive, negative: DELTA.negative };
+
+// Signal accent for emphasis
+const accentColor = SIGNAL.accent;
+```
+
+### Supply Palette
+
+```javascript
+import { SUPPLY } from '../constants/colors';
+// SUPPLY.unsold: #0F172A (slate-900) — Most urgent
+// SUPPLY.upcoming: #334155 (slate-700) — Pipeline
+// SUPPLY.gls: #64748B (slate-500) — GLS sites
+// SUPPLY.total: #94A3B8 (slate-400) — Totals
 ```
 
 ---
@@ -46,10 +90,10 @@ const bedroomColors = { 1: '#f7be81', 2: '#4f81bd', 3: '#28527a', 4: '#112b3c', 
 // EVERY interactive element:
 <button className="
   min-h-[44px] min-w-[44px]      // iOS: 44pt, Android: 48dp
-  hover:bg-[#EAE0CF]/30          // Desktop
-  active:bg-[#EAE0CF]/50         // Touch feedback
+  hover:bg-slate-100             // Desktop
+  active:bg-slate-200            // Touch feedback
   active:scale-[0.98]            // Press feedback
-  focus-visible:ring-2           // Keyboard
+  focus-visible:ring-2 focus-visible:ring-blue-600  // Keyboard (SIGNAL.focus)
   touch-action-manipulation      // No double-tap zoom
   select-none
 ">
@@ -68,28 +112,35 @@ const bedroomColors = { 1: '#f7be81', 2: '#4f81bd', 3: '#28527a', 4: '#112b3c', 
 ### Buttons
 
 ```tsx
-// Primary
-className="min-h-[44px] px-4 py-2 rounded-md bg-[#213448] text-white hover:bg-[#547792] active:scale-[0.98]"
+// Primary (SIGNAL accent)
+className="min-h-[44px] px-4 py-2 rounded-none bg-orange-500 text-white hover:bg-orange-600 active:scale-[0.98]"
 
-// Secondary
-className="min-h-[44px] px-4 py-2 rounded-md bg-white text-[#213448] border border-[#94B4C1] hover:border-[#547792] active:bg-[#EAE0CF]/50"
+// Secondary (Slate)
+className="min-h-[44px] px-4 py-2 rounded-none bg-white text-slate-900 border border-slate-300 hover:border-slate-500 active:bg-slate-100"
+
+// Tertiary/Ghost
+className="min-h-[44px] px-4 py-2 rounded-none bg-transparent text-slate-700 hover:bg-slate-100 active:bg-slate-200"
 
 // Disabled
-className="bg-[#EAE0CF]/50 text-[#94B4C1] cursor-not-allowed"
+className="bg-slate-100 text-slate-400 cursor-not-allowed"
 ```
 
 ### Cards
 
 ```tsx
-className="bg-white rounded-lg border border-[#94B4C1]/50 shadow-sm p-3 md:p-4 lg:p-6"
+// Standard card (weapon aesthetic)
+className="bg-white rounded-none border border-slate-200 shadow-sm p-3 md:p-4 lg:p-6"
+
+// Elevated card on VOID background
+className="bg-neutral-900 rounded-none border border-neutral-700 text-white"
 ```
 
 ### KPI Cards
 
 ```tsx
-<div className="p-3 md:p-4 bg-white rounded-lg border border-[#94B4C1]/50">
-  <span className="text-xs uppercase text-[#547792]">{label}</span>
-  <div className="text-xl font-bold font-mono tabular-nums text-[#213448]">{value}</div>
+<div className="p-3 md:p-4 bg-white rounded-none border border-slate-200">
+  <span className="text-xs uppercase tracking-wider text-slate-500 font-mono">{label}</span>
+  <div className="text-xl font-bold font-mono tabular-nums text-slate-900">{value}</div>
 </div>
 ```
 
@@ -98,15 +149,24 @@ className="bg-white rounded-lg border border-[#94B4C1]/50 shadow-sm p-3 md:p-4 l
 ## 1.4 Typography
 
 ```tsx
-// Headings
-<h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-[#213448]">
-<h2 className="text-lg md:text-xl font-semibold">
+// Headings (INK.primary)
+<h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-slate-900">
+<h2 className="text-lg md:text-xl font-semibold text-slate-900">
 
-// Body
-<p className="text-sm md:text-base">
+// Terminal headers (weapon aesthetic)
+<span className="text-[10px] uppercase tracking-wider font-mono text-slate-500">LABEL</span>
+
+// Body (INK.mid)
+<p className="text-sm md:text-base text-slate-600">
+
+// Muted/secondary text
+<span className="text-slate-400">
 
 // Numbers (always monospace)
-<span className="font-mono tabular-nums">1,234,567</span>
+<span className="font-mono tabular-nums text-slate-900">1,234,567</span>
+
+// Accent text (SIGNAL)
+<span className="text-orange-600 font-semibold">+12.5%</span>
 ```
 
 ---
@@ -125,10 +185,10 @@ const handleSort = (col) => setSortConfig(prev => ({
   order: prev.column === col && prev.order === 'desc' ? 'asc' : 'desc'
 }));
 
-// Sortable header
+// Sortable header (weapon aesthetic: no rounded corners)
 <th onClick={() => handleSort('col')} className="cursor-pointer hover:bg-slate-100 select-none">
   <div className="flex items-center gap-1">
-    <span>Label</span>
+    <span className="font-mono text-xs uppercase tracking-wider">Label</span>
     <SortIcon column="col" config={sortConfig} />
   </div>
 </th>
@@ -141,7 +201,7 @@ const handleSort = (col) => setSortConfig(prev => ({
 ### Desktop (1024px+)
 
 ```tsx
-<div className="hidden lg:block bg-white rounded-lg border border-[#94B4C1]/50 p-4">
+<div className="hidden lg:block bg-white rounded-none border border-slate-200 p-4">
   <div className="flex flex-wrap items-end gap-4">
     <FilterDropdown /><FilterDropdown /><FilterDateRange />
   </div>
@@ -152,9 +212,9 @@ const handleSort = (col) => setSortConfig(prev => ({
 
 ```tsx
 // Toggle button → Full-screen drawer
-<button className="w-full min-h-[48px] px-4 flex items-center gap-2 bg-white rounded-lg border">
+<button className="w-full min-h-[48px] px-4 flex items-center gap-2 bg-white rounded-none border border-slate-200">
   <FilterIcon /><span>Filters</span>
-  {activeCount > 0 && <span className="ml-auto bg-[#547792]/20 px-2 rounded-full">{activeCount}</span>}
+  {activeCount > 0 && <span className="ml-auto bg-slate-200 px-2 text-slate-700">{activeCount}</span>}
 </button>
 
 // Drawer: sticky header, scrollable content, sticky footer with Apply button
@@ -163,9 +223,9 @@ const handleSort = (col) => setSortConfig(prev => ({
 ### Filter Chip
 
 ```tsx
-<span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm bg-[#547792]/20 border border-[#547792]/30">
+<span className="inline-flex items-center gap-1 px-2 py-1 rounded-none text-sm bg-slate-100 border border-slate-300 text-slate-700">
   {label}
-  <button className="min-h-[24px] min-w-[24px] rounded-full active:bg-[#547792]/50">x</button>
+  <button className="min-h-[24px] min-w-[24px] active:bg-slate-200">×</button>
 </span>
 ```
 
@@ -177,7 +237,7 @@ const handleSort = (col) => setSortConfig(prev => ({
 
 ```tsx
 <div className="h-48 flex items-center justify-center">
-  <div className="w-8 h-8 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
+  <div className="w-8 h-8 border-2 border-slate-600 border-t-transparent rounded-full animate-spin" />
 </div>
 ```
 
@@ -186,9 +246,9 @@ const handleSort = (col) => setSortConfig(prev => ({
 ```tsx
 <div className="h-48 flex items-center justify-center text-center">
   <div>
-    <SearchIcon className="w-12 h-12 text-[#94B4C1] mx-auto" />
-    <p className="text-[#547792]">No data matches filters</p>
-    <button onClick={clearFilters} className="mt-3 text-sm text-[#213448]">Clear filters</button>
+    <SearchIcon className="w-12 h-12 text-slate-400 mx-auto" />
+    <p className="text-slate-500">No data matches filters</p>
+    <button onClick={clearFilters} className="mt-3 text-sm text-orange-600 hover:text-orange-700">Clear filters</button>
   </div>
 </div>
 ```
@@ -198,9 +258,9 @@ const handleSort = (col) => setSortConfig(prev => ({
 ```tsx
 <div className="h-48 flex items-center justify-center text-center">
   <div>
-    <AlertIcon className="w-12 h-12 text-red-400 mx-auto" />
-    <p className="text-[#213448]">{error}</p>
-    <button onClick={retry} className="mt-3 text-sm">Try again</button>
+    <AlertIcon className="w-12 h-12 text-red-500 mx-auto" />
+    <p className="text-slate-900">{error}</p>
+    <button onClick={retry} className="mt-3 text-sm text-orange-600 hover:text-orange-700">Try again</button>
   </div>
 </div>
 ```
@@ -210,7 +270,10 @@ const handleSort = (col) => setSortConfig(prev => ({
 ## 1.8 Motion & Accessibility
 
 ```css
-/* Quick feedback: 100ms, Medium: 200ms */
+/* Weapon aesthetic: instant transitions preferred */
+transition-none
+
+/* Or quick feedback: 100ms max */
 transition-all duration-100
 
 /* Respect user preference */
@@ -220,8 +283,8 @@ transition-all duration-100
 ```
 
 ```tsx
-// Focus rings
-focus:outline-none focus-visible:ring-2 focus-visible:ring-[#547792]
+// Focus rings (SIGNAL.focus)
+focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600
 
 // Icon buttons need labels
 <button aria-label="Close"><XIcon aria-hidden="true" /></button>
@@ -230,7 +293,7 @@ focus:outline-none focus-visible:ring-2 focus-visible:ring-[#547792]
 <div aria-live="polite" className="sr-only">{resultCount} results</div>
 ```
 
-**Contrast:** #213448 on white = 10.7:1, #547792 on white = 4.6:1
+**Contrast:** slate-900 (#0F172A) on white = 15.4:1, slate-500 (#64748B) on white = 4.6:1
 
 ---
 
@@ -475,14 +538,24 @@ Before writing code:
 
 ```
 VISUAL:
-[ ] Using project palette (#213448, #547792, #94B4C1, #EAE0CF)
+[ ] Using Institutional Print palette (INK, REGION, SIGNAL, CANVAS, VOID)
+[ ] Import colors from 'constants/colors' — no hardcoded hex
 [ ] Numbers use font-mono tabular-nums
 [ ] Touch targets >= 44px
+[ ] Weapon aesthetic: rounded-none on cards, buttons, inputs
+
+COLOR MAPPING:
+[ ] Primary text: text-slate-900 (INK.primary)
+[ ] Body text: text-slate-600 (INK.mid)
+[ ] Muted text: text-slate-400 (INK.muted)
+[ ] Borders: border-slate-200 (CANVAS.grid)
+[ ] Accent: text-orange-500/600 (SIGNAL.accent)
+[ ] Regions: slate-900/700/500 for CCR/RCR/OCR
 
 STATES:
 [ ] active: feedback on all buttons
 [ ] Loading/Empty/Error states designed
-[ ] focus-visible: rings for keyboard
+[ ] focus-visible:ring-2 focus-visible:ring-blue-600 for keyboard
 
 FILTERS:
 [ ] Desktop: horizontal bar
@@ -505,6 +578,7 @@ CHARTS:
 [ ] Container has overflow-hidden
 [ ] responsive: true, maintainAspectRatio: false
 [ ] Single height owner (chart OR parent)
+[ ] Colors imported from constants/colors
 
 ACCESSIBILITY:
 [ ] No hover-only interactions
