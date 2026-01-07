@@ -28,16 +28,16 @@ const getHeatColor = (pct) => {
   if (pct === null || pct === undefined) return '#F8F9FA'; // Suppressed/empty
   if (pct === 0) return '#F8F9FA';
 
-  // Gradient: #EAE0CF (sand) → #547792 (ocean blue) → #213448 (deep navy)
+  // Gradient: #E5E7EB (slate-200) → #334155 (slate-700) → #0F172A (slate-900)
   // Map pct (0-100) to intensity (0-1)
   const intensity = Math.min(pct / 60, 1); // 60%+ gets max color
 
   if (intensity < 0.5) {
-    // Blend sand → ocean blue
-    return interpolateColor('#EAE0CF', '#547792', intensity * 2);
+    // Blend slate-200 → slate-700
+    return interpolateColor('#E5E7EB', '#334155', intensity * 2);
   } else {
-    // Blend ocean blue → deep navy
-    return interpolateColor('#547792', '#213448', (intensity - 0.5) * 2);
+    // Blend slate-700 → slate-900
+    return interpolateColor('#334155', '#0F172A', (intensity - 0.5) * 2);
   }
 };
 
@@ -64,9 +64,9 @@ const interpolateColor = (color1, color2, factor) => {
  * Get text color based on background brightness
  */
 const getTextColor = (pct) => {
-  if (pct === null || pct === undefined || pct === 0) return '#547792';
+  if (pct === null || pct === undefined || pct === 0) return '#475569';
   if (pct > 35) return '#FFFFFF';
-  return '#213448';
+  return '#0F172A';
 };
 
 /**
@@ -242,7 +242,7 @@ export function BudgetActivityHeatmap({
                       ? '#F8F9FA'
                       : getHeatColor(pct);
                     const textColor = isSuppressed || isLowSample
-                      ? '#94B4C1'
+                      ? '#94A3B8'
                       : getTextColor(pct);
 
                     // Tooltip content
@@ -326,7 +326,7 @@ export function BudgetActivityHeatmap({
             <div
               className="w-12 h-3 rounded"
               style={{
-                background: 'linear-gradient(to right, #EAE0CF, #547792, #213448)',
+                background: 'linear-gradient(to right, #E5E7EB, #334155, #0F172A)',
               }}
             />
             <span>High</span>

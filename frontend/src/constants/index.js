@@ -75,13 +75,18 @@ export const isDistrictInRegion = (district, region) => {
 // =============================================================================
 
 export {
-  MONO,
-  STATUS,
-  BRAND,
+  // Core palettes (Institutional Print / Slate)
+  VOID,
+  CANVAS,
+  INK,
   REGION,
+  SIGNAL,
+  DELTA,
   SUPPLY,
+  LIQUIDITY,
+  STATUS,
   CHART,
-  THEME_COLORS,
+  // Helpers
   REGION_BADGE_CLASSES,
   getRegionColor,
   getRegionBadgeClass,
@@ -448,15 +453,15 @@ export const FLOOR_RANGE_LABELS = {
 };
 
 /**
- * Floor level colors for charts (palette-consistent)
+ * Floor level colors for charts (Slate palette)
  * Gradient from lighter to darker representing floor height
  */
 export const FLOOR_LEVEL_COLORS = {
-  'Low': 'rgba(148, 180, 193, 0.8)',      // #94B4C1 - Sky Blue (lightest)
-  'Mid-Low': 'rgba(120, 156, 175, 0.8)',  // Blend
-  'Mid': 'rgba(84, 119, 146, 0.8)',       // #547792 - Ocean Blue
-  'Mid-High': 'rgba(60, 90, 115, 0.8)',   // Blend
-  'High': 'rgba(33, 52, 72, 0.8)',        // #213448 - Deep Navy
+  'Low': 'rgba(100, 116, 139, 0.8)',      // slate-500 (lightest)
+  'Mid-Low': 'rgba(71, 85, 105, 0.8)',    // slate-600
+  'Mid': 'rgba(51, 65, 85, 0.8)',         // slate-700
+  'Mid-High': 'rgba(30, 41, 59, 0.8)',    // slate-800
+  'High': 'rgba(15, 23, 42, 0.8)',        // slate-900 (darkest)
   'Luxury': 'rgba(139, 115, 85, 0.9)',    // Gold/Bronze for luxury
   'Unknown': 'rgba(200, 200, 200, 0.5)',  // Gray
 };

@@ -898,7 +898,7 @@ function RegionalPricingPreview() {
                 style={{
                   width: 6 + i * 2,
                   height: 6 + i * 2,
-                  backgroundColor: '#213448',
+                  backgroundColor: '#0F172A',  // slate-900
                   opacity: 0.3 + i * 0.2,
                 }}
               />

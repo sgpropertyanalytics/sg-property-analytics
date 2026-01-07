@@ -200,12 +200,12 @@ function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawDat
       {
         label: 'CCR-RCR Z-Score',
         data: data.map(d => d.zCcrRcr),
-        borderColor: '#213448', // Navy
+        borderColor: '#0F172A', // Navy
         backgroundColor: 'rgba(33, 52, 72, 0.1)',
         borderWidth: 2.5,
         pointRadius: 0,
         pointHoverRadius: 5,
-        pointHoverBackgroundColor: '#213448',
+        pointHoverBackgroundColor: '#0F172A',
         pointHoverBorderColor: '#fff',
         pointHoverBorderWidth: 2,
         fill: false,
@@ -215,13 +215,13 @@ function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawDat
       {
         label: 'RCR-OCR Z-Score',
         data: data.map(d => d.zRcrOcr),
-        borderColor: '#547792', // Ocean blue
+        borderColor: '#334155', // Ocean blue
         backgroundColor: 'rgba(84, 119, 146, 0.1)',
         borderWidth: 2.5,
         borderDash: [6, 4],
         pointRadius: 0,
         pointHoverRadius: 5,
-        pointHoverBackgroundColor: '#547792',
+        pointHoverBackgroundColor: '#334155',
         pointHoverBorderColor: '#fff',
         pointHoverBorderWidth: 2,
         fill: false,
@@ -418,13 +418,13 @@ function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawDat
           <div className="flex justify-center gap-6 py-2 shrink-0">
             <div className="flex items-center gap-2">
               <svg width="32" height="8">
-                <line x1="0" y1="4" x2="32" y2="4" stroke="#213448" strokeWidth={2} />
+                <line x1="0" y1="4" x2="32" y2="4" stroke="#0F172A" strokeWidth={2} />
               </svg>
               <span className="text-xs text-[#374151]">CCR-RCR Z-Score</span>
             </div>
             <div className="flex items-center gap-2">
               <svg width="32" height="8">
-                <line x1="0" y1="4" x2="32" y2="4" stroke="#547792" strokeWidth={2} strokeDasharray="8 4" />
+                <line x1="0" y1="4" x2="32" y2="4" stroke="#334155" strokeWidth={2} strokeDasharray="8 4" />
               </svg>
               <span className="text-xs text-[#374151]">RCR-OCR Z-Score</span>
             </div>

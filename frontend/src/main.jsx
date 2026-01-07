@@ -109,7 +109,7 @@ class RootErrorBoundary extends React.Component {
         fontSize: '14px',
         fontWeight: '500',
         color: 'white',
-        backgroundColor: '#547792',
+        backgroundColor: '#334155',  // slate-700
         border: 'none',
         borderRadius: '8px',
         cursor: 'pointer',
@@ -120,8 +120,8 @@ class RootErrorBoundary extends React.Component {
         padding: '10px 20px',
         fontSize: '14px',
         fontWeight: '500',
-        color: '#547792',
-        backgroundColor: '#EAE0CF',
+        color: '#334155',            // slate-700
+        backgroundColor: '#E5E7EB',  // slate-200
         border: 'none',
         borderRadius: '8px',
         cursor: 'pointer',

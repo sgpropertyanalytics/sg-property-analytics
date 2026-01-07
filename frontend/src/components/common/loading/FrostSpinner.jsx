@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
  * FrostSpinner - Minimal pulsing dots spinner
  *
  * Three dots that pulse in sequence, creating a smooth loading indicator.
- * Uses the design system blue color (#547792).
+ * Uses the design system slate-700 color (#334155).
  *
  * @param {string} size - 'sm' | 'md' | 'lg' (default: 'md')
  * @param {string} color - Tailwind color class (default: 'bg-brand-blue')

@@ -359,7 +359,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
 
               {/* Expanded Projects */}
               {isExpanded && (
-                <div className="divide-y divide-[#94B4C1]/20">
+                <div className="divide-y divide-[#64748B]/20">
                   {projects.map((project) => {
                     const bestZone = Object.entries(project.floor_zones || {})
                       .filter(([, d]) => d.count >= 5)
@@ -487,7 +487,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
                       // Color intensity based on percentage (higher % = darker)
                       const intensity = Math.min(percentage / 40, 1); // 40% = max intensity
                       const bgColor = hasData
-                        ? `rgba(84, 119, 146, ${0.15 + intensity * 0.45})`
+                        ? `rgba(51, 65, 85, ${0.15 + intensity * 0.45})`  // slate-700
                         : LIQUIDITY_COLORS.insufficient;
 
                       return (
@@ -611,7 +611,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
 
           {/* Arrow */}
           <div className="absolute left-1/2 bottom-0 transform -translate-x-1/2 translate-y-full">
-            <div className="border-8 border-transparent border-t-[#213448]" />
+            <div className="border-8 border-transparent border-t-[#0F172A]" />
           </div>
         </div>
       )}

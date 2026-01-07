@@ -108,8 +108,8 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, o
         type: 'bar',
         label: 'Resale Transactions',
         data: transactionCounts,
-        backgroundColor: 'rgba(148, 180, 193, 0.7)',  // Sky #94B4C1 - light, recedes
-        borderColor: '#547792',  // Blue border for definition
+        backgroundColor: 'rgba(100, 116, 139, 0.7)',  // Slate 500 - light, recedes
+        borderColor: '#334155',  // Slate 700 border for definition
         borderWidth: 1,
         borderRadius: 3,
         yAxisID: 'y',
@@ -119,13 +119,13 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, o
         type: 'line',
         label: 'Total Transaction Value',
         data: totalValues,
-        borderColor: '#213448',  // Navy - bold, pops forward
-        backgroundColor: 'rgba(33, 52, 72, 0.05)',
+        borderColor: '#0F172A',  // Slate 900 - bold, pops forward
+        backgroundColor: 'rgba(15, 23, 42, 0.05)',
         borderWidth: 3,
         pointRadius: 0,
         pointHoverRadius: 6,
-        pointHoverBackgroundColor: '#EAE0CF',  // Sand fill on hover
-        pointHoverBorderColor: '#213448',
+        pointHoverBackgroundColor: '#E5E7EB',  // Slate 200 fill on hover
+        pointHoverBorderColor: '#0F172A',
         pointHoverBorderWidth: 2,
         tension: 0.3,
         fill: false,
@@ -150,16 +150,16 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, o
           pointStyle: 'rectRounded',
           padding: 20,
           font: { size: 12, weight: '500' },
-          color: '#547792',
+          color: '#475569',
           boxWidth: 12,
           boxHeight: 12,
         },
       },
       tooltip: {
-        backgroundColor: 'rgba(33, 52, 72, 0.95)',  // Navy
-        titleColor: '#EAE0CF',  // Sand
-        bodyColor: '#94B4C1',   // Sky
-        borderColor: 'rgba(148, 180, 193, 0.3)',
+        backgroundColor: 'rgba(15, 23, 42, 0.95)',  // Slate 900
+        titleColor: '#F1F5F9',  // Slate 100
+        bodyColor: '#94A3B8',   // Slate 400
+        borderColor: 'rgba(100, 116, 139, 0.3)',
         borderWidth: 1,
         cornerRadius: 8,
         padding: 12,

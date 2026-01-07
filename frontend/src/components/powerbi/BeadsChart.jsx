@@ -225,11 +225,11 @@ function BeadsChartBase({
             pointStyle: 'circle',
             padding: 16,
             font: { size: 11 },
-            color: '#213448',
+            color: '#0F172A',  // slate-900
           },
         },
         tooltip: {
-          backgroundColor: 'rgba(33, 52, 72, 0.95)',
+          backgroundColor: 'rgba(15, 23, 42, 0.95)',  // slate-900
           titleFont: { size: 12, weight: 'bold' },
           bodyFont: { size: 11 },
           padding: 12,

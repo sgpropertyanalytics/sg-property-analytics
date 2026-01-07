@@ -25,25 +25,25 @@ export default {
           negative: '#FF5500',  // Orange - negative deltas
           positive: '#10B981',  // Alias for consistency
         },
-        // Brand palette (Charts/Regions)
+        // Brand palette (Institutional Print / Slate)
         brand: {
-          navy: '#213448',      // CCR, primary
-          blue: '#547792',      // RCR, secondary
-          sky: '#94B4C1',       // OCR, tertiary
-          sand: '#EAE0CF',      // Backgrounds, accents
+          navy: '#0F172A',      // slate-900 - CCR, primary
+          blue: '#334155',      // slate-700 - RCR, secondary
+          sky: '#64748B',       // slate-500 - OCR, tertiary
+          sand: '#E5E7EB',      // slate-200 - Backgrounds, accents
         },
-        // Region aliases
+        // Region aliases (Slate gradient: dark→light for CCR→OCR)
         region: {
-          ccr: '#213448',
-          rcr: '#547792',
-          ocr: '#94B4C1',
+          ccr: '#0F172A',       // slate-900
+          rcr: '#334155',       // slate-700
+          ocr: '#64748B',       // slate-500
         },
-        // Supply palette (For supply/inventory charts)
+        // Supply palette (Slate progression - matches SUPPLY in colors.js)
         supply: {
-          unsold: '#6b4226',    // Muted chocolate brown
-          upcoming: '#9c6644',  // Muted terracotta
-          gls: '#c4a77d',       // Muted camel/tan
-          total: '#e8dcc8',     // Warm cream
+          unsold: '#0F172A',    // Slate 900 - Heaviest (most urgent)
+          upcoming: '#334155',  // Slate 700 - Pipeline
+          gls: '#64748B',       // Slate 500 - GLS sites
+          total: '#94A3B8',     // Slate 400 - Totals (lightest)
         },
         // Card backgrounds
         card: {

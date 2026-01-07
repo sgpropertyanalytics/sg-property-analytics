@@ -19,15 +19,18 @@ import { Line } from 'react-chartjs-2';
 import { isFloorDirection, FloorDirectionLabels } from '../../schemas/apiContract';
 import { ChartSlot } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
-import { BRAND } from '../../constants/colors';
+import { REGION, INK, CANVAS } from '../../constants/colors';
 import { VerdictBadge, VerdictBadgeLarge } from './VerdictBadge';
 
 // Colors from centralized colors.js + chart-specific fills
 const COLORS = {
-  ...BRAND,  // navy, blue, sky, sand
+  navy: REGION.CCR,           // slate-900
+  oceanBlue: REGION.RCR,      // slate-700
+  skyBlue: REGION.OCR,        // slate-500
+  sand: CANVAS.grid,          // slate-200
   protectedFill: 'rgba(16, 185, 129, 0.12)', // Light green
   cautionFill: 'rgba(239, 68, 68, 0.12)',    // Light red
-  unitMarker: BRAND.blue,
+  unitMarker: REGION.RCR,     // slate-700
 };
 
 /**
@@ -159,7 +162,7 @@ function PriceBandChartBase({
         xValue: lastIndex,
         yValue: unitPsf,
         content: `$${unitPsf.toLocaleString()} psf`,
-        backgroundColor: 'rgba(33, 52, 72, 0.9)',
+        backgroundColor: 'rgba(15, 23, 42, 0.9)',  // slate-900
         color: '#fff',
         font: { size: 11, weight: 'bold' },
         padding: { x: 6, y: 4 },
@@ -192,7 +195,7 @@ function PriceBandChartBase({
         tooltip: {
           mode: 'index',
           intersect: false,
-          backgroundColor: 'rgba(33, 52, 72, 0.95)',
+          backgroundColor: 'rgba(15, 23, 42, 0.95)',  // slate-900
           titleColor: '#fff',
           bodyColor: '#fff',
           borderColor: COLORS.skyBlue,

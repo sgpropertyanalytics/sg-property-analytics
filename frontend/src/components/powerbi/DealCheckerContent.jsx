@@ -590,7 +590,7 @@ export default function DealCheckerContent() {
                     <div
                       className="h-2 w-16 rounded-none"
                       style={{
-                        background: 'linear-gradient(to right, #EF4444, #F97316, #FACC15, #94B4C1)',
+                        background: 'linear-gradient(to right, #EF4444, #F97316, #FACC15, #64748B)',  // slate-500
                       }}
                     />
                     <div className="flex gap-2 text-[8px] text-brand-blue">

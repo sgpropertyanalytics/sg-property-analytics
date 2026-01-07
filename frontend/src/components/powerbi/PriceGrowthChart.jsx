@@ -15,12 +15,17 @@ import React, { useMemo, useRef } from 'react';
 import { Line } from 'react-chartjs-2';
 import { ChartSlot } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
-import { BRAND } from '../../constants/colors';
+import { REGION, CANVAS } from '../../constants/colors';
 import { ChartFrame } from '../common/ChartFrame';
 import { getTxnField, TxnField } from '../../schemas/apiContract';
 
-// Colors from centralized colors.js
-const COLORS = BRAND;
+// Colors from centralized colors.js (Slate palette)
+const COLORS = {
+  navy: REGION.CCR,       // slate-900
+  oceanBlue: REGION.RCR,  // slate-700
+  skyBlue: REGION.OCR,    // slate-500
+  sand: CANVAS.grid,      // slate-200
+};
 
 // Helper: Calculate median
 const median = (arr) => {
@@ -193,7 +198,7 @@ function PriceGrowthChartBase({
         tooltip: {
           mode: 'index',
           intersect: false,
-          backgroundColor: 'rgba(33, 52, 72, 0.95)',
+          backgroundColor: 'rgba(15, 23, 42, 0.95)',  // slate-900
           titleColor: '#fff',
           bodyColor: '#fff',
           borderColor: COLORS.skyBlue,

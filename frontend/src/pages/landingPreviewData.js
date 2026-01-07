@@ -4,11 +4,11 @@
  * This data is curated to be visually representative without API calls.
  */
 
-// Regional Pricing Preview - CCR/RCR/OCR price beads
+// Regional Pricing Preview - CCR/RCR/OCR price beads (Slate palette)
 export const REGIONAL_PRICING_DATA = [
-  { name: 'CCR', color: '#213448', prices: [2800, 3200, 3600, 4200] },
-  { name: 'RCR', color: '#547792', prices: [1800, 2100, 2400, 2900] },
-  { name: 'OCR', color: '#94B4C1', prices: [1400, 1650, 1900, 2200] },
+  { name: 'CCR', color: '#0F172A', prices: [2800, 3200, 3600, 4200] },  // slate-900
+  { name: 'RCR', color: '#334155', prices: [1800, 2100, 2400, 2900] },  // slate-700
+  { name: 'OCR', color: '#64748B', prices: [1400, 1650, 1900, 2200] },  // slate-500
 ];
 
 // Volume Trend Preview - 6-month rolling transaction volumes

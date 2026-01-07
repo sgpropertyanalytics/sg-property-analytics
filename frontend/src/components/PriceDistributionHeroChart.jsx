@@ -35,7 +35,7 @@ const buyerMarkerPlugin = {
     ctx.save();
     ctx.beginPath();
     ctx.setLineDash([6, 4]);
-    ctx.strokeStyle = '#213448'; // Deep Navy
+    ctx.strokeStyle = '#0F172A'; // Slate 900
     ctx.lineWidth = 2;
     ctx.moveTo(xPosition, top);
     ctx.lineTo(xPosition, bottom);
@@ -44,7 +44,7 @@ const buyerMarkerPlugin = {
     // Draw diamond marker at top
     const diamondSize = 6;
     ctx.setLineDash([]);
-    ctx.fillStyle = '#213448';
+    ctx.fillStyle = '#0F172A';
     ctx.beginPath();
     ctx.moveTo(xPosition, top - diamondSize * 2);
     ctx.lineTo(xPosition + diamondSize, top - diamondSize);
@@ -378,11 +378,11 @@ export function PriceDistributionHeroChart({
       if (idx === selectedBinIndex) {
         return 'rgba(16, 185, 129, 0.8)'; // Emerald green for selected
       }
-      // Buyer's price bin - dark navy
+      // Buyer's price bin - dark slate
       if (idx === buyerBinIndex) {
-        return `rgba(33, 52, 72, ${intensity + 0.2})`; // #213448 with extra opacity
+        return `rgba(15, 23, 42, ${intensity + 0.2})`; // Slate 900 with extra opacity
       }
-      return `rgba(84, 119, 146, ${intensity})`; // #547792
+      return `rgba(51, 65, 85, ${intensity})`; // Slate 700
     });
 
     const borderColors = bins.map((bin, idx) => {
@@ -472,7 +472,7 @@ export function PriceDistributionHeroChart({
           font: {
             size: 10,
           },
-          color: '#547792',
+          color: '#475569',
         },
         border: {
           display: false,
@@ -487,7 +487,7 @@ export function PriceDistributionHeroChart({
           font: {
             size: 10,
           },
-          color: '#547792',
+          color: '#475569',
           callback: (value) => value.toLocaleString(),
         },
         border: {
@@ -496,7 +496,7 @@ export function PriceDistributionHeroChart({
         title: {
           display: true,
           text: 'Observations',
-          color: '#547792',
+          color: '#475569',
           font: {
             size: 11,
           }
@@ -670,7 +670,7 @@ export function PriceDistributionHeroChart({
       </div>
 
       {/* Compact Annotation Footer */}
-      <div className="px-4 py-2 bg-gradient-to-r from-[#EAE0CF]/40 to-transparent border-t border-brand-sky/30">
+      <div className="px-4 py-2 bg-gradient-to-r from-slate-200/40 to-transparent border-t border-brand-sky/30">
         <div className="flex items-center gap-2">
           {/* Compact visual indicator */}
           <div className={`flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full ${

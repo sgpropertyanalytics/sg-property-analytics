@@ -8,12 +8,12 @@ import apiClient from '../api/client';
  *
  * Two-card layout:
  * - Quarterly: White card (anchor/standard)
- * - Annual: Deep Navy card (premium "black card" VIP look)
+ * - Annual: Slate card (premium "black card" VIP look)
  *
- * Color Palette:
- * - Page Background: #EAE0CF (Sand)
- * - Quarterly: White bg, Navy text, Ghost button
- * - Annual: #213448 (Navy) bg, Sand/White text, Sand button
+ * Color Palette (Institutional Print / Slate):
+ * - Page Background: slate-200 (#E5E7EB)
+ * - Quarterly: White bg, Slate text, Ghost button
+ * - Annual: slate-900 (#0F172A) bg, Light text, slate-200 button
  */
 export default function Pricing() {
   const navigate = useNavigate();

@@ -452,7 +452,7 @@ export function getWaterfallChartOptions(totals, includeGls) {
         grid: { display: false },
         ticks: {
           font: { size: 11, weight: '600' },
-          color: '#213448',
+          color: '#0F172A',
           maxRotation: 0,
           autoSkip: false,
         },
@@ -466,13 +466,13 @@ export function getWaterfallChartOptions(totals, includeGls) {
         ticks: {
           callback: (value) => formatNumber(value),
           font: { size: 11 },
-          color: '#547792',
+          color: '#475569',
         },
         title: {
           display: true,
           text: 'Units',
           font: { size: 12 },
-          color: '#547792',
+          color: '#475569',
         },
       },
     },
@@ -501,7 +501,7 @@ export function getDistrictChartOptions() {
           boxHeight: 12,
           padding: 8,
           font: { size: 11 },
-          color: '#213448',
+          color: '#0F172A',
         },
       },
       tooltip: {
@@ -531,7 +531,7 @@ export function getDistrictChartOptions() {
         grid: { display: false },
         ticks: {
           font: { size: 10 },
-          color: '#547792',
+          color: '#475569',
           maxRotation: 45,
           minRotation: 0,
         },
@@ -545,13 +545,13 @@ export function getDistrictChartOptions() {
         ticks: {
           callback: (value) => formatNumber(value),
           font: { size: 11 },
-          color: '#547792',
+          color: '#475569',
         },
         title: {
           display: true,
           text: 'Units',
           font: { size: 12 },
-          color: '#547792',
+          color: '#475569',
         },
       },
     },

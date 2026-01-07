@@ -23,7 +23,7 @@ import { FrostOverlay } from '../common/loading';
  *
  * Usage:
  *   <InlineCard label="Median" value="$1.85M" />
- *   <InlineCard label="CCR" value="$2,450" subtext="+3.2% vs prev" color="#213448" />
+ *   <InlineCard label="CCR" value="$2,450" subtext="+3.2% vs prev" color="#0F172A" />
  *   <InlineCard label="Q1-Q3" value="$1.22M – $2.27M" />
  */
 
@@ -67,14 +67,14 @@ export function InlineCard({
     if (variant === 'success') return 'text-emerald-700 font-semibold';
     if (variant === 'warning') return 'text-amber-700 font-semibold';
     if (variant === 'danger') return 'text-red-700 font-semibold';
-    if (!trend) return 'text-[#547792]';
+    if (!trend) return 'text-[#334155]';  // slate-700
     switch (trend) {
       case 'up':
         return 'text-emerald-600';
       case 'down':
         return 'text-red-600';
       default:
-        return 'text-[#547792]';
+        return 'text-[#334155]';  // slate-700
     }
   };
 
@@ -129,7 +129,7 @@ export function InlineCard({
   // Background color - consistent grey for all cards (only for default variant)
   // Label uses the color prop, but background is always neutral grey
   const bgStyle = variant === 'default'
-    ? { backgroundColor: 'rgba(33, 52, 72, 0.05)' } // #213448 at 5% - consistent grey
+    ? { backgroundColor: 'rgba(15, 23, 42, 0.05)' } // slate-900 at 5% - consistent grey
     : undefined;
 
   const labelStyle = variant === 'default' && color ? { color } : undefined;

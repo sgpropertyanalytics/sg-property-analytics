@@ -20,7 +20,7 @@ import { BEDROOM_OPTIONS, PERIOD_OPTIONS, SALE_TYPE_OPTIONS } from './constants'
 // INFO TOOLTIP
 // =============================================================================
 
-export function InfoTooltip({ text, color = '#94B4C1' }) {
+export function InfoTooltip({ text, color = '#64748B' }) {  // slate-500
   return (
     <span className="relative group inline-flex items-center ml-1">
       <span

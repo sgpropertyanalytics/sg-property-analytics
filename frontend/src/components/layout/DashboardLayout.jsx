@@ -30,7 +30,7 @@ function ContentLoadingFallback() {
  * Layout Structure:
  * ┌─────────────────────────────────────────────────────────────────┐
  * │ [GlobalNavRail 256px]       [Main Content flex-1]              │
- * │ Deep Navy #213448           Full-width content area            │
+ * │ Slate-900 #0F172A           Full-width content area            │
  * └─────────────────────────────────────────────────────────────────┘
  *
  * Responsive Behavior:

@@ -39,7 +39,7 @@ export function KeyInsightBox({
   tooltip = null,
 }) {
   const variants = {
-    default: 'bg-gradient-to-r from-[#213448]/5 to-[#547792]/5',
+    default: 'bg-gradient-to-r from-[#0F172A]/5 to-[#334155]/5',  // slate-900 to slate-700
     positive: 'bg-gradient-to-r from-green-50 to-emerald-50',
     warning: 'bg-gradient-to-r from-amber-50 to-yellow-50',
     info: 'bg-brand-sand/30',

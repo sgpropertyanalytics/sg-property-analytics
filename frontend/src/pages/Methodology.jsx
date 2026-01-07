@@ -268,10 +268,10 @@ export function MethodologyContent() {
                   key={region.code}
                   className={`bg-brand-sand/20 rounded-lg p-3 border-l-4 ${
                     region.code === 'CCR'
-                      ? 'border-l-[#213448]'
+                      ? 'border-l-[#0F172A]'
                       : region.code === 'RCR'
-                        ? 'border-l-[#547792]'
-                        : 'border-l-[#94B4C1]'
+                        ? 'border-l-[#334155]'
+                        : 'border-l-[#64748B]'
                   }`}
                 >
                   <div className="flex flex-wrap items-baseline gap-2 mb-1">
