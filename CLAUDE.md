@@ -249,12 +249,29 @@ RCR: D03, D04, D05, D08, D12, D13, D14, D15, D20
 OCR: D16-D19, D21-D28
 ```
 
-### Colors (Institutional Print / Slate)
-```
-Primary: #0F172A (slate-900) | Secondary: #334155 (slate-700) | Tertiary: #64748B (slate-500) | Background: #E5E7EB (slate-200)
-CCR: slate-900 | RCR: slate-700 | OCR: slate-500
-Signal Accent: #F97316 (Bloomberg Orange)
-```
+### Design System — Institutional Print / Slate
+
+**Philosophy:** "Financial Print / Blueprint" — The Suit: Slate + Void. The Tie: Bloomberg Orange.
+
+**Source of Truth:** `frontend/src/constants/colors.js`
+
+| Palette | Token | Hex | Tailwind | Usage |
+|---------|-------|-----|----------|-------|
+| **INK** | primary | `#0F172A` | `slate-900` | Headers, primary data |
+| | mid | `#475569` | `slate-600` | Body text |
+| | muted | `#94A3B8` | `slate-400` | Placeholders, ghost data |
+| **VOID** | base | `#0A0A0A` | — | Nav background |
+| **CANVAS** | paper | `#FFFFFF` | `white` | Cards, modals |
+| | grid | `#E5E7EB` | `slate-200` | Borders, chart grids |
+| **SIGNAL** | accent | `#F97316` | `orange-500` | CTAs, highlights |
+| | focus | `#2563EB` | `blue-600` | Focus rings |
+| **DELTA** | positive | `#059669` | `emerald-600` | Gains |
+| | negative | `#DC2626` | `red-600` | Losses |
+| **REGION** | CCR | `#0F172A` | `slate-900` | Premium (darkest) |
+| | RCR | `#334155` | `slate-700` | Mid-tier |
+| | OCR | `#64748B` | `slate-500` | Suburban (lightest) |
+
+**Aesthetic:** Hard edges (`rounded-none`), instant transitions, monospace headers, structural borders.
 
 ---
 

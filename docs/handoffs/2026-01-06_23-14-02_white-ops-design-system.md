@@ -155,35 +155,45 @@ Key things the next agent should know:
 
 ## CSS Variables Available
 
+> **Note:** Palette evolved to "Institutional Print / Slate" system. See `frontend/src/constants/colors.js` for current source of truth.
+
 ```css
-/* Mono palette */
---color-mono-ink: #000000;
---color-mono-dark: #171717;
---color-mono-mid: #525252;
---color-mono-light: #A3A3A3;
---color-mono-muted: #E5E7EB;
---color-mono-canvas: #FFFFFF;
+/* INK (Data/Text - "The Print") */
+--color-ink-primary: #0F172A;   /* slate-900 - Headers, primary data */
+--color-ink-dense: #1E293B;     /* slate-800 - Secondary emphasis */
+--color-ink-mid: #475569;       /* slate-600 - Body text */
+--color-ink-muted: #94A3B8;     /* slate-400 - Placeholders */
+--color-ink-light: #CBD5E1;     /* slate-300 - Subtle borders */
 
-/* Status */
---color-status-live: #10B981;
---color-status-negative: #FF5500;
+/* VOID (Dark Frame) */
+--color-void-base: #0A0A0A;     /* Nav background */
+--color-void-surface: #1A1A1A;  /* Elevated cards */
+--color-void-edge: #333333;     /* Metal borders */
 
-/* Brand (legacy) */
---color-brand-navy: #213448;
---color-brand-blue: #547792;
---color-brand-sky: #94B4C1;
---color-brand-sand: #EAE0CF;
+/* CANVAS (Light Content) */
+--color-canvas-base: #FAFAFA;   /* Main background */
+--color-canvas-paper: #FFFFFF;  /* Cards, modals */
+--color-canvas-grid: #E5E7EB;   /* Chart grids, borders */
 
-/* Region aliases */
---color-region-ccr: var(--color-brand-navy);
---color-region-rcr: var(--color-brand-blue);
---color-region-ocr: var(--color-brand-sky);
+/* SIGNAL (Accent - "The Tie") */
+--color-signal-accent: #F97316;     /* orange-500 - CTAs */
+--color-signal-accent-a11y: #EA580C; /* orange-600 - Accessible text */
+--color-signal-focus: #2563EB;      /* blue-600 - Focus rings */
 
-/* Supply palette */
---color-supply-unsold: #6b4226;
---color-supply-upcoming: #9c6644;
---color-supply-gls: #c4a77d;
---color-supply-total: #e8dcc8;
+/* DELTA (Financial +/-) */
+--color-delta-positive: #059669;  /* emerald-600 */
+--color-delta-negative: #DC2626;  /* red-600 */
+
+/* REGION (Monochrome Hierarchy: Dark→Light for CCR→OCR) */
+--color-region-ccr: #0F172A;    /* slate-900 - Premium */
+--color-region-rcr: #334155;    /* slate-700 - Mid-tier */
+--color-region-ocr: #64748B;    /* slate-500 - Suburban */
+
+/* SUPPLY (Full Slate - Inventory) */
+--color-supply-unsold: #0F172A;   /* slate-900 */
+--color-supply-upcoming: #334155; /* slate-700 */
+--color-supply-gls: #64748B;      /* slate-500 */
+--color-supply-total: #94A3B8;    /* slate-400 */
 ```
 
 ## Commands to Run
