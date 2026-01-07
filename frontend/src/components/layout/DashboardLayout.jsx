@@ -17,7 +17,7 @@ function ContentLoadingFallback() {
   return (
     <div className="h-full min-h-[50vh] flex items-center justify-center bg-transparent animate-fade-in">
       <div className="flex flex-col items-center gap-3">
-        <div className="w-8 h-8 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-[#547792] border-t-transparent rounded-none animate-spin" />
         <span className="text-sm text-[#547792]">Loading...</span>
       </div>
     </div>
@@ -151,14 +151,14 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
   const handleMobileNavClose = () => setMobileNavOpen(false);
 
   return (
-    <div className="flex h-screen bg-[#EAE0CF]/30 overflow-hidden">
+    <div className="flex h-screen bg-gray-50 overflow-hidden">
       {/* ===== GLOBAL NAV RAIL (Primary Sidebar) ===== */}
       {/* Desktop: Collapsible with premium physics animation | Mobile: Hidden */}
       <div
         className="hidden lg:flex flex-shrink-0 relative overflow-visible"
         style={{
           width: isNavCollapsed ? NAV_WIDTH_COLLAPSED : NAV_WIDTH_EXPANDED,
-          transition: 'width 500ms cubic-bezier(0.2, 0, 0, 1)'
+          transition: 'none'
         }}
       >
         <GlobalNavRail activePage={activePage} collapsed={isNavCollapsed} />
@@ -166,11 +166,11 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
         {/* Collapse Toggle Button - Positioned at sidebar edge */}
         <button
           onClick={toggleNavCollapse}
-          className="absolute -right-3 top-6 z-10 w-6 h-6 rounded-full bg-[#213448] border border-[#547792]/50 flex items-center justify-center text-[#94B4C1] hover:text-white hover:bg-[#547792] active:scale-95 transition-all duration-200 shadow-lg"
+          className="absolute -right-3 top-6 z-10 w-6 h-6 rounded-none bg-mono-canvas border border-mono-muted flex items-center justify-center text-mono-dark hover:bg-mono-dark hover:text-white transition-none weapon-shadow"
           aria-label={isNavCollapsed ? 'Expand navigation' : 'Collapse navigation'}
         >
           <svg
-            className="w-3.5 h-3.5 transition-transform duration-500 ease-[cubic-bezier(0.2,0,0,1)]"
+            className="w-3.5 h-3.5 transition-transform duration-0"
             style={{ transform: isNavCollapsed ? 'rotate(180deg)' : 'rotate(0deg)' }}
             fill="none"
             stroke="currentColor"
@@ -198,7 +198,7 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
             {/* Close button overlay */}
             <button
               onClick={handleMobileNavClose}
-              className="absolute top-4 right-4 p-2 rounded-lg bg-[#547792]/30 text-[#EAE0CF] hover:bg-[#547792]/50 min-h-[44px] min-w-[44px] flex items-center justify-center active:bg-[#547792]/60 active:scale-[0.98]"
+              className="absolute top-4 right-4 p-2 rounded-none bg-[#547792]/30 text-[#EAE0CF] hover:bg-[#547792]/50 min-h-[44px] min-w-[44px] flex items-center justify-center active:bg-[#547792]/60 active:scale-[0.98]"
               aria-label="Close navigation"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -213,12 +213,12 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
       {/* min-w-0 prevents flex children from overflowing - critical for nested grids */}
       <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
         {/* Mobile Header */}
-        <header className="lg:hidden sticky top-0 z-40 bg-[#213448] px-3 py-2 flex-shrink-0">
+        <header className="lg:hidden sticky top-0 z-40 bg-gray-50 px-3 py-2 flex-shrink-0 border-b border-black/10 weapon-noise">
           <div className="flex items-center justify-between gap-2">
             {/* Hamburger Menu */}
             <button
               onClick={() => setMobileNavOpen(true)}
-              className="flex items-center justify-center p-2 rounded-lg bg-[#547792]/30 text-white min-h-[44px] min-w-[44px]"
+              className="flex items-center justify-center p-2 rounded-none bg-mono-canvas border border-mono-muted text-mono-dark min-h-[44px] min-w-[44px] hover:bg-mono-muted/50 transition-none"
               aria-label="Open navigation menu"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -227,7 +227,7 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
             </button>
 
             {/* Title */}
-            <h1 className="text-white font-semibold text-sm truncate flex-1 text-center">
+            <h1 className="text-black font-mono text-[10px] uppercase tracking-[0.18em] truncate flex-1 text-center">
               SG Property Analytics
             </h1>
 
@@ -236,9 +236,9 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
           </div>
 
           {/* Mobile Page Indicator */}
-          <div className="mt-2 flex justify-center">
-            <div className="inline-flex rounded-lg bg-[#547792]/20 px-3 py-1.5">
-              <span className="text-[#EAE0CF] text-xs font-medium">
+            <div className="mt-2 flex justify-center">
+              <div className="inline-flex rounded-none bg-white border border-black/10 px-3 py-1.5">
+                <span className="text-black/70 font-mono text-[10px] uppercase tracking-[0.18em]">
                 {NAV_ITEMS.find(item => item.id === activePage)?.label || 'Market Core'}
               </span>
             </div>
@@ -248,7 +248,7 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
         {/* Main Content - Wrapped with Suspense + ErrorBoundary */}
         {/* IMPORTANT: Suspense is HERE so nav rail stays mounted during lazy loading */}
         {/* min-w-0 on main and wrapper prevents nested grid overflow */}
-        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden flex flex-col weapon-grid-bg">
+        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden flex flex-col bg-gray-50 weapon-grid-bg weapon-noise">
           <ErrorBoundary name="Page Content">
             <Suspense fallback={<ContentLoadingFallback />}>
               <div className="flex-1 min-w-0">

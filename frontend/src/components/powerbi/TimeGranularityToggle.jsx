@@ -62,7 +62,7 @@ export function TimeGranularityToggle({ className = '', layout = 'default' }) {
             key={opt.value}
             type="button"
             onClick={() => handleChange(opt.value)}
-            className={`px-3 py-2 text-sm font-medium transition-all min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#213448] focus-visible:ring-inset ${
+            className={`px-3 py-2 text-sm font-mono uppercase tracking-wider transition-none min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#213448] focus-visible:ring-inset ${
               timeGrouping === opt.value
                 ? 'bg-[#213448] text-white shadow-inner'
                 : 'bg-transparent text-slate-500 hover:bg-white/50 hover:text-slate-900'
@@ -79,7 +79,7 @@ export function TimeGranularityToggle({ className = '', layout = 'default' }) {
   return (
     <div className={`relative ${className}`}>
       {/* Label above - matches FilterGroup pattern */}
-      <label className="block text-sm font-medium text-[#547792] mb-1.5">
+      <label className="block text-sm font-mono uppercase tracking-wider text-[#547792] mb-1.5">
         Group by
       </label>
 
@@ -90,10 +90,10 @@ export function TimeGranularityToggle({ className = '', layout = 'default' }) {
             key={opt.value}
             type="button"
             onClick={() => handleChange(opt.value)}
-            className={`min-h-[44px] px-3 py-2 text-sm rounded-md border transition-colors ${
+            className={`min-h-[44px] px-3 py-2 text-sm rounded-none border transition-none ${
               timeGrouping === opt.value
-                ? 'bg-[#547792] text-white border-[#547792]'
-                : 'bg-white text-[#213448] border-[#94B4C1] hover:border-[#547792]'
+                ? 'bg-mono-dark text-white border-mono-dark'
+                : 'bg-white text-[#213448] border-[#94B4C1] hover:border-mono-dark'
             }`}
           >
             {opt.label}
@@ -104,7 +104,7 @@ export function TimeGranularityToggle({ className = '', layout = 'default' }) {
       {/* One-time helper tooltip - auto-dismisses after 5s, smaller on mobile */}
       {showHelper && (
         <div
-          className="absolute left-0 top-full mt-2 p-2 sm:p-2.5 bg-[#213448] text-white text-[10px] sm:text-xs rounded-lg shadow-lg z-50 w-48 sm:w-56"
+          className="absolute left-0 top-full mt-2 p-2 sm:p-2.5 bg-[#213448] text-white text-[10px] sm:text-xs rounded-none shadow-lg z-50 w-48 sm:w-56"
           style={{ animation: 'fadeIn 0.2s ease-out' }}
         >
           <div className="flex items-start justify-between gap-2">
@@ -114,7 +114,7 @@ export function TimeGranularityToggle({ className = '', layout = 'default' }) {
             <button
               type="button"
               onClick={dismissHelper}
-              className="text-[#94B4C1] hover:text-white transition-colors shrink-0"
+              className="text-[#94B4C1] hover:text-white transition-none shrink-0"
               aria-label="Dismiss"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
