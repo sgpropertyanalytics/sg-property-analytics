@@ -1,13 +1,13 @@
 /**
- * ContentSection - L1 White Frame Container
+ * ContentSection - L1 Wireframe Container
  *
  * Groups related content (KPIs, charts) into visually contained sections.
- * Creates "canvas vs content" separation for better scannability.
+ * Uses transparent background with structural borders (Industrial Wireframe aesthetic).
  *
  * Layer Model:
- * L0: PageCanvas (#F0EDE8 warm stone)
- * L1: ContentSection (#FAF9F7 warm off-white) ← This component
- * L2: Cards (#FFFCF5 warm cream)
+ * L0: PageCanvas (#F2EFE9 engineering paper with grid)
+ * L1: ContentSection (transparent with stone-400 border) ← This component
+ * L2: Cards (transparent with stone-400 border)
  *
  * @param {ReactNode} children - Content to render inside the section
  * @param {string} title - Optional section header (rendered as terminal-header style)
@@ -16,10 +16,10 @@
 export function ContentSection({ children, title, className = '' }) {
   return (
     <section
-      className={`bg-canvas-paper border border-stone-200 p-4 md:p-6 mb-4 md:mb-6 ${className}`}
+      className={`bg-transparent border border-stone-400 p-4 md:p-6 mb-4 md:mb-6 ${className}`}
     >
       {title && (
-        <h2 className="terminal-header pb-3 mb-4 border-b border-stone-200">
+        <h2 className="terminal-header pb-3 mb-4 border-b border-stone-400">
           {title}
         </h2>
       )}
