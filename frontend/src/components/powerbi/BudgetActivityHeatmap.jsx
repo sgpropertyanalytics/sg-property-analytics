@@ -147,10 +147,10 @@ export function BudgetActivityHeatmap({
       <div className="px-4 py-3 border-b border-mono-muted">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h4 className="font-semibold text-[#213448]">
+            <h4 className="font-semibold text-brand-navy">
               Bedroom Mix by Property Age
             </h4>
-            <p className="text-xs text-[#547792] mt-0.5">
+            <p className="text-xs text-brand-blue mt-0.5">
               Share of transactions in each age group (within your budget, last {timeWindow} months)
             </p>
           </div>
@@ -164,8 +164,8 @@ export function BudgetActivityHeatmap({
                 onClick={() => setTimePreset(preset)}
                 className={`px-2 py-1 text-xs rounded transition-colors ${
                   timePreset === preset
-                    ? 'bg-[#213448] text-white'
-                    : 'bg-white border border-[#94B4C1]/50 text-[#547792] hover:bg-[#EAE0CF]/50'
+                    ? 'bg-brand-navy text-white'
+                    : 'bg-white border border-brand-sky/50 text-brand-blue hover:bg-brand-sand/50'
                 }`}
               >
                 {preset}
@@ -190,18 +190,18 @@ export function BudgetActivityHeatmap({
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr>
-              <th className="text-left px-2 py-2 text-xs font-medium text-[#547792] w-44">
+              <th className="text-left px-2 py-2 text-xs font-medium text-brand-blue w-44">
                 Property Type
               </th>
               {bedroomTypes.map((br) => (
                 <th
                   key={br}
-                  className="text-center px-2 py-2 text-xs font-medium text-[#547792] min-w-[52px]"
+                  className="text-center px-2 py-2 text-xs font-medium text-brand-blue min-w-[52px]"
                 >
                   {getBedroomLabelShort(br)}
                 </th>
               ))}
-              <th className="text-center px-2 py-2 text-xs font-medium text-[#547792] min-w-[60px]">
+              <th className="text-center px-2 py-2 text-xs font-medium text-brand-blue min-w-[60px]">
                 Count
               </th>
             </tr>
@@ -215,16 +215,16 @@ export function BudgetActivityHeatmap({
               return (
                 <tr
                   key={band.key}
-                  className={`border-t border-[#94B4C1]/20 ${
+                  className={`border-t border-brand-sky/20 ${
                     isLowSample ? 'bg-stripes' : ''
                   }`}
                 >
                   {/* Age band label */}
-                  <td className="px-2 py-2 text-xs font-medium text-[#213448]">
+                  <td className="px-2 py-2 text-xs font-medium text-brand-navy">
                     <div className="flex items-center gap-2">
                       <span>{band.label}</span>
                       {isLowSample && (
-                        <span className="text-[10px] text-[#94B4C1] bg-[#94B4C1]/10 px-1.5 py-0.5 rounded">
+                        <span className="text-[10px] text-brand-sky bg-brand-sky/10 px-1.5 py-0.5 rounded">
                           Limited sample
                         </span>
                       )}
@@ -260,9 +260,9 @@ export function BudgetActivityHeatmap({
                         title={tooltipText}
                       >
                         {isSuppressed || isLowSample ? (
-                          <span className="text-[#94B4C1]">—</span>
+                          <span className="text-brand-sky">—</span>
                         ) : pct === 0 ? (
-                          <span className="text-[#94B4C1]">—</span>
+                          <span className="text-brand-sky">—</span>
                         ) : (
                           `${Math.round(pct)}%`
                         )}
@@ -271,9 +271,9 @@ export function BudgetActivityHeatmap({
                   })}
 
                   {/* Row total */}
-                  <td className="text-center px-2 py-2 text-xs font-mono tabular-nums text-[#547792] bg-[#EAE0CF]/20">
+                  <td className="text-center px-2 py-2 text-xs font-mono tabular-nums text-brand-blue bg-brand-sand/20">
                     {isLowSample ? (
-                      <span className="text-[#94B4C1]">{rowTotal}</span>
+                      <span className="text-brand-sky">{rowTotal}</span>
                     ) : (
                       rowTotal
                     )}
@@ -287,10 +287,10 @@ export function BudgetActivityHeatmap({
 
       {/* Insight Text */}
       {data.insight && (
-        <div className="px-4 py-3 bg-[#EAE0CF]/20 border-t border-[#94B4C1]/30">
+        <div className="px-4 py-3 bg-brand-sand/20 border-t border-brand-sky/30">
           <div className="flex items-start gap-2">
             <svg
-              className="w-4 h-4 text-[#547792] mt-0.5 flex-shrink-0"
+              className="w-4 h-4 text-brand-blue mt-0.5 flex-shrink-0"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -302,14 +302,14 @@ export function BudgetActivityHeatmap({
                 d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <p className="text-xs text-[#547792]">{data.insight}</p>
+            <p className="text-xs text-brand-blue">{data.insight}</p>
           </div>
         </div>
       )}
 
       {/* Footer: Disclaimer + Legend */}
-      <div className="px-4 py-2 bg-[#547792]/5 border-t border-[#94B4C1]/20">
-        <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-[#94B4C1]">
+      <div className="px-4 py-2 bg-brand-blue/5 border-t border-brand-sky/20">
+        <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-brand-sky">
           {/* Disclaimer */}
           <span>This reflects where buyers transact — not current listings.</span>
 
@@ -318,7 +318,7 @@ export function BudgetActivityHeatmap({
             <span>Distribution:</span>
             <div className="flex items-center gap-1">
               <div
-                className="w-4 h-3 rounded border border-[#94B4C1]/30"
+                className="w-4 h-3 rounded border border-brand-sky/30"
                 style={{ backgroundColor: '#F8F9FA' }}
               />
               <span>Low</span>

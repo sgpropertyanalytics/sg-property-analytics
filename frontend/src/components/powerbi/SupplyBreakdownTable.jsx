@@ -139,17 +139,17 @@ export function SupplyBreakdownTable({
   const SortIcon = ({ column }) => {
     if (sortConfig.column !== column) {
       return (
-        <svg className="w-3 h-3 text-[#94B4C1]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-3 h-3 text-brand-sky" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
         </svg>
       );
     }
     return sortConfig.order === 'asc' ? (
-      <svg className="w-3 h-3 text-[#213448]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg className="w-3 h-3 text-brand-navy" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
       </svg>
     ) : (
-      <svg className="w-3 h-3 text-[#213448]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg className="w-3 h-3 text-brand-navy" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
       </svg>
     );
@@ -168,8 +168,8 @@ export function SupplyBreakdownTable({
         <div className="px-6 py-4 border-b border-mono-muted">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
-              <h3 className="font-bold text-lg text-[#213448]">Supply Pipeline Breakdown</h3>
-              <p className="text-sm text-[#547792] mt-0.5">
+              <h3 className="font-bold text-lg text-brand-navy">Supply Pipeline Breakdown</h3>
+              <p className="text-sm text-brand-blue mt-0.5">
                 {selectedRegion || 'All Regions'} • {tableData.districts.length} districts
               </p>
             </div>
@@ -177,16 +177,16 @@ export function SupplyBreakdownTable({
             <div className="flex items-center gap-3 text-xs">
               <div className="flex items-center gap-1.5">
                 <div className="w-3 h-3 rounded" style={{ backgroundColor: COLORS.unsold }} />
-                <span className="text-[#547792]">Unsold</span>
+                <span className="text-brand-blue">Unsold</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-3 h-3 rounded" style={{ backgroundColor: COLORS.upcoming }} />
-                <span className="text-[#547792]">Upcoming</span>
+                <span className="text-brand-blue">Upcoming</span>
               </div>
               {includeGls && (
                 <div className="flex items-center gap-1.5">
                   <div className="w-3 h-3 rounded" style={{ backgroundColor: COLORS.gls }} />
-                  <span className="text-[#547792]">GLS</span>
+                  <span className="text-brand-blue">GLS</span>
                 </div>
               )}
             </div>
@@ -199,7 +199,7 @@ export function SupplyBreakdownTable({
             <thead className="sticky top-0 bg-white z-10">
               <tr>
                 <th
-                  className="sticky left-0 bg-[#EAE0CF]/50 text-left px-3 py-2 font-semibold text-[#213448] border-b border-r border-[#94B4C1]/30 min-w-[320px] cursor-pointer hover:bg-[#EAE0CF]/70 select-none"
+                  className="sticky left-0 bg-brand-sand/50 text-left px-3 py-2 font-semibold text-brand-navy border-b border-r border-brand-sky/30 min-w-[320px] cursor-pointer hover:bg-brand-sand/70 select-none"
                   onClick={() => handleSort('district')}
                 >
                   <div className="flex items-center gap-1">
@@ -208,7 +208,7 @@ export function SupplyBreakdownTable({
                   </div>
                 </th>
                 <th
-                  className="bg-[#EAE0CF]/50 text-center px-2 py-2 font-semibold text-[#213448] border-b border-r border-[#94B4C1]/30 min-w-[60px] cursor-pointer hover:bg-[#EAE0CF]/70 select-none"
+                  className="bg-brand-sand/50 text-center px-2 py-2 font-semibold text-brand-navy border-b border-r border-brand-sky/30 min-w-[60px] cursor-pointer hover:bg-brand-sand/70 select-none"
                   onClick={() => handleSort('region')}
                 >
                   <div className="flex items-center justify-center gap-1">
@@ -217,7 +217,7 @@ export function SupplyBreakdownTable({
                   </div>
                 </th>
                 <th
-                  className="bg-[#EAE0CF]/50 text-center px-2 py-2 font-semibold text-[#213448] border-b border-r border-[#94B4C1]/30 min-w-[100px] cursor-pointer hover:bg-[#EAE0CF]/70 select-none"
+                  className="bg-brand-sand/50 text-center px-2 py-2 font-semibold text-brand-navy border-b border-r border-brand-sky/30 min-w-[100px] cursor-pointer hover:bg-brand-sand/70 select-none"
                   onClick={() => handleSort('total')}
                 >
                   <div className="flex items-center justify-center gap-1">
@@ -226,7 +226,7 @@ export function SupplyBreakdownTable({
                   </div>
                 </th>
                 <th
-                  className="bg-[#EAE0CF]/50 text-right px-3 py-2 font-medium text-[#213448] border-b border-[#94B4C1]/30 min-w-[80px] cursor-pointer hover:bg-[#EAE0CF]/70 select-none"
+                  className="bg-brand-sand/50 text-right px-3 py-2 font-medium text-brand-navy border-b border-brand-sky/30 min-w-[80px] cursor-pointer hover:bg-brand-sand/70 select-none"
                   onClick={() => handleSort('unsold')}
                 >
                   <div className="flex items-center justify-end gap-1">
@@ -235,7 +235,7 @@ export function SupplyBreakdownTable({
                   </div>
                 </th>
                 <th
-                  className="bg-[#EAE0CF]/50 text-right px-3 py-2 font-medium text-[#213448] border-b border-[#94B4C1]/30 min-w-[80px] cursor-pointer hover:bg-[#EAE0CF]/70 select-none"
+                  className="bg-brand-sand/50 text-right px-3 py-2 font-medium text-brand-navy border-b border-brand-sky/30 min-w-[80px] cursor-pointer hover:bg-brand-sand/70 select-none"
                   onClick={() => handleSort('upcoming')}
                 >
                   <div className="flex items-center justify-end gap-1">
@@ -245,7 +245,7 @@ export function SupplyBreakdownTable({
                 </th>
                 {includeGls && (
                   <th
-                    className="bg-[#EAE0CF]/50 text-right px-3 py-2 font-medium text-[#213448] border-b border-[#94B4C1]/30 min-w-[80px] cursor-pointer hover:bg-[#EAE0CF]/70 select-none"
+                    className="bg-brand-sand/50 text-right px-3 py-2 font-medium text-brand-navy border-b border-brand-sky/30 min-w-[80px] cursor-pointer hover:bg-brand-sand/70 select-none"
                     onClick={() => handleSort('gls')}
                   >
                     <div className="flex items-center justify-end gap-1">
@@ -266,15 +266,15 @@ export function SupplyBreakdownTable({
                   <React.Fragment key={row.district}>
                     {/* District Header Row */}
                     <tr
-                      className="bg-[#547792]/10 cursor-pointer hover:bg-[#547792]/20 transition-colors"
+                      className="bg-brand-blue/10 cursor-pointer hover:bg-brand-blue/20 transition-colors"
                       onClick={() => toggleDistrict(row.district)}
                     >
                       {/* District */}
-                      <td className="sticky left-0 bg-[#547792]/10 px-3 py-1.5 font-semibold text-[#213448] border-r border-[#94B4C1]/30">
+                      <td className="sticky left-0 bg-brand-blue/10 px-3 py-1.5 font-semibold text-brand-navy border-r border-brand-sky/30">
                         <div className="flex items-center gap-2">
                           {hasProjects ? (
                             <svg
-                              className={`w-3 h-3 text-[#547792] transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                              className={`w-3 h-3 text-brand-blue transition-transform ${isExpanded ? 'rotate-90' : ''}`}
                               fill="none"
                               stroke="currentColor"
                               viewBox="0 0 24 24"
@@ -285,22 +285,22 @@ export function SupplyBreakdownTable({
                             <div className="w-3 h-3" />
                           )}
                           <span>{row.district}</span>
-                          <span className="text-[#547792] font-normal">–</span>
-                          <span className="text-[#547792] font-normal truncate">
+                          <span className="text-brand-blue font-normal">–</span>
+                          <span className="text-brand-blue font-normal truncate">
                             {areaName}
                           </span>
                         </div>
                       </td>
 
                       {/* Region */}
-                      <td className="px-2 py-1.5 border-r border-[#94B4C1]/30 bg-[#547792]/10 text-center">
+                      <td className="px-2 py-1.5 border-r border-brand-sky/30 bg-brand-blue/10 text-center">
                         <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-medium ${getRegionBadgeClass(getRegionForDistrict(row.district))}`}>
                           {getRegionForDistrict(row.district)}
                         </span>
                       </td>
 
                       {/* Total with Bar */}
-                      <td className="px-2 py-1.5 border-r border-[#94B4C1]/30 bg-[#547792]/10">
+                      <td className="px-2 py-1.5 border-r border-brand-sky/30 bg-brand-blue/10">
                         <div className="flex items-center gap-1">
                           <div className="flex-1 h-3 bg-gray-100 rounded overflow-hidden flex">
                             {/* Unsold segment */}
@@ -334,25 +334,25 @@ export function SupplyBreakdownTable({
                               />
                             )}
                           </div>
-                          <span className="text-[10px] text-[#213448] font-mono tabular-nums font-semibold w-10 text-right">
+                          <span className="text-[10px] text-brand-navy font-mono tabular-nums font-semibold w-10 text-right">
                             {formatNum(row.total)}
                           </span>
                         </div>
                       </td>
 
                       {/* Unsold */}
-                      <td className="text-right px-3 py-1.5 font-mono tabular-nums bg-[#547792]/10 text-[#213448]">
+                      <td className="text-right px-3 py-1.5 font-mono tabular-nums bg-brand-blue/10 text-brand-navy">
                         {formatNum(row.unsold)}
                       </td>
 
                       {/* Upcoming */}
-                      <td className="text-right px-3 py-1.5 font-mono tabular-nums bg-[#547792]/10 text-[#213448]">
+                      <td className="text-right px-3 py-1.5 font-mono tabular-nums bg-brand-blue/10 text-brand-navy">
                         {formatNum(row.upcoming)}
                       </td>
 
                       {/* GLS */}
                       {includeGls && (
-                        <td className="text-right px-3 py-1.5 font-mono tabular-nums bg-[#547792]/10 text-[#213448]">
+                        <td className="text-right px-3 py-1.5 font-mono tabular-nums bg-brand-blue/10 text-brand-navy">
                           {formatNum(row.gls)}
                         </td>
                       )}
@@ -362,10 +362,10 @@ export function SupplyBreakdownTable({
                     {isExpanded && hasProjects && row.projects.map((project, pIdx) => (
                       <tr
                         key={`${row.district}-${pIdx}`}
-                        className={pIdx % 2 === 0 ? 'bg-white' : 'bg-[#EAE0CF]/10'}
+                        className={pIdx % 2 === 0 ? 'bg-white' : 'bg-brand-sand/10'}
                       >
                         {/* Project Name */}
-                        <td className={`sticky left-0 ${pIdx % 2 === 0 ? 'bg-white' : 'bg-[#EAE0CF]/10'} pl-8 pr-3 py-1 text-xs font-medium text-[#213448] border-r border-[#94B4C1]/30`}>
+                        <td className={`sticky left-0 ${pIdx % 2 === 0 ? 'bg-white' : 'bg-brand-sand/10'} pl-8 pr-3 py-1 text-xs font-medium text-brand-navy border-r border-brand-sky/30`}>
                           <div className="flex items-center gap-2">
                             <span
                               className="w-2 h-2 rounded-full shrink-0"
@@ -377,7 +377,7 @@ export function SupplyBreakdownTable({
                               {project.name}
                             </span>
                             {project.category === 'upcoming' && project.launch_quarter && (
-                              <span className="text-[9px] text-[#94B4C1] shrink-0">
+                              <span className="text-[9px] text-brand-sky shrink-0">
                                 {project.launch_quarter}
                               </span>
                             )}
@@ -385,28 +385,28 @@ export function SupplyBreakdownTable({
                         </td>
 
                         {/* Region - empty for project rows */}
-                        <td className={`${pIdx % 2 === 0 ? 'bg-white' : 'bg-[#EAE0CF]/10'} px-2 py-1 border-r border-[#94B4C1]/30`} />
+                        <td className={`${pIdx % 2 === 0 ? 'bg-white' : 'bg-brand-sand/10'} px-2 py-1 border-r border-brand-sky/30`} />
 
                         {/* Project Total */}
-                        <td className={`${pIdx % 2 === 0 ? 'bg-white' : 'bg-[#EAE0CF]/10'} px-2 py-1 border-r border-[#94B4C1]/30 text-center`}>
-                          <span className="text-[10px] text-[#547792] font-mono tabular-nums">
+                        <td className={`${pIdx % 2 === 0 ? 'bg-white' : 'bg-brand-sand/10'} px-2 py-1 border-r border-brand-sky/30 text-center`}>
+                          <span className="text-[10px] text-brand-blue font-mono tabular-nums">
                             {formatNum(project.units)}
                           </span>
                         </td>
 
                         {/* Unsold column */}
-                        <td className="text-right px-3 py-1 font-mono tabular-nums text-[11px] text-[#213448]">
+                        <td className="text-right px-3 py-1 font-mono tabular-nums text-[11px] text-brand-navy">
                           {project.category === 'unsold' ? formatNum(project.units) : '–'}
                         </td>
 
                         {/* Upcoming column */}
-                        <td className="text-right px-3 py-1 font-mono tabular-nums text-[11px] text-[#213448]">
+                        <td className="text-right px-3 py-1 font-mono tabular-nums text-[11px] text-brand-navy">
                           {project.category === 'upcoming' ? formatNum(project.units) : '–'}
                         </td>
 
                         {/* GLS column */}
                         {includeGls && (
-                          <td className="text-right px-3 py-1 font-mono tabular-nums text-[11px] text-[#213448]">
+                          <td className="text-right px-3 py-1 font-mono tabular-nums text-[11px] text-brand-navy">
                             –
                           </td>
                         )}
@@ -418,22 +418,22 @@ export function SupplyBreakdownTable({
 
               {/* Totals Row */}
               {tableData.totals && (
-                <tr className="bg-[#213448] text-white font-semibold">
-                  <td className="sticky left-0 bg-[#213448] px-3 py-2.5 border-t border-[#547792]">
+                <tr className="bg-brand-navy text-white font-semibold">
+                  <td className="sticky left-0 bg-brand-navy px-3 py-2.5 border-t border-brand-blue">
                     TOTAL
                   </td>
-                  <td className="px-2 py-2.5 border-t border-[#547792]" />
-                  <td className="px-2 py-2.5 font-mono tabular-nums border-t border-[#547792] text-center">
+                  <td className="px-2 py-2.5 border-t border-brand-blue" />
+                  <td className="px-2 py-2.5 font-mono tabular-nums border-t border-brand-blue text-center">
                     {formatNum(tableData.totals.totalEffectiveSupply)}
                   </td>
-                  <td className="text-right px-3 py-2.5 font-mono tabular-nums border-t border-[#547792]">
+                  <td className="text-right px-3 py-2.5 font-mono tabular-nums border-t border-brand-blue">
                     {formatNum(tableData.totals.unsoldInventory)}
                   </td>
-                  <td className="text-right px-3 py-2.5 font-mono tabular-nums border-t border-[#547792]">
+                  <td className="text-right px-3 py-2.5 font-mono tabular-nums border-t border-brand-blue">
                     {formatNum(tableData.totals.upcomingLaunches)}
                   </td>
                   {includeGls && (
-                    <td className="text-right px-3 py-2.5 font-mono tabular-nums border-t border-[#547792]">
+                    <td className="text-right px-3 py-2.5 font-mono tabular-nums border-t border-brand-blue">
                       {formatNum(tableData.totals.glsPipeline)}
                     </td>
                   )}

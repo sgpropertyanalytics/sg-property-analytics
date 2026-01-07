@@ -188,8 +188,8 @@ export function GLSDataTable({ height = 400 }) {
       <div className="px-4 py-3 border-b border-mono-muted">
         <div className="flex items-center justify-between mb-2">
           <div>
-            <h3 className="font-semibold text-[#213448]">Government Land Sales (GLS)</h3>
-            <p className="text-xs text-[#547792]">
+            <h3 className="font-semibold text-brand-navy">Government Land Sales (GLS)</h3>
+            <p className="text-xs text-brand-blue">
               {isLoading ? 'Loading...' : `${safeData.length} tenders`}
               {!isLoading && safeData.length > 0 && (
                 <span className="ml-2">
@@ -204,7 +204,7 @@ export function GLSDataTable({ height = 400 }) {
             <button
               type="button"
               onClick={(e) => { e.preventDefault(); handleRefresh(); }}
-              className="p-1.5 text-[#547792] hover:text-[#213448] hover:bg-[#EAE0CF] rounded transition-colors"
+              className="p-1.5 text-brand-blue hover:text-brand-navy hover:bg-brand-sand rounded transition-colors"
               title="Refresh data"
               disabled={isLoading}
             >
@@ -219,10 +219,10 @@ export function GLSDataTable({ height = 400 }) {
         <div className="flex items-center gap-3">
           {/* Status filter */}
           <div className="flex items-center gap-1 text-xs">
-            <span className="text-[#547792]">Status:</span>
+            <span className="text-brand-blue">Status:</span>
             <button
               onClick={() => setFilter('all')}
-              className={`px-2 py-1 rounded ${filter === 'all' ? 'bg-[#213448] text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+              className={`px-2 py-1 rounded ${filter === 'all' ? 'bg-brand-navy text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
             >
               All
             </button>
@@ -242,11 +242,11 @@ export function GLSDataTable({ height = 400 }) {
 
           {/* Segment filter */}
           <div className="flex items-center gap-1 text-xs ml-4">
-            <span className="text-[#547792]">Segment:</span>
+            <span className="text-brand-blue">Segment:</span>
             <select
               value={segmentFilter}
               onChange={(e) => setSegmentFilter(e.target.value)}
-              className="text-xs border border-[#94B4C1] rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#547792] text-[#213448]"
+              className="text-xs border border-brand-sky rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-brand-blue text-brand-navy"
             >
               <option value="">All</option>
               <option value="CCR">CCR</option>
@@ -271,14 +271,14 @@ export function GLSDataTable({ height = 400 }) {
         ) : (
           <div className={isFreeResolved ? 'blur-sm grayscale-[40%]' : ''}>
             {safeData.map((tender, idx) => (
-              <div key={tender.id || idx} className="p-3 bg-white rounded-lg border border-[#94B4C1]/30">
+              <div key={tender.id || idx} className="p-3 bg-white rounded-lg border border-brand-sky/30">
                 {/* Header: Location + Status */}
                 <div className="flex justify-between items-start gap-2 mb-2">
                   <div className="min-w-0 flex-1">
-                    <div className="font-medium text-[#213448] text-sm line-clamp-2">
+                    <div className="font-medium text-brand-navy text-sm line-clamp-2">
                       {tender.location_raw || '-'}
                     </div>
-                    <div className="text-xs text-[#547792] mt-0.5">
+                    <div className="text-xs text-brand-blue mt-0.5">
                       {formatDate(tender.release_date)}
                       {tender.market_segment && (
                         <span className={`ml-2 px-1.5 py-0.5 text-[10px] font-medium rounded ${getRegionBadgeClass(tender.market_segment)}`}>
@@ -297,29 +297,29 @@ export function GLSDataTable({ height = 400 }) {
                 </div>
                 {/* Developer */}
                 {tender.successful_tenderer && (
-                  <div className="text-xs text-[#547792] mb-2 truncate">
+                  <div className="text-xs text-brand-blue mb-2 truncate">
                     Developer: {tender.successful_tenderer}
                   </div>
                 )}
                 {/* Metrics Row */}
                 <div className="flex justify-between items-center text-sm">
                   <div>
-                    <div className="text-[10px] text-[#547792]">Land PSF (PPR)</div>
-                    <div className="text-[#213448] font-semibold">
+                    <div className="text-[10px] text-brand-blue">Land PSF (PPR)</div>
+                    <div className="text-brand-navy font-semibold">
                       {tender.psf_ppr ? formatCurrency(tender.psf_ppr) : '-'}
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-[10px] text-[#547792]">Est. Launch PSF</div>
-                    <div className="text-xs text-[#213448]">
+                    <div className="text-[10px] text-brand-blue">Est. Launch PSF</div>
+                    <div className="text-xs text-brand-navy">
                       {tender.psf_ppr && tender.market_segment
                         ? formatImpliedPSF(tender.psf_ppr, tender.market_segment)
                         : '-'}
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-[10px] text-[#547792]">Units</div>
-                    <div className="text-xs text-[#213448]">
+                    <div className="text-[10px] text-brand-blue">Units</div>
+                    <div className="text-xs text-brand-navy">
                       {tender.estimated_units ? `~${tender.estimated_units.toLocaleString()}` : '-'}
                     </div>
                   </div>
@@ -433,8 +433,8 @@ export function GLSDataTable({ height = 400 }) {
       </div>
 
       {/* Footer with legend */}
-      <div className="px-4 py-2 border-t border-[#94B4C1]/30 bg-[#EAE0CF]/30">
-        <div className="flex items-center justify-between text-xs text-[#547792]">
+      <div className="px-4 py-2 border-t border-brand-sky/30 bg-brand-sand/30">
+        <div className="flex items-center justify-between text-xs text-brand-blue">
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1">
               <span className="w-2 h-2 bg-amber-400 rounded-full"></span>
@@ -445,14 +445,14 @@ export function GLSDataTable({ height = 400 }) {
               <span>Awarded = FACT (confirmed supply)</span>
             </span>
           </div>
-          <span className="text-[#547792]/70">
+          <span className="text-brand-blue/70">
             PSF (PPR) = Price per sqft of Gross Floor Area
           </span>
         </div>
       </div>
 
       {/* Methodology footnote */}
-      <div className="px-4 py-3 border-t border-[#94B4C1]/20 bg-slate-50/50">
+      <div className="px-4 py-3 border-t border-brand-sky/20 bg-slate-50/50">
         <p className="text-[10px] text-slate-500 leading-relaxed">
           <span className="font-medium text-slate-600">Methodology note:</span>{' '}
           Estimated selling prices are derived using a margin-based feasibility model applied to the

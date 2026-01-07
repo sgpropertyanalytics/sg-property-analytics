@@ -85,7 +85,7 @@ function TurnoverBar({ label, value, maxValue = 30 }) {
     <div className="mb-6">
       {/* Label and value */}
       <div className="flex justify-between items-center mb-2">
-        <span className="text-xs font-medium uppercase tracking-wide text-[#547792]">
+        <span className="text-xs font-medium uppercase tracking-wide text-brand-blue">
           {label}
         </span>
         <div className="flex items-center gap-2">
@@ -99,7 +99,7 @@ function TurnoverBar({ label, value, maxValue = 30 }) {
       </div>
 
       {/* Progress bar container */}
-      <div className="relative h-4 bg-[#EAE0CF]/50 rounded-full overflow-hidden">
+      <div className="relative h-4 bg-brand-sand/50 rounded-full overflow-hidden">
         {/* Filled portion */}
         <div
           className="absolute top-0 left-0 h-full rounded-full transition-all duration-500"
@@ -118,7 +118,7 @@ function TurnoverBar({ label, value, maxValue = 30 }) {
         >
           {zoneLabel}
         </span>
-        <div className="flex gap-4 text-[9px] text-[#94B4C1]">
+        <div className="flex gap-4 text-[9px] text-brand-sky">
           <span>&lt;5: Low</span>
           <span>5-15: Healthy</span>
           <span>&gt;15: Elevated</span>
@@ -167,7 +167,7 @@ export default function ExitRiskDashboard({
   return (
     <div className="weapon-card p-6">
       {/* Header */}
-      <h3 className="text-sm font-semibold text-[#213448] uppercase tracking-wide mb-6">
+      <h3 className="text-sm font-semibold text-brand-navy uppercase tracking-wide mb-6">
         Liquidity Assessment
       </h3>
 
@@ -196,13 +196,13 @@ export default function ExitRiskDashboard({
 
       {/* Interpretation */}
       {interpretation && (
-        <div className="bg-[#EAE0CF]/30 rounded-lg p-4 text-sm text-[#213448] leading-relaxed">
+        <div className="bg-brand-sand/30 rounded-lg p-4 text-sm text-brand-navy leading-relaxed">
           {interpretation}
         </div>
       )}
 
       {/* Helper note */}
-      <div className="mt-4 text-[10px] text-[#94B4C1] text-center">
+      <div className="mt-4 text-[10px] text-brand-sky text-center">
         Turnover = resale transactions per 100 units. Green zone (5-15) indicates optimal liquidity.
       </div>
     </div>

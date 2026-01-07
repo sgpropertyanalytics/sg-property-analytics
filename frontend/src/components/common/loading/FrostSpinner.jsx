@@ -8,11 +8,11 @@ import { motion } from 'framer-motion';
  * Uses the design system blue color (#547792).
  *
  * @param {string} size - 'sm' | 'md' | 'lg' (default: 'md')
- * @param {string} color - Tailwind color class (default: 'bg-[#547792]')
+ * @param {string} color - Tailwind color class (default: 'bg-brand-blue')
  */
 export const FrostSpinner = React.memo(function FrostSpinner({
   size = 'md',
-  color = 'bg-[#547792]',
+  color = 'bg-brand-blue',
 }) {
   // Check for reduced motion preference
   const prefersReducedMotion =

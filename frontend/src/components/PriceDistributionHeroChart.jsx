@@ -509,13 +509,13 @@ export function PriceDistributionHeroChart({
   // Loading state
   if (loading) {
     return (
-      <div className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden">
-        <div className="px-4 py-3 border-b border-[#94B4C1]/30">
-          <h3 className="font-semibold text-[#213448]">Price Distribution</h3>
+      <div className="bg-card rounded-lg border border-brand-sky/50 overflow-hidden">
+        <div className="px-4 py-3 border-b border-brand-sky/30">
+          <h3 className="font-semibold text-brand-navy">Price Distribution</h3>
         </div>
         <div className="p-4 flex items-center justify-center" style={{ height }}>
-          <div className="flex items-center gap-2 text-[#547792]">
-            <div className="w-4 h-4 border-2 border-[#547792] border-t-transparent rounded-full animate-spin" />
+          <div className="flex items-center gap-2 text-brand-blue">
+            <div className="w-4 h-4 border-2 border-brand-blue border-t-transparent rounded-full animate-spin" />
             <span>Loading distribution...</span>
           </div>
         </div>
@@ -526,12 +526,12 @@ export function PriceDistributionHeroChart({
   // No data state
   if (totalCount === 0 || !chartData) {
     return (
-      <div className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden">
-        <div className="px-4 py-3 border-b border-[#94B4C1]/30">
-          <h3 className="font-semibold text-[#213448]">Price Distribution</h3>
+      <div className="bg-card rounded-lg border border-brand-sky/50 overflow-hidden">
+        <div className="px-4 py-3 border-b border-brand-sky/30">
+          <h3 className="font-semibold text-brand-navy">Price Distribution</h3>
         </div>
         <div className="p-4 flex items-center justify-center" style={{ height }}>
-          <div className="text-center text-[#547792]">
+          <div className="text-center text-brand-blue">
             <svg className="w-12 h-12 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
@@ -602,22 +602,22 @@ export function PriceDistributionHeroChart({
   };
 
   return (
-    <div className="bg-card rounded-lg border border-[#94B4C1]/50 overflow-hidden">
+    <div className="bg-card rounded-lg border border-brand-sky/50 overflow-hidden">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-[#94B4C1]/30">
+      <div className="px-4 py-3 border-b border-brand-sky/30">
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0 flex-1">
-            <h3 className="font-semibold text-[#213448]">Price Distribution</h3>
-            <p className="text-xs text-[#547792] mt-0.5">
+            <h3 className="font-semibold text-brand-navy">Price Distribution</h3>
+            <p className="text-xs text-brand-blue mt-0.5">
               {scopeToggle
                 ? `${scopeToggle.transactionCount.toLocaleString()} comparable transactions`
                 : `How your target price compares to ${totalCount.toLocaleString()} comparable transactions`
               }
             </p>
-            <p className="text-xs text-[#547792]/70 mt-0.5">
+            <p className="text-xs text-brand-blue/70 mt-0.5">
               {getFilterDescription()}
               {onBinClick && (
-                <span className="ml-2 text-[#547792]">• Click bars to filter table</span>
+                <span className="ml-2 text-brand-blue">• Click bars to filter table</span>
               )}
             </p>
           </div>
@@ -636,8 +636,8 @@ export function PriceDistributionHeroChart({
                     onClick={() => scopeToggle.onScopeChange(key)}
                     className={`px-3 py-1 text-xs rounded-md transition-colors ${
                       scopeToggle.activeScope === key
-                        ? 'bg-[#213448] text-white'
-                        : 'bg-[#EAE0CF]/50 text-[#547792] hover:bg-[#EAE0CF]'
+                        ? 'bg-brand-navy text-white'
+                        : 'bg-brand-sand/50 text-brand-blue hover:bg-brand-sand'
                     }`}
                   >
                     {label}
@@ -670,7 +670,7 @@ export function PriceDistributionHeroChart({
       </div>
 
       {/* Compact Annotation Footer */}
-      <div className="px-4 py-2 bg-gradient-to-r from-[#EAE0CF]/40 to-transparent border-t border-[#94B4C1]/30">
+      <div className="px-4 py-2 bg-gradient-to-r from-[#EAE0CF]/40 to-transparent border-t border-brand-sky/30">
         <div className="flex items-center gap-2">
           {/* Compact visual indicator */}
           <div className={`flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full ${

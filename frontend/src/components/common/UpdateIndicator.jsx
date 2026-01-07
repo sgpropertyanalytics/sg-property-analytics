@@ -19,7 +19,7 @@ export const UpdateIndicator = React.memo(function UpdateIndicator() {
   return (
     <div className="update-indicator">
       <FrostSpinner size="sm" />
-      <span className="text-sm font-medium text-[#EAE0CF]">Updating...</span>
+      <span className="text-sm font-medium text-brand-sand">Updating...</span>
     </div>
   );
 });

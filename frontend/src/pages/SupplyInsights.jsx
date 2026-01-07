@@ -37,10 +37,10 @@ export function SupplyInsightsContent() {
         <div className="p-3 md:p-4 lg:p-6">
           {/* Header */}
           <div className="mb-4 md:mb-6">
-            <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-[#213448]">
+            <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-brand-navy">
               Supply & Inventory Insights
             </h1>
-            <p className="text-[#547792] text-sm mt-1">
+            <p className="text-brand-blue text-sm mt-1">
               Track supply pipeline, government land sales, and upcoming launches
             </p>
           </div>
@@ -79,10 +79,10 @@ export function SupplyInsightsContent() {
             </ErrorBoundary>
 
             {/* ===== Divider ===== */}
-            <div className="border-t border-[#94B4C1]/30 my-6" />
+            <div className="border-t border-brand-sky/30 my-6" />
 
             {/* ===== Data Tables ===== */}
-            <h2 className="text-base md:text-lg font-semibold text-[#213448] mb-3">
+            <h2 className="text-base md:text-lg font-semibold text-brand-navy mb-3">
               Detailed Data Tables
             </h2>
 

@@ -17,8 +17,8 @@ function ContentLoadingFallback() {
   return (
     <div className="h-full min-h-[50vh] flex items-center justify-center bg-transparent animate-fade-in">
       <div className="flex flex-col items-center gap-3">
-        <div className="w-8 h-8 border-2 border-[#547792] border-t-transparent rounded-none animate-spin" />
-        <span className="text-sm text-[#547792]">Loading...</span>
+        <div className="w-8 h-8 border-2 border-brand-blue border-t-transparent rounded-none animate-spin" />
+        <span className="text-sm text-brand-blue">Loading...</span>
       </div>
     </div>
   );

@@ -321,16 +321,16 @@ function PriceGrowthChartBase({
       <div className="px-4 py-3 border-b border-mono-muted shrink-0">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <h3 className="font-semibold text-[#213448] truncate">
+            <h3 className="font-semibold text-brand-navy truncate">
               Price Growth
               {projectName && (
-                <span className="font-normal text-[#547792]"> — {projectName}</span>
+                <span className="font-normal text-brand-blue"> — {projectName}</span>
               )}
             </h3>
-            <p className="text-xs text-[#547792] mt-1">
+            <p className="text-xs text-brand-blue mt-1">
               Quarterly median PSF and cumulative growth from first transaction
               {district && (
-                <span className="ml-2 px-2 py-0.5 bg-[#EAE0CF]/50 text-[#547792] rounded text-xs">
+                <span className="ml-2 px-2 py-0.5 bg-brand-sand/50 text-brand-blue rounded text-xs">
                   vs {district} avg
                 </span>
               )}
@@ -358,13 +358,13 @@ function PriceGrowthChartBase({
       </ChartSlot>
 
       {/* Footer */}
-      <div className="shrink-0 h-11 px-4 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 flex items-center justify-between text-xs text-[#547792]">
+      <div className="shrink-0 h-11 px-4 bg-brand-sand/30 border-t border-brand-sky/30 flex items-center justify-between text-xs text-brand-blue">
         <span>
           {stats?.totalTransactions || 0} transactions •{' '}
           {aggregatedData.length} quarters
         </span>
         {stats?.dateRange && (
-          <span className="text-[#213448]">
+          <span className="text-brand-navy">
             {stats.dateRange}
           </span>
         )}

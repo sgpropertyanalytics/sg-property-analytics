@@ -290,13 +290,13 @@ function PriceBandChartBase({
       <div className="px-4 py-3 border-b border-mono-muted shrink-0">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <h3 className="font-semibold text-[#213448] truncate">
+            <h3 className="font-semibold text-brand-navy truncate">
               Historical Downside Protection
               {projectName && (
-                <span className="font-normal text-[#547792]"> — {projectName}</span>
+                <span className="font-normal text-brand-blue"> — {projectName}</span>
               )}
             </h3>
-            <p className="text-xs text-[#547792] mt-1">
+            <p className="text-xs text-brand-blue mt-1">
               P25 / Median / P75 resale price bands, last {dataQuality?.window_months || 24} months
               {proxyLabel && (
                 <span className="ml-2 px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-xs">
@@ -319,7 +319,7 @@ function PriceBandChartBase({
         {/* Floor trend indicator */}
         {trend && !isFloorDirection.unknown(trend.floor_direction) && (
           <div className="flex items-center gap-2 mt-2">
-            <span className="text-xs text-[#547792]">Floor trend:</span>
+            <span className="text-xs text-brand-blue">Floor trend:</span>
             <span className={`
               text-xs font-medium px-2 py-0.5 rounded
               ${isFloorDirection.rising(trend.floor_direction)
@@ -359,7 +359,7 @@ function PriceBandChartBase({
       </ChartSlot>
 
       {/* Footer */}
-      <div className="shrink-0 h-11 px-4 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 flex items-center justify-between text-xs text-[#547792]">
+      <div className="shrink-0 h-11 px-4 bg-brand-sand/30 border-t border-brand-sky/30 flex items-center justify-between text-xs text-brand-blue">
         <span className="min-w-0 truncate flex-1">
           {totalResaleTransactions != null && totalResaleTransactions !== dataQuality?.total_trades ? (
             <>
@@ -374,7 +374,7 @@ function PriceBandChartBase({
           )}
         </span>
         {latest && (
-          <span className="text-[#213448] shrink-0 hidden sm:block">
+          <span className="text-brand-navy shrink-0 hidden sm:block">
             Latest: P25 ${latest.p25_s?.toLocaleString() || '-'} |
             Median ${latest.p50_s?.toLocaleString() || '-'} |
             P75 ${latest.p75_s?.toLocaleString() || '-'}

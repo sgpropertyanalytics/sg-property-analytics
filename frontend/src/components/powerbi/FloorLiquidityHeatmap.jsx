@@ -209,25 +209,25 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
       <div className="px-6 py-4 border-b border-mono-muted">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <h3 className="font-bold text-lg text-[#213448]">Which Floors Resell Faster</h3>
-            <p className="text-sm text-[#547792] mt-0.5">
+            <h3 className="font-bold text-lg text-brand-navy">Which Floors Resell Faster</h3>
+            <p className="text-sm text-brand-blue mt-0.5">
               Z-score normalized resale velocity by project ({data.projects.length} projects)
             </p>
             {/* Z-score explanation */}
             <div className="mt-1 flex items-center gap-1.5 group relative">
-              <svg className="w-3.5 h-3.5 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3.5 h-3.5 text-brand-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <span className="text-xs text-[#547792] cursor-help">What is Z-score?</span>
+              <span className="text-xs text-brand-blue cursor-help">What is Z-score?</span>
               {/* Tooltip */}
-              <div className="absolute left-0 top-full mt-1 w-72 p-3 bg-[#213448] text-white text-xs rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+              <div className="absolute left-0 top-full mt-1 w-72 p-3 bg-brand-navy text-white text-xs rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
                 <p className="font-medium mb-2">Z-score measures relative liquidity within each project:</p>
                 <div className="space-y-1 text-[11px]">
                   <div className="flex justify-between"><span className="text-blue-300">+1.0 or higher</span><span>Sells much faster than avg</span></div>
                   <div className="flex justify-between"><span className="text-gray-300">0.0</span><span>Average speed for this project</span></div>
                   <div className="flex justify-between"><span className="text-blue-100">-1.0 or lower</span><span>Sells much slower than avg</span></div>
                 </div>
-                <p className="mt-2 text-[10px] text-[#547792]">Normalizes across projects of different sizes for fair comparison.</p>
+                <p className="mt-2 text-[10px] text-brand-blue">Normalizes across projects of different sizes for fair comparison.</p>
               </div>
             </div>
           </div>
@@ -237,15 +237,15 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
             <div className="flex items-center gap-1">
               <button
                 onClick={expandAll}
-                className="px-2 py-1 text-xs text-[#547792] hover:bg-[#EAE0CF]/50 rounded transition-colors"
+                className="px-2 py-1 text-xs text-brand-blue hover:bg-brand-sand/50 rounded transition-colors"
                 title="Expand all districts"
               >
                 Expand All
               </button>
-              <span className="text-[#547792]">|</span>
+              <span className="text-brand-blue">|</span>
               <button
                 onClick={collapseAll}
-                className="px-2 py-1 text-xs text-[#547792] hover:bg-[#EAE0CF]/50 rounded transition-colors"
+                className="px-2 py-1 text-xs text-brand-blue hover:bg-brand-sand/50 rounded transition-colors"
                 title="Collapse all districts"
               >
                 Collapse
@@ -254,15 +254,15 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
 
             {/* Window Toggle */}
             <div className="flex items-center gap-2">
-              <span className="text-xs text-[#547792] font-medium">Window:</span>
+              <span className="text-xs text-brand-blue font-medium">Window:</span>
               {[6, 12, 24].map((months) => (
                 <button
                   key={months}
                   onClick={() => setWindowMonths(months)}
                   className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
                     windowMonths === months
-                      ? 'bg-[#213448] text-white'
-                      : 'bg-[#EAE0CF]/50 text-[#547792] hover:bg-[#EAE0CF]'
+                      ? 'bg-brand-navy text-white'
+                      : 'bg-brand-sand/50 text-brand-blue hover:bg-brand-sand'
                   }`}
                 >
                   {months}M
@@ -274,32 +274,32 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
       </div>
 
       {/* Legend */}
-      <div className="px-6 py-2 bg-[#EAE0CF]/20 border-b border-[#94B4C1]/20">
+      <div className="px-6 py-2 bg-brand-sand/20 border-b border-brand-sky/20">
         <div className="flex flex-wrap items-center gap-4 text-xs">
-          <span className="text-[#547792] font-medium">Liquidity:</span>
+          <span className="text-brand-blue font-medium">Liquidity:</span>
           <div className="flex items-center gap-1.5">
             <div className="w-4 h-3 rounded" style={{ backgroundColor: LIQUIDITY_COLORS.very_liquid }} />
-            <span className="text-[#213448]">Very Liquid</span>
+            <span className="text-brand-navy">Very Liquid</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-4 h-3 rounded" style={{ backgroundColor: LIQUIDITY_COLORS.liquid }} />
-            <span className="text-[#547792]">Liquid</span>
+            <span className="text-brand-blue">Liquid</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-4 h-3 rounded" style={{ backgroundColor: LIQUIDITY_COLORS.neutral }} />
-            <span className="text-[#547792]">Neutral</span>
+            <span className="text-brand-blue">Neutral</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-4 h-3 rounded" style={{ backgroundColor: LIQUIDITY_COLORS.illiquid }} />
-            <span className="text-[#547792]">Illiquid</span>
+            <span className="text-brand-blue">Illiquid</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-4 h-3 rounded" style={{ backgroundColor: LIQUIDITY_COLORS.very_illiquid }} />
-            <span className="text-[#547792]">Very Illiquid</span>
+            <span className="text-brand-blue">Very Illiquid</span>
           </div>
-          <div className="flex items-center gap-1.5 ml-4 border-l border-[#94B4C1]/30 pl-4">
-            <div className="w-4 h-3 rounded border border-dashed border-[#94B4C1]" style={{ backgroundColor: LIQUIDITY_COLORS.insufficient }} />
-            <span className="text-[#547792]">n&lt;5</span>
+          <div className="flex items-center gap-1.5 ml-4 border-l border-brand-sky/30 pl-4">
+            <div className="w-4 h-3 rounded border border-dashed border-brand-sky" style={{ backgroundColor: LIQUIDITY_COLORS.insufficient }} />
+            <span className="text-brand-blue">n&lt;5</span>
           </div>
         </div>
       </div>
@@ -316,25 +316,25 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
               {/* District Header */}
               <button
                 onClick={() => toggleDistrict(district)}
-                className="w-full px-3 py-2 flex items-center justify-between bg-[#547792]/10 rounded-t-lg"
+                className="w-full px-3 py-2 flex items-center justify-between bg-brand-blue/10 rounded-t-lg"
               >
                 <div className="flex items-center gap-2">
                   <svg
-                    className={`w-3 h-3 text-[#547792] transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                    className={`w-3 h-3 text-brand-blue transition-transform ${isExpanded ? 'rotate-90' : ''}`}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
-                  <span className="font-semibold text-[#213448]">{district}</span>
-                  <span className="text-xs text-[#547792]">({projects.length})</span>
+                  <span className="font-semibold text-brand-navy">{district}</span>
+                  <span className="text-xs text-brand-blue">({projects.length})</span>
                 </div>
-                <span className="text-xs font-medium text-[#213448]">{districtAgg?.totalTxns || 0} txns</span>
+                <span className="text-xs font-medium text-brand-navy">{districtAgg?.totalTxns || 0} txns</span>
               </button>
 
               {/* District Floor Zone Summary */}
-              <div className="px-3 py-2 border-b border-[#94B4C1]/20">
+              <div className="px-3 py-2 border-b border-brand-sky/20">
                 <div className="flex flex-wrap gap-1">
                   {floorZones.map((zone) => {
                     const zoneData = districtAgg?.zones?.[zone];
@@ -349,8 +349,8 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
                         className="flex flex-col items-center px-2 py-1 rounded text-[10px]"
                         style={{ backgroundColor: bgColor }}
                       >
-                        <span className="font-medium text-[#213448]">{zone}</span>
-                        <span className="text-[#547792]">{hasData ? zoneData.count : '-'}</span>
+                        <span className="font-medium text-brand-navy">{zone}</span>
+                        <span className="text-brand-blue">{hasData ? zoneData.count : '-'}</span>
                       </div>
                     );
                   })}
@@ -369,17 +369,17 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
                       <div key={project.project_name} className="px-3 py-2">
                         <div className="flex justify-between items-start">
                           <div className="min-w-0 flex-1">
-                            <div className="font-medium text-[#213448] text-sm truncate">
+                            <div className="font-medium text-brand-navy text-sm truncate">
                               {project.project_name}
                             </div>
-                            <div className="text-xs text-[#547792]">
+                            <div className="text-xs text-brand-blue">
                               {project.total_transactions} transactions
                             </div>
                           </div>
                           {bestZone && (
                             <div className="text-right flex-shrink-0 ml-2">
-                              <div className="text-[10px] text-[#547792]">Best Floor</div>
-                              <div className="text-xs font-semibold text-[#213448]">
+                              <div className="text-[10px] text-brand-blue">Best Floor</div>
+                              <div className="text-xs font-semibold text-brand-navy">
                                 {bestZone[0]} <span className="text-emerald-600">+{bestZone[1].z_score?.toFixed(2)}</span>
                               </div>
                             </div>
@@ -420,19 +420,19 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
         <table className="w-full border-collapse text-xs min-w-[700px]">
           <thead className="sticky top-0 bg-white z-10">
             <tr>
-              <th className="sticky left-0 bg-[#EAE0CF]/50 text-left px-3 py-1 font-semibold text-[#213448] border-b border-r border-[#94B4C1]/30 min-w-[180px]">
+              <th className="sticky left-0 bg-brand-sand/50 text-left px-3 py-1 font-semibold text-brand-navy border-b border-r border-brand-sky/30 min-w-[180px]">
                 Project
               </th>
-              <th className="bg-[#EAE0CF]/50 text-center px-2 py-1 font-medium text-[#547792] border-b border-r border-[#94B4C1]/30 min-w-[80px]">
+              <th className="bg-brand-sand/50 text-center px-2 py-1 font-medium text-brand-blue border-b border-r border-brand-sky/30 min-w-[80px]">
                 Volume
               </th>
               {floorZones.map((zone) => (
                 <th
                   key={zone}
-                  className="bg-[#EAE0CF]/50 text-center px-2 py-1 font-medium border-b border-[#94B4C1]/30 min-w-[70px]"
+                  className="bg-brand-sand/50 text-center px-2 py-1 font-medium border-b border-brand-sky/30 min-w-[70px]"
                 >
-                  <div className="text-[#547792]">{zone}</div>
-                  <div className="text-[10px] text-[#547792] font-normal">({FLOOR_RANGE_LABELS[zone] || '?'})</div>
+                  <div className="text-brand-blue">{zone}</div>
+                  <div className="text-[10px] text-brand-blue font-normal">({FLOOR_RANGE_LABELS[zone] || '?'})</div>
                 </th>
               ))}
             </tr>
@@ -446,13 +446,13 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
                 <React.Fragment key={district}>
                   {/* District Header Row - Clickable */}
                   <tr
-                    className="bg-[#547792]/10 cursor-pointer hover:bg-[#547792]/20 transition-colors"
+                    className="bg-brand-blue/10 cursor-pointer hover:bg-brand-blue/20 transition-colors"
                     onClick={() => toggleDistrict(district)}
                   >
-                    <td className="sticky left-0 bg-[#547792]/10 px-3 py-1.5 font-semibold text-[#213448] border-r border-[#94B4C1]/30">
+                    <td className="sticky left-0 bg-brand-blue/10 px-3 py-1.5 font-semibold text-brand-navy border-r border-brand-sky/30">
                       <div className="flex items-center gap-2">
                         <svg
-                          className={`w-3 h-3 text-[#547792] transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                          className={`w-3 h-3 text-brand-blue transition-transform ${isExpanded ? 'rotate-90' : ''}`}
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -460,21 +460,21 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
                         <span>{district}</span>
-                        <span className="text-[#213448] font-normal">
+                        <span className="text-brand-navy font-normal">
                           ({projects.length} projects • {projectsByDistrict.districtAggregates[district]?.totalTxns || 0} txns)
                         </span>
                       </div>
                     </td>
                     {/* Volume Bar - Now second column */}
-                    <td className="px-2 py-1.5 border-r border-[#94B4C1]/30 bg-[#547792]/10">
+                    <td className="px-2 py-1.5 border-r border-brand-sky/30 bg-brand-blue/10">
                       <div className="flex items-center gap-1">
                         <div className="flex-1 h-3 bg-gray-100 rounded overflow-hidden">
                           <div
-                            className="h-full bg-[#547792] rounded"
+                            className="h-full bg-brand-blue rounded"
                             style={{ width: `${(projectsByDistrict.districtAggregates[district]?.totalTxns || 0) / projectsByDistrict.maxVolume * 100}%` }}
                           />
                         </div>
-                        <span className="text-[10px] text-[#547792] font-mono tabular-nums w-8 text-right">
+                        <span className="text-[10px] text-brand-blue font-mono tabular-nums w-8 text-right">
                           {projectsByDistrict.districtAggregates[district]?.totalTxns || 0}
                         </span>
                       </div>
@@ -498,7 +498,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
                           title={hasData ? `${zone}: ${districtZone.count} of ${districtTotal} transactions (${percentage.toFixed(1)}%)` : `${zone}: No data`}
                         >
                           {hasData ? (
-                            <span className="text-[11px] font-mono tabular-nums text-[#213448]">
+                            <span className="text-[11px] font-mono tabular-nums text-brand-navy">
                               {districtZone.count}
                             </span>
                           ) : (
@@ -511,14 +511,14 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
 
                   {/* Project Rows - Show when expanded */}
                   {isExpanded && projects.map((project, idx) => (
-                    <tr key={project.project_name} className={idx % 2 === 0 ? 'bg-white' : 'bg-[#EAE0CF]/10'}>
+                    <tr key={project.project_name} className={idx % 2 === 0 ? 'bg-white' : 'bg-brand-sand/10'}>
                       {/* Project Name (sticky) - Indented */}
-                      <td className={`sticky left-0 ${idx % 2 === 0 ? 'bg-white' : 'bg-[#EAE0CF]/10'} pl-8 pr-3 py-1 text-xs font-medium text-[#213448] border-r border-[#94B4C1]/30`}>
+                      <td className={`sticky left-0 ${idx % 2 === 0 ? 'bg-white' : 'bg-brand-sand/10'} pl-8 pr-3 py-1 text-xs font-medium text-brand-navy border-r border-brand-sky/30`}>
                         <span className="truncate" title={project.project_name}>{project.project_name}</span>
                       </td>
                       {/* Project Volume - Now second column */}
-                      <td className={`${idx % 2 === 0 ? 'bg-white' : 'bg-[#EAE0CF]/10'} px-2 py-1 border-r border-[#94B4C1]/30 text-center`}>
-                        <span className="text-[10px] text-[#547792] font-mono tabular-nums">
+                      <td className={`${idx % 2 === 0 ? 'bg-white' : 'bg-brand-sand/10'} px-2 py-1 border-r border-brand-sky/30 text-center`}>
+                        <span className="text-[10px] text-brand-blue font-mono tabular-nums">
                           {project.total_transactions}
                         </span>
                       </td>
@@ -538,7 +538,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
                         return (
                           <td
                             key={zone}
-                            className="text-center px-1 py-1 cursor-pointer transition-all duration-100 hover:ring-2 hover:ring-[#213448] hover:ring-inset"
+                            className="text-center px-1 py-1 cursor-pointer transition-all duration-100 hover:ring-2 hover:ring-brand-navy hover:ring-inset"
                             style={{
                               backgroundColor: bgColor,
                               opacity: isInsufficient ? 0.6 : 1
@@ -573,7 +573,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
       {/* Tooltip */}
       {hoveredCell && hoveredCell.zoneData && (
         <div
-          className="fixed z-50 bg-[#213448] text-white rounded-lg shadow-xl p-4 pointer-events-none transform -translate-x-1/2 -translate-y-full"
+          className="fixed z-50 bg-brand-navy text-white rounded-lg shadow-xl p-4 pointer-events-none transform -translate-x-1/2 -translate-y-full"
           style={{
             left: tooltipPos.x,
             top: tooltipPos.y,
@@ -581,25 +581,25 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
           }}
         >
           <div className="font-bold text-sm mb-1">{hoveredCell.project.project_name}</div>
-          <div className="text-xs text-[#94B4C1] mb-3">{hoveredCell.zone} Floor</div>
+          <div className="text-xs text-brand-sky mb-3">{hoveredCell.zone} Floor</div>
 
           <div className="space-y-1.5 text-xs">
             <div className="flex justify-between">
-              <span className="text-[#94B4C1]">Avg Velocity:</span>
+              <span className="text-brand-sky">Avg Velocity:</span>
               <span className="font-mono tabular-nums">{hoveredCell.zoneData.velocity.toFixed(2)} units/mo</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[#94B4C1]">Sample Size:</span>
+              <span className="text-brand-sky">Sample Size:</span>
               <span className="font-mono tabular-nums">n={hoveredCell.zoneData.count}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[#94B4C1]">Z-Score:</span>
+              <span className="text-brand-sky">Z-Score:</span>
               <span className="font-mono tabular-nums">
                 {hoveredCell.zoneData.z_score > 0 ? '+' : ''}{hoveredCell.zoneData.z_score.toFixed(2)}
               </span>
             </div>
-            <div className="flex justify-between pt-1 border-t border-[#547792]/30">
-              <span className="text-[#94B4C1]">Liquidity:</span>
+            <div className="flex justify-between pt-1 border-t border-brand-blue/30">
+              <span className="text-brand-sky">Liquidity:</span>
               <span className={`font-medium ${
                 hoveredCell.zoneData.z_score >= 0.25 ? 'text-blue-300' :
                 hoveredCell.zoneData.z_score <= -0.25 ? 'text-blue-100' : 'text-gray-300'
@@ -617,15 +617,15 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
       )}
 
       {/* Exclusion Note */}
-      <div className="px-6 py-2 bg-[#547792]/10 border-t border-[#94B4C1]/20">
-        <div className="flex items-center gap-2 text-xs text-[#547792]">
+      <div className="px-6 py-2 bg-brand-blue/10 border-t border-brand-sky/20">
+        <div className="flex items-center gap-2 text-xs text-brand-blue">
           <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <span>
             Excluded: Boutique projects (&lt;100 units) and projects with &lt;30 resale transactions
             {meta.exclusions?.low_transactions > 0 || meta.exclusions?.boutique_projects > 0 ? (
-              <span className="text-[#94B4C1] ml-1">
+              <span className="text-brand-sky ml-1">
                 ({meta.exclusions.boutique_projects || 0} boutique, {meta.exclusions.low_transactions || 0} low volume)
               </span>
             ) : null}
@@ -634,14 +634,14 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
       </div>
 
       {/* Footer */}
-      <div className="px-6 py-3 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30">
+      <div className="px-6 py-3 bg-brand-sand/30 border-t border-brand-sky/30">
         <div className="flex flex-wrap items-center justify-between gap-4 text-xs">
           <div className="flex items-center gap-4">
-            <span className="text-[#94B4C1]">
+            <span className="text-brand-sky">
               Based on resale transactions in the last {windowMonths} months
             </span>
           </div>
-          <div className="text-[#94B4C1]">
+          <div className="text-brand-sky">
             Darker = Faster to sell • Lighter = Slower to sell
           </div>
         </div>

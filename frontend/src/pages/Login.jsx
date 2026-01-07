@@ -44,29 +44,29 @@ function Login() {
   };
 
   return (
-    <div className="min-h-screen min-h-[100dvh] bg-[#213448] flex">
+    <div className="min-h-screen min-h-[100dvh] bg-brand-navy flex">
 
       {/* ===== LEFT PANEL - The "Value" Zone ===== */}
-      <div className="hidden lg:flex lg:w-1/2 bg-[#213448] text-[#EAE0CF] p-12 flex-col justify-between relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 bg-brand-navy text-brand-sand p-12 flex-col justify-between relative overflow-hidden">
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-5">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-[#94B4C1] rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-[#547792] rounded-full blur-3xl" />
+          <div className="absolute top-0 right-0 w-96 h-96 bg-brand-sky rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-brand-blue rounded-full blur-3xl" />
         </div>
 
         {/* Logo & Back */}
         <div className="relative z-10">
           <button
             onClick={() => navigate('/')}
-            className="flex items-center gap-2 text-[#94B4C1] hover:text-[#EAE0CF] transition-colors mb-12 group"
+            className="flex items-center gap-2 text-brand-sky hover:text-brand-sand transition-colors mb-12 group"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
             <span className="text-sm font-medium">Back to home</span>
           </button>
 
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-12 h-12 bg-[#547792]/30 rounded-xl flex items-center justify-center">
-              <LineChart className="w-7 h-7 text-[#94B4C1]" />
+            <div className="w-12 h-12 bg-brand-blue/30 rounded-xl flex items-center justify-center">
+              <LineChart className="w-7 h-7 text-brand-sky" />
             </div>
             <span className="font-bold text-2xl tracking-tight">PropAnalytics.sg</span>
           </div>
@@ -74,10 +74,10 @@ function Login() {
           <h1 className="text-4xl font-bold tracking-tight leading-tight mb-4">
             Institutional-grade analytics for
             <br />
-            <span className="text-[#94B4C1]">Singapore private property.</span>
+            <span className="text-brand-sky">Singapore private property.</span>
           </h1>
 
-          <p className="text-[#94B4C1] text-lg max-w-md">
+          <p className="text-brand-sky text-lg max-w-md">
             Make decisions using raw transaction data and current market trends.
           </p>
         </div>
@@ -90,10 +90,10 @@ function Login() {
             transition={{ delay: 0.2 }}
             className="flex items-center gap-3"
           >
-            <div className="w-10 h-10 rounded-lg bg-[#547792]/30 flex items-center justify-center">
-              <TrendingUp className="w-5 h-5 text-[#94B4C1]" />
+            <div className="w-10 h-10 rounded-lg bg-brand-blue/30 flex items-center justify-center">
+              <TrendingUp className="w-5 h-5 text-brand-sky" />
             </div>
-            <span className="text-[#EAE0CF]">103,379 transaction records</span>
+            <span className="text-brand-sand">103,379 transaction records</span>
           </motion.div>
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -101,10 +101,10 @@ function Login() {
             transition={{ delay: 0.3 }}
             className="flex items-center gap-3"
           >
-            <div className="w-10 h-10 rounded-lg bg-[#547792]/30 flex items-center justify-center">
-              <BarChart3 className="w-5 h-5 text-[#94B4C1]" />
+            <div className="w-10 h-10 rounded-lg bg-brand-blue/30 flex items-center justify-center">
+              <BarChart3 className="w-5 h-5 text-brand-sky" />
             </div>
-            <span className="text-[#EAE0CF]">Real-time market analytics</span>
+            <span className="text-brand-sand">Real-time market analytics</span>
           </motion.div>
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -112,30 +112,30 @@ function Login() {
             transition={{ delay: 0.4 }}
             className="flex items-center gap-3"
           >
-            <div className="w-10 h-10 rounded-lg bg-[#547792]/30 flex items-center justify-center">
-              <Shield className="w-5 h-5 text-[#94B4C1]" />
+            <div className="w-10 h-10 rounded-lg bg-brand-blue/30 flex items-center justify-center">
+              <Shield className="w-5 h-5 text-brand-sky" />
             </div>
-            <span className="text-[#EAE0CF]">Institutional-grade data</span>
+            <span className="text-brand-sand">Institutional-grade data</span>
           </motion.div>
         </div>
 
         {/* Social Proof - Metrics */}
-        <div className="relative z-10 pt-8 border-t border-[#547792]/30">
+        <div className="relative z-10 pt-8 border-t border-brand-blue/30">
           <div className="grid grid-cols-3 gap-6 mb-6">
             <div>
-              <div className="text-2xl font-bold text-[#EAE0CF] font-mono tabular-nums">$2.8B+</div>
-              <div className="text-xs text-[#94B4C1] uppercase tracking-wide">Property Value Analyzed</div>
+              <div className="text-2xl font-bold text-brand-sand font-mono tabular-nums">$2.8B+</div>
+              <div className="text-xs text-brand-sky uppercase tracking-wide">Property Value Analyzed</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-[#EAE0CF] font-mono tabular-nums">5 Years</div>
-              <div className="text-xs text-[#94B4C1] uppercase tracking-wide">Historical Data</div>
+              <div className="text-2xl font-bold text-brand-sand font-mono tabular-nums">5 Years</div>
+              <div className="text-xs text-brand-sky uppercase tracking-wide">Historical Data</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-[#EAE0CF] font-mono tabular-nums">28</div>
-              <div className="text-xs text-[#94B4C1] uppercase tracking-wide">Districts Covered</div>
+              <div className="text-2xl font-bold text-brand-sand font-mono tabular-nums">28</div>
+              <div className="text-xs text-brand-sky uppercase tracking-wide">Districts Covered</div>
             </div>
           </div>
-          <p className="text-sm text-[#94B4C1]">
+          <p className="text-sm text-brand-sky">
             Trusted by property investors, agents, and analysts across Singapore.
           </p>
         </div>
@@ -162,17 +162,17 @@ function Login() {
           <div className="lg:hidden mb-10">
             <button
               onClick={() => navigate('/')}
-              className="flex items-center gap-2 text-[#547792] hover:text-[#213448] transition-colors mb-6 group"
+              className="flex items-center gap-2 text-brand-blue hover:text-brand-navy transition-colors mb-6 group"
             >
               <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
               <span className="text-sm font-medium">Back to home</span>
             </button>
 
             <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-[#213448] rounded-lg flex items-center justify-center">
-                <LineChart className="w-6 h-6 text-[#EAE0CF]" />
+              <div className="w-10 h-10 bg-brand-navy rounded-lg flex items-center justify-center">
+                <LineChart className="w-6 h-6 text-brand-sand" />
               </div>
-              <span className="font-bold text-xl tracking-tight text-[#213448]">PropAnalytics.sg</span>
+              <span className="font-bold text-xl tracking-tight text-brand-navy">PropAnalytics.sg</span>
             </div>
           </div>
 
@@ -239,7 +239,7 @@ function Login() {
           <div className="mt-4 text-center">
             <button
               onClick={() => setShowEmailForm(!showEmailForm)}
-              className="text-sm text-[#547792] hover:text-[#213448] transition-colors underline underline-offset-2 decoration-[#94B4C1] hover:decoration-[#213448]"
+              className="text-sm text-brand-blue hover:text-brand-navy transition-colors underline underline-offset-2 decoration-[#94B4C1] hover:decoration-[#213448]"
             >
               Or continue with email
             </button>
@@ -258,39 +258,39 @@ function Login() {
                 <div className="mt-6 pt-6 border-t border-[#E0DCD4] space-y-4">
                   {/* Email Input */}
                   <div>
-                    <label className="block text-xs font-medium text-[#547792] uppercase tracking-wide mb-2">
+                    <label className="block text-xs font-medium text-brand-blue uppercase tracking-wide mb-2">
                       Email
                     </label>
                     <div className="relative">
-                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94B4C1]" />
+                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-sky" />
                       <input
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="you@example.com"
-                        className="w-full pl-11 pr-4 py-3 bg-white border border-[#E0DCD4] rounded-xl text-[#213448] placeholder:text-[#94B4C1] focus:outline-none focus:ring-2 focus:ring-[#547792]/30 focus:border-[#547792] transition-all"
+                        className="w-full pl-11 pr-4 py-3 bg-white border border-[#E0DCD4] rounded-xl text-brand-navy placeholder:text-brand-sky focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue transition-all"
                       />
                     </div>
                   </div>
 
                   {/* Password Input */}
                   <div>
-                    <label className="block text-xs font-medium text-[#547792] uppercase tracking-wide mb-2">
+                    <label className="block text-xs font-medium text-brand-blue uppercase tracking-wide mb-2">
                       Password
                     </label>
                     <div className="relative">
-                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94B4C1]" />
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-sky" />
                       <input
                         type={showPassword ? 'text' : 'password'}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="Enter password"
-                        className="w-full pl-11 pr-12 py-3 bg-white border border-[#E0DCD4] rounded-xl text-[#213448] placeholder:text-[#94B4C1] focus:outline-none focus:ring-2 focus:ring-[#547792]/30 focus:border-[#547792] transition-all"
+                        className="w-full pl-11 pr-12 py-3 bg-white border border-[#E0DCD4] rounded-xl text-brand-navy placeholder:text-brand-sky focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue transition-all"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-[#94B4C1] hover:text-[#547792] transition-colors"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-sky hover:text-brand-blue transition-colors"
                       >
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
@@ -300,12 +300,12 @@ function Login() {
                   {/* Email Submit Button */}
                   <button
                     disabled
-                    className="w-full py-3 bg-[#547792] text-white rounded-xl font-medium hover:bg-[#456680] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full py-3 bg-brand-blue text-white rounded-xl font-medium hover:bg-[#456680] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Continue with Email
                   </button>
 
-                  <p className="text-xs text-center text-[#94B4C1]">
+                  <p className="text-xs text-center text-brand-sky">
                     Email sign-in coming soon. Use Google for now.
                   </p>
                 </div>

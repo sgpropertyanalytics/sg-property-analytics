@@ -110,7 +110,7 @@ export function BlurredCell({
       {/* PRO badge - visible on hover */}
       <span
         className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity
-                   bg-[#213448] text-white text-[8px] font-bold px-1 py-0.5 rounded
+                   bg-brand-navy text-white text-[8px] font-bold px-1 py-0.5 rounded
                    pointer-events-none"
         aria-hidden="true"
       >

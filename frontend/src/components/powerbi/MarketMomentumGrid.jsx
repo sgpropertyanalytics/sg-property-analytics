@@ -114,8 +114,8 @@ export function MarketMomentumGrid({ saleType = SaleType.RESALE }) {
       <div className="px-3 md:px-4 py-3 border-b border-mono-muted">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>
-            <h3 className="text-sm font-semibold text-[#213448]">Median PSF Trend by District</h3>
-            <p className="text-xs text-[#547792] mt-0.5">
+            <h3 className="text-sm font-semibold text-brand-navy">Median PSF Trend by District</h3>
+            <p className="text-xs text-brand-blue mt-0.5">
               <span className="hidden sm:inline">% shows total growth from first to last quarter • Click to filter</span>
               <span className="sm:hidden">% = growth • Tap to filter</span>
             </p>
@@ -123,16 +123,16 @@ export function MarketMomentumGrid({ saleType = SaleType.RESALE }) {
           {/* Region Legend */}
           <div className="flex items-center gap-2 sm:gap-3 text-xs">
             <div className="flex items-center gap-1">
-              <div className="w-3 h-2 sm:w-4 sm:h-3 rounded bg-[#213448]" />
-              <span className="text-[#547792]">CCR</span>
+              <div className="w-3 h-2 sm:w-4 sm:h-3 rounded bg-brand-navy" />
+              <span className="text-brand-blue">CCR</span>
             </div>
             <div className="flex items-center gap-1">
-              <div className="w-3 h-2 sm:w-4 sm:h-3 rounded bg-[#547792]" />
-              <span className="text-[#547792]">RCR</span>
+              <div className="w-3 h-2 sm:w-4 sm:h-3 rounded bg-brand-blue" />
+              <span className="text-brand-blue">RCR</span>
             </div>
             <div className="flex items-center gap-1">
-              <div className="w-3 h-2 sm:w-4 sm:h-3 rounded bg-[#94B4C1]" />
-              <span className="text-[#547792]">OCR</span>
+              <div className="w-3 h-2 sm:w-4 sm:h-3 rounded bg-brand-sky" />
+              <span className="text-brand-blue">OCR</span>
             </div>
           </div>
         </div>
@@ -154,25 +154,25 @@ export function MarketMomentumGrid({ saleType = SaleType.RESALE }) {
       </div>
 
       {/* Footer with explanatory notes */}
-      <div className="px-3 md:px-4 py-2 md:py-3 bg-[#EAE0CF]/20 border-t border-[#94B4C1]/30">
+      <div className="px-3 md:px-4 py-2 md:py-3 bg-brand-sand/20 border-t border-brand-sky/30">
         <div className="flex flex-col gap-1.5 md:gap-2">
           {/* Data indicator */}
           <div className="flex flex-wrap items-center gap-x-3 md:gap-x-4 gap-y-1 text-[10px]">
-            <span className="text-[#547792] font-medium">
+            <span className="text-brand-blue font-medium">
               {isSaleType.resale(saleType) ? 'Resale Only' : isSaleType.newSale(saleType) ? 'New Sale Only' : 'All Sale Types'}
             </span>
-            <span className="text-[#94B4C1]">{ALL_DISTRICTS.length} districts</span>
+            <span className="text-brand-sky">{ALL_DISTRICTS.length} districts</span>
           </div>
 
           {/* Chart legend - simplified on mobile */}
-          <div className="flex flex-wrap items-center gap-x-3 md:gap-x-4 gap-y-1 text-[10px] text-[#547792]">
+          <div className="flex flex-wrap items-center gap-x-3 md:gap-x-4 gap-y-1 text-[10px] text-brand-blue">
             <span><strong>Line:</strong> Median PSF</span>
             <span><strong>Bars:</strong> Volume ($)</span>
             <span className="hidden sm:inline"><strong>%:</strong> Total growth</span>
           </div>
 
           {/* Additional notes - hidden on mobile */}
-          <div className="hidden sm:block text-[10px] text-[#94B4C1] space-y-0.5">
+          <div className="hidden sm:block text-[10px] text-brand-sky space-y-0.5">
             <p>Each chart has independent Y-axis scaling. Use sidebar filters to change date range or sale type.</p>
             <p className="italic">Note: D24 (Lim Chu Kang / Tengah) has no condo transactions.</p>
           </div>

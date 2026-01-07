@@ -338,20 +338,20 @@ export function ExitRiskContent() {
       <div className="p-3 md:p-4 lg:p-6">
         {/* Header */}
         <div className="mb-4 md:mb-6">
-          <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-[#213448]">
+          <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-brand-navy">
             Exit Risk Analysis
           </h1>
-          <p className="text-[#547792] text-sm mt-1">
+          <p className="text-brand-blue text-sm mt-1">
             Comprehensive exit queue and liquidity assessment for individual projects
           </p>
         </div>
 
         {/* Project Selector + Downside Protection Input */}
-        <div className="bg-card rounded-xl border border-[#94B4C1]/30 mb-6">
+        <div className="bg-card rounded-xl border border-brand-sky/30 mb-6">
           <div className="grid grid-cols-1 lg:grid-cols-2">
             {/* Left: Project Selector */}
             <div className="p-4 md:p-6">
-              <label className="block text-sm font-medium text-[#213448] mb-2">
+              <label className="block text-sm font-medium text-brand-navy mb-2">
                 Select a Project
               </label>
               <div className="relative" ref={dropdownRef}>
@@ -359,9 +359,9 @@ export function ExitRiskContent() {
                   type="button"
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   disabled={projectOptionsLoading}
-                  className="w-full px-3 py-2.5 text-sm border border-[#94B4C1]/50 rounded-lg text-left bg-[#EAE0CF]/20 focus:outline-none focus:ring-2 focus:ring-[#547792] focus:border-transparent flex items-center justify-between min-w-0"
+                  className="w-full px-3 py-2.5 text-sm border border-brand-sky/50 rounded-lg text-left bg-brand-sand/20 focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-transparent flex items-center justify-between min-w-0"
                 >
-                  <span className={selectedProject ? 'text-[#213448] truncate font-medium min-w-0' : 'text-[#94B4C1] min-w-0'}>
+                  <span className={selectedProject ? 'text-brand-navy truncate font-medium min-w-0' : 'text-brand-sky min-w-0'}>
                     {selectedProject
                       ? `${selectedProject.name} (${selectedProject.district})`
                       : projectOptionsLoading
@@ -373,14 +373,14 @@ export function ExitRiskContent() {
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); handleClearSelection(); }}
-                        className="p-1 hover:bg-[#94B4C1]/30 rounded"
+                        className="p-1 hover:bg-brand-sky/30 rounded"
                       >
-                        <svg className="w-4 h-4 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 text-brand-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
                       </button>
                     )}
-                    <svg className={`w-4 h-4 text-[#547792] transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className={`w-4 h-4 text-brand-blue transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </div>
@@ -388,20 +388,20 @@ export function ExitRiskContent() {
 
                 {/* Dropdown Panel */}
                 {isDropdownOpen && (
-                  <div className="absolute z-50 w-full mt-1 bg-white border border-[#94B4C1]/50 rounded-lg shadow-lg max-h-80 overflow-hidden">
-                    <div className="p-2 border-b border-[#94B4C1]/30">
+                  <div className="absolute z-50 w-full mt-1 bg-white border border-brand-sky/50 rounded-lg shadow-lg max-h-80 overflow-hidden">
+                    <div className="p-2 border-b border-brand-sky/30">
                       <input
                         type="text"
                         placeholder="Type to search..."
                         value={projectSearch}
                         onChange={(e) => setProjectSearch(e.target.value)}
-                        className="w-full px-3 py-2 border border-[#94B4C1]/50 rounded text-sm focus:outline-none focus:ring-1 focus:ring-[#547792] text-[#213448]"
+                        className="w-full px-3 py-2 border border-brand-sky/50 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-blue text-brand-navy"
                         autoFocus
                       />
                     </div>
                     <div className="max-h-60 overflow-y-auto">
                       {filteredProjects.length === 0 ? (
-                        <div className="px-3 py-4 text-sm text-[#94B4C1] text-center">
+                        <div className="px-3 py-4 text-sm text-brand-sky text-center">
                           {projectOptionsLoading ? 'Loading...' : 'No projects found'}
                         </div>
                       ) : (
@@ -410,17 +410,17 @@ export function ExitRiskContent() {
                             key={p.name}
                             type="button"
                             onClick={() => handleProjectSelect(p)}
-                            className={`w-full px-3 py-2 text-left text-sm hover:bg-[#EAE0CF]/50 flex justify-between items-center min-w-0 ${
-                              selectedProject?.name === p.name ? 'bg-[#EAE0CF]/30 text-[#213448] font-medium' : 'text-[#547792]'
+                            className={`w-full px-3 py-2 text-left text-sm hover:bg-brand-sand/50 flex justify-between items-center min-w-0 ${
+                              selectedProject?.name === p.name ? 'bg-brand-sand/30 text-brand-navy font-medium' : 'text-brand-blue'
                             }`}
                           >
                             <span className="truncate min-w-0">{p.name}</span>
-                            <span className="text-xs text-[#94B4C1] ml-2 flex-shrink-0">{p.district}</span>
+                            <span className="text-xs text-brand-sky ml-2 flex-shrink-0">{p.district}</span>
                           </button>
                         ))
                       )}
                       {filteredProjects.length > 100 && (
-                        <div className="px-3 py-2 text-xs text-[#94B4C1] text-center border-t border-[#94B4C1]/30">
+                        <div className="px-3 py-2 text-xs text-brand-sky text-center border-t border-brand-sky/30">
                           +{filteredProjects.length - 100} more projects
                         </div>
                       )}
@@ -430,19 +430,19 @@ export function ExitRiskContent() {
               </div>
 
               {!projectOptionsLoading && projectOptions.length > 0 && (
-                <p className="text-xs text-[#94B4C1] mt-2">
+                <p className="text-xs text-brand-sky mt-2">
                   {projectOptions.length.toLocaleString()} projects available
                 </p>
               )}
             </div>
 
             {/* Right: Downside Protection Input */}
-            <div className="lg:border-l lg:border-[#94B4C1]/30 bg-[#547792]/[0.03] p-4 md:p-6">
+            <div className="lg:border-l lg:border-brand-sky/30 bg-brand-blue/[0.03] p-4 md:p-6">
               <div className="mb-3">
-                <h2 className="text-sm font-semibold text-[#213448] mb-1">
+                <h2 className="text-sm font-semibold text-brand-navy mb-1">
                   Downside Protection Analysis
                 </h2>
-                <p className="text-xs text-[#547792]">
+                <p className="text-xs text-brand-blue">
                   See where your unit PSF sits relative to historical price floors
                 </p>
               </div>
@@ -454,7 +454,7 @@ export function ExitRiskContent() {
               />
 
               {!selectedProject && (
-                <p className="text-xs text-[#94B4C1] mt-2 italic">
+                <p className="text-xs text-brand-sky mt-2 italic">
                   Select a project first to analyze downside protection
                 </p>
               )}
@@ -474,16 +474,16 @@ export function ExitRiskContent() {
 
         {/* Empty State */}
         {!selectedProject && !loading && (
-          <div className="bg-card rounded-xl border border-[#94B4C1]/30 p-8 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#EAE0CF]/50 flex items-center justify-center">
-              <svg className="w-8 h-8 text-[#547792]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="bg-card rounded-xl border border-brand-sky/30 p-8 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-brand-sand/50 flex items-center justify-center">
+              <svg className="w-8 h-8 text-brand-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
-            <h2 className="text-lg font-semibold text-[#213448] mb-2">
+            <h2 className="text-lg font-semibold text-brand-navy mb-2">
               Select a Project to Analyze
             </h2>
-            <p className="text-sm text-[#547792] max-w-md mx-auto">
+            <p className="text-sm text-brand-blue max-w-md mx-auto">
               Search for any condominium project with resale transaction history to view liquidity assessment, turnover metrics, and downside protection analysis.
             </p>
           </div>
@@ -497,15 +497,15 @@ export function ExitRiskContent() {
               <ResaleMetricsCards loading={true} compact />
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-              <div className="bg-card rounded-xl border border-[#94B4C1]/30 overflow-hidden">
+              <div className="bg-card rounded-xl border border-brand-sky/30 overflow-hidden">
                 <FrostOverlay height={350} showSpinner showProgress />
               </div>
-              <div className="bg-card rounded-xl border border-[#94B4C1]/30 overflow-hidden">
+              <div className="bg-card rounded-xl border border-brand-sky/30 overflow-hidden">
                 <FrostOverlay height={400} showSpinner showProgress />
               </div>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-              <div className="bg-card rounded-xl border border-[#94B4C1]/30 overflow-hidden">
+              <div className="bg-card rounded-xl border border-brand-sky/30 overflow-hidden">
                 <FrostOverlay height={400} showSpinner showProgress />
               </div>
               <ExitRiskDashboard loading={true} />
@@ -547,12 +547,12 @@ export function ExitRiskContent() {
                     compact
                   />
                 ) : (
-                  <div className="bg-card rounded-xl border border-[#94B4C1]/30 p-6 flex flex-col">
-                    <h3 className="text-sm font-semibold text-[#213448] uppercase tracking-wide mb-4">
+                  <div className="bg-card rounded-xl border border-brand-sky/30 p-6 flex flex-col">
+                    <h3 className="text-sm font-semibold text-brand-navy uppercase tracking-wide mb-4">
                       Resale Activity Metrics
                     </h3>
                     <div className="flex-1 flex items-center justify-center">
-                      <p className="text-sm text-[#94B4C1] text-center">
+                      <p className="text-sm text-brand-sky text-center">
                         No resale data available yet
                       </p>
                     </div>
@@ -637,20 +637,20 @@ export function ExitRiskContent() {
 
             {/* Data Quality Notes */}
             {normalizedExitQueue.dataQuality?.warnings?.length > 0 && (
-              <div className="bg-[#EAE0CF]/30 rounded-xl p-4 border border-[#94B4C1]/30">
-                <h4 className="text-xs font-medium text-[#547792] uppercase tracking-wide mb-2">
+              <div className="bg-brand-sand/30 rounded-xl p-4 border border-brand-sky/30">
+                <h4 className="text-xs font-medium text-brand-blue uppercase tracking-wide mb-2">
                   Data Notes
                 </h4>
-                <ul className="text-xs text-[#547792] space-y-1">
+                <ul className="text-xs text-brand-blue space-y-1">
                   {normalizedExitQueue.dataQuality.warnings.map((warning, i) => (
                     <li key={i} className="flex items-start gap-2">
-                      <span className="text-[#94B4C1]">-</span>
+                      <span className="text-brand-sky">-</span>
                       <span>{warning}</span>
                     </li>
                   ))}
                 </ul>
                 {normalizedExitQueue.dataQuality.sampleWindowMonths > 0 && (
-                  <p className="text-xs text-[#94B4C1] mt-2">
+                  <p className="text-xs text-brand-sky mt-2">
                     Data spans {normalizedExitQueue.dataQuality.sampleWindowMonths} months of resale history.
                   </p>
                 )}

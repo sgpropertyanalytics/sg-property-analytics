@@ -97,9 +97,9 @@ const REGIONS = [
  */
 function SectionCard({ title, children, id }) {
   return (
-    <div id={id} className="min-w-0 bg-white rounded-xl border border-[#94B4C1]/30 shadow-sm overflow-hidden scroll-mt-4">
-      <div className="px-4 py-3 bg-[#EAE0CF]/30 border-b border-[#94B4C1]/20">
-        <h2 className="text-base sm:text-lg font-semibold text-[#213448]">{title}</h2>
+    <div id={id} className="min-w-0 bg-white rounded-xl border border-brand-sky/30 shadow-sm overflow-hidden scroll-mt-4">
+      <div className="px-4 py-3 bg-brand-sand/30 border-b border-brand-sky/20">
+        <h2 className="text-base sm:text-lg font-semibold text-brand-navy">{title}</h2>
       </div>
       <div className="p-3 sm:p-4">{children}</div>
     </div>
@@ -113,11 +113,11 @@ function DataTable({ headers, rows, className = '' }) {
       <div className={`hidden sm:block overflow-x-auto max-w-full ${className}`}>
         <table className="min-w-[600px] w-full text-sm">
           <thead>
-            <tr className="border-b border-[#94B4C1]/30">
+            <tr className="border-b border-brand-sky/30">
               {headers.map((header, i) => (
                 <th
                   key={i}
-                  className="px-3 py-2 text-left font-semibold text-[#213448] whitespace-nowrap"
+                  className="px-3 py-2 text-left font-semibold text-brand-navy whitespace-nowrap"
                 >
                   {header}
                 </th>
@@ -126,9 +126,9 @@ function DataTable({ headers, rows, className = '' }) {
           </thead>
           <tbody>
             {rows.map((row, i) => (
-              <tr key={i} className="border-b border-[#94B4C1]/20 last:border-0">
+              <tr key={i} className="border-b border-brand-sky/20 last:border-0">
                 {row.map((cell, j) => (
-                  <td key={j} className="px-3 py-2 text-[#547792] break-words">
+                  <td key={j} className="px-3 py-2 text-brand-blue break-words">
                     {cell}
                   </td>
                 ))}
@@ -141,13 +141,13 @@ function DataTable({ headers, rows, className = '' }) {
       {/* Mobile: card view */}
       <div className={`sm:hidden space-y-2 ${className}`}>
         {rows.map((row, i) => (
-          <div key={i} className="p-3 bg-white rounded-lg border border-[#94B4C1]/20">
+          <div key={i} className="p-3 bg-white rounded-lg border border-brand-sky/20">
             {row.map((cell, j) => (
               <div key={j} className={j < row.length - 1 ? 'mb-2' : ''}>
-                <dt className="text-xs font-semibold text-[#213448] mb-0.5">
+                <dt className="text-xs font-semibold text-brand-navy mb-0.5">
                   {headers[j]}
                 </dt>
-                <dd className="text-sm text-[#547792]">{cell}</dd>
+                <dd className="text-sm text-brand-blue">{cell}</dd>
               </div>
             ))}
           </div>
@@ -191,7 +191,7 @@ export function MethodologyContent() {
         <div className="space-y-6 mt-6">
           {/* Bedroom Classification */}
           <SectionCard title="Bedroom Classification">
-            <p className="text-sm text-[#547792] mb-4">
+            <p className="text-sm text-brand-blue mb-4">
               URA data does not include bedroom count. We estimate bedroom types based on unit floor
               area (sqft) using a three-tier classification system that accounts for changing unit
               sizes over time.
@@ -199,14 +199,14 @@ export function MethodologyContent() {
 
             <div className="space-y-4">
               {Object.entries(BEDROOM_THRESHOLDS).map(([key, tier]) => (
-                <div key={key} className="bg-[#EAE0CF]/20 rounded-lg p-3">
+                <div key={key} className="bg-brand-sand/20 rounded-lg p-3">
                   <div className="flex flex-wrap items-baseline gap-2 mb-2">
-                    <span className="font-semibold text-[#213448] text-sm sm:text-base">{tier.name}</span>
-                    <span className="text-xs px-2 py-0.5 bg-[#547792]/10 text-[#547792] rounded">
+                    <span className="font-semibold text-brand-navy text-sm sm:text-base">{tier.name}</span>
+                    <span className="text-xs px-2 py-0.5 bg-brand-blue/10 text-brand-blue rounded">
                       {tier.date}
                     </span>
                   </div>
-                  <p className="text-xs sm:text-sm text-[#547792] mb-3">{tier.description}</p>
+                  <p className="text-xs sm:text-sm text-brand-blue mb-3">{tier.description}</p>
                   <DataTable
                     headers={['Bedroom Type', 'Floor Area Range']}
                     rows={tier.thresholds.map((t) => [t.bedroom, t.range])}
@@ -226,7 +226,7 @@ export function MethodologyContent() {
 
           {/* Floor Level Classification */}
           <SectionCard title="Floor Level Classification">
-            <p className="text-sm text-[#547792] mb-4">
+            <p className="text-sm text-brand-blue mb-4">
               Units are classified into floor level tiers based on the floor number. Higher floors
               typically command a premium due to views, privacy, and reduced noise.
             </p>
@@ -238,7 +238,7 @@ export function MethodologyContent() {
 
           {/* Property Age Buckets */}
           <SectionCard title="Property Age Classification">
-            <p className="text-sm text-[#547792] mb-4">
+            <p className="text-sm text-brand-blue mb-4">
               Properties are categorized by age to help compare similar market segments. Age is
               calculated from the project&apos;s TOP (Temporary Occupation Permit) date.
             </p>
@@ -257,7 +257,7 @@ export function MethodologyContent() {
 
           {/* Market Regions */}
           <SectionCard title="Market Regions (URA Segments)">
-            <p className="text-sm text-[#547792] mb-4">
+            <p className="text-sm text-brand-blue mb-4">
               Singapore&apos;s private residential market is divided into three regions by the Urban
               Redevelopment Authority (URA). These segments reflect location value and pricing
               tiers.
@@ -266,7 +266,7 @@ export function MethodologyContent() {
               {REGIONS.map((region) => (
                 <div
                   key={region.code}
-                  className={`bg-[#EAE0CF]/20 rounded-lg p-3 border-l-4 ${
+                  className={`bg-brand-sand/20 rounded-lg p-3 border-l-4 ${
                     region.code === 'CCR'
                       ? 'border-l-[#213448]'
                       : region.code === 'RCR'
@@ -278,24 +278,24 @@ export function MethodologyContent() {
                     <span
                       className={`px-2 py-0.5 rounded text-xs font-semibold ${
                         region.code === 'CCR'
-                          ? 'bg-[#213448] text-white'
+                          ? 'bg-brand-navy text-white'
                           : region.code === 'RCR'
-                            ? 'bg-[#547792] text-white'
-                            : 'bg-[#94B4C1] text-[#213448]'
+                            ? 'bg-brand-blue text-white'
+                            : 'bg-brand-sky text-brand-navy'
                       }`}
                     >
                       {region.code}
                     </span>
-                    <span className="font-semibold text-[#213448] text-sm sm:text-base">{region.name}</span>
+                    <span className="font-semibold text-brand-navy text-sm sm:text-base">{region.name}</span>
                   </div>
-                  <p className="text-xs sm:text-sm text-[#547792] mb-2">{region.description}</p>
+                  <p className="text-xs sm:text-sm text-brand-blue mb-2">{region.description}</p>
                   <div className="text-xs sm:text-sm">
-                    <span className="text-[#547792]">Districts: </span>
-                    <span className="text-[#213448] font-medium">{region.districts.join(', ')}</span>
+                    <span className="text-brand-blue">Districts: </span>
+                    <span className="text-brand-navy font-medium">{region.districts.join(', ')}</span>
                   </div>
                   <div className="text-xs sm:text-sm mt-1">
-                    <span className="text-[#547792]">Areas: </span>
-                    <span className="text-[#213448]">{region.areas}</span>
+                    <span className="text-brand-blue">Areas: </span>
+                    <span className="text-brand-navy">{region.areas}</span>
                   </div>
                 </div>
               ))}
@@ -305,33 +305,33 @@ export function MethodologyContent() {
           {/* Key Metrics */}
           <SectionCard title="Key Metrics Explained">
             <div className="space-y-3">
-              <div className="p-3 bg-[#EAE0CF]/20 rounded-lg">
-                <h4 className="font-semibold text-[#213448] text-sm sm:text-base mb-1">PSF ($ per square foot)</h4>
-                <p className="text-xs sm:text-sm text-[#547792]">
+              <div className="p-3 bg-brand-sand/20 rounded-lg">
+                <h4 className="font-semibold text-brand-navy text-sm sm:text-base mb-1">PSF ($ per square foot)</h4>
+                <p className="text-xs sm:text-sm text-brand-blue">
                   Transaction price divided by floor area in square feet. The primary metric for
                   comparing property values across different unit sizes.
                 </p>
               </div>
-              <div className="p-3 bg-[#EAE0CF]/20 rounded-lg">
-                <h4 className="font-semibold text-[#213448] text-sm sm:text-base mb-1">Median vs Average</h4>
-                <p className="text-xs sm:text-sm text-[#547792]">
+              <div className="p-3 bg-brand-sand/20 rounded-lg">
+                <h4 className="font-semibold text-brand-navy text-sm sm:text-base mb-1">Median vs Average</h4>
+                <p className="text-xs sm:text-sm text-brand-blue">
                   We primarily use <strong>median</strong> values as they are more robust to
                   outliers. A few extremely high or low transactions can skew averages, but medians
                   represent the &quot;typical&quot; transaction better.
                 </p>
               </div>
-              <div className="p-3 bg-[#EAE0CF]/20 rounded-lg">
-                <h4 className="font-semibold text-[#213448] text-sm sm:text-base mb-1">Liquidity Score</h4>
-                <p className="text-xs sm:text-sm text-[#547792]">
+              <div className="p-3 bg-brand-sand/20 rounded-lg">
+                <h4 className="font-semibold text-brand-navy text-sm sm:text-base mb-1">Liquidity Score</h4>
+                <p className="text-xs sm:text-sm text-brand-blue">
                   A composite score (0-100) measuring how easily you can exit a property. Combines:
                   Exit Safety (60%) - velocity, breadth, concentration; and Market Health (40%) -
                   volume, diversity, stability. Based on <strong>resale only</strong> to measure
                   organic demand.
                 </p>
               </div>
-              <div className="p-3 bg-[#EAE0CF]/20 rounded-lg">
-                <h4 className="font-semibold text-[#213448] text-sm sm:text-base mb-1">Outlier Exclusion</h4>
-                <p className="text-xs sm:text-sm text-[#547792]">
+              <div className="p-3 bg-brand-sand/20 rounded-lg">
+                <h4 className="font-semibold text-brand-navy text-sm sm:text-base mb-1">Outlier Exclusion</h4>
+                <p className="text-xs sm:text-sm text-brand-blue">
                   Transactions with PSF values more than 3 standard deviations from the mean are
                   flagged as outliers and excluded from aggregate calculations to prevent
                   distortion.
@@ -343,29 +343,29 @@ export function MethodologyContent() {
           {/* Data Sources */}
           <SectionCard title="Data Sources">
             <div className="space-y-3">
-              <div className="flex items-start gap-3 p-3 bg-[#EAE0CF]/20 rounded-lg">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-[#213448] flex items-center justify-center flex-shrink-0">
+              <div className="flex items-start gap-3 p-3 bg-brand-sand/20 rounded-lg">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-brand-navy flex items-center justify-center flex-shrink-0">
                   <span className="text-white text-xs font-bold">URA</span>
                 </div>
                 <div className="min-w-0">
-                  <h4 className="font-semibold text-[#213448] text-sm sm:text-base">
+                  <h4 className="font-semibold text-brand-navy text-sm sm:text-base">
                     Urban Redevelopment Authority
                   </h4>
-                  <p className="text-xs sm:text-sm text-[#547792] mt-0.5">
+                  <p className="text-xs sm:text-sm text-brand-blue mt-0.5">
                     Primary source for private residential transaction data. Updated monthly with
                     caveats filed with the Singapore Land Authority.
                   </p>
                 </div>
               </div>
-              <div className="flex items-start gap-3 p-3 bg-[#EAE0CF]/20 rounded-lg">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-[#547792] flex items-center justify-center flex-shrink-0">
+              <div className="flex items-start gap-3 p-3 bg-brand-sand/20 rounded-lg">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-brand-blue flex items-center justify-center flex-shrink-0">
                   <span className="text-white text-xs font-bold">HDB</span>
                 </div>
                 <div className="min-w-0">
-                  <h4 className="font-semibold text-[#213448] text-sm sm:text-base">
+                  <h4 className="font-semibold text-brand-navy text-sm sm:text-base">
                     Housing & Development Board
                   </h4>
-                  <p className="text-xs sm:text-sm text-[#547792] mt-0.5">
+                  <p className="text-xs sm:text-sm text-brand-blue mt-0.5">
                     Source for HDB resale transaction data (not included in this application -
                     private condos only).
                   </p>
@@ -374,7 +374,7 @@ export function MethodologyContent() {
             </div>
 
             {/* Dynamic Database Stats */}
-            <div className="mt-4 p-4 bg-[#213448] rounded-lg text-white">
+            <div className="mt-4 p-4 bg-brand-navy rounded-lg text-white">
               <h4 className="font-semibold text-sm sm:text-base mb-3 flex items-center gap-2">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
@@ -427,7 +427,7 @@ export function MethodologyContent() {
 
           {/* Codebase Statistics */}
           <SectionCard title="Codebase Statistics">
-            <p className="text-sm text-[#547792] mb-4">
+            <p className="text-sm text-brand-blue mb-4">
               Track the growth and evolution of the application codebase over time.
               This chart shows lines of code at different points in the development history.
             </p>
@@ -436,7 +436,7 @@ export function MethodologyContent() {
 
           {/* Disclaimers */}
           <SectionCard title="Disclaimers">
-            <div className="space-y-2 text-xs sm:text-sm text-[#547792]">
+            <div className="space-y-2 text-xs sm:text-sm text-brand-blue">
               <p>
                 This application provides data analytics and insights for informational purposes
                 only. It does not constitute financial, investment, or real estate advice.

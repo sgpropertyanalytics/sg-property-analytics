@@ -12,15 +12,15 @@ import { transformGrowthDumbbellSeries, logFetchDebug } from '../../adapters';
 
 // Region header colors (matching micro-charts)
 const REGION_HEADER_BG = {
-  CCR: 'bg-[#213448]',
-  RCR: 'bg-[#547792]',
-  OCR: 'bg-[#94B4C1]',
+  CCR: 'bg-brand-navy',
+  RCR: 'bg-brand-blue',
+  OCR: 'bg-brand-sky',
 };
 
 const REGION_HEADER_TEXT = {
   CCR: 'text-white',
   RCR: 'text-white',
-  OCR: 'text-[#213448]',
+  OCR: 'text-brand-navy',
 };
 
 
@@ -209,10 +209,10 @@ function GrowthDumbbellChartBase({ saleType = SaleType.RESALE, enabled = true })
       <div className="px-4 py-3 border-b border-mono-muted">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>
-            <h3 className="text-sm font-semibold text-[#213448]">
+            <h3 className="text-sm font-semibold text-brand-navy">
               Dumbbell Chart of Median PSF Growth %
             </h3>
-            <p className="text-xs text-[#547792] mt-0.5">
+            <p className="text-xs text-brand-blue mt-0.5">
               Comparing {startQuarter} (earliest) → {endQuarter} (latest) • Click headers to sort
             </p>
           </div>
@@ -220,11 +220,11 @@ function GrowthDumbbellChartBase({ saleType = SaleType.RESALE, enabled = true })
           <div className="flex items-center gap-4 text-xs">
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-3 rounded-full bg-slate-300 border border-white shadow-sm" />
-              <span className="text-[#547792]">Earliest Quarter</span>
+              <span className="text-brand-blue">Earliest Quarter</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3.5 h-3.5 rounded-full bg-emerald-500 border border-white shadow-sm" />
-              <span className="text-[#547792]">Latest Quarter</span>
+              <span className="text-brand-blue">Latest Quarter</span>
             </div>
           </div>
         </div>

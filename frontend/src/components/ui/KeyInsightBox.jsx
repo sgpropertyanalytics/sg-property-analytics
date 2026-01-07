@@ -42,14 +42,14 @@ export function KeyInsightBox({
     default: 'bg-gradient-to-r from-[#213448]/5 to-[#547792]/5',
     positive: 'bg-gradient-to-r from-green-50 to-emerald-50',
     warning: 'bg-gradient-to-r from-amber-50 to-yellow-50',
-    info: 'bg-[#EAE0CF]/30',
+    info: 'bg-brand-sand/30',
   };
 
   const iconColors = {
-    default: 'bg-[#547792]/20 text-[#547792]',
+    default: 'bg-brand-blue/20 text-brand-blue',
     positive: 'bg-green-100 text-green-600',
     warning: 'bg-amber-100 text-amber-600',
-    info: 'bg-[#94B4C1]/30 text-[#547792]',
+    info: 'bg-brand-sky/30 text-brand-blue',
   };
 
   // Default icons per variant
@@ -112,7 +112,7 @@ export function KeyInsightBox({
   const { getReferenceProps, getFloatingProps } = useInteractions([hover, focus, dismiss, role]);
 
   return (
-    <div className={`${padding} ${variants[variant]} border-b border-[#94B4C1]/30 ${className}`}>
+    <div className={`${padding} ${variants[variant]} border-b border-brand-sky/30 ${className}`}>
       <div className={`flex items-start ${gap}`}>
         {tooltip ? (
           <>
@@ -129,7 +129,7 @@ export function KeyInsightBox({
                   ref={refs.setFloating}
                   style={floatingStyles}
                   {...getFloatingProps()}
-                  className="z-[9999] w-72 max-w-[calc(100vw-2rem)] p-3 bg-[#213448] text-white text-xs leading-relaxed rounded shadow-lg whitespace-pre-line"
+                  className="z-[9999] w-72 max-w-[calc(100vw-2rem)] p-3 bg-brand-navy text-white text-xs leading-relaxed rounded shadow-lg whitespace-pre-line"
                 >
                   {tooltip}
                 </div>
@@ -143,9 +143,9 @@ export function KeyInsightBox({
         )}
         <div className="flex-1 min-w-0">
           {title && (
-            <h4 className={`font-semibold text-[#213448] ${titleSize} mb-0.5`}>{title}</h4>
+            <h4 className={`font-semibold text-brand-navy ${titleSize} mb-0.5`}>{title}</h4>
           )}
-          <div className={`${contentSize} text-[#547792] leading-relaxed`}>{children}</div>
+          <div className={`${contentSize} text-brand-blue leading-relaxed`}>{children}</div>
         </div>
       </div>
     </div>

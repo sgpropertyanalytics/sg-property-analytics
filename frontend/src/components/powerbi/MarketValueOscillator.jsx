@@ -358,10 +358,10 @@ function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawDat
           {/* Header */}
           <div className="px-3 py-2.5 md:px-4 md:py-3 border-b border-mono-muted shrink-0">
             <div className="min-w-0">
-              <h3 className="font-semibold text-[#213448] text-sm md:text-base">
+              <h3 className="font-semibold text-brand-navy text-sm md:text-base">
                 Market Value Oscillator
               </h3>
-              <p className="text-xs text-[#547792] mt-0.5">
+              <p className="text-xs text-brand-blue mt-0.5">
                 Z-Score normalized spread analysis ({TIME_LABELS[timeGrouping]})
               </p>
             </div>
@@ -431,7 +431,7 @@ function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawDat
           </div>
 
           {/* Footer */}
-          <div className="shrink-0 h-11 px-4 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 flex items-center justify-end gap-3 text-xs text-[#547792]">
+          <div className="shrink-0 h-11 px-4 bg-brand-sand/30 border-t border-brand-sky/30 flex items-center justify-end gap-3 text-xs text-brand-blue">
             <span className="truncate">{data.length} periods</span>
           </div>
         </div>

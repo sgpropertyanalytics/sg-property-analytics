@@ -200,13 +200,13 @@ export function HotProjectsTable({
   ];
 
   return (
-    <div id="hot-projects-table" className={`bg-card ${compact ? '' : 'rounded-lg border border-[#94B4C1]/50'} overflow-hidden`}>
+    <div id="hot-projects-table" className={`bg-card ${compact ? '' : 'rounded-lg border border-brand-sky/50'} overflow-hidden`}>
       {/* Header - conditionally shown */}
       {showHeader && (
-        <div className="px-4 py-3 border-b border-[#94B4C1]/30 flex items-center justify-between">
+        <div className="px-4 py-3 border-b border-brand-sky/30 flex items-center justify-between">
           <div>
-            <h3 className="font-semibold text-[#213448]">Active New Sales</h3>
-            <p className="text-xs text-[#547792]">
+            <h3 className="font-semibold text-brand-navy">Active New Sales</h3>
+            <p className="text-xs text-brand-blue">
               {isLoading ? 'Loading...' : `${safeData.length} launched projects with sales activity`}
             </p>
           </div>
@@ -214,7 +214,7 @@ export function HotProjectsTable({
             <button
               type="button"
               onClick={(e) => { e.preventDefault(); handleRefresh(); }}
-              className="p-1.5 text-[#547792] hover:text-[#213448] hover:bg-[#EAE0CF] rounded transition-colors"
+              className="p-1.5 text-brand-blue hover:text-brand-navy hover:bg-brand-sand rounded transition-colors"
               title="Refresh data"
               disabled={isLoading}
             >
@@ -233,7 +233,7 @@ export function HotProjectsTable({
         ) : isLoading ? (
           <FrostOverlay height={height - 60} showSpinner showProgress />
         ) : sortedData.length === 0 ? (
-          <div className="text-center py-8 text-[#547792] text-sm">
+          <div className="text-center py-8 text-brand-blue text-sm">
             No active projects found.
           </div>
         ) : (
@@ -242,7 +242,7 @@ export function HotProjectsTable({
               <div className="flex justify-between items-start gap-3">
                 {/* Left: Project info */}
                 <div className="min-w-0 flex-1">
-                  <div className="font-medium text-[#213448] truncate">
+                  <div className="font-medium text-brand-navy truncate">
                     <BlurredProject
                       value={project.project_name}
                       masked={project.project_name_masked}
@@ -250,10 +250,10 @@ export function HotProjectsTable({
                       source="hot-projects"
                     />
                   </div>
-                  <div className="text-xs text-[#547792] mt-0.5">
+                  <div className="text-xs text-brand-blue mt-0.5">
                     {project.district || '-'} • {project.developer || '-'}
                   </div>
-                  <div className="text-xs text-[#547792] mt-0.5 flex items-center gap-2">
+                  <div className="text-xs text-brand-blue mt-0.5 flex items-center gap-2">
                     <span>{project.units_sold || 0}/{project.total_units || '-'} sold</span>
                     {project.percent_sold !== null && project.percent_sold !== undefined && (
                       <span className={`px-1.5 py-0.5 text-[10px] font-semibold rounded ${getPercentClass(project.percent_sold)}`}>
@@ -272,13 +272,13 @@ export function HotProjectsTable({
                 </div>
                 {/* Right: Date, Segment, Price */}
                 <div className="flex-shrink-0 text-right">
-                  <div className="text-xs text-[#547792]">
+                  <div className="text-xs text-brand-blue">
                     {project.first_new_sale ? new Date(project.first_new_sale).toLocaleDateString('en-SG', { year: 'numeric', month: 'short' }) : '-'}
                   </div>
                   <span className={`inline-block mt-1 px-1.5 py-0.5 text-[10px] font-medium rounded ${getRegionBadgeClass(project.market_segment)}`}>
                     {project.market_segment || '-'}
                   </span>
-                  <div className="text-xs text-[#213448] font-medium mt-1">
+                  <div className="text-xs text-brand-navy font-medium mt-1">
                     <SuppressedValue
                       value={project.median_psf}
                       suppressed={project.suppressed || (project.units_sold || 0) < 15}

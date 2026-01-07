@@ -122,10 +122,10 @@ function SupplyWaterfallChartBase({
         {/* Header */}
         <div className="px-3 py-2.5 md:px-4 md:py-3 border-b border-mono-muted shrink-0">
           <div className="min-w-0">
-            <h3 className="font-semibold text-[#213448] text-sm md:text-base">
+            <h3 className="font-semibold text-brand-navy text-sm md:text-base">
               {chartTitle}
             </h3>
-            <p className="text-xs text-[#547792] mt-0.5">
+            <p className="text-xs text-brand-blue mt-0.5">
               {chartData?.displayMeta?.subtitle || 'Supply pipeline breakdown'}
             </p>
           </div>
@@ -133,21 +133,21 @@ function SupplyWaterfallChartBase({
 
         {/* Legend */}
         {view === 'regional' && (
-          <div className="px-3 py-2 bg-[#EAE0CF]/20 border-b border-[#94B4C1]/20 shrink-0">
+          <div className="px-3 py-2 bg-brand-sand/20 border-b border-brand-sky/20 shrink-0">
             <div className="flex flex-wrap items-center gap-4 text-xs">
-              <span className="text-[#547792] font-medium">Supply:</span>
+              <span className="text-brand-blue font-medium">Supply:</span>
               <div className="flex items-center gap-1.5">
                 <div className="w-4 h-3 rounded" style={{ backgroundColor: '#6b4226' }} />
-                <span className="text-[#213448]">Unsold Inventory</span>
+                <span className="text-brand-navy">Unsold Inventory</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-4 h-3 rounded" style={{ backgroundColor: '#9c6644' }} />
-                <span className="text-[#213448]">Upcoming Launches</span>
+                <span className="text-brand-navy">Upcoming Launches</span>
               </div>
               {includeGls && (
                 <div className="flex items-center gap-1.5">
                   <div className="w-4 h-3 rounded" style={{ backgroundColor: '#c4a77d' }} />
-                  <span className="text-[#213448]">GLS Pipeline</span>
+                  <span className="text-brand-navy">GLS Pipeline</span>
                 </div>
               )}
             </div>
@@ -163,7 +163,7 @@ function SupplyWaterfallChartBase({
               options={chartOptions}
             />
           ) : (
-            <div className="flex items-center justify-center h-full text-[#547792]">
+            <div className="flex items-center justify-center h-full text-brand-blue">
               <div className="text-center">
                 <p className="text-sm">No supply data available</p>
                 <p className="text-xs mt-1">Try adjusting the launch year</p>
@@ -173,7 +173,7 @@ function SupplyWaterfallChartBase({
         </ChartSlot>
 
         {/* Footer */}
-        <div className="shrink-0 h-11 px-4 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 flex items-center justify-between gap-3 text-xs text-[#547792]">
+        <div className="shrink-0 h-11 px-4 bg-brand-sand/30 border-t border-brand-sky/30 flex items-center justify-between gap-3 text-xs text-brand-blue">
           <span className="truncate min-w-0 flex-1">
             {view === 'district'
               ? `Showing ${selectedRegion} districts`

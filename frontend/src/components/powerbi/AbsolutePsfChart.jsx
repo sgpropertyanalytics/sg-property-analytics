@@ -268,10 +268,10 @@ function AbsolutePsfChartBase({ height = 300, saleType = null, sharedData = null
         <div className="px-3 py-2.5 md:px-4 md:py-3 border-b border-mono-muted shrink-0">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <h3 className="font-semibold text-[#213448] text-sm md:text-base">
+              <h3 className="font-semibold text-brand-navy text-sm md:text-base">
                 Absolute PSF by Region
               </h3>
-              <p className="text-xs text-[#547792] mt-0.5">
+              <p className="text-xs text-brand-blue mt-0.5">
                 Median PSF trend ({TIME_LABELS[timeGrouping]}) • Values show latest {TIME_LABELS[timeGrouping].toLowerCase()}
               </p>
             </div>
@@ -318,7 +318,7 @@ function AbsolutePsfChartBase({ height = 300, saleType = null, sharedData = null
         </ChartSlot>
 
         {/* Footer */}
-        <div className="shrink-0 h-11 px-4 bg-[#EAE0CF]/30 border-t border-[#94B4C1]/30 flex items-center justify-between gap-3 text-xs text-[#547792]">
+        <div className="shrink-0 h-11 px-4 bg-brand-sand/30 border-t border-brand-sky/30 flex items-center justify-between gap-3 text-xs text-brand-blue">
           <span className="truncate">{data.length} periods</span>
           <span className="text-[10px]">
             {latestData.counts

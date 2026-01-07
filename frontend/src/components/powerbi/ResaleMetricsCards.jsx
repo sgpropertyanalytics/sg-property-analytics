@@ -32,23 +32,23 @@ const getZoneLabel = (zone) => {
 // Single metric card with optional trend indicator
 function MetricCard({ label, value, subtext, zone = 'default', isUnavailable = false }) {
   const colorClasses = {
-    default: 'bg-[#EAE0CF]/30',
+    default: 'bg-brand-sand/30',
     low: 'bg-amber-50 border border-amber-200',
     healthy: 'bg-emerald-50 border border-emerald-200',
     high: 'bg-red-50 border border-red-200',
-    unknown: 'bg-[#EAE0CF]/30',
+    unknown: 'bg-brand-sand/30',
   };
 
   return (
     <div className={`rounded-lg p-4 ${colorClasses[zone] || colorClasses.default}`}>
-      <p className="text-xs font-medium text-[#547792] uppercase tracking-wide mb-1">
+      <p className="text-xs font-medium text-brand-blue uppercase tracking-wide mb-1">
         {label}
       </p>
-      <p className={`text-2xl font-semibold ${isUnavailable ? 'text-[#94B4C1]' : 'text-[#213448]'}`}>
+      <p className={`text-2xl font-semibold ${isUnavailable ? 'text-brand-sky' : 'text-brand-navy'}`}>
         {value}
       </p>
       {subtext && (
-        <p className="text-xs text-[#547792] mt-1">
+        <p className="text-xs text-brand-blue mt-1">
           {subtext}
         </p>
       )}
@@ -150,7 +150,7 @@ export default function ResaleMetricsCards({
   return (
     <div className="weapon-card p-4 md:p-6">
       {/* Header */}
-      <h3 className="text-sm font-semibold text-[#213448] uppercase tracking-wide mb-3 md:mb-4">
+      <h3 className="text-sm font-semibold text-brand-navy uppercase tracking-wide mb-3 md:mb-4">
         Resale Activity Metrics
       </h3>
 
@@ -180,7 +180,7 @@ export default function ResaleMetricsCards({
 
       {/* Additional context if no total_units */}
       {!totalUnits && totalResaleTransactions !== null && (
-        <div className="mt-3 md:mt-4 text-xs text-[#547792] bg-[#EAE0CF]/20 rounded-lg p-3">
+        <div className="mt-3 md:mt-4 text-xs text-brand-blue bg-brand-sand/20 rounded-lg p-3">
           <strong>Note:</strong> Total units data not available for turnover calculation.
           Showing {totalResaleTransactions?.toLocaleString()} total resale transactions.
         </div>

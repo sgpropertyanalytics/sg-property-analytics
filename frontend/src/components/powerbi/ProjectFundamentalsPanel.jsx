@@ -11,15 +11,15 @@ import { FrostOverlay } from '../common/loading';
 // Single stat card component - matches MetricCard in ResaleMetricsCards
 function StatCard({ label, value, subtext, isUnavailable = false }) {
   return (
-    <div className="bg-[#EAE0CF]/30 rounded-lg p-4">
-      <p className="text-xs font-medium text-[#547792] uppercase tracking-wide mb-1">
+    <div className="bg-brand-sand/30 rounded-lg p-4">
+      <p className="text-xs font-medium text-brand-blue uppercase tracking-wide mb-1">
         {label}
       </p>
-      <p className={`text-2xl font-semibold ${isUnavailable ? 'text-[#94B4C1]' : 'text-[#213448]'}`}>
+      <p className={`text-2xl font-semibold ${isUnavailable ? 'text-brand-sky' : 'text-brand-navy'}`}>
         {value}
       </p>
       {subtext && (
-        <p className="text-xs text-[#547792] mt-1">
+        <p className="text-xs text-brand-blue mt-1">
           {subtext}
         </p>
       )}
@@ -102,7 +102,7 @@ export default function ProjectFundamentalsPanel({
   return (
     <div className="weapon-card p-4 md:p-6">
       {/* Header */}
-      <h3 className="text-sm font-semibold text-[#213448] uppercase tracking-wide mb-3 md:mb-4">
+      <h3 className="text-sm font-semibold text-brand-navy uppercase tracking-wide mb-3 md:mb-4">
         Property Fundamentals
       </h3>
 

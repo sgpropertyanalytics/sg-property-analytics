@@ -32,14 +32,14 @@ export function UpgradeFooterCTA() {
   };
 
   return (
-    <div className="sticky bottom-0 z-30 bg-[#213448] shadow-lg">
+    <div className="sticky bottom-0 z-30 bg-brand-navy shadow-lg">
       <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
         {/* Text content */}
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-[#EAE0CF] text-sm">
+          <p className="font-semibold text-brand-sand text-sm">
             Unlock Full Access
           </p>
-          <p className="text-xs text-[#94B4C1] truncate">
+          <p className="text-xs text-brand-sky truncate">
             See exact prices, project names, and transaction details
           </p>
         </div>
@@ -47,8 +47,8 @@ export function UpgradeFooterCTA() {
         {/* CTA Button - Golden/Cream button on dark background */}
         <button
           onClick={handleClick}
-          className="flex items-center gap-2 px-4 py-2 bg-[#EAE0CF] text-[#213448]
-                     rounded-lg font-semibold text-sm hover:bg-[#EAE0CF]/90
+          className="flex items-center gap-2 px-4 py-2 bg-brand-sand text-brand-navy
+                     rounded-lg font-semibold text-sm hover:bg-brand-sand/90
                      transition-colors whitespace-nowrap shadow-md"
         >
           <Lock className="w-4 h-4" />

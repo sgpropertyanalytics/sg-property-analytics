@@ -23,7 +23,7 @@ export function TransactionDetailModal({ isOpen, onClose, title: _title, additio
       <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-[#94B4C1] hover:text-[#547792]"
+          className="absolute top-4 right-4 text-brand-sky hover:text-brand-blue"
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -46,19 +46,19 @@ export function TransactionDetailModal({ isOpen, onClose, title: _title, additio
               />
             </svg>
           </div>
-          <h3 className="text-lg font-semibold text-[#213448] mb-2">
+          <h3 className="text-lg font-semibold text-brand-navy mb-2">
             Feature Deprecated
           </h3>
-          <p className="text-sm text-[#547792] mb-4">
+          <p className="text-sm text-brand-blue mb-4">
             Transaction drill-through has been replaced with aggregated project insights
             for compliance reasons.
           </p>
-          <p className="text-xs text-[#94B4C1] mb-6">
+          <p className="text-xs text-brand-sky mb-6">
             Individual transaction records are no longer available.
           </p>
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-[#213448] text-white rounded-lg hover:bg-[#547792] transition-colors"
+            className="px-4 py-2 bg-brand-navy text-white rounded-lg hover:bg-brand-blue transition-colors"
           >
             Close
           </button>

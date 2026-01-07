@@ -73,7 +73,7 @@ export const NAV_ITEMS = NAV_GROUPS.flatMap(g => g.items);
  *
  * Design System (Senior UI Pattern):
  * - Active: bg-white/10 + ring-1 ring-white/10 + blue accent bar
- * - Inactive: text-[#94B4C1] with opacity transitions
+ * - Inactive: text-brand-sky with opacity transitions
  * - Hover: text-white + bg-white/5
  * - Coming Soon: opacity-50 + cursor-not-allowed
  *
@@ -159,14 +159,14 @@ function NavItem({ item, isActive, onClick, collapsed = false }) {
            absolute left-full ml-2 z-50
            hidden group-hover:block
            px-2 py-1.5
-           font-mono text-[10px] uppercase tracking-[0.18em] text-[#fafafa]
+           font-mono text-[10px] uppercase tracking-[0.18em] text-mono-canvas
            bg-black border border-black/20
            rounded-none weapon-shadow
            whitespace-nowrap
          ">
 
           {item.label}
-          {isComingSoon && <span className="ml-1 text-[#94B4C1]/60">(SOON)</span>}
+          {isComingSoon && <span className="ml-1 text-brand-sky/60">(SOON)</span>}
         </div>
       )}
     </button>
@@ -366,7 +366,7 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
                absolute left-full ml-2 z-50
                hidden group-hover:block
                px-2 py-1.5
-               font-mono text-[10px] uppercase tracking-[0.18em] text-[#fafafa]
+               font-mono text-[10px] uppercase tracking-[0.18em] text-mono-canvas
                bg-black border border-black/20
                rounded-none weapon-shadow
                whitespace-nowrap
