@@ -17,7 +17,7 @@ export const MONO = {
   mid: '#525252',       // Medium gray - body text
   light: '#A3A3A3',     // Light gray - secondary text, placeholders
   muted: '#E5E7EB',     // Border gray - structural lines
-  canvas: '#FFFFFF',    // White - backgrounds
+  canvas: '#FAFAFA',
 };
 
 // =============================================================================

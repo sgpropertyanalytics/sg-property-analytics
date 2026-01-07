@@ -117,7 +117,7 @@ export function ProjectDeepDiveContent() {
     #94B4C1 100%)`;
 
   return (
-    <div className="min-h-full bg-[#EAE0CF]/40">
+    <div className="min-h-full">
       <div className="p-3 md:p-4 lg:p-6">
         {/* Header */}
         <div className="mb-4 md:mb-6">

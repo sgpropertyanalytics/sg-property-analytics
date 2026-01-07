@@ -138,7 +138,7 @@ export function KPICardV2({
   tooltip,
   value,
   badge,
-  trend,
+  trend: _trend,
   footnote,
   transition,
   loading = false,
@@ -184,7 +184,7 @@ export function KPICardV2({
             )}
           </div>
           {subtitle && (
-            <p className="text-[9px] text-[#94B4C1] mt-0.5 leading-tight">
+            <p className="text-[9px] text-mono-light mt-0.5 leading-tight">
               {subtitle}
             </p>
           )}

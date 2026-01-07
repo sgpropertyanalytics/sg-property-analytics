@@ -20,7 +20,7 @@ export function PrimaryMarketContent() {
   const chartHeight = useChartHeight(400, MOBILE_CAPS.tall);
 
   return (
-    <div className="min-h-full bg-[#EAE0CF]/40">
+    <div className="min-h-full">
       {/* Main Content Area - scrolling handled by parent DashboardLayout */}
       <div className="p-3 md:p-4 lg:p-6">
           {/* Header */}
