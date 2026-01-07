@@ -226,11 +226,17 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
         className={`
           relative w-full h-full flex flex-col py-4 flex-shrink-0
           overflow-y-auto overflow-x-visible
-          bg-zinc-950
-          shadow-[5px_0_30px_-5px_rgba(0,0,0,0.8)]
           z-50
           ${collapsed ? 'px-2' : 'px-3'}
           ${isPending ? 'opacity-90' : ''}
+
+          /* THE CHASSIS TEXTURE - Vertical gradient mimics overhead server room lighting */
+          bg-zinc-950
+          bg-[linear-gradient(to_bottom,rgba(39,39,42,1),rgba(9,9,11,1))]
+
+          /* THE SEAM - Physical termination of metal casing */
+          border-r border-white/5
+          shadow-[6px_0_24px_-6px_rgba(0,0,0,0.7)]
         `}
         aria-label="Main navigation"
       >

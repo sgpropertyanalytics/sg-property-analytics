@@ -994,10 +994,31 @@ input[type="range"].slider-thumb::-moz-range-progress {
   animation: heartbeat-glow 4s ease-in-out infinite;
 }
 
-/* ====== Server Rack LED - Active Nav Indicator ====== */
+/* ====== Industrial Chassis & Server Rack LED ====== */
 
 /*
- * Physical LED implementation using Tailwind utility classes (GlobalNavRail.jsx):
+ * CHASSIS TEXTURE (GlobalNavRail nav container):
+ * Uses gradients to simulate lighting, borders to simulate physical edges.
+ *
+ * 1. Overhead Lighting:
+ *    bg-[linear-gradient(to_bottom,rgba(39,39,42,1),rgba(9,9,11,1))]
+ *    - Top: lighter zinc-800 tones (light hits the top of the rack)
+ *    - Bottom: deep black (bottom of rack in shadow)
+ *    - Provides reflective surface for LED glow
+ *
+ * 2. The Beveled Edge:
+ *    border-r border-white/5
+ *    - 1px machined metal edge where light catches the corner
+ *    - Separates black metal from dark shadow
+ *
+ * 3. The Heavy Shadow:
+ *    shadow-[6px_0_24px_-6px_rgba(0,0,0,0.7)]
+ *    - Chassis casting shadow onto beige paper
+ *    - 6px offset = physical depth
+ *    - 24px blur = realistic soft edge
+ *    - 0.7 opacity = heavy, solid shadow
+ *
+ * PHYSICAL LED (NavItem active state):
  *
  * The Source:     border-l-[3px] border-emerald-500
  * The Spill:      bg-gradient-to-r from-emerald-500/10 to-transparent
