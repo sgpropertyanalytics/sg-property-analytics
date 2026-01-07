@@ -47,7 +47,7 @@ export function WeaponCard({
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
-              <span className="text-[10px] font-medium tracking-wider">LIVE</span>
+              <span className="text-xs font-medium tracking-wider">LIVE</span>
             </span>
           )}
         </div>
@@ -71,7 +71,7 @@ export function WeaponCardHeader({ title, live = false, className = '' }) {
       {live && (
         <span className="text-status-live flex items-center gap-1">
           <span className="pulse-ring-emerald w-2 h-2 rounded-full bg-status-live" />
-          <span className="text-[9px]">LIVE</span>
+          <span className="text-xs">LIVE</span>
         </span>
       )}
     </div>
