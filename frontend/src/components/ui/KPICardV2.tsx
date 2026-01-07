@@ -89,10 +89,10 @@ export function KPIHeroContent({
 }: KPIHeroContentProps) {
   const changeColor = change?.direction === 'up' ? 'text-status-live'
     : change?.direction === 'down' ? 'text-status-negative'
-    : 'text-mono-light';
+      : 'text-mono-light';
   const arrow = change?.direction === 'up' ? '▲'
     : change?.direction === 'down' ? '▼'
-    : '—';
+      : '—';
   const pctStr = change?.value != null
     ? (change.value >= 0 ? `+${change.value}%` : `${change.value}%`)
     : '';
@@ -167,11 +167,16 @@ export function KPICardV2({
     <div
       className={`
         weapon-card hud-corner weapon-shadow p-4 sm:p-5
-        min-h-40 flex flex-col
+        min-h-40 flex flex-col relative
         transition-none
         ${className}
       `.trim()}
     >
+      {/* Ruler Ticks - Top Edge */}
+      <div className="absolute top-0 left-1/4 w-px h-1.5 bg-black/10 z-10" />
+      <div className="absolute top-0 left-1/2 w-px h-2 bg-black/20 z-10" />
+      <div className="absolute top-0 left-3/4 w-px h-1.5 bg-black/10 z-10" />
+
       {/* Layer 1: Header - pinned to top */}
       <div className="flex-shrink-0 mb-2">
         <div>
@@ -195,7 +200,7 @@ export function KPICardV2({
       <div className="flex-1 flex items-end pb-2 min-w-0">
         {typeof value === 'string' ? (
           <div className="truncate" title={badge ? `${value} ${badge.text}` : value}>
-             <span className="text-[22px] sm:text-[32px] font-data font-semibold text-mono-ink leading-none">
+            <span className="text-[22px] sm:text-[32px] font-data font-semibold text-mono-ink leading-none">
 
               {value}
             </span>

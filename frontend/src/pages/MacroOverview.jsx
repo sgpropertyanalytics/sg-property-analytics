@@ -199,23 +199,23 @@ export function MacroOverviewContent() {
   return (
     <div className="min-h-full">
       {/* Main Content Area - scrolling handled by parent DashboardLayout */}
-      {/* Background provided by DashboardLayout (bg-gray-50) */}
-      <div className="p-4 md:p-6 lg:p-8">
+      {/* Background provided by DashboardLayout */}
+      <div>
         {/* Header */}
         <div className="mb-4 md:mb-6">
           <div className="min-w-0 mb-2">
-            <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-brand-navy hidden lg:block">
+            <h1 className="text-lg md:text-xl lg:text-2xl font-display font-semibold uppercase tracking-tight text-mono-ink hidden lg:block">
               Market Overview
             </h1>
             {/* Data source info - shows last update, total records, new additions, and outliers removed */}
             {apiMetadata && (
-              <p className="text-brand-blue text-xs md:text-sm italic">
+              <p className="text-mono-mid text-[10px] font-mono uppercase tracking-[0.1em] italic">
                 Last updated: {apiMetadata.last_updated
                   ? new Date(apiMetadata.last_updated).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric'
-                    })
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                  })
                   : 'N/A'}
                 {apiMetadata.total_records > 0 && (
                   <> | Total records: {apiMetadata.total_records.toLocaleString()}</>
@@ -239,207 +239,207 @@ export function MacroOverviewContent() {
 
         {/* Analytics View - Dashboard with charts */}
         <div className="animate-view-enter">
-              {/* KPI Summary Cards - Using standardized KPICardV2 */}
-              <KPICardV2Group columns={4} className="mb-4 md:mb-6">
-                {/* Card 1: Market Momentum */}
-                <KPICardV2
-                  title="Market Momentum"
-                  value={(() => {
-                    const kpi = getKpi('market_momentum');
-                    if (!kpi?.meta?.current_score) return '—';
-                    const { current_score, prev_score, score_change_pct, change_direction, condition_direction, label } = kpi.meta;
-                    const badgeColor = condition_direction === 'up' ? 'green' : condition_direction === 'down' ? 'red' : 'gray';
-                    return (
-                      <KPIHeroContent
-                        value={current_score}
-                        badge={label ? { text: label, color: badgeColor } : undefined}
-                        change={score_change_pct != null ? { value: score_change_pct, direction: change_direction } : undefined}
-                        previous={prev_score ? { value: prev_score } : undefined}
-                      />
-                    );
-                  })()}
-                  footnote={getKpiField(getKpi('market_momentum'), KpiField.INSIGHT)}
-                  tooltip={getKpi('market_momentum')?.meta?.description}
-                  loading={kpis.loading}
-                />
+          {/* KPI Summary Cards - Using standardized KPICardV2 */}
+          <KPICardV2Group columns={4} className="mb-4 md:mb-6">
+            {/* Card 1: Market Momentum */}
+            <KPICardV2
+              title="Market Momentum"
+              value={(() => {
+                const kpi = getKpi('market_momentum');
+                if (!kpi?.meta?.current_score) return '—';
+                const { current_score, prev_score, score_change_pct, change_direction, condition_direction, label } = kpi.meta;
+                const badgeColor = condition_direction === 'up' ? 'green' : condition_direction === 'down' ? 'red' : 'gray';
+                return (
+                  <KPIHeroContent
+                    value={current_score}
+                    badge={label ? { text: label, color: badgeColor } : undefined}
+                    change={score_change_pct != null ? { value: score_change_pct, direction: change_direction } : undefined}
+                    previous={prev_score ? { value: prev_score } : undefined}
+                  />
+                );
+              })()}
+              footnote={getKpiField(getKpi('market_momentum'), KpiField.INSIGHT)}
+              tooltip={getKpi('market_momentum')?.meta?.description}
+              loading={kpis.loading}
+            />
 
-                {/* Card 2: Resale Median PSF (Q-o-Q) */}
-                <KPICardV2
-                  title="Resale Median PSF"
-                  value={(() => {
-                    const kpi = getKpi('median_psf');
-                    if (!kpi?.meta?.current_psf) return '—';
-                    const { current_psf, prev_psf, pct_change, direction } = kpi.meta;
-                    return (
-                      <KPIHeroContent
-                        value={`$${current_psf?.toLocaleString()}`}
-                        unit="psf"
-                        change={pct_change != null ? { value: pct_change, direction } : undefined}
-                        previous={prev_psf ? { value: `$${prev_psf?.toLocaleString()} psf` } : undefined}
-                      />
-                    );
-                  })()}
-                  footnote={getKpiField(getKpi('median_psf'), KpiField.INSIGHT)}
-                  tooltip={getKpi('median_psf')?.meta?.description}
-                  loading={kpis.loading}
-                />
+            {/* Card 2: Resale Median PSF (Q-o-Q) */}
+            <KPICardV2
+              title="Resale Median PSF"
+              value={(() => {
+                const kpi = getKpi('median_psf');
+                if (!kpi?.meta?.current_psf) return '—';
+                const { current_psf, prev_psf, pct_change, direction } = kpi.meta;
+                return (
+                  <KPIHeroContent
+                    value={`$${current_psf?.toLocaleString()}`}
+                    unit="psf"
+                    change={pct_change != null ? { value: pct_change, direction } : undefined}
+                    previous={prev_psf ? { value: `$${prev_psf?.toLocaleString()} psf` } : undefined}
+                  />
+                );
+              })()}
+              footnote={getKpiField(getKpi('median_psf'), KpiField.INSIGHT)}
+              tooltip={getKpi('median_psf')?.meta?.description}
+              loading={kpis.loading}
+            />
 
-                {/* Card 3: Total Resale Transactions (last 3 months) */}
-                <KPICardV2
-                  title="Total Resale Transactions"
-                  value={(() => {
-                    const kpi = getKpi('total_transactions');
-                    if (!kpi?.meta?.current_count && kpi?.meta?.current_count !== 0) return '—';
-                    const { current_count, previous_count, pct_change, direction, label } = kpi.meta;
-                    const badgeColor = direction === 'up' ? 'green' : direction === 'down' ? 'red' : 'gray';
-                    return (
-                      <KPIHeroContent
-                        value={current_count?.toLocaleString()}
-                        badge={label ? { text: label, color: badgeColor } : undefined}
-                        change={pct_change != null ? { value: pct_change, direction } : undefined}
-                        previous={previous_count != null ? { value: `${previous_count?.toLocaleString()} txns` } : undefined}
-                      />
-                    );
-                  })()}
-                  footnote={getKpiField(getKpi('total_transactions'), KpiField.INSIGHT)}
-                  tooltip={getKpi('total_transactions')?.meta?.description}
-                  loading={kpis.loading}
-                />
+            {/* Card 3: Total Resale Transactions (last 3 months) */}
+            <KPICardV2
+              title="Total Resale Transactions"
+              value={(() => {
+                const kpi = getKpi('total_transactions');
+                if (!kpi?.meta?.current_count && kpi?.meta?.current_count !== 0) return '—';
+                const { current_count, previous_count, pct_change, direction, label } = kpi.meta;
+                const badgeColor = direction === 'up' ? 'green' : direction === 'down' ? 'red' : 'gray';
+                return (
+                  <KPIHeroContent
+                    value={current_count?.toLocaleString()}
+                    badge={label ? { text: label, color: badgeColor } : undefined}
+                    change={pct_change != null ? { value: pct_change, direction } : undefined}
+                    previous={previous_count != null ? { value: `${previous_count?.toLocaleString()} txns` } : undefined}
+                  />
+                );
+              })()}
+              footnote={getKpiField(getKpi('total_transactions'), KpiField.INSIGHT)}
+              tooltip={getKpi('total_transactions')?.meta?.description}
+              loading={kpis.loading}
+            />
 
-                {/* Card 4: Annualized Resale Velocity */}
-                <KPICardV2
-                  title="Annualized Resale Velocity"
-                  value={(() => {
-                    const kpi = getKpi('resale_velocity');
-                    if (!kpi?.value && kpi?.value !== 0) return '—';
-                    const { prior_annualized, pct_change } = kpi.meta || {};
-                    const trend = getKpiField(kpi, KpiField.TREND);
-                    const direction = trend?.direction;
-                    const label = trend?.label;
-                    const badgeColor = direction === 'up' ? 'green' : direction === 'down' ? 'red' : 'gray';
-                    // Change direction based on pct_change sign (separate from badge direction)
-                    const changeDirection = pct_change > 0 ? 'up' : pct_change < 0 ? 'down' : 'neutral';
-                    return (
-                      <KPIHeroContent
-                        value={getKpiField(kpi, KpiField.FORMATTED_VALUE)}
-                        badge={label ? { text: label, color: badgeColor } : undefined}
-                        change={pct_change != null ? { value: pct_change, direction: changeDirection } : undefined}
-                        previous={prior_annualized != null ? { value: `${prior_annualized}%` } : undefined}
-                      />
-                    );
-                  })()}
-                  footnote={getKpiField(getKpi('resale_velocity'), KpiField.INSIGHT)}
-                  tooltip={getKpi('resale_velocity')?.meta?.description}
-                  loading={kpis.loading}
-                />
-              </KPICardV2Group>
+            {/* Card 4: Annualized Resale Velocity */}
+            <KPICardV2
+              title="Annualized Resale Velocity"
+              value={(() => {
+                const kpi = getKpi('resale_velocity');
+                if (!kpi?.value && kpi?.value !== 0) return '—';
+                const { prior_annualized, pct_change } = kpi.meta || {};
+                const trend = getKpiField(kpi, KpiField.TREND);
+                const direction = trend?.direction;
+                const label = trend?.label;
+                const badgeColor = direction === 'up' ? 'green' : direction === 'down' ? 'red' : 'gray';
+                // Change direction based on pct_change sign (separate from badge direction)
+                const changeDirection = pct_change > 0 ? 'up' : pct_change < 0 ? 'down' : 'neutral';
+                return (
+                  <KPIHeroContent
+                    value={getKpiField(kpi, KpiField.FORMATTED_VALUE)}
+                    badge={label ? { text: label, color: badgeColor } : undefined}
+                    change={pct_change != null ? { value: pct_change, direction: changeDirection } : undefined}
+                    previous={prior_annualized != null ? { value: `${prior_annualized}%` } : undefined}
+                  />
+                );
+              })()}
+              footnote={getKpiField(getKpi('resale_velocity'), KpiField.INSIGHT)}
+              tooltip={getKpi('resale_velocity')?.meta?.description}
+              loading={kpis.loading}
+            />
+          </KPICardV2Group>
 
-              {/* Charts Grid - Responsive: 1 col mobile, 2 cols desktop */}
-              {/* Each chart wrapped with ErrorBoundary to prevent cascade failures */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-4 md:mb-6">
-                {/* Time Trend Chart - Full width on all screens */}
-                <div className="lg:col-span-2">
-                  <ErrorBoundary name="Time Trend Chart" compact>
-                    <TimeTrendChart
-                      onDrillThrough={(value) => handleDrillThrough(`Transactions in ${value}`)}
-                      height={trendChartHeight}
+          {/* Charts Grid - Responsive: 1 col mobile, 2 cols desktop */}
+          {/* Each chart wrapped with ErrorBoundary to prevent cascade failures */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-4 md:mb-6">
+            {/* Time Trend Chart - Full width on all screens */}
+            <div className="lg:col-span-2">
+              <ErrorBoundary name="Time Trend Chart" compact>
+                <TimeTrendChart
+                  onDrillThrough={(value) => handleDrillThrough(`Transactions in ${value}`)}
+                  height={trendChartHeight}
+                  saleType={SALE_TYPE}
+                  staggerIndex={0}
+                />
+              </ErrorBoundary>
+            </div>
+
+            {/* Market Compression + Absolute PSF - Side by side (Watermarked for free users) */}
+            {/* Desktop/Tablet: 50/50 grid | Mobile: Stacked */}
+            {/* Lazy-loaded with Suspense for faster initial page load */}
+            {/* SHARED DATA: Both charts receive pre-fetched compressionData (W4 fix) */}
+            <div
+              ref={compressionRef}
+              className="lg:col-span-2 grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 items-stretch"
+            >
+              <ErrorBoundary name="Price Compression" compact>
+                <ChartWatermark>
+                  <Suspense fallback={<ChartLoadingFallback height={compressionHeight} />}>
+                    <PriceCompressionChart
+                      height={compressionHeight}
                       saleType={SALE_TYPE}
-                      staggerIndex={0}
+                      sharedData={compressionData}
+                      sharedStatus={compressionInView ? compressionStatus : 'pending'}
+                      staggerIndex={1}
                     />
-                  </ErrorBoundary>
-                </div>
+                  </Suspense>
+                </ChartWatermark>
+              </ErrorBoundary>
+              <ErrorBoundary name="Absolute PSF" compact>
+                <ChartWatermark>
+                  <Suspense fallback={<ChartLoadingFallback height={compressionHeight} />}>
+                    <AbsolutePsfChart
+                      height={compressionHeight}
+                      saleType={SALE_TYPE}
+                      sharedData={compressionData}
+                      sharedStatus={compressionInView ? compressionStatus : 'pending'}
+                      staggerIndex={2}
+                    />
+                  </Suspense>
+                </ChartWatermark>
+              </ErrorBoundary>
+            </div>
 
-                {/* Market Compression + Absolute PSF - Side by side (Watermarked for free users) */}
-                {/* Desktop/Tablet: 50/50 grid | Mobile: Stacked */}
-                {/* Lazy-loaded with Suspense for faster initial page load */}
-                {/* SHARED DATA: Both charts receive pre-fetched compressionData (W4 fix) */}
-                <div
-                  ref={compressionRef}
-                  className="lg:col-span-2 grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 items-stretch"
-                >
-                  <ErrorBoundary name="Price Compression" compact>
-                    <ChartWatermark>
-                      <Suspense fallback={<ChartLoadingFallback height={compressionHeight} />}>
-                        <PriceCompressionChart
-                          height={compressionHeight}
-                          saleType={SALE_TYPE}
-                          sharedData={compressionData}
-                          sharedStatus={compressionInView ? compressionStatus : 'pending'}
-                          staggerIndex={1}
-                        />
-                      </Suspense>
-                    </ChartWatermark>
-                  </ErrorBoundary>
-                  <ErrorBoundary name="Absolute PSF" compact>
-                    <ChartWatermark>
-                      <Suspense fallback={<ChartLoadingFallback height={compressionHeight} />}>
-                        <AbsolutePsfChart
-                          height={compressionHeight}
-                          saleType={SALE_TYPE}
-                          sharedData={compressionData}
-                          sharedStatus={compressionInView ? compressionStatus : 'pending'}
-                          staggerIndex={2}
-                        />
-                      </Suspense>
-                    </ChartWatermark>
-                  </ErrorBoundary>
-                </div>
+            {/* Market Value Oscillator - Full width, Z-score normalized spread analysis */}
+            {/* Lazy-loaded with Suspense for faster initial page load */}
+            {/* SHARED DATA: Receives compressionRaw to eliminate duplicate aggregate request (P0 fix) */}
+            <div className="lg:col-span-2">
+              <ErrorBoundary name="Market Value Oscillator" compact>
+                <ChartWatermark>
+                  <Suspense fallback={<ChartLoadingFallback height={oscillatorHeight} />}>
+                    <MarketValueOscillator
+                      height={oscillatorHeight}
+                      saleType={SALE_TYPE}
+                      sharedRawData={compressionRaw}
+                      sharedStatus={compressionInView ? compressionStatus : 'pending'}
+                      staggerIndex={3}
+                    />
+                  </Suspense>
+                </ChartWatermark>
+              </ErrorBoundary>
+            </div>
 
-                {/* Market Value Oscillator - Full width, Z-score normalized spread analysis */}
-                {/* Lazy-loaded with Suspense for faster initial page load */}
-                {/* SHARED DATA: Receives compressionRaw to eliminate duplicate aggregate request (P0 fix) */}
-                <div className="lg:col-span-2">
-                  <ErrorBoundary name="Market Value Oscillator" compact>
-                    <ChartWatermark>
-                      <Suspense fallback={<ChartLoadingFallback height={oscillatorHeight} />}>
-                        <MarketValueOscillator
-                          height={oscillatorHeight}
-                          saleType={SALE_TYPE}
-                          sharedRawData={compressionRaw}
-                          sharedStatus={compressionInView ? compressionStatus : 'pending'}
-                          staggerIndex={3}
-                        />
-                      </Suspense>
-                    </ChartWatermark>
-                  </ErrorBoundary>
-                </div>
-
-                {/* Price Distribution + Beads Chart - Side by side */}
-                <div
-                  ref={panelsRef}
-                  className="lg:col-span-2 grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6"
-                >
-                  <div>
-                    <ErrorBoundary name="Price Distribution" compact>
-                      <ChartWatermark>
-                        <PriceDistributionChart
-                          onDrillThrough={(value) => handleDrillThrough(`Transactions at ${value}`)}
-                          height={standardChartHeight}
-                          saleType={SALE_TYPE}
-                          sharedData={dashboardPanels?.price_histogram}
-                          sharedStatus={panelsInView ? dashboardStatus : 'pending'}
-                          staggerIndex={4}
-                        />
-                      </ChartWatermark>
-                    </ErrorBoundary>
-                  </div>
-
-                  <div>
-                    <ErrorBoundary name="Price by Region & Bedroom" compact>
-                      <ChartWatermark>
-                        <BeadsChart
-                          height={standardChartHeight}
-                          saleType={SALE_TYPE}
-                          sharedData={dashboardPanels?.beads_chart}
-                          sharedStatus={panelsInView ? dashboardStatus : 'pending'}
-                          staggerIndex={5}
-                        />
-                      </ChartWatermark>
-                    </ErrorBoundary>
-                  </div>
-                </div>
-
+            {/* Price Distribution + Beads Chart - Side by side */}
+            <div
+              ref={panelsRef}
+              className="lg:col-span-2 grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6"
+            >
+              <div>
+                <ErrorBoundary name="Price Distribution" compact>
+                  <ChartWatermark>
+                    <PriceDistributionChart
+                      onDrillThrough={(value) => handleDrillThrough(`Transactions at ${value}`)}
+                      height={standardChartHeight}
+                      saleType={SALE_TYPE}
+                      sharedData={dashboardPanels?.price_histogram}
+                      sharedStatus={panelsInView ? dashboardStatus : 'pending'}
+                      staggerIndex={4}
+                    />
+                  </ChartWatermark>
+                </ErrorBoundary>
               </div>
+
+              <div>
+                <ErrorBoundary name="Price by Region & Bedroom" compact>
+                  <ChartWatermark>
+                    <BeadsChart
+                      height={standardChartHeight}
+                      saleType={SALE_TYPE}
+                      sharedData={dashboardPanels?.beads_chart}
+                      sharedStatus={panelsInView ? dashboardStatus : 'pending'}
+                      staggerIndex={5}
+                    />
+                  </ChartWatermark>
+                </ErrorBoundary>
+              </div>
+            </div>
+
+          </div>
 
         </div>
       </div>

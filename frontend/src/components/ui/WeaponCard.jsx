@@ -27,16 +27,22 @@ export function WeaponCard({
   className = '',
   interactive = true,
   noPadding = false,
+  variant = 'primary', // 'primary' | 'secondary'
 }) {
   return (
     <div
       className={`
         weapon-card hud-corner scan-line-hover
-        overflow-hidden flex flex-col
+        overflow-hidden flex flex-col relative
         ${interactive ? 'cursor-crosshair' : ''}
         ${className}
       `.trim().replace(/\s+/g, ' ')}
     >
+      {/* Ruler Ticks - Top Edge */}
+      <div className="absolute top-0 left-1/4 w-px h-1.5 bg-black/10 z-10" />
+      <div className="absolute top-0 left-1/2 w-px h-2 bg-black/20 z-10" />
+      <div className="absolute top-0 left-3/4 w-px h-1.5 bg-black/10 z-10" />
+
       {title && (
         <div className="terminal-header px-4 py-2 border-b border-mono-muted flex justify-between items-center shrink-0">
           <span>{title}</span>
