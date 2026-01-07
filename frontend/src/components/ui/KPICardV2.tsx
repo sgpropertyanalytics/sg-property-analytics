@@ -166,18 +166,22 @@ export function KPICardV2({
   return (
     <div
       className={`
-        bg-white border border-gray-200 shadow-sm
-        p-4 sm:p-5
+        weapon-card hud-corner weapon-shadow p-4 sm:p-5
         min-h-40 flex flex-col relative
         transition-none
         ${className}
       `.trim()}
     >
+      {/* Ruler Ticks - Top Edge */}
+      <div className="absolute top-0 left-1/4 w-px h-1.5 bg-black/10 z-10" />
+      <div className="absolute top-0 left-1/2 w-px h-2 bg-black/20 z-10" />
+      <div className="absolute top-0 left-3/4 w-px h-1.5 bg-black/10 z-10" />
+
       {/* Layer 1: Header - pinned to top */}
       <div className="flex-shrink-0 mb-2">
         <div>
           <div className="flex items-center gap-1">
-            <span className="text-sm font-medium text-gray-500">
+            <span className="terminal-header text-mono-mid">
               {title}
             </span>
             {combinedTooltip && (
@@ -185,7 +189,7 @@ export function KPICardV2({
             )}
           </div>
           {subtitle && (
-            <p className="text-xs text-gray-400 mt-0.5 leading-tight">
+            <p className="text-[9px] text-mono-light mt-0.5 leading-tight">
               {subtitle}
             </p>
           )}
@@ -196,7 +200,7 @@ export function KPICardV2({
       <div className="flex-1 flex items-end pb-2 min-w-0">
         {typeof value === 'string' ? (
           <div className="truncate" title={badge ? `${value} ${badge.text}` : value}>
-            <span className="text-[28px] sm:text-[36px] font-bold text-gray-900 leading-none tracking-tight">
+            <span className="text-[22px] sm:text-[32px] font-data font-semibold text-mono-ink leading-none">
 
               {value}
             </span>

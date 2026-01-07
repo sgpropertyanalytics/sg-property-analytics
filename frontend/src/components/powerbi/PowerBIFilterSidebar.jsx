@@ -114,11 +114,12 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
   };
 
   // ==================== HORIZONTAL LAYOUT ====================
-  // Clean Analyst Control Ribbon
-  // Solid White #FFFFFF, Border #E5E7EB, Shadow-sm
+  // iOS-style segmented controls with pill-shaped tracks
+  // Frosted glass - sticky handled by parent FilterBar wrapper
+  // Single row layout: Property filters | Time Duration | Granularity | Reset
   if (layout === 'horizontal') {
     return (
-      <div className="-mx-3 md:-mx-4 lg:-mx-6 px-3 md:px-4 lg:px-6 py-3 bg-white border-b border-gray-200 shadow-[0_1px_2px_rgba(0,0,0,0.03)] z-30 sticky top-0 mb-6">
+      <div className="-mx-3 md:-mx-4 lg:-mx-6 px-3 md:px-4 lg:px-6 py-3 bg-card/85 backdrop-blur-sm border-b border-mono-muted weapon-noise">
         <div className="flex flex-wrap lg:flex-nowrap items-center justify-start gap-3">
           {/* Property Filters - Region + District + Bedroom */}
           <div className="flex items-center gap-3 flex-shrink-0 min-w-0">
@@ -128,10 +129,11 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
               <button
                 type="button"
                 onClick={() => setSegments([])}
-                className={`px-4 py-2 text-sm font-medium transition-none min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-navy focus-visible:ring-inset ${filters.segments.length === 0
+                className={`px-4 py-2 text-sm font-medium transition-none min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-navy focus-visible:ring-inset ${
+                  filters.segments.length === 0
                     ? 'bg-brand-navy text-white shadow-inner'
                     : 'bg-transparent text-slate-500 hover:bg-white/50 hover:text-slate-900'
-                  }`}
+                }`}
               >
                 All
               </button>
@@ -140,10 +142,11 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                   type="button"
                   key={seg}
                   onClick={(e) => handleFilterClick(e, seg, filters.segments, setSegments, toggleSegment)}
-                  className={`px-4 py-2 text-sm font-medium transition-none min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-navy focus-visible:ring-inset ${filters.segments.includes(seg)
+                  className={`px-4 py-2 text-sm font-medium transition-none min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-navy focus-visible:ring-inset ${
+                    filters.segments.includes(seg)
                       ? 'bg-brand-navy text-white shadow-inner'
                       : 'bg-transparent text-slate-500 hover:bg-white/50 hover:text-slate-900'
-                    }`}
+                  }`}
                   title="Shift+click to multi-select"
                 >
                   {seg}
@@ -175,10 +178,11 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
               <button
                 type="button"
                 onClick={() => setBedroomTypes([])}
-                className={`px-3 py-2 text-sm font-medium transition-none min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-navy focus-visible:ring-inset ${filters.bedroomTypes.length === 0
+                className={`px-3 py-2 text-sm font-medium transition-none min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-navy focus-visible:ring-inset ${
+                  filters.bedroomTypes.length === 0
                     ? 'bg-brand-navy text-white shadow-inner'
                     : 'bg-transparent text-slate-500 hover:bg-white/50 hover:text-slate-900'
-                  }`}
+                }`}
               >
                 All
               </button>
@@ -187,10 +191,11 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                   type="button"
                   key={br}
                   onClick={(e) => handleFilterClick(e, br, filters.bedroomTypes, setBedroomTypes, toggleBedroomType)}
-                  className={`px-3 py-2 text-sm font-medium transition-none min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-navy focus-visible:ring-inset ${filters.bedroomTypes.includes(br)
+                  className={`px-3 py-2 text-sm font-medium transition-none min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-navy focus-visible:ring-inset ${
+                    filters.bedroomTypes.includes(br)
                       ? 'bg-brand-navy text-white shadow-inner'
                       : 'bg-transparent text-slate-500 hover:bg-white/50 hover:text-slate-900'
-                    }`}
+                  }`}
                   title="Shift+click to multi-select"
                 >
                   {br === 5 ? '5BR' : `${br}BR`}
@@ -210,12 +215,13 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                 key={opt.id}
                 onClick={(e) => { e.preventDefault(); handlePresetClick(opt.id); }}
                 disabled={filterOptions.loading}
-                className={`px-3 py-2 text-sm font-medium transition-none min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-navy focus-visible:ring-inset ${filterOptions.loading
+                className={`px-3 py-2 text-sm font-medium transition-none min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-navy focus-visible:ring-inset ${
+                  filterOptions.loading
                     ? 'bg-gray-100/80 text-gray-400 cursor-wait'
                     : currentPreset === opt.id
                       ? 'bg-brand-navy text-white shadow-inner'
                       : 'bg-transparent text-slate-500 hover:bg-white/50 hover:text-slate-900'
-                  }`}
+                }`}
               >
                 {opt.label}
               </button>
@@ -295,12 +301,13 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                     type="button"
                     key={seg}
                     onClick={(e) => handleFilterClick(e, seg, filters.segments, setSegments, toggleSegment)}
-                    className={`min-h-[44px] py-2.5 text-sm rounded-none border transition-none ${filters.segments.includes(seg)
+                    className={`min-h-[44px] py-2.5 text-sm rounded-none border transition-none ${
+                      filters.segments.includes(seg)
                         ? 'bg-brand-blue text-white border-brand-blue'
                         : filters.segments.length === 0
                           ? 'bg-white text-brand-navy border-brand-sky'
                           : 'bg-white text-brand-blue border-brand-sky hover:border-brand-blue'
-                      }`}
+                    }`}
                   >
                     {seg}
                   </button>
@@ -347,12 +354,13 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                   type="button"
                   key={br}
                   onClick={(e) => handleFilterClick(e, br, filters.bedroomTypes, setBedroomTypes, toggleBedroomType)}
-                  className={`min-h-[44px] py-2 text-sm rounded-none border transition-none ${filters.bedroomTypes.includes(br)
+                  className={`min-h-[44px] py-2 text-sm rounded-none border transition-none ${
+                    filters.bedroomTypes.includes(br)
                       ? 'bg-brand-blue text-white border-brand-blue'
                       : filters.bedroomTypes.length === 0
                         ? 'bg-white text-brand-navy border-brand-sky'
                         : 'bg-white text-brand-blue border-brand-sky hover:border-brand-blue'
-                    }`}
+                  }`}
                 >
                   {br === 5 ? '5BR' : `${br}BR`}
                 </button>
@@ -382,12 +390,13 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                   key={opt.id}
                   onClick={(e) => { e.preventDefault(); handlePresetClick(opt.id); }}
                   disabled={filterOptions.loading}
-                  className={`min-h-[44px] py-2 text-sm rounded-none border transition-none ${filterOptions.loading
+                  className={`min-h-[44px] py-2 text-sm rounded-none border transition-none ${
+                    filterOptions.loading
                       ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-wait'
                       : currentPreset === opt.id
                         ? 'bg-brand-blue text-white border-brand-blue'
                         : 'bg-white text-brand-navy border-brand-sky hover:border-brand-blue hover:bg-brand-sand/50'
-                    }`}
+                  }`}
                 >
                   {opt.label}
                 </button>
@@ -571,12 +580,13 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                   type="button"
                   key={seg}
                   onClick={(e) => handleFilterClick(e, seg, filters.segments, setSegments, toggleSegment)}
-                  className={`min-h-[44px] py-2.5 text-sm rounded-none border transition-none ${filters.segments.includes(seg)
+                  className={`min-h-[44px] py-2.5 text-sm rounded-none border transition-none ${
+                    filters.segments.includes(seg)
                       ? 'bg-brand-blue text-white border-brand-blue'
                       : filters.segments.length === 0
                         ? 'bg-white text-brand-navy border-brand-sky'
                         : 'bg-white text-brand-blue border-brand-sky hover:border-brand-blue'
-                    }`}
+                  }`}
                 >
                   {seg}
                 </button>
@@ -625,12 +635,13 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                 type="button"
                 key={br}
                 onClick={(e) => handleFilterClick(e, br, filters.bedroomTypes, setBedroomTypes, toggleBedroomType)}
-                className={`min-h-[44px] py-2 text-sm rounded-none border transition-none ${filters.bedroomTypes.includes(br)
+                className={`min-h-[44px] py-2 text-sm rounded-none border transition-none ${
+                  filters.bedroomTypes.includes(br)
                     ? 'bg-brand-blue text-white border-brand-blue'
                     : filters.bedroomTypes.length === 0
                       ? 'bg-white text-brand-navy border-brand-sky'
                       : 'bg-white text-brand-blue border-brand-sky hover:border-brand-blue'
-                  }`}
+                }`}
               >
                 {br === 5 ? '5BR' : `${br}BR`}
               </button>
@@ -662,12 +673,13 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                 key={opt.id}
                 onClick={(e) => { e.preventDefault(); handlePresetClick(opt.id); }}
                 disabled={filterOptions.loading}
-                className={`min-h-[44px] py-2 text-sm rounded-none border transition-none ${filterOptions.loading
+                className={`min-h-[44px] py-2 text-sm rounded-none border transition-none ${
+                  filterOptions.loading
                     ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-wait'
                     : currentPreset === opt.id
                       ? 'bg-brand-blue text-white border-brand-blue'
                       : 'bg-white text-brand-navy border-brand-sky hover:border-brand-blue hover:bg-brand-sand/50'
-                  }`}
+                }`}
               >
                 {opt.label}
               </button>
@@ -764,10 +776,11 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
           type="button"
           onClick={(e) => { e.preventDefault(); handleResetFilters(); }}
           disabled={activeFilterCount === 0}
-          className={`w-full min-h-[44px] px-4 py-2.5 rounded-none border transition-none font-mono text-[11px] uppercase tracking-[0.18em] ${activeFilterCount > 0
+          className={`w-full min-h-[44px] px-4 py-2.5 rounded-none border transition-none font-mono text-[11px] uppercase tracking-[0.18em] ${
+            activeFilterCount > 0
               ? 'bg-mono-dark text-white border-mono-dark hover:bg-mono-ink'
               : 'bg-mono-muted/40 text-mono-light border-mono-muted cursor-not-allowed'
-            }`}
+          }`}
         >
           Reset All Filters
         </button>
@@ -830,9 +843,9 @@ function MultiSelectDropdown({ options, selected, onChange, placeholder, searcha
 
   const filteredOptions = searchable && search
     ? options.filter(opt =>
-      opt.label.toLowerCase().includes(search.toLowerCase()) ||
-      opt.value.toLowerCase().includes(search.toLowerCase())
-    )
+        opt.label.toLowerCase().includes(search.toLowerCase()) ||
+        opt.value.toLowerCase().includes(search.toLowerCase())
+      )
     : options;
 
   const handleToggle = (value, e) => {

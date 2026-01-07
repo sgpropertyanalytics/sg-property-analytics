@@ -152,7 +152,7 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
   const handleMobileNavClose = () => setMobileNavOpen(false);
 
   return (
-    <div className="flex h-screen bg-[#F5F7FA] overflow-hidden text-mono-ink">
+    <div className="flex h-screen bg-mono-void overflow-hidden text-mono-ink">
       {/* ===== GLOBAL NAV RAIL (Primary Sidebar) ===== */}
       {/* Desktop: Collapsible with premium physics animation | Mobile: Hidden */}
       <div
@@ -213,7 +213,7 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
 
       {/* ===== MAIN CONTENT AREA ===== */}
       {/* min-w-0 prevents flex children from overflowing - critical for nested grids */}
-      <div className="flex-1 min-w-0 flex flex-col overflow-hidden bg-[#F5F7FA]">
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden bg-mono-void">
         {/* Mobile Header */}
         <header className="lg:hidden sticky top-0 z-40 bg-mono-canvas px-3 py-2 flex-shrink-0 border-b border-mono-muted weapon-noise">
           <div className="flex items-center justify-between gap-2">
@@ -253,7 +253,7 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
         <div className="flex-1 min-w-0 overflow-hidden relative">
           <TerminalShell className="h-full">
             {/* Inner scrollable area within the terminal screen */}
-            <main className="flex-1 w-full h-full overflow-y-auto overflow-x-hidden custom-scrollbar bg-transparent">
+            <main className="flex-1 w-full h-full overflow-y-auto overflow-x-hidden custom-scrollbar bg-mono-canvas">
               <div className="min-h-full flex flex-col">
                 <ErrorBoundary name="Page Content">
                   <Suspense fallback={<ContentLoadingFallback />}>
