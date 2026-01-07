@@ -13,11 +13,10 @@ import { getInitials } from '../../utils/formatters';
  * - Opens Account Settings modal on click (for authenticated users)
  * - Shows "Sign In" button for non-authenticated users
  *
- * Color Palette:
- * - Deep Navy: #213448
- * - Ocean Blue: #547792
- * - Sky Blue: #94B4C1
- * - Sand/Cream: #EAE0CF
+ * VOID THEME (Dark Nav):
+ * - Button/text: mono-light → mono-canvas on hover
+ * - Avatar ring: mono-edge → mono-light on hover
+ * - Dropdown: Stays light (appears over content area)
  */
 export const UserProfileMenu = React.memo(function UserProfileMenu({ expanded = false, onOpenSettings }) {
   const { user, isAuthenticated, logout } = useAuth();
@@ -37,7 +36,7 @@ export const UserProfileMenu = React.memo(function UserProfileMenu({ expanded = 
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Show "Sign In" button for non-authenticated users
+  // Show "Sign In" button for non-authenticated users (VOID THEME)
   if (!isAuthenticated || !user) {
     return (
       <button
@@ -45,7 +44,7 @@ export const UserProfileMenu = React.memo(function UserProfileMenu({ expanded = 
         className={`
           group relative flex items-center
           ${expanded ? 'gap-3 px-3 py-3 rounded-none w-full' : 'flex-col justify-center w-full aspect-square rounded-none'}
-          text-brand-sky/60 hover:bg-brand-blue/30 hover:text-brand-sand transition-none
+          text-mono-light hover:bg-white/[0.05] hover:text-mono-canvas transition-none
         `}
         aria-label="Sign In"
       >
@@ -58,18 +57,18 @@ export const UserProfileMenu = React.memo(function UserProfileMenu({ expanded = 
           <span className="text-sm font-medium">Sign In</span>
         )}
 
-        {/* Tooltip - only when collapsed */}
+        {/* Tooltip - only when collapsed (dark tooltip over light content) */}
         {!expanded && (
           <div className="
             absolute left-full ml-4 px-3 py-2
-            bg-brand-navy text-brand-sand text-sm font-medium
+            bg-mono-ink text-mono-canvas text-sm font-medium
             rounded-none weapon-shadow
             opacity-0 invisible group-hover:opacity-100 group-hover:visible
             pointer-events-none transition-none
-            whitespace-nowrap z-50 border border-brand-sky/30
+            whitespace-nowrap z-50 border border-mono-edge
           ">
             Sign In
-            <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1.5 w-3 h-3 bg-brand-navy rotate-45 border-l border-b border-brand-sky/30" />
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1.5 w-3 h-3 bg-mono-ink rotate-45 border-l border-b border-mono-edge" />
           </div>
         )}
       </button>
@@ -93,12 +92,12 @@ export const UserProfileMenu = React.memo(function UserProfileMenu({ expanded = 
         className={`
           group relative flex items-center
           ${expanded ? 'gap-3 px-3 py-3 rounded-none w-full' : 'flex-col justify-center w-full aspect-square rounded-none'}
-          text-brand-sky/60 hover:bg-brand-blue/30 hover:text-brand-sand transition-none
+          text-mono-light hover:bg-white/[0.05] hover:text-mono-canvas transition-none
         `}
         aria-label="User menu"
       >
-        {/* Avatar */}
-        <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-brand-blue/30 group-hover:ring-brand-sand/50 transition-none">
+        {/* Avatar (VOID THEME) */}
+        <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-mono-edge group-hover:ring-mono-light transition-none">
           {user.photoURL ? (
             <img
               src={user.photoURL}
@@ -107,19 +106,19 @@ export const UserProfileMenu = React.memo(function UserProfileMenu({ expanded = 
               referrerPolicy="no-referrer"
             />
           ) : (
-            <div className="w-full h-full bg-brand-blue flex items-center justify-center text-brand-sand text-sm font-medium">
+            <div className="w-full h-full bg-mono-surface flex items-center justify-center text-mono-canvas text-sm font-medium">
               {getInitials(user)}
             </div>
           )}
         </div>
 
-        {/* Name/Email when expanded */}
+        {/* Name/Email when expanded (VOID THEME) */}
         {expanded && (
           <div className="flex-1 min-w-0 text-left">
-            <div className="text-sm font-medium text-brand-sand truncate">
+            <div className="text-sm font-medium text-mono-canvas truncate">
               {user.displayName || 'User'}
             </div>
-            <div className="text-xs text-brand-sky truncate">
+            <div className="text-xs text-mono-light truncate">
               {user.email}
             </div>
           </div>
@@ -127,26 +126,26 @@ export const UserProfileMenu = React.memo(function UserProfileMenu({ expanded = 
 
         {/* Premium badge when collapsed */}
         {!expanded && isPremium && (
-          <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-brand-sand rounded-full flex items-center justify-center">
-            <svg className="w-2 h-2 text-brand-navy" fill="currentColor" viewBox="0 0 20 20">
+          <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-mono-canvas rounded-full flex items-center justify-center">
+            <svg className="w-2 h-2 text-mono-void" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
             </svg>
           </div>
         )}
 
-        {/* Tooltip when collapsed */}
+        {/* Tooltip when collapsed (dark tooltip over light content) */}
         {!expanded && (
           <div className="
             absolute left-full ml-4 px-3 py-2
-            bg-brand-navy text-brand-sand text-sm
+            bg-mono-ink text-mono-canvas text-sm
             rounded-none weapon-shadow
             opacity-0 invisible group-hover:opacity-100 group-hover:visible
             pointer-events-none transition-none
-            whitespace-nowrap z-50 border border-brand-sky/30
+            whitespace-nowrap z-50 border border-mono-edge
           ">
             <div className="font-medium">{user.displayName || 'User'}</div>
-            <div className="text-xs text-brand-sky">{user.email}</div>
-            <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1.5 w-3 h-3 bg-brand-navy rotate-45 border-l border-b border-brand-sky/30" />
+            <div className="text-xs text-mono-light">{user.email}</div>
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1.5 w-3 h-3 bg-mono-ink rotate-45 border-l border-b border-mono-edge" />
           </div>
         )}
       </button>
