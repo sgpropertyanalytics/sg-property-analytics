@@ -73,29 +73,49 @@ const ALLOWED_FILES = [
 ];
 
 // Color to semantic name mapping for suggestions
-// Updated for White Ops design system - prefer importing from colors.js
+// Updated for White Ops design system - prefer Tailwind tokens or imports from colors.js
 const COLOR_MAPPING = {
-  // Primary brand colors (from BRAND in colors.js)
-  '#213448': 'BRAND.navy - import { BRAND } from "../../constants/colors"',
-  '#547792': 'BRAND.blue - import { BRAND } from "../../constants/colors"',
-  '#94b4c1': 'BRAND.sky - import { BRAND } from "../../constants/colors"',
-  '#94B4C1': 'BRAND.sky - import { BRAND } from "../../constants/colors"',
-  '#eae0cf': 'BRAND.sand - import { BRAND } from "../../constants/colors"',
-  '#EAE0CF': 'BRAND.sand - import { BRAND } from "../../constants/colors"',
+  // Primary brand colors - USE TAILWIND TOKENS (preferred)
+  '#213448': 'brand-navy → use "bg-brand-navy" or "text-brand-navy" Tailwind class',
+  '#547792': 'brand-blue → use "bg-brand-blue" or "text-brand-blue" Tailwind class',
+  '#94b4c1': 'brand-sky → use "bg-brand-sky" or "text-brand-sky" Tailwind class',
+  '#94B4C1': 'brand-sky → use "bg-brand-sky" or "text-brand-sky" Tailwind class',
+  '#eae0cf': 'brand-sand → use "bg-brand-sand" or "text-brand-sand" Tailwind class',
+  '#EAE0CF': 'brand-sand → use "bg-brand-sand" or "text-brand-sand" Tailwind class',
 
-  // Region colors (from REGION in colors.js)
-  // CCR/RCR/OCR same as BRAND but semantic import: REGION.CCR, REGION.RCR, REGION.OCR
+  // Monochromatic base - USE TAILWIND TOKENS
+  '#000000': 'mono-ink → use "bg-mono-ink" or "text-mono-ink" Tailwind class',
+  '#171717': 'mono-dark → use "bg-mono-dark" or "text-mono-dark" Tailwind class',
+  '#525252': 'mono-mid → use "bg-mono-mid" or "text-mono-mid" Tailwind class',
+  '#A3A3A3': 'mono-light → use "bg-mono-light" or "text-mono-light" Tailwind class',
+  '#a3a3a3': 'mono-light → use "bg-mono-light" or "text-mono-light" Tailwind class',
+  '#E5E7EB': 'mono-muted → use "bg-mono-muted" or "border-mono-muted" Tailwind class',
+  '#e5e7eb': 'mono-muted → use "bg-mono-muted" or "border-mono-muted" Tailwind class',
+  '#FAFAFA': 'mono-canvas → use "bg-mono-canvas" Tailwind class',
+  '#fafafa': 'mono-canvas → use "bg-mono-canvas" Tailwind class',
+
+  // Liquidity zone colors (from LIQUIDITY in colors.js)
+  '#F59E0B': 'LIQUIDITY.low → import { LIQUIDITY } from "../../constants/colors"',
+  '#f59e0b': 'LIQUIDITY.low → import { LIQUIDITY } from "../../constants/colors"',
+  '#10B981': 'LIQUIDITY.healthy or STATUS.live → import from "../../constants/colors"',
+  '#10b981': 'LIQUIDITY.healthy or STATUS.live → import from "../../constants/colors"',
+  '#EF4444': 'LIQUIDITY.high → import { LIQUIDITY } from "../../constants/colors"',
+  '#ef4444': 'LIQUIDITY.high → import { LIQUIDITY } from "../../constants/colors"',
 
   // Supply pipeline colors (from SUPPLY in colors.js)
-  '#6b4226': 'SUPPLY.unsold - import { SUPPLY } from "../../constants/colors"',
-  '#9c6644': 'SUPPLY.upcoming - import { SUPPLY } from "../../constants/colors"',
-  '#c4a77d': 'SUPPLY.gls - import { SUPPLY } from "../../constants/colors"',
+  '#6b4226': 'SUPPLY.unsold → import { SUPPLY } from "../../constants/colors"',
+  '#9c6644': 'SUPPLY.upcoming → import { SUPPLY } from "../../constants/colors"',
+  '#c4a77d': 'SUPPLY.gls → import { SUPPLY } from "../../constants/colors"',
+
+  // Status colors
+  '#FF5500': 'STATUS.negative → import { STATUS } from "../../constants/colors"',
+  '#ff5500': 'STATUS.negative → import { STATUS } from "../../constants/colors"',
 
   // Bloomberg Terminal typography colors (from chartOptions.js)
-  '#0f172a': 'slate-900 (chart ticks) - use CHART_AXIS_DEFAULTS or text-slate-900',
-  '#0F172A': 'slate-900 (chart ticks) - use CHART_AXIS_DEFAULTS or text-slate-900',
-  '#64748b': 'slate-500 (axis titles) - use CHART_AXIS_DEFAULTS or text-slate-500',
-  '#64748B': 'slate-500 (axis titles) - use CHART_AXIS_DEFAULTS or text-slate-500',
+  '#0f172a': 'slate-900 → use "text-slate-900" or CHART_AXIS_DEFAULTS',
+  '#0F172A': 'slate-900 → use "text-slate-900" or CHART_AXIS_DEFAULTS',
+  '#64748b': 'slate-500 → use "text-slate-500" or CHART_AXIS_DEFAULTS',
+  '#64748B': 'slate-500 → use "text-slate-500" or CHART_AXIS_DEFAULTS',
 };
 
 export default {

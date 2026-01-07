@@ -131,13 +131,13 @@ export default function DealCheckerMap({
   // No location data available
   if (!centerProject?.latitude) {
     return (
-      <div className="h-full flex items-center justify-center bg-slate-50">
+      <div className="h-full flex items-center justify-center bg-mono-canvas">
         <div className="text-center">
-          <svg className="w-12 h-12 mx-auto text-[#94B4C1] mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-12 h-12 mx-auto text-brand-sky mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
-          <p className="text-sm text-[#547792]">Location data not available</p>
+          <p className="text-sm text-brand-blue">Location data not available</p>
         </div>
       </div>
     );
@@ -217,7 +217,7 @@ export default function DealCheckerMap({
             }}
           >
             <div
-              className="w-2.5 h-2.5 bg-[#94B4C1] rounded-full border border-white shadow cursor-pointer hover:bg-[#547792] transition-colors"
+              className="w-2.5 h-2.5 bg-brand-sky rounded-full border border-white shadow cursor-pointer hover:bg-brand-blue transition-none"
               style={{ filter: volumeGlow }}
               title={`${project.project_name} (${(project.distance_km * 1000).toFixed(0)}m) - ${project.transaction_count || 0} transactions`}
             />
@@ -240,7 +240,7 @@ export default function DealCheckerMap({
             }}
           >
             <div
-              className="w-3 h-3 bg-[#547792] rounded-full border-2 border-white shadow-md cursor-pointer hover:bg-[#213448] transition-colors"
+              className="w-3 h-3 bg-brand-blue rounded-full border-2 border-white shadow-md cursor-pointer hover:bg-brand-navy transition-none"
               style={{ filter: volumeGlow }}
               title={`${project.project_name} (${(project.distance_km * 1000).toFixed(0)}m) - ${project.transaction_count || 0} transactions`}
             />
@@ -256,13 +256,13 @@ export default function DealCheckerMap({
       >
         <div className="flex flex-col items-center">
           {/* Label */}
-          <div className="px-2 py-1 bg-[#213448] text-white text-xs font-semibold rounded shadow-lg whitespace-nowrap max-w-[200px] truncate">
+          <div className="px-2 py-1 bg-brand-navy text-white text-xs font-semibold rounded-none shadow-lg whitespace-nowrap max-w-[200px] truncate">
             {centerProject.name}
           </div>
           {/* Arrow */}
-          <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-[#213448]" />
+          <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-brand-navy" />
           {/* Pin */}
-          <div className="w-4 h-4 bg-[#213448] rounded-full border-2 border-white shadow-lg -mt-1" />
+          <div className="w-4 h-4 bg-brand-navy rounded-full border-2 border-white shadow-lg -mt-1" />
         </div>
       </Marker>
 
@@ -280,10 +280,10 @@ export default function DealCheckerMap({
           maxWidth="280px"
         >
           <div className="p-2 min-w-[180px]">
-            <h4 className="font-semibold text-[#213448] text-sm mb-1">
+            <h4 className="font-semibold text-brand-navy text-sm mb-1">
               {popupInfo.project_name}
             </h4>
-            <div className="text-xs text-[#547792] space-y-0.5">
+            <div className="text-xs text-brand-blue space-y-0.5">
               <p>District: {popupInfo.district}</p>
               <p>Distance: {(popupInfo.distance_km * 1000).toFixed(0)}m</p>
               {popupInfo.transaction_count > 0 && (
@@ -297,7 +297,7 @@ export default function DealCheckerMap({
                   )}
                 </>
               )}
-              <p className="text-[#94B4C1] mt-1">
+              <p className="text-brand-sky mt-1">
                 {popupInfo.tier === '1km' ? 'Within 1km' : 'Within 2km'}
               </p>
             </div>
@@ -308,29 +308,29 @@ export default function DealCheckerMap({
       {/* Legend */}
       <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-sm rounded-none shadow-weapon border border-mono-muted p-2 text-xs">
         <div className="flex items-center gap-2 mb-1">
-          <div className="w-3 h-3 bg-[#213448] rounded-full border border-white"></div>
-          <span className="text-[#213448]">Your project</span>
+          <div className="w-3 h-3 bg-brand-navy rounded-full border border-white"></div>
+          <span className="text-brand-navy">Your project</span>
         </div>
         <div className="flex items-center gap-2 mb-1">
-          <div className="w-2.5 h-2.5 bg-[#547792] rounded-full border border-white"></div>
-          <span className="text-[#547792]">Within 1km</span>
+          <div className="w-2.5 h-2.5 bg-brand-blue rounded-full border border-white"></div>
+          <span className="text-brand-blue">Within 1km</span>
         </div>
         <div className="flex items-center gap-2 mb-2">
-          <div className="w-2 h-2 bg-[#94B4C1] rounded-full border border-white"></div>
-          <span className="text-[#94B4C1]">1-2km</span>
+          <div className="w-2 h-2 bg-brand-sky rounded-full border border-white"></div>
+          <span className="text-brand-sky">1-2km</span>
         </div>
         {/* Volume activity legend */}
-        <div className="border-t border-[#94B4C1]/30 pt-1.5 mt-1">
-          <div className="text-[9px] text-[#547792] uppercase tracking-wide mb-1">Volume</div>
+        <div className="border-t border-brand-sky/30 pt-1.5 mt-1">
+          <div className="text-[9px] text-brand-blue uppercase tracking-wide mb-1">Volume</div>
           <div
-            className="h-1.5 w-full rounded-sm"
+            className="h-1.5 w-full rounded-none"
             style={{
               background: 'linear-gradient(to right, #EF4444, #F97316, #FACC15, #94B4C1)',
             }}
           />
           <div className="flex justify-between mt-0.5">
-            <span className="text-[8px] text-[#547792]">High</span>
-            <span className="text-[8px] text-[#547792]">Low</span>
+            <span className="text-[8px] text-brand-blue">High</span>
+            <span className="text-[8px] text-brand-blue">Low</span>
           </div>
         </div>
       </div>

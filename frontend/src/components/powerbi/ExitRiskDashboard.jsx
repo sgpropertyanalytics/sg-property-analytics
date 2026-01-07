@@ -15,14 +15,7 @@
  * IMPORTANT: Values displayed as "X per 100 units" (NEVER with % symbol)
  */
 import { FrostOverlay } from '../common/loading';
-
-// Institutional color palette for liquidity zones
-const LIQUIDITY_COLORS = {
-  low: '#F59E0B',      // Soft amber - Low Liquidity
-  healthy: '#10B981',  // Muted green - Healthy Liquidity (optimal)
-  high: '#EF4444',     // Muted red - Elevated Turnover
-  unknown: '#94B4C1',  // Sky blue - Unknown
-};
+import { LIQUIDITY } from '../../constants/colors';
 
 // Get liquidity zone from turnover value
 const getLiquidityZone = (turnover) => {
@@ -35,7 +28,7 @@ const getLiquidityZone = (turnover) => {
 // Get color for turnover value based on liquidity zone
 const getTurnoverColor = (turnover) => {
   const zone = getLiquidityZone(turnover);
-  return LIQUIDITY_COLORS[zone] || LIQUIDITY_COLORS.unknown;
+  return LIQUIDITY[zone] || LIQUIDITY.unknown;
 };
 
 // Get zone label for display

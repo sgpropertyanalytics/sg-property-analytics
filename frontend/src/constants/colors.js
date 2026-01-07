@@ -31,6 +31,17 @@ export const STATUS = {
 };
 
 // =============================================================================
+// LIQUIDITY PALETTE (Exit Risk / Turnover zones)
+// =============================================================================
+
+export const LIQUIDITY = {
+  low: '#F59E0B',       // Soft amber - Low Liquidity (<5 per 100 units)
+  healthy: '#10B981',   // Muted green - Healthy Liquidity (5-15 per 100 units)
+  high: '#EF4444',      // Muted red - Elevated Turnover (>15 per 100 units)
+  unknown: '#94B4C1',   // Sky blue - Unknown
+};
+
+// =============================================================================
 // BRAND PALETTE (Legacy - Charts/Regions)
 // =============================================================================
 

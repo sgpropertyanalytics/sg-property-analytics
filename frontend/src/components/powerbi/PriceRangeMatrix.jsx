@@ -89,15 +89,15 @@ export function PriceRangeMatrix({
       skeleton="grid"
       height={300}
     >
-    <div className="bg-card rounded-lg shadow-sm border border-[#94B4C1]/50">
+    <div className="weapon-card hud-corner overflow-hidden">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-gray-200">
+      <div className="terminal-header px-4 py-3 border-b border-mono-muted">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-semibold text-[#213448]">
-              Fair Price Range
-            </h3>
-            <p className="text-xs text-gray-500 mt-0.5">
+            <span className="text-mono-ink font-semibold">
+              FAIR_PRICE_RANGE
+            </span>
+            <p className="text-xs text-mono-mid mt-0.5 normal-case tracking-normal">
               Price corridors by bedroom and property age (Q1-Q3 = typical range)
             </p>
           </div>
@@ -109,24 +109,24 @@ export function PriceRangeMatrix({
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-gray-50">
-              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
+            <tr className="bg-mono-canvas">
+              <th className="px-3 py-2 text-left text-xs font-mono font-medium text-mono-mid uppercase tracking-wider w-32">
                 Property Age
               </th>
               {bedrooms.map((br) => (
                 <th
                   key={br}
-                  className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="px-2 py-2 text-center text-xs font-mono font-medium text-mono-mid uppercase tracking-wider"
                 >
                   {getBedroomLabelShort(br)}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-mono-muted">
             {ageBands.map((band) => (
-              <tr key={band} className="hover:bg-gray-50">
-                <td className="px-3 py-2 text-xs font-medium text-gray-700 whitespace-nowrap">
+              <tr key={band} className="hover:bg-mono-canvas">
+                <td className="px-3 py-2 text-xs font-mono font-medium text-mono-mid whitespace-nowrap">
                   {AGE_BAND_LABELS_SHORT[band] || band}
                 </td>
                 {bedrooms.map((br) => (

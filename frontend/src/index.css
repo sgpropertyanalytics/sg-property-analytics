@@ -602,29 +602,6 @@ input[type="range"].slider-thumb::-moz-range-progress {
   cursor: crosshair;
 }
 
-/* ====== Phase 3.3: Grayscale Depth Utility Classes ====== */
-
-/* Text color hierarchy for monochrome depth */
-.text-ink { color: #000000; }
-.text-gray-dark { color: #333333; }
-.text-gray-mid { color: #666666; }
-.text-gray-light { color: #999999; }
-.text-gray-muted { color: #cccccc; }
-
-/* Background variants */
-.bg-ink { background-color: #000000; }
-.bg-gray-dark { background-color: #333333; }
-.bg-gray-mid { background-color: #666666; }
-.bg-gray-light { background-color: #999999; }
-.bg-gray-muted { background-color: #cccccc; }
-
-/* Border variants */
-.border-ink { border-color: #000000; }
-.border-gray-dark { border-color: #333333; }
-.border-gray-mid { border-color: #666666; }
-.border-gray-light { border-color: #999999; }
-.border-gray-muted { border-color: #cccccc; }
-
 /* ====== Phase 4.1: Enhanced Pulse Ring Animation ====== */
 
 /* Multiple expanding rings for live indicators */
@@ -677,31 +654,6 @@ input[type="range"].slider-thumb::-moz-range-progress {
 
 /* ====== Phase 4.3: Card Hover & Micro-interactions ====== */
 
-/* Card hover lift + glow effect */
-.card-hover-lift {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.card-hover-lift:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.08),
-    0 0 0 1px rgba(0, 0, 0, 0.05);
-}
-
-/* Card with emerald glow on hover */
-.card-hover-glow {
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-}
-
-.card-hover-glow:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.08),
-    0 0 20px rgba(16, 185, 129, 0.15);
-  border-color: rgba(16, 185, 129, 0.3);
-}
-
 /* Button scan sweep effect (builds on scan-line-hover) */
 .btn-scan-sweep {
   position: relative;
@@ -728,20 +680,7 @@ input[type="range"].slider-thumb::-moz-range-progress {
   left: 100%;
 }
 
-/* Input focus glow (emerald accent) */
-.input-focus-glow {
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
-}
-
-.input-focus-glow:focus {
-  outline: none;
-  border-color: rgba(16, 185, 129, 0.5);
-  box-shadow:
-    0 0 0 3px rgba(16, 185, 129, 0.1),
-    0 0 12px rgba(16, 185, 129, 0.2);
-}
-
-/* Command bar specific focus glow */
+/* Command bar specific focus glow (used in LandingV3) */
 .command-bar-focus {
   transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
