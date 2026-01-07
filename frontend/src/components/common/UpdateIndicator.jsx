@@ -7,10 +7,10 @@ import { FrostSpinner } from './loading';
  * Shows a small pill with pulsing dots animation to indicate data is being fetched.
  * Designed to overlay charts without obstructing too much content.
  *
- * Uses the design system colors:
- * - Navy background (#213448 with transparency)
- * - Blue dots (#547792)
- * - Sand text (#EAE0CF)
+ * Uses the Institutional Print / Slate palette:
+ * - Primary background: slate-900 (#0F172A with transparency)
+ * - Secondary: slate-700 (#334155)
+ * - Light text: slate-200 (#E5E7EB)
  *
  * @deprecated Prefer using FrostOverlay component instead for loading states.
  * This component is kept for backward compatibility.

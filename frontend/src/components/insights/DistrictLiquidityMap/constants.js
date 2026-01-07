@@ -34,20 +34,20 @@ export const MAP_STYLE =
 // =============================================================================
 
 export const COLORS = {
-  deepNavy: '#213448',
-  oceanBlue: '#547792',
-  skyBlue: '#94B4C1',
-  sand: '#EAE0CF',
+  deepNavy: '#0F172A',    // slate-900
+  oceanBlue: '#334155',   // slate-700
+  skyBlue: '#64748B',     // slate-500
+  sand: '#E5E7EB',        // slate-200
 };
 
-// Liquidity tier colors (based on Z-score)
+// Liquidity tier colors (based on Z-score) - Slate palette
 export const LIQUIDITY_FILLS = {
-  veryHigh: 'rgba(33, 52, 72, 0.60)', // Deep Navy - Z > 1.5
-  high: 'rgba(84, 119, 146, 0.50)', // Ocean Blue - 0.5 < Z <= 1.5
-  neutral: 'rgba(148, 180, 193, 0.35)', // Sky Blue - -0.5 <= Z <= 0.5
-  low: 'rgba(234, 224, 207, 0.50)', // Sand - -1.5 <= Z < -0.5
-  veryLow: 'rgba(234, 224, 207, 0.70)', // Sand stronger - Z < -1.5
-  noData: 'rgba(200, 200, 200, 0.15)', // Gray - no data
+  veryHigh: 'rgba(15, 23, 42, 0.60)',    // slate-900 - Z > 1.5
+  high: 'rgba(51, 65, 85, 0.50)',        // slate-700 - 0.5 < Z <= 1.5
+  neutral: 'rgba(100, 116, 139, 0.35)',  // slate-500 - -0.5 <= Z <= 0.5
+  low: 'rgba(229, 231, 235, 0.50)',      // slate-200 - -1.5 <= Z < -0.5
+  veryLow: 'rgba(229, 231, 235, 0.70)',  // slate-200 stronger - Z < -1.5
+  noData: 'rgba(200, 200, 200, 0.15)',   // Gray - no data
 };
 
 // =============================================================================

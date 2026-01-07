@@ -166,7 +166,7 @@ function NewLaunchTimelineChartBase({ height = 300 }) {
         type: 'bar',
         label: 'Total Units',
         data: totalUnits,
-        backgroundColor: 'rgba(100, 116, 139, 0.7)', // Sky #94B4C1
+        backgroundColor: 'rgba(100, 116, 139, 0.7)', // slate-500
         borderColor: '#334155',
         borderWidth: 1,
         borderRadius: 3,

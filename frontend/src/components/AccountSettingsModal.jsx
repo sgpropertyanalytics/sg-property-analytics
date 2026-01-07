@@ -14,11 +14,11 @@ import { getInitials } from '../utils/formatters';
  * - Billing & Plan (current plan, subscription management)
  * - Delete Account (danger zone)
  *
- * Color Palette:
- * - Deep Navy: #213448
- * - Ocean Blue: #547792
- * - Sky Blue: #94B4C1
- * - Sand/Cream: #EAE0CF
+ * Color Palette (Institutional Print / Slate):
+ * - Primary: #0F172A (slate-900)
+ * - Secondary: #334155 (slate-700)
+ * - Tertiary: #64748B (slate-500)
+ * - Background: #E5E7EB (slate-200)
  */
 export function AccountSettingsModal({ isOpen, onClose, onShowPricing }) {
   const { user, logout } = useAuth();

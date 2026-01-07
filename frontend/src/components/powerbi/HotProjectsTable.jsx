@@ -147,17 +147,17 @@ export function HotProjectsTable({
     };
   }, [safeData]);
 
-  // Color scale using theme colors: highest = #213448, lowest = #EAE0CF (reserved for future use)
+  // Color scale using slate palette: highest = slate-900, lowest = slate-200 (reserved for future use)
   const _getValueColor = (value, min, max) => {
     if (value === null || value === undefined) return { bg: '#f1f5f9', text: '#64748b' };
     const ratio = (value - min) / (max - min || 1);
     // Interpolate between colors based on ratio
-    // Low (0): #EAE0CF (cream) -> High (1): #213448 (deep navy)
-    if (ratio >= 0.8) return { bg: 'rgba(33, 52, 72, 0.15)', text: '#213448' };      // Deep Navy
-    if (ratio >= 0.6) return { bg: 'rgba(84, 119, 146, 0.15)', text: '#3d5a73' };    // Ocean Blue
-    if (ratio >= 0.4) return { bg: 'rgba(148, 180, 193, 0.2)', text: '#547792' };    // Sky Blue
-    if (ratio >= 0.2) return { bg: 'rgba(234, 224, 207, 0.5)', text: '#6b7c6b' };    // Light
-    return { bg: 'rgba(234, 224, 207, 0.3)', text: '#8b9a8b' };                       // Cream (lowest)
+    // Low (0): slate-200 -> High (1): slate-900
+    if (ratio >= 0.8) return { bg: 'rgba(15, 23, 42, 0.15)', text: '#0F172A' };      // slate-900
+    if (ratio >= 0.6) return { bg: 'rgba(51, 65, 85, 0.15)', text: '#334155' };      // slate-700
+    if (ratio >= 0.4) return { bg: 'rgba(100, 116, 139, 0.2)', text: '#64748B' };    // slate-500
+    if (ratio >= 0.2) return { bg: 'rgba(229, 231, 235, 0.5)', text: '#6B7280' };    // slate-200
+    return { bg: 'rgba(229, 231, 235, 0.3)', text: '#9CA3AF' };                       // slate-200 (lowest)
   };
 
   // Sort indicator

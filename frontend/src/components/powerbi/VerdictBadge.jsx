@@ -79,7 +79,7 @@ export function VerdictBadge({
           <div className="bg-brand-navy text-white text-xs rounded-lg px-3 py-2 shadow-lg">
             {tooltip}
             {/* Arrow */}
-            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#213448]" />
+            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#0F172A]" />
           </div>
         </div>
       )}

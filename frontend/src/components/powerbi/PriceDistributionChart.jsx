@@ -134,7 +134,7 @@ function PriceDistributionChartBase({
   const maxValue = Math.max(...counts, 1);
   const getBarColor = (count, alpha = 0.8) => {
     const intensity = 0.3 + (count / maxValue) * 0.7;
-    return `rgba(84, 119, 146, ${alpha * intensity})`;  // #547792
+    return `rgba(51, 65, 85, ${alpha * intensity})`;  // slate-700
   };
 
   const chartData = {
