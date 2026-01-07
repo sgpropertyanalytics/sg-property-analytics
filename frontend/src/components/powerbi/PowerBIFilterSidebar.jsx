@@ -114,26 +114,22 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
   };
 
   // ==================== HORIZONTAL LAYOUT ====================
-  // iOS-style segmented controls with pill-shaped tracks
-  // Frosted glass - sticky handled by parent FilterBar wrapper
+  // Industrial Wireframe: Segmented controls as "mechanical switches"
+  // Transparent backgrounds, sharp edges, structural borders
   // Single row layout: Property filters | Time Duration | Granularity | Reset
   if (layout === 'horizontal') {
     return (
-      <div className="-mx-3 md:-mx-4 lg:-mx-6 px-3 md:px-4 lg:px-6 py-3 bg-card/85 backdrop-blur-sm border-b border-mono-muted weapon-noise">
-        <div className="flex flex-wrap lg:flex-nowrap items-center justify-start gap-3">
+      <div className="-mx-3 md:-mx-4 lg:-mx-6 px-3 md:px-4 lg:px-6 py-3 bg-transparent border-b border-stone-400">
+        <div className="flex flex-wrap lg:flex-nowrap items-center justify-start gap-4">
           {/* Property Filters - Region + District + Bedroom */}
-          <div className="flex items-center gap-3 flex-shrink-0 min-w-0">
-            {/* Region Segmented Track */}
-            <div className="inline-flex bg-white/60 backdrop-blur-sm border border-mono-muted rounded-none overflow-hidden divide-x divide-gray-200/80">
-              {/* "All" button - dark blue when active (default state) */}
+          <div className="flex items-center gap-4 flex-shrink-0 min-w-0">
+            {/* Region Segmented Control */}
+            <div className="segmented-control">
+              {/* "All" button */}
               <button
                 type="button"
                 onClick={() => setSegments([])}
-                className={`px-4 py-2 text-sm font-medium transition-none min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-navy focus-visible:ring-inset ${
-                  filters.segments.length === 0
-                    ? 'bg-brand-navy text-white shadow-inner'
-                    : 'bg-transparent text-slate-500 hover:bg-white/50 hover:text-slate-900'
-                }`}
+                className={`segmented-btn ${filters.segments.length === 0 ? 'active' : ''}`}
               >
                 All
               </button>
@@ -142,11 +138,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                   type="button"
                   key={seg}
                   onClick={(e) => handleFilterClick(e, seg, filters.segments, setSegments, toggleSegment)}
-                  className={`px-4 py-2 text-sm font-medium transition-none min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-navy focus-visible:ring-inset ${
-                    filters.segments.includes(seg)
-                      ? 'bg-brand-navy text-white shadow-inner'
-                      : 'bg-transparent text-slate-500 hover:bg-white/50 hover:text-slate-900'
-                  }`}
+                  className={`segmented-btn ${filters.segments.includes(seg) ? 'active' : ''}`}
                   title="Shift+click to multi-select"
                 >
                   {seg}
@@ -172,17 +164,13 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
               segmentedStyle
             />
 
-            {/* Bedroom Segmented Track */}
-            <div className="inline-flex bg-white/60 backdrop-blur-sm border border-mono-muted rounded-none overflow-hidden divide-x divide-gray-200/80">
-              {/* "All" button - dark blue when active */}
+            {/* Bedroom Segmented Control */}
+            <div className="segmented-control">
+              {/* "All" button */}
               <button
                 type="button"
                 onClick={() => setBedroomTypes([])}
-                className={`px-3 py-2 text-sm font-medium transition-none min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-navy focus-visible:ring-inset ${
-                  filters.bedroomTypes.length === 0
-                    ? 'bg-brand-navy text-white shadow-inner'
-                    : 'bg-transparent text-slate-500 hover:bg-white/50 hover:text-slate-900'
-                }`}
+                className={`segmented-btn ${filters.bedroomTypes.length === 0 ? 'active' : ''}`}
               >
                 All
               </button>
@@ -191,36 +179,32 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                   type="button"
                   key={br}
                   onClick={(e) => handleFilterClick(e, br, filters.bedroomTypes, setBedroomTypes, toggleBedroomType)}
-                  className={`px-3 py-2 text-sm font-medium transition-none min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-navy focus-visible:ring-inset ${
-                    filters.bedroomTypes.includes(br)
-                      ? 'bg-brand-navy text-white shadow-inner'
-                      : 'bg-transparent text-slate-500 hover:bg-white/50 hover:text-slate-900'
-                  }`}
+                  className={`segmented-btn ${filters.bedroomTypes.includes(br) ? 'active' : ''}`}
                   title="Shift+click to multi-select"
                 >
-                  {br === 5 ? '5BR' : `${br}BR`}
+                  {br}BR
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Divider - visible on large screens */}
-          <div className="hidden lg:block w-px h-7 bg-brand-sky/50 flex-shrink-0" />
+          {/* Divider - structural line */}
+          <div className="hidden lg:block w-px h-7 bg-stone-400 flex-shrink-0" />
 
           {/* Time Controls - Period Presets */}
-          <div className="inline-flex bg-white/60 backdrop-blur-sm border border-mono-muted rounded-none overflow-hidden divide-x divide-gray-200/80 flex-shrink-0">
+          <div className="segmented-control flex-shrink-0">
             {TIMEFRAME_OPTIONS.map(opt => (
               <button
                 type="button"
                 key={opt.id}
                 onClick={(e) => { e.preventDefault(); handlePresetClick(opt.id); }}
                 disabled={filterOptions.loading}
-                className={`px-3 py-2 text-sm font-medium transition-none min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-navy focus-visible:ring-inset ${
+                className={`segmented-btn ${
                   filterOptions.loading
-                    ? 'bg-gray-100/80 text-gray-400 cursor-wait'
+                    ? 'opacity-50 cursor-wait'
                     : currentPreset === opt.id
-                      ? 'bg-brand-navy text-white shadow-inner'
-                      : 'bg-transparent text-slate-500 hover:bg-white/50 hover:text-slate-900'
+                      ? 'active'
+                      : ''
                 }`}
               >
                 {opt.label}
@@ -228,17 +212,17 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
             ))}
           </div>
 
-          {/* Divider - visible on large screens */}
-          <div className="hidden lg:block w-px h-7 bg-brand-sky/50 flex-shrink-0" />
+          {/* Divider - structural line */}
+          <div className="hidden lg:block w-px h-7 bg-stone-400 flex-shrink-0" />
 
           {/* Time Granularity Toggle */}
           <TimeGranularityToggle layout="horizontal" />
 
-          {/* Reset button - text link style, always at end */}
+          {/* Reset button - wireframe text link */}
           {activeFilterCount > 0 && (
             <button
               onClick={handleResetFilters}
-              className="min-h-[44px] px-3 py-2 text-sm font-medium text-brand-blue hover:text-brand-navy hover:underline transition-none flex-shrink-0 ml-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-navy focus-visible:ring-offset-2 rounded"
+              className="segmented-btn border border-stone-400 text-stone-600 hover:border-red-500 hover:text-red-500 flex-shrink-0 ml-auto"
             >
               Reset
             </button>
@@ -879,14 +863,14 @@ function MultiSelectDropdown({ options, selected, onChange, placeholder, searcha
     return () => document.removeEventListener('click', handleClick);
   }, [isOpen]);
 
-  // Styles differ based on segmentedStyle prop
+  // Styles differ based on segmentedStyle prop - Industrial Wireframe aesthetic
   const buttonClasses = segmentedStyle
-    ? `${compact ? 'min-w-[140px]' : 'w-full'} min-w-0 px-3 py-2 min-h-[44px] text-sm font-medium border border-gray-300/80 rounded-none bg-white/60 backdrop-blur-sm text-left flex items-center justify-between shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-navy`
-    : `${compact ? 'min-w-[140px]' : 'w-full'} min-w-0 px-3 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-none bg-white text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-blue-500`;
+    ? `${compact ? 'min-w-[140px]' : 'w-full'} min-w-0 px-4 py-2 min-h-[36px] font-mono text-xs uppercase tracking-wide border border-stone-400 bg-transparent text-stone-600 text-left flex items-center justify-between focus:outline-none focus:border-orange-500 hover:border-stone-600`
+    : `${compact ? 'min-w-[140px]' : 'w-full'} min-w-0 px-3 py-2.5 min-h-[44px] text-sm border border-stone-400 bg-transparent text-left flex items-center justify-between focus:outline-none focus:border-orange-500`;
 
   const dropdownClasses = segmentedStyle
-    ? `absolute z-50 ${compact ? 'w-64' : 'w-full'} mt-1 bg-white/95 backdrop-blur-sm border border-gray-300/80 rounded-none shadow-lg max-h-60 overflow-hidden`
-    : `absolute z-50 ${compact ? 'w-64' : 'w-full'} mt-1 bg-white border border-slate-300 rounded-none shadow-lg max-h-60 overflow-hidden`;
+    ? `absolute z-50 ${compact ? 'w-64' : 'w-full'} mt-1 bg-[#F2EFE9] border border-stone-400 max-h-60 overflow-hidden`
+    : `absolute z-50 ${compact ? 'w-64' : 'w-full'} mt-1 bg-[#F2EFE9] border border-stone-400 max-h-60 overflow-hidden`;
 
   return (
     <div className={`relative multi-select-dropdown ${compact ? '' : 'w-full'}`}>
@@ -895,11 +879,11 @@ function MultiSelectDropdown({ options, selected, onChange, placeholder, searcha
         onClick={(e) => { e.preventDefault(); setIsOpen(!isOpen); }}
         className={buttonClasses}
       >
-        <span className={`${selected.length > 0 ? 'text-slate-900' : 'text-slate-500'} truncate min-w-0 flex-shrink`}>
+        <span className={`${selected.length > 0 ? 'text-stone-900' : 'text-stone-500'} truncate min-w-0 flex-shrink`}>
           {getDisplayText()}
         </span>
         <svg
-          className={`w-4 h-4 text-slate-400 transition-none flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 text-stone-400 transition-none flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -911,13 +895,13 @@ function MultiSelectDropdown({ options, selected, onChange, placeholder, searcha
       {isOpen && (
         <div className={dropdownClasses}>
           {searchable && (
-            <div className="p-2 border-b border-slate-200">
+            <div className="p-2 border-b border-stone-400">
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search..."
-                className="w-full px-2 py-1 text-sm border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full px-2 py-1 text-xs font-mono uppercase border border-stone-400 bg-transparent focus:outline-none focus:border-[#FF4F00]"
                 onClick={(e) => e.stopPropagation()}
               />
             </div>
@@ -927,7 +911,7 @@ function MultiSelectDropdown({ options, selected, onChange, placeholder, searcha
               <button
                 type="button"
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); onChange([]); }}
-                className="w-full px-3 py-2 text-xs text-left text-blue-600 hover:bg-blue-50 border-b border-slate-100"
+                className="w-full px-3 py-2 text-xs font-mono uppercase text-left text-[#FF4F00] hover:bg-stone-200/50 border-b border-stone-400"
               >
                 Clear selection
               </button>
@@ -935,16 +919,16 @@ function MultiSelectDropdown({ options, selected, onChange, placeholder, searcha
             {filteredOptions.map(opt => (
               <label
                 key={opt.value}
-                className="flex items-center px-3 py-2 hover:bg-slate-50 cursor-pointer"
+                className="flex items-center px-3 py-2 hover:bg-stone-200/50 cursor-pointer"
                 onClick={(e) => e.stopPropagation()}
               >
                 <input
                   type="checkbox"
                   checked={selected.includes(opt.value)}
                   onChange={(e) => handleToggle(opt.value, e)}
-                  className="mr-2 rounded border-slate-300 text-blue-500 focus:ring-blue-500"
+                  className="mr-2 border-stone-400 text-stone-900 focus:ring-stone-400 accent-stone-900"
                 />
-                <span className="text-sm text-slate-700">{opt.label}</span>
+                <span className="text-xs font-mono text-stone-700">{opt.label}</span>
               </label>
             ))}
           </div>

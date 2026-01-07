@@ -53,20 +53,16 @@ export function TimeGranularityToggle({ className = '', layout = 'default' }) {
     setTimeGrouping(value);
   };
 
-  // Horizontal layout: Pro-style segmented control (glass effect with dividers)
+  // Horizontal layout: Industrial Wireframe segmented control
   if (layout === 'horizontal') {
     return (
-      <div className={`relative inline-flex bg-white/60 backdrop-blur-sm border border-mono-muted rounded-none overflow-hidden divide-x divide-gray-200/80 flex-shrink-0 ${className}`}>
+      <div className={`segmented-control flex-shrink-0 ${className}`}>
         {options.map(opt => (
           <button
             key={opt.value}
             type="button"
             onClick={() => handleChange(opt.value)}
-            className={`px-3 py-2 text-sm font-mono uppercase tracking-wider transition-none min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-navy focus-visible:ring-inset ${
-              timeGrouping === opt.value
-                ? 'bg-brand-navy text-white shadow-inner'
-                : 'bg-transparent text-mono-mid hover:bg-white/50 hover:text-mono-ink'
-            }`}
+            className={`segmented-btn ${timeGrouping === opt.value ? 'active' : ''}`}
           >
             {opt.label}
           </button>
