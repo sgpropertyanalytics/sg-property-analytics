@@ -1,116 +1,141 @@
 /**
- * WHITE OPS / MUNITIONS-GRADE COLOR SYSTEM
+ * INSTITUTIONAL PRINT COLOR SYSTEM
  * Single Source of Truth for all color tokens
  *
+ * Design Philosophy: "Financial Print / Blueprint Strategy"
+ * Charts look like high-end architectural blueprints or printed financial reports.
+ * The Suit: Slate + Void + Cool Gray | The Tie: Bloomberg Orange
+ *
  * USAGE:
- * - Import specific palettes: import { MONO, STATUS, BRAND } from '../constants/colors'
- * - Use Tailwind classes after Phase 2: bg-mono-ink, text-status-live, border-brand-navy
+ * - Import specific palettes: import { INK, REGION, SIGNAL } from '../constants/colors'
+ * - Use Tailwind classes: bg-ink, text-region-ccr, border-signal-accent
  */
 
 // =============================================================================
-// MONOCHROMATIC BASE (Primary for Weapon Aesthetic)
+// VOID (Dark Frame - Navigation & Premium Surfaces)
 // =============================================================================
 
-export const MONO = {
-  void: '#0A0A0A',      // The void - nav background (denser than dark)
-  surface: '#1A1A1A',   // Elevated surfaces on void
-  edge: '#333333',      // Machined metal borders
-  ink: '#000000',       // Pure black - headers, borders, emphasis
-  dark: '#171717',      // Near-black - active states (inverted BG)
-  mid: '#525252',       // Medium gray - body text
-  light: '#A3A3A3',     // Light gray - secondary text, placeholders
-  muted: '#E5E7EB',     // Border gray - structural lines
-  canvas: '#FAFAFA',
+export const VOID = {
+  base: '#0A0A0A',      // The void - nav background (denser than dark)
+  surface: '#1A1A1A',   // Elevated cards on void
+  edge: '#333333',      // Machined metal borders on dark
 };
 
 // =============================================================================
-// STATUS COLORS (Surgical Use Only)
+// CANVAS (Light Content Areas)
 // =============================================================================
 
-export const STATUS = {
-  live: '#10B981',      // Emerald - ONLY for live/active indicators
-  negative: '#FF5500',  // Orange - negative deltas
-  positive: '#10B981',  // Alias for consistency
+export const CANVAS = {
+  base: '#FAFAFA',      // Main content background
+  paper: '#FFFFFF',     // Cards, modals
+  grid: '#E5E7EB',      // Chart grids, subtle borders (replaces sand)
 };
 
 // =============================================================================
-// LIQUIDITY PALETTE (Exit Risk / Turnover zones)
+// INK (Data/Text - The "Print")
 // =============================================================================
 
-export const LIQUIDITY = {
-  low: '#F59E0B',       // Soft amber - Low Liquidity (<5 per 100 units)
-  healthy: '#10B981',   // Muted green - Healthy Liquidity (5-15 per 100 units)
-  high: '#EF4444',      // Muted red - Elevated Turnover (>15 per 100 units)
-  unknown: '#94B4C1',   // Sky blue - Unknown
+export const INK = {
+  primary: '#0F172A',   // Slate 900 - Primary data, headers, chart bars
+  dense: '#1E293B',     // Slate 800 - Secondary emphasis
+  mid: '#475569',       // Slate 600 - Body text
+  muted: '#94A3B8',     // Slate 400 - Ghost data, historical, placeholders
+  light: '#CBD5E1',     // Slate 300 - Subtle borders
 };
 
 // =============================================================================
-// BRAND PALETTE (Legacy - Charts/Regions)
-// =============================================================================
-
-export const BRAND = {
-  navy: '#213448',      // CCR, primary
-  blue: '#547792',      // RCR, secondary
-  sky: '#94B4C1',       // OCR, tertiary
-  sand: '#EAE0CF',      // Backgrounds, accents
-};
-
-// =============================================================================
-// REGION MAPPING
+// REGION (Monochrome Hierarchy - Dark→Light for CCR→OCR)
 // =============================================================================
 
 export const REGION = {
-  CCR: BRAND.navy,
-  RCR: BRAND.blue,
-  OCR: BRAND.sky,
+  CCR: '#0F172A',       // Slate 900 - Premium/Core (darkest)
+  RCR: '#334155',       // Slate 700 - Mid-tier
+  OCR: '#64748B',       // Slate 500 - Suburban (lightest)
 };
 
 // =============================================================================
-// SUPPLY PALETTE (For supply/inventory charts)
+// SIGNAL (Accent - "The Tie")
+// =============================================================================
+
+export const SIGNAL = {
+  accent: '#F97316',    // Orange 500 - Buttons, large graphics, highlights
+  accentA11y: '#EA580C', // Orange 600 - Text/borders on light (accessible)
+  focus: '#2563EB',     // Blue 600 - Focus rings, interactive states
+};
+
+// =============================================================================
+// DELTA (Financial +/-)
+// =============================================================================
+
+export const DELTA = {
+  positive: '#059669',  // Emerald 600 - Gains, positive change
+  negative: '#DC2626',  // Red 600 - Losses, negative change
+  neutral: '#64748B',   // Slate 500 - No change
+};
+
+// =============================================================================
+// SUPPLY (Full Slate - Inventory/Pipeline)
 // =============================================================================
 
 export const SUPPLY = {
-  unsold: '#6b4226',    // Muted chocolate brown
-  upcoming: '#9c6644',  // Muted terracotta
-  gls: '#c4a77d',       // Muted camel/tan
-  total: '#e8dcc8',     // Warm cream
+  unsold: '#0F172A',    // Slate 900 - Heaviest (most urgent)
+  upcoming: '#334155',  // Slate 700 - Pipeline
+  gls: '#64748B',       // Slate 500 - GLS sites
+  total: '#94A3B8',     // Slate 400 - Totals (lightest)
 };
 
 // =============================================================================
-// CHART COLORS (Terminal-style for weapon aesthetic)
+// LIQUIDITY (Exit Risk / Turnover Zones)
+// =============================================================================
+
+export const LIQUIDITY = {
+  low: '#F59E0B',       // Amber 500 - Low Liquidity (<5 per 100 units)
+  healthy: '#059669',   // Emerald 600 - Healthy Liquidity (5-15 per 100 units)
+  high: '#DC2626',      // Red 600 - Elevated Turnover (>15 per 100 units)
+  unknown: '#94A3B8',   // Slate 400 - Unknown
+};
+
+// =============================================================================
+// STATUS (Operational States)
+// =============================================================================
+
+export const STATUS = {
+  live: '#059669',      // Emerald 600 - Live/active indicators
+  positive: '#059669',  // Alias
+  negative: '#DC2626',  // Red 600 - Errors, alerts
+};
+
+// =============================================================================
+// CHART (Unified Chart Palette)
 // =============================================================================
 
 export const CHART = {
-  primary: BRAND.navy,
-  secondary: BRAND.blue,
-  tertiary: BRAND.sky,
-  accent: BRAND.sand,
-  // Terminal overrides (for monochrome charts)
-  terminalPrimary: MONO.ink,
-  terminalSecondary: MONO.mid,
-  terminalAccent: STATUS.live,
-  grid: 'rgba(0, 0, 0, 0.05)',
-  axis: 'rgba(0, 0, 0, 0.3)',
+  // Primary data series (use INK for monochrome charts)
+  primary: INK.primary,
+  secondary: INK.muted,
+  tertiary: INK.light,
+
+  // Signal color for emphasis
+  accent: SIGNAL.accent,
+
+  // Grid and axes
+  grid: 'rgba(15, 23, 42, 0.05)',   // Slate 900 at 5%
+  axis: 'rgba(15, 23, 42, 0.3)',    // Slate 900 at 30%
+
+  // Region colors (for geographic data)
+  regionCCR: REGION.CCR,
+  regionRCR: REGION.RCR,
+  regionOCR: REGION.OCR,
 };
 
 // =============================================================================
-// BACKWARD COMPATIBILITY EXPORTS
+// REGION BADGE CLASSES (Tailwind)
 // =============================================================================
 
-/**
- * @deprecated Use BRAND instead for clarity
- * Kept for backward compatibility with existing components
- */
-export const THEME_COLORS = BRAND;
-
-/**
- * Region badge Tailwind classes using design system tokens
- */
 export const REGION_BADGE_CLASSES = {
-  CCR: 'bg-brand-navy text-white',
-  RCR: 'bg-brand-blue text-white',
-  OCR: 'bg-brand-sky text-brand-navy',
-  SAND: 'bg-brand-sand text-brand-navy',
+  CCR: 'bg-slate-900 text-white',
+  RCR: 'bg-slate-700 text-white',
+  OCR: 'bg-slate-500 text-white',
 };
 
 // =============================================================================
@@ -135,4 +160,40 @@ export const getRegionColor = (region) => {
 export const getRegionBadgeClass = (region) => {
   const r = (region || '').toUpperCase();
   return REGION_BADGE_CLASSES[r] || REGION_BADGE_CLASSES.OCR;
+};
+
+// =============================================================================
+// DEPRECATED EXPORTS (Remove in Phase 5)
+// =============================================================================
+
+/**
+ * @deprecated Use INK, REGION, CANVAS instead
+ * Legacy palette kept for backward compatibility during migration
+ */
+export const BRAND = {
+  navy: '#213448',      // Use REGION.CCR (#0F172A) instead
+  blue: '#547792',      // Use REGION.RCR (#334155) instead
+  sky: '#94B4C1',       // Use REGION.OCR (#64748B) instead
+  sand: '#EAE0CF',      // Use CANVAS.grid (#E5E7EB) instead
+};
+
+/**
+ * @deprecated Use BRAND instead (itself deprecated)
+ */
+export const THEME_COLORS = BRAND;
+
+/**
+ * @deprecated Use VOID, CANVAS, INK instead
+ * Legacy MONO palette - partial compatibility
+ */
+export const MONO = {
+  void: VOID.base,
+  surface: VOID.surface,
+  edge: VOID.edge,
+  ink: INK.primary,
+  dark: VOID.surface,
+  mid: INK.mid,
+  light: INK.muted,
+  muted: CANVAS.grid,
+  canvas: CANVAS.base,
 };
