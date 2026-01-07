@@ -22,8 +22,10 @@ import {
   MAX_DISTRICT_PRICE,
 } from './landingPreviewData';
 
-const CANVAS = '#fafafa';
-const INK = '#000000';
+// REAM Design System: Bond Paper + Industrial
+const CANVAS = '#F5F5F4'; // Warm bond paper (stone-100)
+const INK = '#1C1917'; // Warm stone-900
+const ACCENT = '#FF4F00'; // Safety orange
 
 function formatSgClock(date) {
   try {
@@ -69,13 +71,13 @@ function SectionTitle({ eyebrow, title, muted, rightSlot }) {
     <div className="flex items-end justify-between gap-6">
       <div>
         {eyebrow ? (
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#57534E]">
             {eyebrow}
           </div>
         ) : null}
-        <div className="mt-2 font-display text-2xl md:text-3xl font-bold tracking-tighter text-black glitch-hover cursor-default">
+        <div className="mt-2 font-display text-2xl md:text-3xl font-bold tracking-tighter text-[#1C1917] glitch-hover cursor-default">
           {title}{' '}
-          {muted ? <span className="text-black/60">{muted}</span> : null}
+          {muted ? <span className="text-[#57534E]">{muted}</span> : null}
         </div>
       </div>
       {rightSlot ? <div className="hidden md:block">{rightSlot}</div> : null}
@@ -85,7 +87,7 @@ function SectionTitle({ eyebrow, title, muted, rightSlot }) {
 
 function MonoPill({ children, leftDot = null }) {
   return (
-    <div className="inline-flex items-center gap-2 border border-black/10 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
+    <div className="inline-flex items-center gap-2 border border-[#E7E5E4] px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-[#57534E]">
       {leftDot ? <span className="flex h-2 w-2 items-center justify-center">{leftDot}</span> : null}
       <span>{children}</span>
     </div>
@@ -94,11 +96,11 @@ function MonoPill({ children, leftDot = null }) {
 
 function SectionDivider() {
   return (
-    <div className="relative h-px bg-black/10 max-w-7xl mx-auto">
-      {/* Aerospace-style decorative markers */}
-      <div className="absolute left-1/4 -top-1 w-2 h-2 border border-black/15 bg-[#fafafa] rotate-45" />
-      <div className="absolute left-1/2 -translate-x-1/2 -top-1.5 w-3 h-3 border border-black/20 bg-[#fafafa] rotate-45" />
-      <div className="absolute right-1/4 -top-1 w-2 h-2 border border-black/15 bg-[#fafafa] rotate-45" />
+    <div className="relative h-px bg-[#E7E5E4] max-w-7xl mx-auto">
+      {/* Industrial decorative markers */}
+      <div className="absolute left-1/4 -top-1 w-2 h-2 border border-[#D6D3D1] bg-[#F5F5F4] rotate-45" />
+      <div className="absolute left-1/2 -translate-x-1/2 -top-1.5 w-3 h-3 border border-[#D6D3D1] bg-[#F5F5F4] rotate-45" />
+      <div className="absolute right-1/4 -top-1 w-2 h-2 border border-[#D6D3D1] bg-[#F5F5F4] rotate-45" />
     </div>
   );
 }
@@ -224,12 +226,13 @@ function CommandBar({ onExecute }) {
 
   return (
     <div className="relative">
-      <div className="flex items-stretch border border-black/10 bg-[#fafafa] command-bar-focus">
-        <div className="flex items-center gap-2 px-3 border-r border-black/10">
-          <Command className="h-4 w-4 text-black/60" />
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60 hidden sm:inline">
-            Cmd
-          </span>
+      {/* REAM Command Bar - White with brutalist shadow */}
+      <div
+        className="flex items-stretch border border-[#1C1917] bg-white p-1"
+        style={{ boxShadow: '8px 8px 0px 0px rgba(28,25,23,0.1)' }}
+      >
+        <div className="flex items-center gap-2 pl-4 pr-2">
+          <Command className="h-4 w-4 text-[#57534E]" />
         </div>
         <input
           ref={inputRef}
@@ -244,20 +247,18 @@ function CommandBar({ onExecute }) {
             window.setTimeout(() => setIsOpen(false), 120);
           }}
           onKeyDown={onKeyDown}
-          placeholder="Type a command…"
-          className="flex-1 min-w-0 px-3 py-3 font-mono text-xs tracking-wide text-black/70 placeholder:text-black/60 bg-transparent outline-none"
+          placeholder="Type a district or project..."
+          className="flex-1 min-w-0 p-3 font-mono text-sm tracking-wide text-[#1C1917] placeholder:text-[#A8A29E] bg-transparent outline-none"
         />
         <button
           type="button"
           onClick={() => execute(value || filtered[0] || '')}
-          className="group flex items-center gap-2 px-4 bg-black hover:bg-black/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
+          className="group flex items-center gap-2 px-6 py-3 bg-[#1C1917] hover:bg-[#333] focus:outline-none"
         >
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-white">Enter Terminal</span>
+          <span className="font-mono text-xs text-white">ENTER TERMINAL</span>
           <ArrowRight className="h-4 w-4 text-white group-hover:translate-x-0.5 transition-transform" />
         </button>
       </div>
-
-
 
       <AnimatePresence>
         {isOpen && filtered.length ? (
@@ -265,7 +266,8 @@ function CommandBar({ onExecute }) {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 8 }}
-            className="absolute left-0 right-0 mt-2 border border-black/10 bg-[#fafafa]"
+            className="absolute left-0 right-0 mt-2 border border-[#E7E5E4] bg-white"
+            style={{ boxShadow: '4px 4px 0px 0px rgba(28,25,23,0.05)' }}
           >
             {filtered.map((s, i) => (
               <button
@@ -276,14 +278,14 @@ function CommandBar({ onExecute }) {
                   setValue(s);
                   setIsOpen(false);
                 }}
-                className={`w-full px-3 py-2 flex items-center justify-between gap-3 text-left hover:bg-black/[0.02] border-t first:border-t-0 border-black/05 ${
-                  i === activeIndex ? 'bg-black/[0.02]' : ''
+                className={`w-full px-3 py-2 flex items-center justify-between gap-3 text-left hover:bg-[#F5F5F4] border-t first:border-t-0 border-[#E7E5E4] ${
+                  i === activeIndex ? 'bg-[#F5F5F4]' : ''
                 }`}
               >
                 <div className="min-w-0">
-                  <div className="font-mono text-xs text-black/70 truncate">{s}</div>
+                  <div className="font-mono text-xs text-[#57534E] truncate">{s}</div>
                 </div>
-                <ChevronRight className="h-4 w-4 text-black/60" />
+                <ChevronRight className="h-4 w-4 text-[#A8A29E]" />
               </button>
             ))}
           </motion.div>
@@ -328,23 +330,23 @@ function TerminalOutput({ lines, isLive = true }) {
 
 
   return (
-    <div 
+    <div
       ref={containerRef}
-      className="font-mono text-xs leading-relaxed text-black/60 h-[240px] overflow-hidden"
+      className="font-mono text-xs leading-relaxed text-[#57534E] h-[240px] overflow-hidden"
     >
       {visibleLines.map((line, i) => (
-        <div key={i} className={line.startsWith('→') ? 'text-emerald-600' : 'text-black/60'}>
+        <div key={i} className={line.startsWith('→') ? 'text-[#10B981]' : 'text-[#57534E]'}>
           {line}
         </div>
       ))}
       {currentTyping && (
-        <div className={currentTyping.startsWith('→') ? 'text-emerald-600' : 'text-black/60'}>
+        <div className={currentTyping.startsWith('→') ? 'text-[#10B981]' : 'text-[#57534E]'}>
           {currentTyping}
           <span className={`inline-block ${cursorOn ? 'opacity-100' : 'opacity-0'}`}>_</span>
         </div>
       )}
       {currentLineIndex >= lines.length && (
-        <div className="text-emerald-600">
+        <div className="text-[#10B981]">
           $ ready<span className={`inline-block ${cursorOn ? 'opacity-100' : 'opacity-0'}`}>_</span>
         </div>
       )}
@@ -489,7 +491,8 @@ function ParticleGlobe() {
           if (i === 0) ctx.moveTo(pt.x, pt.y);
           else ctx.lineTo(pt.x, pt.y);
         }
-        ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+        // REAM: Warm stone color for arcs (drawn on bond paper)
+        ctx.strokeStyle = 'rgba(120,113,108,0.25)'; // stone-500
         ctx.lineWidth = 1;
         ctx.setLineDash([2, 3]);
         ctx.stroke();
@@ -511,13 +514,14 @@ function ParticleGlobe() {
       for (const p of rendered) {
         const pr = project(p, w, h, globeRadius);
         const alpha = clamp((pr.z + 1.2) / 2.2, 0, 1);
-        const base = 0.18 + alpha * 0.52;
+        const base = 0.22 + alpha * 0.48;
         const size = 1.6;
         const pulse = 1;
 
         ctx.beginPath();
         ctx.arc(pr.x, pr.y, size * pr.p * pulse, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(0,0,0,${base})`;
+        // REAM: Warm stone dots (looks drawn on paper)
+        ctx.fillStyle = `rgba(87,83,78,${base})`; // stone-600
         ctx.fill();
       }
 
@@ -612,50 +616,50 @@ function StatusPanel() {
   }, []);
 
   return (
-    <div className="border border-black/10 bg-[#fafafa] h-[240px] flex flex-col">
-      <div className="px-3 py-2 border-b border-black/05 flex items-center justify-between">
-        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
+    <div className="border border-[#E7E5E4] bg-white h-[240px] flex flex-col">
+      <div className="px-3 py-2 border-b border-[#E7E5E4] flex items-center justify-between">
+        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#57534E]">
           System Status
         </div>
-        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60 tabular-nums">
+        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#57534E] tabular-nums">
           SG {clock}
         </div>
       </div>
       <div className="p-3 grid grid-cols-2 gap-3 flex-1">
-        <div className="border border-black/10 px-3 py-2">
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">URA LINK</div>
+        <div className="border border-[#E7E5E4] px-3 py-2">
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#A8A29E]">URA LINK</div>
           <div className="mt-1 flex items-center gap-2">
-            <LiveDot />
-            <div className="font-mono text-xs text-black/60">ONLINE</div>
+            <span className="text-[#10B981]">●</span>
+            <div className="font-mono text-xs text-[#1C1917]">ONLINE</div>
           </div>
         </div>
-        <div className="border border-black/10 px-3 py-2">
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">PIPELINE</div>
+        <div className="border border-[#E7E5E4] px-3 py-2">
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#A8A29E]">INTEGRITY</div>
+          <div className="mt-1 font-mono text-xs text-[#1C1917] tabular-nums transition-all duration-300">{integrity.toFixed(1)}% VERIFIED</div>
+        </div>
+        <div className="border border-[#E7E5E4] px-3 py-2">
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#A8A29E]">TRANSACTIONS</div>
+          <div className="mt-1 font-mono text-xs text-[#1C1917] tabular-nums transition-all duration-300">{txCount.toLocaleString('en-SG')}</div>
+        </div>
+        <div className="border border-[#E7E5E4] px-3 py-2">
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#A8A29E]">PIPELINE</div>
           <div className="mt-1 flex items-center gap-2">
             <span className="relative inline-flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full bg-emerald-500 opacity-50 animate-ping" style={{ animationDuration: '2s' }} />
-              <span className="relative inline-flex h-2 w-2 bg-emerald-600" />
+              <span className="absolute inline-flex h-full w-full bg-[#10B981] opacity-50 animate-ping" style={{ animationDuration: '2s' }} />
+              <span className="relative inline-flex h-2 w-2 bg-[#10B981]" />
             </span>
-            <div className="font-mono text-xs text-black/60">STREAMING</div>
+            <div className="font-mono text-xs text-[#1C1917]">STREAMING</div>
           </div>
         </div>
-        <div className="border border-black/10 px-3 py-2">
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">TRANSACTIONS</div>
-          <div className="mt-1 font-mono text-xs text-black/60 tabular-nums transition-all duration-300">{txCount.toLocaleString('en-SG')}</div>
-        </div>
-        <div className="border border-black/10 px-3 py-2">
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">INTEGRITY</div>
-          <div className="mt-1 font-mono text-xs text-black/60 tabular-nums transition-all duration-300">{integrity.toFixed(1)}%</div>
-        </div>
       </div>
-      <div className="px-3 py-2 border-t border-black/05 flex items-center justify-between mt-auto">
-        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
+      <div className="px-3 py-2 border-t border-[#E7E5E4] flex items-center justify-between mt-auto">
+        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#A8A29E]">
           LAST SYNC: {syncAgo}s ago
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-1 h-1 bg-emerald-500 animate-pulse" />
-          <div className="w-1 h-1 bg-emerald-500 animate-pulse" style={{ animationDelay: '0.2s' }} />
-          <div className="w-1 h-1 bg-emerald-500 animate-pulse" style={{ animationDelay: '0.4s' }} />
+          <div className="w-1 h-1 bg-[#10B981] animate-pulse" />
+          <div className="w-1 h-1 bg-[#10B981] animate-pulse" style={{ animationDelay: '0.2s' }} />
+          <div className="w-1 h-1 bg-[#10B981] animate-pulse" style={{ animationDelay: '0.4s' }} />
         </div>
       </div>
     </div>
@@ -1479,9 +1483,15 @@ export default function LandingV3() {
   );
 
   return (
-    <div className="relative min-h-screen bg-[#fafafa] text-black overflow-x-hidden">
+    <div className="relative min-h-screen bg-[#F5F5F4] text-[#1C1917] overflow-x-hidden">
       <style>{`
         :root { color-scheme: light; }
+
+        /* REAM vertical ruler grid - faint lines every 120px */
+        .ream-vertical-grid {
+          background-image: linear-gradient(to right, #E7E5E4 1px, transparent 1px);
+          background-size: 120px 100%;
+        }
 
         @keyframes landingV3-dotDrift {
           0%, 100% { transform: translate3d(0, 0, 0); opacity: 0.82; }
@@ -1511,14 +1521,9 @@ export default function LandingV3() {
         }
       `}</style>
 
-      {/* Subtle crosshatch grid @ 80px - brightens on section hover */}
+      {/* REAM vertical ruler grid - industrial 120px spacing */}
       <div
-        className={`pointer-events-none fixed inset-0 z-0 transition-opacity duration-300 ${isGridHot ? 'opacity-[0.04]' : 'opacity-[0.015]'}`}
-        style={{
-          backgroundImage:
-            'linear-gradient(to right, rgba(0,0,0,1) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,1) 1px, transparent 1px)',
-          backgroundSize: '80px 80px',
-        }}
+        className={`pointer-events-none fixed inset-0 z-0 ream-vertical-grid transition-opacity duration-300 ${isGridHot ? 'opacity-100' : 'opacity-60'}`}
       />
 
       {/* Scanline overlay */}
@@ -1538,31 +1543,32 @@ export default function LandingV3() {
         }}
       />
 
-      {/* NAV */}
+      {/* NAV - REAM Industrial */}
       <nav
         className={`fixed top-0 left-0 right-0 z-50 border-b transition-all duration-200 ${
           isScrolled
-            ? 'bg-[#fafafa]/95 backdrop-blur-sm border-black/10 shadow-sm'
-            : 'bg-[#fafafa] border-black/10'
+            ? 'bg-[#F5F5F4]/95 backdrop-blur-sm border-[#E7E5E4] shadow-sm'
+            : 'bg-[#F5F5F4] border-[#E7E5E4]'
         }`}
       >
         {/* Scroll progress indicator */}
         <div
-          className="absolute bottom-0 left-0 h-px bg-black/30 transition-all duration-75"
+          className="absolute bottom-0 left-0 h-px bg-[#1C1917]/30 transition-all duration-75"
           style={{ width: `${scrollProgress}%` }}
         />
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-4">
           <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="border border-black/10 p-2">
-                <Terminal className="h-5 w-5 text-black" />
+            {/* Logo block */}
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-8 h-8 bg-[#1C1917] flex items-center justify-center text-white font-mono font-bold text-sm">
+                &gt;_
               </div>
               <div className="min-w-0">
-                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
+                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#57534E]">
                   PROPANALYTICS.SG
                 </div>
-                <div className="text-sm font-bold tracking-tight text-black">
-                  Intelligence Terminal
+                <div className="font-mono text-xs font-bold tracking-tight text-[#1C1917]">
+                  INTELLIGENCE TERMINAL
                 </div>
               </div>
             </div>
@@ -1570,23 +1576,25 @@ export default function LandingV3() {
             <div className="hidden lg:flex items-center gap-3">
               <MonoPill leftDot={<LiveDot />}>URA LINK: ONLINE</MonoPill>
               <MonoPill>PIPELINE: HEALTHY</MonoPill>
-              <MonoPill>RESTRICTED ACCESS // CLASSIFIED</MonoPill>
             </div>
 
-            <div className="flex items-center gap-2">
+            {/* CTA buttons */}
+            <div className="flex items-center gap-3">
               <button
                 type="button"
                 onClick={onAnyCTA}
-                className="px-4 py-2 border border-black/10 text-black font-medium hover:border-black/20 hover:bg-black/[0.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
+                className="px-6 py-2 font-mono text-xs font-bold border border-[#1C1917] text-[#1C1917] hover:bg-[#E7E5E4] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1C1917]/20"
               >
-                Log In
+                LOG IN
               </button>
+              {/* Safety Orange accent - REAM brutalist */}
               <button
                 type="button"
                 onClick={onAnyCTA}
-                className="px-4 py-2 bg-black text-[#fafafa] font-medium hover:bg-black/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
+                className="px-6 py-2 font-mono text-xs font-bold bg-[#FF4F00] text-white border border-[#FF4F00] hover:bg-[#CC3F00] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF4F00]/20"
+                style={{ boxShadow: '4px 4px 0px 0px rgba(28,25,23,1)' }}
               >
-                Request Access
+                REQUEST ACCESS
               </button>
             </div>
           </div>
@@ -1608,35 +1616,41 @@ export default function LandingV3() {
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
                 {/* 60/40 asymmetric split for visual interest */}
                 <div className="lg:col-span-7">
+                  {/* REAM 'Stamp' - Industrial marker */}
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.5 }}
-                    className="flex items-center gap-3"
+                    className="inline-flex items-center gap-2 mb-6 border-l-2 border-[#FF4F00] pl-3"
                   >
-                    <MonoPill leftDot={<LiveDot />}>Live URA Data</MonoPill>
-                    <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
-                      v3 // preview
-                    </div>
+                    <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" />
+                    <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#57534E]">
+                      Live URA Data // V3 Pipeline
+                    </span>
                   </motion.div>
 
+                  {/* REAM Typography - Condensed 'Alert' style */}
                   <motion.h1
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.6, delay: 0.05 }}
-                    className="mt-6 font-display text-4xl sm:text-5xl md:text-6xl xl:text-7xl font-bold tracking-tighter leading-[1.05]"
+                    className="font-sans text-5xl sm:text-6xl md:text-7xl font-bold tracking-tighter leading-[0.9]"
                   >
-                    <span className="block text-black">Singapore Condo</span>
-                    <span className="block text-black/60" style={{ whiteSpace: 'nowrap' }}>Market Intelligence</span>
+                    <span className="block text-[#1C1917]">SINGAPORE</span>
+                    <span className="block text-[#1C1917]">CONDO</span>
+                    <span className="block text-[#FF4F00]">INTELLIGENCE</span>
                   </motion.h1>
 
                   <motion.p
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.6, delay: 0.12 }}
-                    className="mt-6 text-base sm:text-lg leading-relaxed text-black/60 max-w-xl"
+                    className="mt-8 font-mono text-sm text-[#57534E] max-w-md leading-relaxed"
                   >
-                    Data-driven price benchmarking across projects, locations, and market segments — based on 100,000+ private property transactions.
+                    Data-driven price benchmarking across projects, locations, and market segments.
+                    <span className="block mt-2 text-[#1C1917] font-bold">
+                      // Indexing 100,000+ private property transactions.
+                    </span>
                   </motion.p>
 
                   <motion.div
