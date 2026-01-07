@@ -997,26 +997,35 @@ input[type="range"].slider-thumb::-moz-range-progress {
 /* ====== Industrial Chassis & Server Rack LED ====== */
 
 /*
- * CHASSIS TEXTURE (GlobalNavRail nav container):
- * Uses gradients to simulate lighting, borders to simulate physical edges.
+ * CHASSIS DESIGN (GlobalNavRail nav container):
+ * The "Tungsten Shift" - Warm charcoal that harmonizes with beige paper.
  *
- * 1. Overhead Lighting:
- *    bg-[linear-gradient(to_bottom,rgba(39,39,42,1),rgba(9,9,11,1))]
- *    - Top: lighter zinc-800 tones (light hits the top of the rack)
- *    - Bottom: deep black (bottom of rack in shadow)
- *    - Provides reflective surface for LED glow
+ * THREE-PART SOLUTION:
  *
- * 2. The Beveled Edge:
- *    border-r border-white/5
- *    - 1px machined metal edge where light catches the corner
- *    - Separates black metal from dark shadow
+ * 1. THE COLOR SHIFT - From "Void" to "Tungsten":
+ *    bg-[#1C1917] (Stone-950)
+ *    - Warm charcoal instead of cold black zinc-950
+ *    - Contains red/orange undertones that match beige paper
+ *    - Stops fighting the warm background
  *
- * 3. The Heavy Shadow:
- *    shadow-[6px_0_24px_-6px_rgba(0,0,0,0.7)]
- *    - Chassis casting shadow onto beige paper
- *    - 6px offset = physical depth
- *    - 24px blur = realistic soft edge
- *    - 0.7 opacity = heavy, solid shadow
+ * 2. THE GASKET - Bridging border between chassis and paper:
+ *    border-r border-[#44403C] (Stone-800)
+ *    - Mid-tone between black chassis and beige paper
+ *    - Like industrial machinery gasket/frame
+ *    - Softens the "hard cut" between zones
+ *
+ * 3. THE SHADOW - Chassis depth with Stone tones:
+ *    shadow-[10px_0_30px_-10px_rgba(28,25,23,0.7)]
+ *    - Uses Stone rgba values for warmth
+ *    - 10px offset = physical depth
+ *    - 30px blur = soft realistic edge
+ *    - 0.7 opacity = heavy, anchored shadow
+ *
+ * 4. THE HACKER DENSITY - System Metrics footer:
+ *    - Shows latency, build version, system status
+ *    - Tiny mono text (10px) with Stone-500 color (#78716C)
+ *    - Adds texture, breaks up heavy black block
+ *    - Makes sidebar feel like functional instrument
  *
  * PHYSICAL LED (NavItem active state):
  *

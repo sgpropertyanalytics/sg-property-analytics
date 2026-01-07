@@ -230,13 +230,16 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
           ${collapsed ? 'px-2' : 'px-3'}
           ${isPending ? 'opacity-90' : ''}
 
-          /* THE CHASSIS TEXTURE - Vertical gradient mimics overhead server room lighting */
-          bg-zinc-950
-          bg-[linear-gradient(to_bottom,rgba(39,39,42,1),rgba(9,9,11,1))]
+          /* THE COLOR - Warm Charcoal (Stone-950) instead of Cold Black */
+          /* Stone has red/orange undertones that harmonize with beige paper */
+          bg-[#1C1917]
 
-          /* THE SEAM - Physical termination of metal casing */
-          border-r border-white/5
-          shadow-[6px_0_24px_-6px_rgba(0,0,0,0.7)]
+          /* THE GASKET - Bridging border between chassis and paper */
+          /* Stone-800 (#44403C) is mid-tone that softens the hard cut */
+          border-r border-[#44403C]
+
+          /* THE SHADOW - Uses Stone tones for warmth */
+          shadow-[10px_0_30px_-10px_rgba(28,25,23,0.7)]
         `}
         aria-label="Main navigation"
       >
@@ -398,6 +401,26 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
           expanded={!collapsed}
           onOpenSettings={() => setShowAccountSettings(true)}
         />
+
+        {/* System Metrics Footer - "Hacker Density" */}
+        {!collapsed && (
+          <div className="p-4 border-t border-[#292524]">
+            <div className="grid grid-cols-2 gap-2 text-[10px] font-mono text-[#78716C]">
+              <div className="flex flex-col">
+                <span className="opacity-50">LATENCY</span>
+                <span className="text-emerald-500 tabular-nums">12ms</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="opacity-50">BUILD</span>
+                <span className="tabular-nums">v2.0.4</span>
+              </div>
+              <div className="flex flex-col col-span-2 mt-2">
+                <span className="opacity-50">STATUS</span>
+                <span className="text-[#A8A29E]">SYSTEM_OPTIMAL</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Account Settings Modal */}
