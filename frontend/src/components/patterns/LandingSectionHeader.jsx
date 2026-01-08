@@ -9,9 +9,9 @@ export function LandingSectionHeader({ eyebrow, title, muted, rightSlot }) {
             {eyebrow}
           </div>
         ) : null}
-        <div className="mt-2 headline-italic text-3xl md:text-4xl tracking-tight text-black cursor-default">
-          {title}
-          {muted ? <span className="text-black/40 ml-1">{muted}</span> : null}
+        <div className="mt-2 font-display text-2xl md:text-3xl font-bold tracking-tighter text-black glitch-hover cursor-default">
+          {title}{' '}
+          {muted ? <span className="text-black/60">{muted}</span> : null}
         </div>
       </div>
       {rightSlot ? <div className="hidden md:block">{rightSlot}</div> : null}
