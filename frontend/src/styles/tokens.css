@@ -1,0 +1,151 @@
+:root {
+  --font-display: "JetBrains Mono", "Geist Sans", system-ui, -apple-system, sans-serif;
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace;
+
+  /* Core surfaces */
+  --color-bg: #F2EFE9;
+  --color-surface: transparent;
+  --color-surface-elevated: #1A1A1A;
+  --color-border: #A8A29E;
+  --color-border-strong: #333333;
+
+  /* Text */
+  --color-text: #0F172A;
+  --color-text-strong: #0F172A;
+  --color-text-muted: #475569;
+  --color-text-subtle: #94A3B8;
+  --color-text-inverse: #F2EFE9;
+
+  /* Brand + semantic */
+  --color-brand: #0F172A;
+  --color-brand-secondary: #334155;
+  --color-brand-tertiary: #64748B;
+  --color-accent: #F97316;
+  --color-accent-strong: #EA580C;
+  --color-focus: #2563EB;
+  --color-success: #059669;
+  --color-danger: #DC2626;
+  --color-warning: #F59E0B;
+
+  /* Legacy palette mapping (kept for compatibility) */
+  --color-void: #0A0A0A;
+  --color-void-surface: #1A1A1A;
+  --color-void-edge: #333333;
+  --color-canvas: #F2EFE9;
+  --color-canvas-paper: transparent;
+  --color-canvas-grid: #A8A29E;
+  --color-ink: #0F172A;
+  --color-ink-dense: #1E293B;
+  --color-ink-mid: #475569;
+  --color-ink-muted: #94A3B8;
+  --color-ink-light: #CBD5E1;
+  --color-region-ccr: #0F172A;
+  --color-region-rcr: #334155;
+  --color-region-ocr: #64748B;
+  --color-signal-accent: #F97316;
+  --color-signal-a11y: #EA580C;
+  --color-signal-focus: #2563EB;
+  --color-delta-positive: #059669;
+  --color-delta-negative: #DC2626;
+  --color-delta-neutral: #64748B;
+  --color-supply-unsold: #0F172A;
+  --color-supply-upcoming: #334155;
+  --color-supply-gls: #64748B;
+  --color-supply-total: #94A3B8;
+  --color-liquidity-low: #F59E0B;
+  --color-liquidity-healthy: #059669;
+  --color-liquidity-high: #DC2626;
+  --color-liquidity-unknown: #94A3B8;
+  --color-status-live: #059669;
+  --color-status-negative: #DC2626;
+  --color-brand-navy: #0F172A;
+  --color-brand-blue: #334155;
+  --color-brand-sky: #64748B;
+  --color-brand-sand: #E5E7EB;
+  --color-card: transparent;
+  --color-card-hover: rgba(255, 79, 0, 0.05);
+
+  /* Legacy mono aliases */
+  --color-mono-void: var(--color-void);
+  --color-mono-surface: var(--color-void-surface);
+  --color-mono-edge: var(--color-void-edge);
+  --color-mono-ink: var(--color-ink);
+  --color-mono-dark: var(--color-void-surface);
+  --color-mono-mid: var(--color-ink-mid);
+  --color-mono-light: var(--color-ink-muted);
+  --color-mono-muted: var(--color-canvas-grid);
+  --color-mono-canvas: var(--color-canvas);
+
+  /* Chart palette */
+  --color-chart-1: #0F172A;
+  --color-chart-2: #334155;
+  --color-chart-3: #64748B;
+  --color-chart-4: #94A3B8;
+  --color-chart-5: #E5E7EB;
+
+  /* Spacing scale (4/8-based) */
+  --space-0: 0px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+
+  /* Radius */
+  --radius-none: 0px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  /* Borders */
+  --border-1: 1px;
+  --border-2: 2px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.16);
+
+  /* Motion */
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+  --duration-slow: 400ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(0.2, 0, 0, 1.1);
+
+  /* Layout */
+  --size-container-max: 1200px;
+
+  /* Z-index scale */
+  --z-base: 0;
+  --z-nav: 20;
+  --z-overlay: 50;
+  --z-modal: 70;
+  --z-toast: 90;
+}
+
+[data-theme='dark'] {
+  --color-bg: #0A0A0A;
+  --color-surface: #1A1A1A;
+  --color-surface-elevated: #1A1A1A;
+  --color-border: #333333;
+  --color-border-strong: #475569;
+  --color-text: #F2EFE9;
+  --color-text-strong: #FAFAFA;
+  --color-text-muted: #CBD5E1;
+  --color-text-subtle: #94A3B8;
+  --color-text-inverse: #0A0A0A;
+  --color-brand: #F2EFE9;
+  --color-brand-secondary: #CBD5E1;
+  --color-brand-tertiary: #94A3B8;
+  --color-card: #1A1A1A;
+}

@@ -132,6 +132,19 @@ export default [
       'design/require-tabular-nums': 'warn',
     },
   },
+  // Stricter spacing rules for new primitives/patterns
+  {
+    files: [
+      'src/components/primitives/**/*.{js,jsx,ts,tsx}',
+      'src/components/patterns/**/*.{js,jsx,ts,tsx}',
+    ],
+    plugins: {
+      design: designPlugin,
+    },
+    rules: {
+      'design/no-arbitrary-spacing': 'error',
+    },
+  },
 
   // Ignore patterns
   {

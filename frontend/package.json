@@ -21,7 +21,8 @@
     "test:perf:diagnose": "playwright test e2e/performance/bottleneck-diagnostic.spec.js",
     "test:perf:charts": "playwright test e2e/performance/per-chart-timing.spec.js",
     "lint": "eslint \"src/**/*.{js,jsx,ts,tsx}\"",
-    "lint:ci": "eslint \"src/**/*.{js,jsx,ts,tsx}\"",
+    "lint:ci": "eslint \"src/**/*.{js,jsx,ts,tsx}\" && node scripts/design-guard.js",
+    "lint:design": "node scripts/design-guard.js",
     "lint:strict": "eslint \"src/**/*.{js,jsx,ts,tsx}\" --max-warnings=0",
     "typecheck": "tsc -p tsconfig.json"
   },

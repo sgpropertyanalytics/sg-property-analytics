@@ -11,6 +11,7 @@ import { TIME_GROUP_BY } from '../../context/PowerBIFilter';
 import { KeyInsightBox, PreviewChartOverlay, ChartSlot } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 import { transformNewVsResaleSeries, logFetchDebug, assertKnownVersion } from '../../adapters';
+import { CHART_COLORS } from '../../constants/chartPalette';
 import {
   SaleType,
   SaleTypeLabels,
@@ -264,13 +265,13 @@ function NewVsResaleChartBase({ height = 350 }) {
       {
         label: SaleTypeLabels[SaleType.NEW_SALE],
         data: newLaunchPrice,
-        borderColor: '#0F172A',  // Deep Navy - primary palette color
-        backgroundColor: 'rgba(33, 52, 72, 0.1)',
+        borderColor: CHART_COLORS.navy,  // Deep Navy - primary palette color
+        backgroundColor: CHART_COLORS.navyDeepAlpha10,
         borderWidth: 2,
         pointRadius: 0,
         pointHoverRadius: 4,
-        pointHoverBackgroundColor: '#0F172A',
-        pointHoverBorderColor: '#fff',
+        pointHoverBackgroundColor: CHART_COLORS.navy,
+        pointHoverBorderColor: CHART_COLORS.white,
         tension: 0.3,
         fill: false,
         spanGaps: true, // Connect line through null/missing data points
@@ -278,14 +279,14 @@ function NewVsResaleChartBase({ height = 350 }) {
       {
         label: PropertyAgeBucketLabels[PropertyAgeBucket.RECENTLY_TOP],
         data: resalePrice,
-        borderColor: '#334155',  // Ocean Blue - secondary palette color
-        backgroundColor: 'rgba(84, 119, 146, 0.1)',
+        borderColor: CHART_COLORS.ocean,  // Ocean Blue - secondary palette color
+        backgroundColor: CHART_COLORS.oceanAlpha10,
         borderWidth: 2,
         borderDash: [5, 5],
         pointRadius: 0,
         pointHoverRadius: 4,
-        pointHoverBackgroundColor: '#334155',
-        pointHoverBorderColor: '#fff',
+        pointHoverBackgroundColor: CHART_COLORS.ocean,
+        pointHoverBorderColor: CHART_COLORS.white,
         tension: 0.3,
         fill: false,
         spanGaps: true, // Connect line through null/missing data points
@@ -387,7 +388,7 @@ function NewVsResaleChartBase({ height = 350 }) {
           callback: (value) => `$${value.toLocaleString()}`,
         },
         grid: {
-          color: 'rgba(148, 180, 193, 0.2)',
+          color: CHART_COLORS.skyAlpha20,
         },
       },
     },
@@ -554,15 +555,19 @@ function NewVsResaleChartBase({ height = 350 }) {
       <div className="flex justify-center gap-6 py-2 shrink-0">
         <div className="flex items-center gap-2">
           <svg width="32" height="8">
-            <line x1="0" y1="4" x2="32" y2="4" stroke="#0F172A" strokeWidth={2} />
+            <line x1="0" y1="4" x2="32" y2="4" stroke={CHART_COLORS.navy} strokeWidth={2} />
           </svg>
-          <span className="text-xs text-[#374151]">{SaleTypeLabels[SaleType.NEW_SALE]}</span>
+          <span className="text-xs" style={{ color: CHART_COLORS.textMuted }}>
+            {SaleTypeLabels[SaleType.NEW_SALE]}
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <svg width="32" height="8">
-            <line x1="0" y1="4" x2="32" y2="4" stroke="#334155" strokeWidth={2} strokeDasharray="8 4" />
+            <line x1="0" y1="4" x2="32" y2="4" stroke={CHART_COLORS.ocean} strokeWidth={2} strokeDasharray="8 4" />
           </svg>
-          <span className="text-xs text-[#374151]">{PropertyAgeBucketLabels[PropertyAgeBucket.RECENTLY_TOP]}</span>
+          <span className="text-xs" style={{ color: CHART_COLORS.textMuted }}>
+            {PropertyAgeBucketLabels[PropertyAgeBucket.RECENTLY_TOP]}
+          </span>
         </div>
       </div>
       </div>

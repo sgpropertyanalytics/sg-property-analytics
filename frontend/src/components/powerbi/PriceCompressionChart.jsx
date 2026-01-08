@@ -12,6 +12,7 @@ import { TIME_GROUP_BY } from '../../context/PowerBIFilter';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { KeyInsightBox, PreviewChartOverlay, ChartSlot, InlineCard, InlineCardRow } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
+import { CHART_COLORS } from '../../constants/chartPalette';
 import {
   transformCompressionSeries,
   calculateCompressionScore,
@@ -160,13 +161,13 @@ function PriceCompressionChartBase({ height = 380, saleType = null, sharedData =
       {
         label: 'CCR-RCR Spread',
         data: data.map(d => d.ccrRcrSpread),
-        borderColor: '#0F172A', // Navy
-        backgroundColor: 'rgba(33, 52, 72, 0.1)',
+        borderColor: CHART_COLORS.navy, // Navy
+        backgroundColor: CHART_COLORS.navyDeepAlpha10,
         borderWidth: 2.5,
         pointRadius: 0,
         pointHoverRadius: 5,
-        pointHoverBackgroundColor: '#0F172A',
-        pointHoverBorderColor: '#fff',
+        pointHoverBackgroundColor: CHART_COLORS.navy,
+        pointHoverBorderColor: CHART_COLORS.white,
         pointHoverBorderWidth: 2,
         fill: false,
         tension: 0.3,
@@ -175,14 +176,14 @@ function PriceCompressionChartBase({ height = 380, saleType = null, sharedData =
       {
         label: 'RCR-OCR Spread',
         data: data.map(d => d.rcrOcrSpread),
-        borderColor: '#334155', // Ocean blue
-        backgroundColor: 'rgba(84, 119, 146, 0.1)',
+        borderColor: CHART_COLORS.ocean, // Ocean blue
+        backgroundColor: CHART_COLORS.oceanAlpha10,
         borderWidth: 2.5,
         borderDash: [6, 4],
         pointRadius: 0,
         pointHoverRadius: 5,
-        pointHoverBackgroundColor: '#334155',
-        pointHoverBorderColor: '#fff',
+        pointHoverBackgroundColor: CHART_COLORS.ocean,
+        pointHoverBorderColor: CHART_COLORS.white,
         pointHoverBorderWidth: 2,
         fill: false,
         tension: 0.3,
@@ -241,7 +242,7 @@ function PriceCompressionChartBase({ height = 380, saleType = null, sharedData =
           ...CHART_AXIS_DEFAULTS.ticks,
           callback: (v) => `$${v.toLocaleString()}`,
         },
-        grid: { color: 'rgba(148, 180, 193, 0.2)' },
+        grid: { color: CHART_COLORS.skyAlpha20 },
       },
     },
   };
@@ -326,15 +327,19 @@ function PriceCompressionChartBase({ height = 380, saleType = null, sharedData =
       <div className="flex justify-center gap-6 py-2 shrink-0">
         <div className="flex items-center gap-2">
           <svg width="32" height="8">
-            <line x1="0" y1="4" x2="32" y2="4" stroke="#0F172A" strokeWidth={2} />
+            <line x1="0" y1="4" x2="32" y2="4" stroke={CHART_COLORS.navy} strokeWidth={2} />
           </svg>
-          <span className="text-xs text-[#374151]">CCR-RCR Spread</span>
+          <span className="text-xs" style={{ color: CHART_COLORS.textMuted }}>
+            CCR-RCR Spread
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <svg width="32" height="8">
-            <line x1="0" y1="4" x2="32" y2="4" stroke="#334155" strokeWidth={2} strokeDasharray="8 4" />
+            <line x1="0" y1="4" x2="32" y2="4" stroke={CHART_COLORS.ocean} strokeWidth={2} strokeDasharray="8 4" />
           </svg>
-          <span className="text-xs text-[#374151]">RCR-OCR Spread</span>
+          <span className="text-xs" style={{ color: CHART_COLORS.textMuted }}>
+            RCR-OCR Spread
+          </span>
         </div>
       </div>
 

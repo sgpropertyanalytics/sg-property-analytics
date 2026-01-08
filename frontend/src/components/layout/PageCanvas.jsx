@@ -9,10 +9,14 @@
  * L1: ContentSection (#FAF9F7 warm off-white)
  * L2: Cards (#FFFCF5 warm cream)
  */
+import Container from '../primitives/Container.jsx';
+
 export function PageCanvas({ children, className = '' }) {
   return (
-    <div className={`min-h-full p-4 md:p-6 lg:p-8 ${className}`}>
-      {children}
+    <div className={`min-h-full py-4 md:py-6 lg:py-8 ${className}`}>
+      <Container>
+        {children}
+      </Container>
     </div>
   );
 }

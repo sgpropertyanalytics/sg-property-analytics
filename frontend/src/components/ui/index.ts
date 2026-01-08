@@ -32,4 +32,6 @@ export { PreviewChartOverlay } from './PreviewChartOverlay';
 
 // Layout components
 export { PageHeader } from './PageHeader';
+export { ChartPanel } from './ChartPanel';
+export { DataSection } from './DataSection';
 export { ChartSlot } from './ChartSlot';

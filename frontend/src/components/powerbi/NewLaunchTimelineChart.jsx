@@ -23,6 +23,7 @@ import { getNewLaunchTimeline, getNewLaunchAbsorption } from '../../api/client';
 import { PreviewChartOverlay, ChartSlot, KeyInsightBox } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 import { transformNewLaunchTimeline, transformNewLaunchAbsorption, is2020Period, assertKnownVersion, logFetchDebug } from '../../adapters';
+import { CHART_COLORS } from '../../constants/chartPalette';
 
 // Singleton Chart.js registration
 import '../../lib/chartjs-registry';
@@ -166,8 +167,8 @@ function NewLaunchTimelineChartBase({ height = 300 }) {
         type: 'bar',
         label: 'Total Units',
         data: totalUnits,
-        backgroundColor: 'rgba(100, 116, 139, 0.7)', // slate-500
-        borderColor: '#334155',
+        backgroundColor: CHART_COLORS.slate500Alpha70, // slate-500
+        borderColor: CHART_COLORS.ocean,
         borderWidth: 1,
         borderRadius: 3,
         yAxisID: 'y',
@@ -177,13 +178,13 @@ function NewLaunchTimelineChartBase({ height = 300 }) {
         type: 'line',
         label: 'Avg Absorption',
         data: absorptionRates,
-        borderColor: '#0F172A', // Navy
-        backgroundColor: 'rgba(33, 52, 72, 0.05)',
+        borderColor: CHART_COLORS.navy, // Navy
+        backgroundColor: CHART_COLORS.navyDeepAlpha05,
         borderWidth: 2.5,
         pointRadius: 0,
         pointHoverRadius: 5,
-        pointHoverBackgroundColor: '#0F172A',
-        pointHoverBorderColor: '#fff',
+        pointHoverBackgroundColor: CHART_COLORS.navy,
+        pointHoverBorderColor: CHART_COLORS.white,
         tension: 0.3,
         yAxisID: 'y1',
         order: 1, // Render on top
@@ -268,7 +269,7 @@ function NewLaunchTimelineChartBase({ height = 300 }) {
             callback: (value) => value.toLocaleString(),
           },
           grid: {
-            color: 'rgba(148, 180, 193, 0.2)',
+            color: CHART_COLORS.skyAlpha20,
           },
         },
         y1: {
@@ -391,13 +392,17 @@ function NewLaunchTimelineChartBase({ height = 300 }) {
           <div className="flex justify-center gap-6 py-2 shrink-0">
             <div className="flex items-center gap-2">
               <div className="w-4 h-3 rounded-sm bg-brand-sky" />
-              <span className="text-xs text-[#374151]">Total Units</span>
+              <span className="text-xs" style={{ color: CHART_COLORS.textMuted }}>
+                Total Units
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <svg width="24" height="8">
-                <line x1="0" y1="4" x2="24" y2="4" stroke="#0F172A" strokeWidth={2.5} />
+                <line x1="0" y1="4" x2="24" y2="4" stroke={CHART_COLORS.navy} strokeWidth={2.5} />
               </svg>
-              <span className="text-xs text-[#374151]">Avg Absorption %</span>
+              <span className="text-xs" style={{ color: CHART_COLORS.textMuted }}>
+                Avg Absorption %
+              </span>
             </div>
           </div>
         </div>

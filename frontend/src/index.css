@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./styles/tokens.css";
 
 /* Geist font for display headlines */
 @import "@fontsource/geist-sans/400.css";
@@ -11,90 +12,7 @@
 @import "@fontsource/jetbrains-mono/500.css";
 @import "@fontsource/jetbrains-mono/700.css";
 
-@theme {
-  --font-display: "JetBrains Mono", "Geist Sans", system-ui, -apple-system, sans-serif;
-  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
-  --font-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace;
-
-  /* =========================================
-   * INSTITUTIONAL PRINT COLOR SYSTEM
-   * The Suit: Slate + Void + Cool Gray
-   * The Tie: Bloomberg Orange
-   * ========================================= */
-
-  /* ----- VOID (Dark Frame) ----- */
-  --color-void: #0A0A0A;          /* Nav background */
-  --color-void-surface: #1A1A1A;  /* Elevated cards on void */
-  --color-void-edge: #333333;     /* Machined metal borders */
-
-  /* ----- CANVAS (Engineering Paper System) ----- */
-  --color-canvas: #F2EFE9;        /* Warm stone - page background */
-  --color-canvas-paper: transparent; /* Wireframe: no fill, borders only */
-  --color-canvas-grid: #A8A29E;   /* Stone-400 - visible structural borders */
-
-  /* ----- INK (Data/Text - The "Print") ----- */
-  --color-ink: #0F172A;           /* Slate 900 - Primary data, headers */
-  --color-ink-dense: #1E293B;     /* Slate 800 - Secondary emphasis */
-  --color-ink-mid: #475569;       /* Slate 600 - Body text */
-  --color-ink-muted: #94A3B8;     /* Slate 400 - Ghost data, historical */
-  --color-ink-light: #CBD5E1;     /* Slate 300 - Subtle borders */
-
-  /* ----- REGION (Monochrome Hierarchy) ----- */
-  --color-region-ccr: #0F172A;    /* Slate 900 - Premium/Core */
-  --color-region-rcr: #334155;    /* Slate 700 - Mid-tier */
-  --color-region-ocr: #64748B;    /* Slate 500 - Suburban */
-
-  /* ----- SIGNAL (Accent - "The Tie") ----- */
-  --color-signal-accent: #F97316;    /* Orange 500 - Buttons, highlights */
-  --color-signal-a11y: #EA580C;      /* Orange 600 - Accessible text */
-  --color-signal-focus: #2563EB;     /* Blue 600 - Focus rings */
-
-  /* ----- DELTA (Financial +/-) ----- */
-  --color-delta-positive: #059669;   /* Emerald 600 - Gains */
-  --color-delta-negative: #DC2626;   /* Red 600 - Losses */
-  --color-delta-neutral: #64748B;    /* Slate 500 - No change */
-
-  /* ----- SUPPLY (Full Slate) ----- */
-  --color-supply-unsold: #0F172A;    /* Slate 900 */
-  --color-supply-upcoming: #334155;  /* Slate 700 */
-  --color-supply-gls: #64748B;       /* Slate 500 */
-  --color-supply-total: #94A3B8;     /* Slate 400 */
-
-  /* ----- LIQUIDITY (Exit Risk) ----- */
-  --color-liquidity-low: #F59E0B;       /* Amber 500 */
-  --color-liquidity-healthy: #059669;   /* Emerald 600 */
-  --color-liquidity-high: #DC2626;      /* Red 600 */
-  --color-liquidity-unknown: #94A3B8;   /* Slate 400 */
-
-  /* ----- STATUS (Operational) ----- */
-  --color-status-live: #059669;      /* Emerald 600 */
-  --color-status-negative: #DC2626;  /* Red 600 */
-
-  /* =========================================
-   * DEPRECATED (Remove in Phase 5)
-   * ========================================= */
-
-  /* Legacy MONO - mapped to new tokens */
-  --color-mono-void: var(--color-void);
-  --color-mono-surface: var(--color-void-surface);
-  --color-mono-edge: var(--color-void-edge);
-  --color-mono-ink: var(--color-ink);
-  --color-mono-dark: var(--color-void-surface);
-  --color-mono-mid: var(--color-ink-mid);
-  --color-mono-light: var(--color-ink-muted);
-  --color-mono-muted: var(--color-canvas-grid);
-  --color-mono-canvas: var(--color-canvas);
-
-  /* Brand colors (Institutional Print / Slate) */
-  --color-brand-navy: #0F172A;   /* slate-900 */
-  --color-brand-blue: #334155;   /* slate-700 */
-  --color-brand-sky: #64748B;    /* slate-500 */
-  --color-brand-sand: #E5E7EB;   /* slate-200 */
-
-  /* Card colors (Wireframe - transparent with borders) */
-  --color-card: transparent;      /* No fill - wireframe aesthetic */
-  --color-card-hover: rgba(255, 79, 0, 0.05); /* Subtle orange tint on hover */
-}
+/* Tokens imported from styles/tokens.css */
 
 /* Display font class for headlines */
 .font-display {
@@ -159,7 +77,7 @@
 }
 
 .weapon-card:hover {
-  border-color: #FF4F00; /* Safety Orange on hover */
+  border-color: var(--color-signal-accent); /* Safety Orange on hover */
   cursor: crosshair;
 }
 
@@ -212,7 +130,7 @@
 /* Container for a group of buttons (The "Ruler Frame") */
 .segmented-control {
   display: inline-flex;
-  border: 1px solid #A8A29E; /* Stone-400 frame */
+  border: var(--border-1) solid var(--color-canvas-grid); /* Stone-400 frame */
   background: transparent;   /* See the grid through */
 }
 
@@ -220,8 +138,8 @@
 .segmented-btn {
   background: transparent;
   border: none;
-  border-right: 1px solid #A8A29E; /* Tick mark divider */
-  color: #57534E; /* Stone-600 */
+  border-right: var(--border-1) solid var(--color-canvas-grid); /* Tick mark divider */
+  color: var(--color-ink-mid); /* Stone-600 */
   font-family: var(--font-mono);
   font-size: 0.75rem; /* 12px technical */
   text-transform: uppercase;
@@ -242,29 +160,29 @@
 
 /* Hover: subtle engagement */
 .segmented-btn:hover:not(.active) {
-  color: #1A1A1A;
+  color: var(--color-void-surface);
   background-color: rgba(0, 0, 0, 0.03);
 }
 
 /* Active: Black Ink inverted */
 .segmented-btn.active {
-  background-color: #1A1A1A;
-  color: #F2EFE9; /* Paper color text */
+  background-color: var(--color-void-surface);
+  color: var(--color-text-inverse); /* Paper color text */
 }
 
 /* Alternative: Safety Orange active (add .segmented-control--orange to parent) */
 .segmented-control--orange .segmented-btn.active {
   background-color: transparent;
-  color: #FF4F00;
-  box-shadow: inset 0 0 0 1px #FF4F00;
+  color: var(--color-signal-accent);
+  box-shadow: inset 0 0 0 var(--border-1) var(--color-signal-accent);
 }
 
 /* Wireframe dropdown/select styling */
 .wireframe-select {
   background: transparent;
-  border: 1px solid #A8A29E;
+  border: var(--border-1) solid var(--color-canvas-grid);
   border-radius: 0;
-  color: #57534E;
+  color: var(--color-ink-mid);
   font-family: var(--font-mono);
   font-size: 0.75rem;
   text-transform: uppercase;
@@ -272,18 +190,18 @@
   padding: 0.5rem 2rem 0.5rem 1rem;
   cursor: pointer;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2357534E' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 0.5rem center;
 }
 
 .wireframe-select:hover {
-  border-color: #1A1A1A;
+  border-color: var(--color-void-surface);
 }
 
 .wireframe-select:focus {
   outline: none;
-  border-color: #FF4F00;
+  border-color: var(--color-signal-accent);
 }
 
 /* Weapon Border Variants */
@@ -301,11 +219,11 @@
 }
 
 body {
-  @apply text-mono-ink;
+  color: var(--color-mono-ink);
   margin: 0;
   -webkit-font-smoothing: antialiased;
   /* Engineering Paper Background */
-  background-color: #F2EFE9;
+  background-color: var(--color-canvas);
   background-image: linear-gradient(90deg, rgba(87, 83, 78, 0.08) 1px, transparent 1px);
   background-size: 120px 100%;
 }
@@ -528,11 +446,11 @@ input[type="range"].slider-thumb::-moz-range-progress {
 .skeleton-shimmer {
   background: linear-gradient(
     90deg,
-    #f0ebe3 0%,
-    #faf8f5 25%,
-    #f0ebe3 50%,
-    #faf8f5 75%,
-    #f0ebe3 100%
+    var(--color-canvas) 0%,
+    var(--color-bg) 25%,
+    var(--color-canvas) 50%,
+    var(--color-bg) 75%,
+    var(--color-canvas) 100%
   );
   background-size: 200% 100%;
   animation: shimmer 3.5s ease-in-out infinite;
@@ -540,14 +458,14 @@ input[type="range"].slider-thumb::-moz-range-progress {
 
 /* Chart skeleton container */
 .chart-skeleton {
-  background-color: #fefefe;
+  background-color: var(--color-bg);
   position: relative;
   overflow: hidden;
 }
 
 /* SVG circle shimmer for map markers */
 .chart-skeleton svg circle.skeleton-shimmer {
-  fill: #f0ebe3;
+  fill: var(--color-canvas);
   animation: shimmer 3.5s ease-in-out infinite;
 }
 
@@ -989,7 +907,7 @@ input[type="range"].slider-thumb::-moz-range-progress {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #10B981;
+  background: var(--color-status-live);
   box-shadow: 0 0 4px rgba(16, 185, 129, 0.6);
   animation: heartbeat-glow 4s ease-in-out infinite;
 }
@@ -1049,4 +967,3 @@ input[type="range"].slider-thumb::-moz-range-progress {
  * - Inset shadow = light reflecting off metal chassis floor
  * - Drop shadow = icon illuminated by LED
  */
-

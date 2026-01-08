@@ -12,6 +12,7 @@ import { TIME_GROUP_BY } from '../../context/PowerBIFilter';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { KeyInsightBox, PreviewChartOverlay, ChartSlot, InlineCard, InlineCardRow } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
+import { CHART_COLORS } from '../../constants/chartPalette';
 import {
   transformOscillatorSeries,
   calculateZScoreStats,
@@ -200,13 +201,13 @@ function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawDat
       {
         label: 'CCR-RCR Z-Score',
         data: data.map(d => d.zCcrRcr),
-        borderColor: '#0F172A', // Navy
-        backgroundColor: 'rgba(33, 52, 72, 0.1)',
+        borderColor: CHART_COLORS.navy, // Navy
+        backgroundColor: CHART_COLORS.navyDeepAlpha10,
         borderWidth: 2.5,
         pointRadius: 0,
         pointHoverRadius: 5,
-        pointHoverBackgroundColor: '#0F172A',
-        pointHoverBorderColor: '#fff',
+        pointHoverBackgroundColor: CHART_COLORS.navy,
+        pointHoverBorderColor: CHART_COLORS.white,
         pointHoverBorderWidth: 2,
         fill: false,
         tension: 0.3,
@@ -215,14 +216,14 @@ function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawDat
       {
         label: 'RCR-OCR Z-Score',
         data: data.map(d => d.zRcrOcr),
-        borderColor: '#334155', // Ocean blue
-        backgroundColor: 'rgba(84, 119, 146, 0.1)',
+        borderColor: CHART_COLORS.ocean, // Ocean blue
+        backgroundColor: CHART_COLORS.oceanAlpha10,
         borderWidth: 2.5,
         borderDash: [6, 4],
         pointRadius: 0,
         pointHoverRadius: 5,
-        pointHoverBackgroundColor: '#334155',
-        pointHoverBorderColor: '#fff',
+        pointHoverBackgroundColor: CHART_COLORS.ocean,
+        pointHoverBorderColor: CHART_COLORS.white,
         pointHoverBorderWidth: 2,
         fill: false,
         tension: 0.3,
@@ -274,7 +275,7 @@ function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawDat
             type: 'box',
             yMin: 2.0,
             yMax: yAxisBounds.max,
-            backgroundColor: 'rgba(239, 68, 68, 0.20)',
+            backgroundColor: CHART_COLORS.redAlpha20,
             borderWidth: 0,
           },
           // Elevated zone (light red) - +1σ to +2σ
@@ -282,7 +283,7 @@ function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawDat
             type: 'box',
             yMin: 1.0,
             yMax: 2.0,
-            backgroundColor: 'rgba(239, 68, 68, 0.08)',
+            backgroundColor: CHART_COLORS.redAlpha08,
             borderWidth: 0,
           },
           // Normal zone (grey) - between -1σ and +1σ
@@ -290,7 +291,7 @@ function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawDat
             type: 'box',
             yMin: -1.0,
             yMax: 1.0,
-            backgroundColor: 'rgba(148, 180, 193, 0.15)',
+            backgroundColor: CHART_COLORS.skyAlpha15,
             borderWidth: 0,
           },
           // Compressed zone (light green) - -2σ to -1σ
@@ -298,7 +299,7 @@ function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawDat
             type: 'box',
             yMin: -2.0,
             yMax: -1.0,
-            backgroundColor: 'rgba(16, 185, 129, 0.08)',
+            backgroundColor: CHART_COLORS.emeraldAlpha08,
             borderWidth: 0,
           },
           // Extreme undervalued zone (dark green) - beyond -2σ
@@ -306,7 +307,7 @@ function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawDat
             type: 'box',
             yMin: yAxisBounds.min,
             yMax: -2.0,
-            backgroundColor: 'rgba(16, 185, 129, 0.20)',
+            backgroundColor: CHART_COLORS.emeraldAlpha20,
             borderWidth: 0,
           },
         },
@@ -423,15 +424,19 @@ function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawDat
           <div className="flex justify-center gap-6 py-2 shrink-0">
             <div className="flex items-center gap-2">
               <svg width="32" height="8">
-                <line x1="0" y1="4" x2="32" y2="4" stroke="#0F172A" strokeWidth={2} />
+                <line x1="0" y1="4" x2="32" y2="4" stroke={CHART_COLORS.navy} strokeWidth={2} />
               </svg>
-              <span className="text-xs text-[#374151]">CCR-RCR Z-Score</span>
+              <span className="text-xs" style={{ color: CHART_COLORS.textMuted }}>
+                CCR-RCR Z-Score
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <svg width="32" height="8">
-                <line x1="0" y1="4" x2="32" y2="4" stroke="#334155" strokeWidth={2} strokeDasharray="8 4" />
+                <line x1="0" y1="4" x2="32" y2="4" stroke={CHART_COLORS.ocean} strokeWidth={2} strokeDasharray="8 4" />
               </svg>
-              <span className="text-xs text-[#374151]">RCR-OCR Z-Score</span>
+              <span className="text-xs" style={{ color: CHART_COLORS.textMuted }}>
+                RCR-OCR Z-Score
+              </span>
             </div>
           </div>
 
