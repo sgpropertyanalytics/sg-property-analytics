@@ -23,26 +23,11 @@ import {
   SupplyField,
   SupplyMetaField,
 } from '../../schemas/apiContract';
+import { WATERFALL, WATERFALL_BORDER, INK } from '../../constants/colors';
 
-// Colors for supply charts (muted warm tones)
-const COLORS = {
-  unsoldInventory: '#6b4226',  // Muted chocolate brown (darkest)
-  upcomingLaunches: '#9c6644', // Muted terracotta (medium)
-  glsPipeline: '#c4a77d',      // Muted camel/tan (lighter)
-  glsExcluded: 'rgba(196, 167, 125, 0.3)',  // Camel @ 30% opacity
-  total: '#e8dcc8',            // Warm cream (lightest)
-  spacer: 'transparent',       // Invisible spacer
-  connector: '#c4a77d',        // Bridge line color (matches GLS)
-};
-
-// Border colors for better definition
-const BORDER_COLORS = {
-  unsoldInventory: '#5a361f',  // Darker brown
-  upcomingLaunches: '#7d5236', // Darker terracotta
-  glsPipeline: '#a68b64',      // Darker camel
-  glsExcluded: 'rgba(166, 139, 100, 0.5)',
-  total: '#d4c9b8',
-};
+// Colors for supply charts - imported from design system
+const COLORS = WATERFALL;
+const BORDER_COLORS = WATERFALL_BORDER;
 
 /**
  * Format date string to readable format
@@ -452,7 +437,7 @@ export function getWaterfallChartOptions(totals, includeGls) {
         grid: { display: false },
         ticks: {
           font: { size: 11, weight: '600' },
-          color: '#0F172A',
+          color: INK.primary,
           maxRotation: 0,
           autoSkip: false,
         },
@@ -466,13 +451,13 @@ export function getWaterfallChartOptions(totals, includeGls) {
         ticks: {
           callback: (value) => formatNumber(value),
           font: { size: 11 },
-          color: '#475569',
+          color: INK.mid,
         },
         title: {
           display: true,
           text: 'Units',
           font: { size: 12 },
-          color: '#475569',
+          color: INK.mid,
         },
       },
     },
@@ -501,7 +486,7 @@ export function getDistrictChartOptions() {
           boxHeight: 12,
           padding: 8,
           font: { size: 11 },
-          color: '#0F172A',
+          color: INK.primary,
         },
       },
       tooltip: {
@@ -531,7 +516,7 @@ export function getDistrictChartOptions() {
         grid: { display: false },
         ticks: {
           font: { size: 10 },
-          color: '#475569',
+          color: INK.mid,
           maxRotation: 45,
           minRotation: 0,
         },
@@ -545,13 +530,13 @@ export function getDistrictChartOptions() {
         ticks: {
           callback: (value) => formatNumber(value),
           font: { size: 11 },
-          color: '#475569',
+          color: INK.mid,
         },
         title: {
           display: true,
           text: 'Units',
           font: { size: 12 },
-          color: '#475569',
+          color: INK.mid,
         },
       },
     },

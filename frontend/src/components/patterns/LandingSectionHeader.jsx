@@ -5,7 +5,7 @@ export function LandingSectionHeader({ eyebrow, title, muted, rightSlot }) {
     <div className="flex items-end justify-between gap-6">
       <div>
         {eyebrow ? (
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
+          <div className="font-mono text-data-xs uppercase tracking-[0.18em] text-black/60">
             {eyebrow}
           </div>
         ) : null}
@@ -21,7 +21,7 @@ export function LandingSectionHeader({ eyebrow, title, muted, rightSlot }) {
 
 export function LandingMonoPill({ children, leftDot = null }) {
   return (
-    <div className="inline-flex items-center gap-2 border border-black/10 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
+    <div className="inline-flex items-center gap-2 border border-black/10 px-3 py-1.5 font-mono text-data-xs uppercase tracking-[0.18em] text-black/60">
       {leftDot ? <span className="flex h-2 w-2 items-center justify-center">{leftDot}</span> : null}
       <span>{children}</span>
     </div>

@@ -67,7 +67,7 @@ export function HelpTooltip({ content }: HelpTooltipProps) {
             ref={refs.setFloating}
             style={floatingStyles}
             {...getFloatingProps()}
-            className="z-[9999] w-64 max-w-[calc(100vw-2rem)] p-3 bg-[#0F172A] text-white text-xs leading-relaxed rounded shadow-lg whitespace-pre-line"
+            className="z-toast w-64 max-w-[calc(100vw-2rem)] p-3 bg-brand-navy text-white text-xs leading-relaxed rounded shadow-lg whitespace-pre-line"
           >
             {content}
           </div>

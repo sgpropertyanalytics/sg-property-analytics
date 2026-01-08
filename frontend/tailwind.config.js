@@ -50,6 +50,17 @@ export default {
           DEFAULT: 'var(--color-card)',
           hover: 'var(--color-card-hover)',
         },
+        // Nav-specific colors (Smoked Obsidian)
+        nav: {
+          bg: 'var(--color-nav-bg)',
+          text: 'var(--color-nav-text)',
+          muted: 'var(--color-nav-text-muted)',
+        },
+        // Skeleton loading colors
+        skeleton: {
+          bg: 'var(--color-skeleton-bg)',
+          border: 'var(--color-skeleton-border)',
+        },
       },
       fontFamily: {
         display: ['var(--font-display)'],
@@ -93,6 +104,7 @@ export default {
         overlay: 'var(--z-overlay)',
         modal: 'var(--z-modal)',
         toast: 'var(--z-toast)',
+        debug: 'var(--z-debug)',
       },
     },
   },
