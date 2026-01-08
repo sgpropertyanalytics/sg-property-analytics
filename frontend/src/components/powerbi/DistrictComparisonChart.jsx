@@ -12,15 +12,16 @@ import {
 } from '../../adapters';
 import { CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 import { REGION } from '../../constants/colors';
+import { CHART_COLORS } from '../../constants/chartPalette';
 
 // Color palette from centralized colors.js - age band differentiated (Slate)
 const COLORS = {
-  selected: REGION.CCR,        // slate-900 - selected project
-  sameAgeBand: REGION.RCR,     // slate-700 - same age cohort
-  otherBand: REGION.OCR,       // slate-500 - other age cohorts
-  selectedHover: '#1E293B',    // slate-800
-  sameAgeBandHover: '#475569', // slate-600
-  otherBandHover: '#94A3B8',   // slate-400
+  selected: REGION.CCR,                  // slate-900 - selected project
+  sameAgeBand: REGION.RCR,               // slate-700 - same age cohort
+  otherBand: REGION.OCR,                 // slate-500 - other age cohorts
+  selectedHover: CHART_COLORS.slate800,  // slate-800
+  sameAgeBandHover: CHART_COLORS.slate600, // slate-600
+  otherBandHover: CHART_COLORS.slate400, // slate-400
 };
 
 // Row height for alignment between table and chart
@@ -190,9 +191,9 @@ function DistrictComparisonChartBase({
           },
         },
         displayColors: false,
-        backgroundColor: 'rgba(15, 23, 42, 0.95)',  // slate-900
-        titleColor: '#fff',
-        bodyColor: '#fff',
+        backgroundColor: CHART_COLORS.navyAlpha95,  // slate-900
+        titleColor: CHART_COLORS.white,
+        bodyColor: CHART_COLORS.white,
         padding: 12,
         cornerRadius: 8,
       },
@@ -204,7 +205,7 @@ function DistrictComparisonChartBase({
           text: 'Median PSF ($)',
           ...CHART_AXIS_DEFAULTS.title,
         },
-        grid: { color: 'rgba(0, 0, 0, 0.05)' },
+        grid: { color: CHART_COLORS.gridLight },
         ticks: {
           ...CHART_AXIS_DEFAULTS.ticks,
           callback: (value) => `$${value.toLocaleString()}`,
