@@ -219,7 +219,7 @@
 }
 
 body {
-  @apply text-mono-ink;
+  color: var(--color-mono-ink);
   margin: 0;
   -webkit-font-smoothing: antialiased;
   /* Engineering Paper Background */
