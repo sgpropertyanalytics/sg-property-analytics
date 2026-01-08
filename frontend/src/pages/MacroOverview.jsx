@@ -16,13 +16,13 @@ import { useData } from '../context/DataContext';
 import { transformCompressionSeries } from '../adapters';
 // Standardized responsive UI components (layout wrappers only)
 import { ErrorBoundary, ChartPanel, ChartWatermark, DataSection, KPICardV2, KPICardV2Group, KPIHeroContent } from '../components/ui';
+import { FilterBar, PageHeader } from '../components/patterns';
 // Containment primitives (L0 → L1 → L2 layer system for visual hierarchy)
 import { PageCanvas, ControlRibbon } from '../components/layout';
 // Desktop-first chart height with mobile guardrail
 // Phase 2: Using TanStack Query via useAppQuery wrapper
 import { useChartHeight, MOBILE_CAPS, useAppQuery } from '../hooks';
 // Unified filter bar component (handles desktop + mobile)
-import { FilterBar } from '../components/powerbi/FilterBar';
 
 // Lazy-loaded below-fold charts (reduces initial bundle by ~150KB)
 // These charts are not immediately visible and can load on demand
@@ -201,14 +201,11 @@ export function MacroOverviewContent() {
   return (
     <PageCanvas>
       {/* Header - Outside containment for page-level context */}
-      <div className="mb-4 md:mb-6">
-        <div className="min-w-0 mb-2">
-          <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-ink hidden lg:block">
-            Market Overview
-          </h1>
-          {/* Data source info - shows last update, total records, new additions, and outliers removed */}
-          {apiMetadata && (
-            <p className="text-ink-mid text-xs md:text-sm italic">
+      <PageHeader
+        title="Market Overview"
+        subtitle={
+          apiMetadata && (
+            <span>
               Last updated: {apiMetadata.last_updated
                 ? new Date(apiMetadata.last_updated).toLocaleDateString('en-US', {
                     year: 'numeric',
@@ -225,13 +222,12 @@ export function MacroOverviewContent() {
               {apiMetadata.outliers_excluded > 0 && (
                 <> | Statistical outliers removed: {apiMetadata.outliers_excluded.toLocaleString()}</>
               )}
-            </p>
-          )}
-        </div>
-
-        {/* Breadcrumb navigation */}
+            </span>
+          )
+        }
+      >
         <DrillBreadcrumb />
-      </div>
+      </PageHeader>
 
       {/* Filter Bar - Contained in sticky ribbon */}
       <ControlRibbon>
@@ -362,32 +358,36 @@ export function MacroOverviewContent() {
                   ref={compressionRef}
                   className="lg:col-span-2 grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 items-stretch"
                 >
-                  <ErrorBoundary name="Price Compression" compact>
-                    <ChartWatermark>
-                      <Suspense fallback={<ChartLoadingFallback height={compressionHeight} />}>
-                        <PriceCompressionChart
-                          height={compressionHeight}
-                          saleType={SALE_TYPE}
-                          sharedData={compressionData}
-                          sharedStatus={compressionInView ? compressionStatus : 'pending'}
-                          staggerIndex={1}
-                        />
-                      </Suspense>
-                    </ChartWatermark>
-                  </ErrorBoundary>
-                  <ErrorBoundary name="Absolute PSF" compact>
-                    <ChartWatermark>
-                      <Suspense fallback={<ChartLoadingFallback height={compressionHeight} />}>
-                        <AbsolutePsfChart
-                          height={compressionHeight}
-                          saleType={SALE_TYPE}
-                          sharedData={compressionData}
-                          sharedStatus={compressionInView ? compressionStatus : 'pending'}
-                          staggerIndex={2}
-                        />
-                      </Suspense>
-                    </ChartWatermark>
-                  </ErrorBoundary>
+                  <ChartPanel>
+                    <ErrorBoundary name="Price Compression" compact>
+                      <ChartWatermark>
+                        <Suspense fallback={<ChartLoadingFallback height={compressionHeight} />}>
+                          <PriceCompressionChart
+                            height={compressionHeight}
+                            saleType={SALE_TYPE}
+                            sharedData={compressionData}
+                            sharedStatus={compressionInView ? compressionStatus : 'pending'}
+                            staggerIndex={1}
+                          />
+                        </Suspense>
+                      </ChartWatermark>
+                    </ErrorBoundary>
+                  </ChartPanel>
+                  <ChartPanel>
+                    <ErrorBoundary name="Absolute PSF" compact>
+                      <ChartWatermark>
+                        <Suspense fallback={<ChartLoadingFallback height={compressionHeight} />}>
+                          <AbsolutePsfChart
+                            height={compressionHeight}
+                            saleType={SALE_TYPE}
+                            sharedData={compressionData}
+                            sharedStatus={compressionInView ? compressionStatus : 'pending'}
+                            staggerIndex={2}
+                          />
+                        </Suspense>
+                      </ChartWatermark>
+                    </ErrorBoundary>
+                  </ChartPanel>
                 </div>
 
                 {/* Market Value Oscillator - Full width, Z-score normalized spread analysis */}
