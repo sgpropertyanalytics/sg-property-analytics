@@ -21,6 +21,7 @@ import {
   MOMENTUM_GRID_DATA,
   MAX_DISTRICT_PRICE,
 } from './landingPreviewData';
+import Container from '../components/primitives/Container.jsx';
 
 const CANVAS = '#fafafa';
 const INK = '#000000';
@@ -94,12 +95,12 @@ function MonoPill({ children, leftDot = null }) {
 
 function SectionDivider() {
   return (
-    <div className="relative h-px bg-black/10 max-w-7xl mx-auto">
+    <Container padding={false} className="relative h-px bg-black/10">
       {/* Aerospace-style decorative markers */}
       <div className="absolute left-1/4 -top-1 w-2 h-2 border border-black/15 bg-mono-canvas rotate-45" />
       <div className="absolute left-1/2 -translate-x-1/2 -top-1.5 w-3 h-3 border border-black/20 bg-mono-canvas rotate-45" />
       <div className="absolute right-1/4 -top-1 w-2 h-2 border border-black/15 bg-mono-canvas rotate-45" />
-    </div>
+    </Container>
   );
 }
 
@@ -1551,7 +1552,7 @@ export default function LandingV3() {
           className="absolute bottom-0 left-0 h-px bg-black/30 transition-all duration-75"
           style={{ width: `${scrollProgress}%` }}
         />
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3">
+        <Container className="py-3">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3 min-w-0">
               <div className="border border-black/10 p-2">
@@ -1590,7 +1591,7 @@ export default function LandingV3() {
               </button>
             </div>
           </div>
-        </div>
+        </Container>
       </nav>
 
       <main className="relative z-10">
@@ -1603,7 +1604,7 @@ export default function LandingV3() {
               background: 'radial-gradient(ellipse at top right, rgba(0,0,0,0.02) 0%, transparent 60%)',
             }}
           />
-          <div className="max-w-7xl mx-auto px-4 md:px-6">
+          <Container>
             <div>
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
                 {/* 60/40 asymmetric split for visual interest */}
@@ -1674,7 +1675,7 @@ export default function LandingV3() {
                 </div>
               </div>
             </div>
-          </div>
+          </Container>
 
         </section>
 
@@ -1682,7 +1683,7 @@ export default function LandingV3() {
 
         {/* STATS */}
         <section className="py-16 md:py-24 section-overlap-down" onMouseEnter={onSectionEnter} onMouseLeave={onSectionLeave}>
-          <div className="max-w-7xl mx-auto px-4 md:px-6">
+          <Container>
             <SectionTitle
               eyebrow="COVERAGE"
               title="SIGNAL_DEPTH"
@@ -1762,14 +1763,14 @@ export default function LandingV3() {
                 <div className="mt-1 font-mono text-[10px] text-black/60">CYCLE_DEPTH</div>
               </div>
             </div>
-          </div>
+          </Container>
         </section>
 
         <SectionDivider />
 
         {/* LIVE SIGNAL ECOSYSTEM */}
         <section className="py-16 md:py-24 section-overlap-up" onMouseEnter={onSectionEnter} onMouseLeave={onSectionLeave}>
-          <div className="max-w-7xl mx-auto px-4 md:px-6">
+          <Container>
             <SectionTitle
               eyebrow="SURVEILLANCE"
               title="SIGNAL_FEED"
@@ -1779,14 +1780,14 @@ export default function LandingV3() {
             <div className="mt-6">
               <LiveSignalEcosystem />
             </div>
-          </div>
+          </Container>
         </section>
 
         <SectionDivider />
 
         {/* CAPABILITIES */}
         <section className="py-16 md:py-24" onMouseEnter={onSectionEnter} onMouseLeave={onSectionLeave}>
-          <div className="max-w-7xl mx-auto px-4 md:px-6">
+          <Container>
             <SectionTitle eyebrow="SYSTEM" title="CAPABILITIES_MANIFEST" muted="analyst_tools" />
 
             <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1815,14 +1816,14 @@ export default function LandingV3() {
                 desc="Command-first UX for power users: run queries without leaving the keyboard."
               />
             </div>
-          </div>
+          </Container>
         </section>
 
         <SectionDivider />
 
         {/* INSIGHTS */}
         <section className="py-16 md:py-24" onMouseEnter={onSectionEnter} onMouseLeave={onSectionLeave}>
-          <div className="max-w-7xl mx-auto px-4 md:px-6">
+          <Container>
             <SectionTitle eyebrow="READOUT" title="MARKET_SIGNALS" muted="realtime" />
 
             <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-4">
@@ -1913,12 +1914,12 @@ export default function LandingV3() {
                 </div>
               </div>
             </div>
-          </div>
+          </Container>
         </section>
 
         {/* CTA */}
         <section className="py-16 md:py-24 bg-black text-[#fafafa]">
-          <div className="max-w-7xl mx-auto px-4 md:px-6">
+          <Container>
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
               <div className="lg:col-span-8">
                 <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#fafafa]/60">
@@ -1979,11 +1980,11 @@ export default function LandingV3() {
                 DO NOT DISTRIBUTE
               </div>
             </div>
-          </div>
+          </Container>
         </section>
 
         <footer className="py-10 footer-grid-pattern">
-          <div className="max-w-7xl mx-auto px-4 md:px-6">
+          <Container>
             {/* System Status Row */}
             <div className="system-status-row pb-6 border-b border-black/05">
               <div className="status-item">
@@ -2029,7 +2030,7 @@ export default function LandingV3() {
                 </button>
               </div>
             </div>
-          </div>
+          </Container>
         </footer>
       </main>
 
