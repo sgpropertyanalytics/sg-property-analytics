@@ -20,6 +20,7 @@ import { isFloorDirection, FloorDirectionLabels } from '../../schemas/apiContrac
 import { ChartSlot } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 import { REGION, INK, CANVAS } from '../../constants/colors';
+import { CHART_COLORS } from '../../constants/chartPalette';
 import { VerdictBadge, VerdictBadgeLarge } from './VerdictBadge';
 
 // Colors from centralized colors.js + chart-specific fills
@@ -28,8 +29,8 @@ const COLORS = {
   oceanBlue: REGION.RCR,      // slate-700
   skyBlue: REGION.OCR,        // slate-500
   sand: CANVAS.grid,          // slate-200
-  protectedFill: 'rgba(16, 185, 129, 0.12)', // Light green
-  cautionFill: 'rgba(239, 68, 68, 0.12)',    // Light red
+  protectedFill: CHART_COLORS.emeraldAlpha12, // Light green
+  cautionFill: CHART_COLORS.redAlpha12,    // Light red
   unitMarker: REGION.RCR,     // slate-700
 };
 
@@ -151,7 +152,7 @@ function PriceBandChartBase({
         xValue: lastIndex,
         yValue: unitPsf,
         backgroundColor: COLORS.unitMarker,
-        borderColor: '#fff',
+        borderColor: CHART_COLORS.white,
         borderWidth: 2,
         radius: 8,
         drawTime: 'afterDatasetsDraw',
@@ -162,8 +163,8 @@ function PriceBandChartBase({
         xValue: lastIndex,
         yValue: unitPsf,
         content: `$${unitPsf.toLocaleString()} psf`,
-        backgroundColor: 'rgba(15, 23, 42, 0.9)',  // slate-900
-        color: '#fff',
+        backgroundColor: CHART_COLORS.navyAlpha90,  // slate-900
+        color: CHART_COLORS.white,
         font: { size: 11, weight: 'bold' },
         padding: { x: 6, y: 4 },
         borderRadius: 4,
@@ -195,9 +196,9 @@ function PriceBandChartBase({
         tooltip: {
           mode: 'index',
           intersect: false,
-          backgroundColor: 'rgba(15, 23, 42, 0.95)',  // slate-900
-          titleColor: '#fff',
-          bodyColor: '#fff',
+          backgroundColor: CHART_COLORS.navyAlpha95,  // slate-900
+          titleColor: CHART_COLORS.white,
+          bodyColor: CHART_COLORS.white,
           borderColor: COLORS.skyBlue,
           borderWidth: 1,
           padding: 12,

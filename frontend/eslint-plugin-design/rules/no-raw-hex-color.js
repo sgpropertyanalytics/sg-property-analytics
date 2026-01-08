@@ -25,10 +25,11 @@ const ALLOWED_FILES = [
   'constants/index.js',
   'constants/colors.js',  // Centralized color system
   'constants/chartOptions.js',
+  'constants/chartPalette.js',
   'design-rules.js',
   'tailwind.config.js',
   'index.css',
-  'main.jsx',
+  'styles/tokens.css',
 
   // UI primitives (entire directory) - define design system
   'components/ui/',
@@ -44,12 +45,6 @@ const ALLOWED_FILES = [
 
   // Common/shared components (entire directory)
   'components/common/',
-
-  // Filter components (entire directory)
-  'components/filters/',
-
-  // Landing page components (entire directory)
-  'components/landing/',
 
   // Modal components - define their own styling
   'PricingModal.jsx',

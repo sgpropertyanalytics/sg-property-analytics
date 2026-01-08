@@ -18,6 +18,7 @@
 import noArbitraryFontSize from './rules/no-arbitrary-font-size.js';
 import noRawHexColor from './rules/no-raw-hex-color.js';
 import requireTabularNums from './rules/require-tabular-nums.js';
+import noArbitrarySpacing from './rules/no-arbitrary-spacing.js';
 
 export default {
   meta: {
@@ -27,6 +28,7 @@ export default {
   rules: {
     'no-arbitrary-font-size': noArbitraryFontSize,
     'no-raw-hex-color': noRawHexColor,
+    'no-arbitrary-spacing': noArbitrarySpacing,
     'require-tabular-nums': requireTabularNums,
   },
   configs: {
@@ -35,6 +37,7 @@ export default {
       rules: {
         'design/no-arbitrary-font-size': 'error',
         'design/no-raw-hex-color': 'error',
+        'design/no-arbitrary-spacing': 'error',
         'design/require-tabular-nums': 'warn',
       },
     },
