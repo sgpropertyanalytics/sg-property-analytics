@@ -1483,13 +1483,12 @@ export default function LandingV3() {
         }
       `}</style>
 
-      {/* Subtle crosshatch grid @ 80px - brightens on section hover */}
+      {/* Fine horizontal grid lines - Atlas bond paper aesthetic */}
       <div
-        className={`pointer-events-none fixed inset-0 z-0 transition-opacity duration-300 ${isGridHot ? 'opacity-[0.04]' : 'opacity-[0.015]'}`}
+        className={`pointer-events-none fixed inset-0 z-0 transition-opacity duration-300 ${isGridHot ? 'opacity-100' : 'opacity-60'}`}
         style={{
           backgroundImage:
-            'linear-gradient(to right, rgba(0,0,0,1) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,1) 1px, transparent 1px)',
-          backgroundSize: '80px 80px',
+            'repeating-linear-gradient(to bottom, transparent, transparent 39px, rgba(0,0,0,0.03) 39px, rgba(0,0,0,0.03) 40px)',
         }}
       />
 
@@ -1510,9 +1509,23 @@ export default function LandingV3() {
         }}
       />
 
+      {/* TOP STATUS BAR */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-mono-canvas border-b border-black/10">
+        <Container className="py-1.5">
+          <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
+            <span>LIVE DATA — MARKET ANALYSIS ACTIVE</span>
+            <span className="hidden md:block">URA REALIS INTELLIGENCE</span>
+            <span className="flex items-center gap-2">
+              <span className="hidden sm:inline">&gt;&gt;&gt;</span>
+              <span className="text-orange-500">REALTIME FEED</span>
+            </span>
+          </div>
+        </Container>
+      </div>
+
       {/* NAV */}
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 border-b transition-all duration-200 ${
+        className={`fixed top-[33px] left-0 right-0 z-50 border-b transition-all duration-200 ${
           isScrolled
             ? 'bg-mono-canvas/95 backdrop-blur-sm border-black/10 shadow-sm'
             : 'bg-mono-canvas border-black/10'
@@ -1556,7 +1569,7 @@ export default function LandingV3() {
               <button
                 type="button"
                 onClick={onAnyCTA}
-                className="px-4 py-2 bg-black text-mono-canvas font-medium hover:bg-black/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
+                className="px-4 py-2 bg-orange-500 text-white font-medium hover:bg-orange-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/50"
               >
                 Request Access
               </button>
@@ -1567,7 +1580,7 @@ export default function LandingV3() {
 
       <main className="relative z-10">
         {/* HERO */}
-        <section className="relative pt-24 md:pt-28 pb-16 md:pb-24 overflow-hidden">
+        <section className="relative pt-32 md:pt-36 pb-16 md:pb-24 overflow-hidden">
           {/* Gradient mesh - subtle corner accent */}
           <div
             className="absolute top-0 right-0 w-1/2 h-1/2 pointer-events-none"
@@ -1577,64 +1590,112 @@ export default function LandingV3() {
           />
           <Container>
             <div>
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-                {/* 60/40 asymmetric split for visual interest */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+                {/* Left column - Hero content */}
                 <div className="lg:col-span-7">
+                  {/* Eyebrow with unit designation */}
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.5 }}
-                    className="flex items-center gap-3"
+                    className="flex items-center justify-between"
                   >
-                    <MonoPill leftDot={<LiveDot />}>Live URA Data</MonoPill>
                     <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
-                      v3 // preview
+                      ADVANCED RESEARCH UNIT
+                    </div>
+                    <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
+                      SG // REALIS
                     </div>
                   </motion.div>
 
-                  <motion.h1
+                  {/* Hero title with badge */}
+                  <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.6, delay: 0.05 }}
-                    className="mt-6 font-display text-4xl sm:text-5xl md:text-6xl xl:text-7xl font-bold tracking-tighter leading-[1.05]"
+                    className="mt-8 flex items-start gap-6"
                   >
-                    <span className="block text-black">Singapore Condo</span>
-                    <span className="block text-black/60" style={{ whiteSpace: 'nowrap' }}>Market Intelligence</span>
-                  </motion.h1>
+                    {/* Badge */}
+                    <div className="hidden md:flex shrink-0 w-16 h-16 border-2 border-black rounded-full items-center justify-center">
+                      <span className="font-display-serif text-2xl font-medium">R</span>
+                    </div>
+
+                    <h1 className="headline-italic text-4xl sm:text-5xl md:text-6xl xl:text-7xl leading-[1.05]">
+                      <span className="block text-black">Singapore</span>
+                      <span className="block text-black">Condo Market</span>
+                      <span className="block text-black/50">Intelligence</span>
+                    </h1>
+                  </motion.div>
 
                   <motion.p
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.6, delay: 0.12 }}
-                    className="mt-6 text-base sm:text-lg leading-relaxed text-black/60 max-w-xl"
+                    className="mt-8 font-mono text-sm leading-relaxed text-black/60 max-w-lg"
                   >
-                    Data-driven price benchmarking across projects, locations, and market segments — based on 100,000+ private property transactions.
+                    PropAnalytics is developing the underlying architecture for next-generation property analytics — a distributed network capable of tracking, reasoning, and benchmarking across all market segments.
                   </motion.p>
 
+                  {/* CTA Button */}
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.6, delay: 0.24 }}
-                    className="mt-6"
-                  >
-                    <CommandBar onExecute={onAnyCTA} />
-                  </motion.div>
-
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.6, delay: 0.3 }}
                     className="mt-8"
                   >
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
-                      <TerminalOutput lines={terminalLines} isLive />
-                      <StatusPanel />
-                    </div>
+                    <button
+                      type="button"
+                      onClick={onAnyCTA}
+                      className="relative px-8 py-4 bg-orange-500 text-white font-mono text-xs uppercase tracking-[0.15em] hover:bg-orange-600 transition-colors"
+                    >
+                      {/* Corner brackets */}
+                      <div className="absolute -top-1 -left-1 w-3 h-3 border-t-2 border-l-2 border-black" />
+                      <div className="absolute -bottom-1 -right-1 w-3 h-3 border-b-2 border-r-2 border-black" />
+                      EXPLORE DATA
+                    </button>
                   </motion.div>
                 </div>
 
-                {/* Globe column - slightly overflow for tension */}
-                <div className="lg:col-span-5 lg:-mr-8">
+                {/* Right column - System panel + Globe */}
+                <div className="lg:col-span-5">
+                  {/* System Mode Header */}
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.5 }}
+                    className="border border-black/10 mb-4"
+                  >
+                    <div className="px-4 py-2 border-b border-black/10">
+                      <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
+                        SYSTEM MODE: ACTIVE NETWORK CALIBRATION
+                      </div>
+                    </div>
+                    <div className="p-4">
+                      <TerminalOutput lines={terminalLines} isLive />
+                    </div>
+                  </motion.div>
+
+                  {/* Frequency Display */}
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.6, delay: 0.1 }}
+                    className="flex justify-end mb-4"
+                  >
+                    <div className="border border-black/10 px-4 py-2">
+                      <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
+                        CURRENT FREQ:
+                      </div>
+                      <div className="font-mono text-2xl tabular-nums text-black">
+                        103.379
+                      </div>
+                      <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
+                        TX/DAY
+                      </div>
+                    </div>
+                  </motion.div>
+
+                  {/* Globe */}
                   <motion.div
                     className="globe-bloom"
                     initial={{ opacity: 0 }}
@@ -1653,85 +1714,92 @@ export default function LandingV3() {
         <SectionDivider />
 
         {/* STATS */}
-        <section className="py-16 md:py-24 section-overlap-down" onMouseEnter={onSectionEnter} onMouseLeave={onSectionLeave}>
+        <section className="py-16 md:py-24" onMouseEnter={onSectionEnter} onMouseLeave={onSectionLeave}>
           <Container>
-            <SectionTitle
-              eyebrow="COVERAGE"
-              title="SIGNAL_DEPTH"
-              muted="auditable"
-              rightSlot={<MonoPill>PREVIEW_MODE</MonoPill>}
-            />
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+              {/* Left - Featured stat + info */}
+              <div className="lg:col-span-5">
+                <div className="flex items-center gap-6 mb-6">
+                  <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
+                    AI-OPS INFRASTRUCTURE
+                  </div>
+                  <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
+                    BUILT BY ENGINEERS
+                  </div>
+                </div>
 
-            {/* Stats grid with equal-height cards */}
-            <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-4 auto-rows-fr">
-              {/* Card 1 - slight rotation for visual interest per Phase 7.1 */}
-              <div
-                className="relative h-full border border-black/10 bg-white/90 backdrop-blur-sm p-4 hover:border-black/20 transition-all hover:shadow-sm"
-                style={{ boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)', transform: 'rotate(-0.5deg)' }}
-              >
-                {/* HUD corner ticks */}
-                <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
-                <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
-                {/* Ruler tick marks along top edge */}
-                <div className="absolute top-0 left-1/4 w-px h-1 bg-black/20" />
-                <div className="absolute top-0 left-1/2 w-px h-1.5 bg-black/30" />
-                <div className="absolute top-0 left-3/4 w-px h-1 bg-black/20" />
-                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">TX_COUNT</div>
-                <div className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-black tabular-nums font-data">
-                  <AnimatedNumber
-                    value={103379}
-                    format={(n) => Math.round(n).toLocaleString('en-SG')}
+                {/* Featured stat block */}
+                <div className="flex items-start gap-6">
+                  <div className="bg-black text-white px-6 py-8">
+                    <div className="font-display-serif text-6xl md:text-7xl">98%</div>
+                  </div>
+                  <div className="pt-2">
+                    <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60 mb-2">
+                      ACCURACY IN ADAPTIVE ROUTING
+                    </div>
+                    <p className="font-mono text-sm text-black/60 max-w-xs">
+                      Adaptive routing recalibrates in real time to maintain signal integrity across networks
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right - Stats grid */}
+              <div className="lg:col-span-7">
+                <div className="flex items-center justify-between mb-6">
+                  <SectionTitle
+                    eyebrow="COVERAGE"
+                    title="Signal Depth"
                   />
+                  <MonoPill>PREVIEW_MODE</MonoPill>
                 </div>
-                <div className="mt-1 font-mono text-[10px] text-black/60">RESALE_TAPE</div>
-              </div>
-              {/* Card 2 */}
-              <div
-                className="relative h-full border border-black/10 bg-white/90 backdrop-blur-sm p-4 hover:border-black/20 transition-all hover:shadow-sm"
-                style={{ boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)', transform: 'rotate(0.5deg)' }}
-              >
-                <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
-                <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
-                <div className="absolute top-0 left-1/4 w-px h-1 bg-black/20" />
-                <div className="absolute top-0 left-1/2 w-px h-1.5 bg-black/30" />
-                <div className="absolute top-0 left-3/4 w-px h-1 bg-black/20" />
-                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">INTEGRITY</div>
-                <div className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-black tabular-nums font-data">
-                  <AnimatedNumber value={99.2} format={(n) => `${n.toFixed(1)}%`} />
+
+                {/* Stats grid - clean alignment, no rotations */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Card 1 */}
+                  <div className="relative border border-black/10 p-4 hover:border-black/20 transition-all">
+                    <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
+                    <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
+                    <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">TX_COUNT</div>
+                    <div className="mt-2 text-2xl font-bold tracking-tight text-black tabular-nums font-data">
+                      <AnimatedNumber
+                        value={103379}
+                        format={(n) => Math.round(n).toLocaleString('en-SG')}
+                      />
+                    </div>
+                    <div className="mt-1 font-mono text-[10px] text-black/40">RESALE_TAPE</div>
+                  </div>
+                  {/* Card 2 */}
+                  <div className="relative border border-black/10 p-4 hover:border-black/20 transition-all">
+                    <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
+                    <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
+                    <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">INTEGRITY</div>
+                    <div className="mt-2 text-2xl font-bold tracking-tight text-black tabular-nums font-data">
+                      <AnimatedNumber value={99.2} format={(n) => `${n.toFixed(1)}%`} />
+                    </div>
+                    <div className="mt-1 font-mono text-[10px] text-black/40">OUTLIER_GATED</div>
+                  </div>
+                  {/* Card 3 */}
+                  <div className="relative border border-black/10 p-4 hover:border-black/20 transition-all">
+                    <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
+                    <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
+                    <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">DISTRICTS</div>
+                    <div className="mt-2 text-2xl font-bold tracking-tight text-black tabular-nums font-data">
+                      <AnimatedNumber value={28} format={(n) => String(Math.round(n))} />
+                    </div>
+                    <div className="mt-1 font-mono text-[10px] text-black/40">CCR/RCR/OCR</div>
+                  </div>
+                  {/* Card 4 */}
+                  <div className="relative border border-black/10 p-4 hover:border-black/20 transition-all">
+                    <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
+                    <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
+                    <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">HISTORY</div>
+                    <div className="mt-2 text-2xl font-bold tracking-tight text-black tabular-nums font-data">
+                      <AnimatedNumber value={5} format={(n) => `${Math.round(n)}Y`} />
+                    </div>
+                    <div className="mt-1 font-mono text-[10px] text-black/40">CYCLE_DEPTH</div>
+                  </div>
                 </div>
-                <div className="mt-1 font-mono text-[10px] text-black/60">OUTLIER_GATED</div>
-              </div>
-              {/* Card 3 - slight rotation */}
-              <div
-                className="relative h-full border border-black/10 bg-white/90 backdrop-blur-sm p-4 hover:border-black/20 transition-all hover:shadow-sm"
-                style={{ boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)', transform: 'rotate(-0.5deg)' }}
-              >
-                <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
-                <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
-                <div className="absolute top-0 left-1/4 w-px h-1 bg-black/20" />
-                <div className="absolute top-0 left-1/2 w-px h-1.5 bg-black/30" />
-                <div className="absolute top-0 left-3/4 w-px h-1 bg-black/20" />
-                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">DISTRICTS</div>
-                <div className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-black tabular-nums font-data">
-                  <AnimatedNumber value={28} format={(n) => String(Math.round(n))} />
-                </div>
-                <div className="mt-1 font-mono text-[10px] text-black/60">CCR/RCR/OCR</div>
-              </div>
-              {/* Card 4 */}
-              <div
-                className="relative h-full border border-black/10 bg-white/90 backdrop-blur-sm p-4 hover:border-black/20 transition-all hover:shadow-sm"
-                style={{ boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)', transform: 'rotate(0.5deg)' }}
-              >
-                <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
-                <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
-                <div className="absolute top-0 left-1/4 w-px h-1 bg-black/20" />
-                <div className="absolute top-0 left-1/2 w-px h-1.5 bg-black/30" />
-                <div className="absolute top-0 left-3/4 w-px h-1 bg-black/20" />
-                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">HISTORY</div>
-                <div className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-black tabular-nums font-data">
-                  <AnimatedNumber value={5} format={(n) => `${Math.round(n)}Y`} />
-                </div>
-                <div className="mt-1 font-mono text-[10px] text-black/60">CYCLE_DEPTH</div>
               </div>
             </div>
           </Container>
@@ -1756,36 +1824,117 @@ export default function LandingV3() {
 
         <SectionDivider />
 
-        {/* CAPABILITIES */}
+        {/* NODE REGISTRY */}
         <section className="py-16 md:py-24" onMouseEnter={onSectionEnter} onMouseLeave={onSectionLeave}>
           <Container>
-            <SectionTitle eyebrow="SYSTEM" title="CAPABILITIES_MANIFEST" muted="analyst_tools" />
+            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-8">
+              <div>
+                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60 mb-2">
+                  NETWORK NODE REGISTRY
+                </div>
+                <h2 className="headline-italic text-3xl md:text-4xl text-black">
+                  Distributed Intelligence Map
+                </h2>
+              </div>
+              <div className="text-right font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
+                <div>Uptime: 99.998%</div>
+                <div>Active Links: 05/06</div>
+              </div>
+            </div>
 
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <CapabilityCard
-                icon={Radar}
-                code="UNDERWRITE"
-                title="Deal Underwriting"
-                desc="Benchmark PSF by district, project, and unit type with repeatable assumptions."
-              />
-              <CapabilityCard
-                icon={Database}
-                code="TX_TAPE"
-                title="Raw Transaction Tape"
-                desc="Scan prints like a feed: district · size · psf · timestamp. No hidden smoothing."
-              />
-              <CapabilityCard
-                icon={ShieldCheck}
-                code="INTEGRITY"
-                title="Integrity Gating"
-                desc="Signal quality checks baked into the workflow — thin data flags and audit trails."
-              />
-              <CapabilityCard
-                icon={Zap}
-                code="LOW_LATENCY"
-                title="Query Engine"
-                desc="Command-first UX for power users: run queries without leaving the keyboard."
-              />
+            {/* Node cards grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* NODE-001: CCR Core */}
+              <div className="relative border border-black/10 p-4 hover:border-black/20 transition-all">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">NODE-001</div>
+                  <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                </div>
+                <h3 className="font-display-serif text-xl mb-1">CCR Core</h3>
+                <div className="flex items-center justify-between">
+                  <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-emerald-600">ACTIVE</div>
+                  <div className="font-mono text-[10px] text-black/40 tabular-nums">12ms</div>
+                </div>
+              </div>
+
+              {/* NODE-002: RCR Districts */}
+              <div className="relative border border-black/10 p-4 hover:border-black/20 transition-all">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">NODE-002</div>
+                  <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                </div>
+                <h3 className="font-display-serif text-xl mb-1">RCR Districts</h3>
+                <div className="flex items-center justify-between">
+                  <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-emerald-600">ACTIVE</div>
+                  <div className="font-mono text-[10px] text-black/40 tabular-nums">14ms</div>
+                </div>
+              </div>
+
+              {/* NODE-003: OCR Regions */}
+              <div className="relative border border-black/10 p-4 hover:border-black/20 transition-all">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">NODE-003</div>
+                  <div className="w-2 h-2 rounded-full bg-blue-400" />
+                </div>
+                <h3 className="font-display-serif text-xl mb-1">OCR Regions</h3>
+                <div className="flex items-center justify-between">
+                  <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-blue-500">SYNCING</div>
+                  <div className="font-mono text-[10px] text-black/40 tabular-nums">280ms</div>
+                </div>
+              </div>
+
+              {/* NODE-004: Price Engine */}
+              <div className="relative border border-black/10 p-4 hover:border-black/20 transition-all">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">NODE-004</div>
+                  <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                </div>
+                <h3 className="font-display-serif text-xl mb-1">Price Engine</h3>
+                <div className="flex items-center justify-between">
+                  <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-emerald-600">ACTIVE</div>
+                  <div className="font-mono text-[10px] text-black/40 tabular-nums">9ms</div>
+                </div>
+              </div>
+
+              {/* NODE-005: URA Feed */}
+              <div className="relative border border-black/10 p-4 hover:border-black/20 transition-all">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">NODE-005</div>
+                  <div className="w-2 h-2 rounded-full bg-black/30" />
+                </div>
+                <h3 className="font-display-serif text-xl mb-1">URA Feed</h3>
+                <div className="flex items-center justify-between">
+                  <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">STANDBY</div>
+                  <div className="font-mono text-[10px] text-black/40 tabular-nums">0ms</div>
+                </div>
+              </div>
+
+              {/* NODE-006: Analytics */}
+              <div className="relative border border-black/10 p-4 hover:border-black/20 transition-all">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">NODE-006</div>
+                  <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                </div>
+                <h3 className="font-display-serif text-xl mb-1">Analytics</h3>
+                <div className="flex items-center justify-between">
+                  <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-emerald-600">ACTIVE</div>
+                  <div className="font-mono text-[10px] text-black/40 tabular-nums">18ms</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer row */}
+            <div className="mt-8 pt-4 border-t border-black/10 flex items-center justify-between">
+              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
+                SECURITY CLEARANCE: LEVEL 4
+              </div>
+              <button
+                type="button"
+                onClick={onAnyCTA}
+                className="font-mono text-[10px] uppercase tracking-[0.18em] text-black underline underline-offset-4 hover:text-orange-500 transition-colors"
+              >
+                INITIATE RE-SYNC
+              </button>
             </div>
           </Container>
         </section>
