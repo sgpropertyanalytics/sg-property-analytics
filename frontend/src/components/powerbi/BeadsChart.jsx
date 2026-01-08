@@ -161,7 +161,7 @@ function BeadsChartBase({
       type: 'box',
       yMin: -0.5,
       yMax: 0.5,
-      backgroundColor: 'rgba(33, 52, 72, 0.04)', // Faint navy
+      backgroundColor: CHART_COLORS.navyDeepAlpha04, // Faint navy
       borderWidth: 0,
       z: -2, // Behind everything
     };
@@ -177,7 +177,7 @@ function BeadsChartBase({
       type: 'box',
       yMin: 1.5,
       yMax: 2.5,
-      backgroundColor: 'rgba(33, 52, 72, 0.04)', // Faint navy
+      backgroundColor: CHART_COLORS.navyDeepAlpha04, // Faint navy
       borderWidth: 0,
       z: -2,
     };
@@ -187,7 +187,7 @@ function BeadsChartBase({
       type: 'line',
       yMin: 0.5,
       yMax: 0.5,
-      borderColor: 'rgba(148, 180, 193, 0.3)', // Light sky color
+      borderColor: CHART_COLORS.skyAlpha30, // Light sky color
       borderWidth: 1,
       borderDash: [4, 4],
       z: -1, // Behind bubbles but above bands
@@ -196,7 +196,7 @@ function BeadsChartBase({
       type: 'line',
       yMin: 1.5,
       yMax: 1.5,
-      borderColor: 'rgba(148, 180, 193, 0.3)', // Light sky color
+      borderColor: CHART_COLORS.skyAlpha30, // Light sky color
       borderWidth: 1,
       borderDash: [4, 4],
       z: -1,
@@ -225,11 +225,11 @@ function BeadsChartBase({
             pointStyle: 'circle',
             padding: 16,
             font: { size: 11 },
-            color: '#0F172A',  // slate-900
+            color: CHART_COLORS.navy,  // slate-900
           },
         },
         tooltip: {
-          backgroundColor: 'rgba(15, 23, 42, 0.95)',  // slate-900
+          backgroundColor: CHART_COLORS.navyAlpha95,  // slate-900
           titleFont: { size: 12, weight: 'bold' },
           bodyFont: { size: 11 },
           padding: 12,

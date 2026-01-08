@@ -199,7 +199,7 @@ function PriceGrowthChartBase({
         tooltip: {
           mode: 'index',
           intersect: false,
-          backgroundColor: 'rgba(15, 23, 42, 0.95)',  // slate-900
+          backgroundColor: CHART_COLORS.navyAlpha95,  // slate-900
           titleColor: CHART_COLORS.white,
           bodyColor: CHART_COLORS.white,
           borderColor: COLORS.skyBlue,

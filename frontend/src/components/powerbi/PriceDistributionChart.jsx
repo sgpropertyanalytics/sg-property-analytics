@@ -135,7 +135,7 @@ function PriceDistributionChartBase({
   const maxValue = Math.max(...counts, 1);
   const getBarColor = (count, alpha = 0.8) => {
     const intensity = 0.3 + (count / maxValue) * 0.7;
-    return `rgba(51, 65, 85, ${alpha * intensity})`;  // slate-700
+    return CHART_COLORS.slate700Alpha(alpha * intensity);  // slate-700
   };
 
   const chartData = {
@@ -160,15 +160,15 @@ function PriceDistributionChartBase({
       type: 'box',
       xMin: q1BinIndex - 0.5,
       xMax: q3BinIndex + 0.5,
-      backgroundColor: 'rgba(33, 52, 72, 0.08)',  // Light navy background
-      borderColor: 'rgba(33, 52, 72, 0.2)',
+      backgroundColor: CHART_COLORS.navyDeepAlpha08,  // Light navy background
+      borderColor: CHART_COLORS.navyDeepAlpha20,
       borderWidth: 1,
       borderDash: [4, 4],
       label: {
         display: true,
         content: 'IQR',
         position: 'start',
-        color: 'rgba(33, 52, 72, 0.5)',
+        color: CHART_COLORS.navyDeepAlpha50,
         font: { size: 9, weight: 'normal' },
       },
     };
@@ -180,14 +180,14 @@ function PriceDistributionChartBase({
       type: 'line',
       xMin: medianBinIndex,
       xMax: medianBinIndex,
-      borderColor: 'rgba(33, 52, 72, 0.8)',  // Dark navy
+      borderColor: CHART_COLORS.navyDeepAlpha80,  // Dark navy
       borderWidth: 2,
       borderDash: [],  // Solid line
       label: {
         display: true,
         content: `Median: ${formatPrice(stats?.median)}`,
         position: 'start',
-        backgroundColor: 'rgba(33, 52, 72, 0.9)',
+        backgroundColor: CHART_COLORS.navyDeepAlpha90,
         color: CHART_COLORS.white,
         font: { size: 10, weight: 'bold' },
         padding: { x: 6, y: 3 },

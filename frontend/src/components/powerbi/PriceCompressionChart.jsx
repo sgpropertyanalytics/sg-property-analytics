@@ -162,7 +162,7 @@ function PriceCompressionChartBase({ height = 380, saleType = null, sharedData =
         label: 'CCR-RCR Spread',
         data: data.map(d => d.ccrRcrSpread),
         borderColor: CHART_COLORS.navy, // Navy
-        backgroundColor: 'rgba(33, 52, 72, 0.1)',
+        backgroundColor: CHART_COLORS.navyDeepAlpha10,
         borderWidth: 2.5,
         pointRadius: 0,
         pointHoverRadius: 5,
@@ -177,7 +177,7 @@ function PriceCompressionChartBase({ height = 380, saleType = null, sharedData =
         label: 'RCR-OCR Spread',
         data: data.map(d => d.rcrOcrSpread),
         borderColor: CHART_COLORS.ocean, // Ocean blue
-        backgroundColor: 'rgba(84, 119, 146, 0.1)',
+        backgroundColor: CHART_COLORS.oceanAlpha10,
         borderWidth: 2.5,
         borderDash: [6, 4],
         pointRadius: 0,
@@ -242,7 +242,7 @@ function PriceCompressionChartBase({ height = 380, saleType = null, sharedData =
           ...CHART_AXIS_DEFAULTS.ticks,
           callback: (v) => `$${v.toLocaleString()}`,
         },
-        grid: { color: 'rgba(148, 180, 193, 0.2)' },
+        grid: { color: CHART_COLORS.skyAlpha20 },
       },
     },
   };

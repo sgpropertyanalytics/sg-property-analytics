@@ -167,7 +167,7 @@ function NewLaunchTimelineChartBase({ height = 300 }) {
         type: 'bar',
         label: 'Total Units',
         data: totalUnits,
-        backgroundColor: 'rgba(100, 116, 139, 0.7)', // slate-500
+        backgroundColor: CHART_COLORS.slate500Alpha70, // slate-500
         borderColor: CHART_COLORS.ocean,
         borderWidth: 1,
         borderRadius: 3,
@@ -179,7 +179,7 @@ function NewLaunchTimelineChartBase({ height = 300 }) {
         label: 'Avg Absorption',
         data: absorptionRates,
         borderColor: CHART_COLORS.navy, // Navy
-        backgroundColor: 'rgba(33, 52, 72, 0.05)',
+        backgroundColor: CHART_COLORS.navyDeepAlpha05,
         borderWidth: 2.5,
         pointRadius: 0,
         pointHoverRadius: 5,
@@ -269,7 +269,7 @@ function NewLaunchTimelineChartBase({ height = 300 }) {
             callback: (value) => value.toLocaleString(),
           },
           grid: {
-            color: 'rgba(148, 180, 193, 0.2)',
+            color: CHART_COLORS.skyAlpha20,
           },
         },
         y1: {

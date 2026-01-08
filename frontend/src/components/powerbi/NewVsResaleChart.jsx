@@ -266,7 +266,7 @@ function NewVsResaleChartBase({ height = 350 }) {
         label: SaleTypeLabels[SaleType.NEW_SALE],
         data: newLaunchPrice,
         borderColor: CHART_COLORS.navy,  // Deep Navy - primary palette color
-        backgroundColor: 'rgba(33, 52, 72, 0.1)',
+        backgroundColor: CHART_COLORS.navyDeepAlpha10,
         borderWidth: 2,
         pointRadius: 0,
         pointHoverRadius: 4,
@@ -280,7 +280,7 @@ function NewVsResaleChartBase({ height = 350 }) {
         label: PropertyAgeBucketLabels[PropertyAgeBucket.RECENTLY_TOP],
         data: resalePrice,
         borderColor: CHART_COLORS.ocean,  // Ocean Blue - secondary palette color
-        backgroundColor: 'rgba(84, 119, 146, 0.1)',
+        backgroundColor: CHART_COLORS.oceanAlpha10,
         borderWidth: 2,
         borderDash: [5, 5],
         pointRadius: 0,
@@ -388,7 +388,7 @@ function NewVsResaleChartBase({ height = 350 }) {
           callback: (value) => `$${value.toLocaleString()}`,
         },
         grid: {
-          color: 'rgba(148, 180, 193, 0.2)',
+          color: CHART_COLORS.skyAlpha20,
         },
       },
     },

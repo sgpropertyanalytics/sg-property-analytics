@@ -15,6 +15,7 @@ import {
 } from '../../schemas/apiContract';
 import { SuppressedValue } from '../SuppressedValue';
 import { CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
+import { CHART_COLORS } from '../../constants/chartPalette';
 import { ErrorState } from '../common/ErrorState';
 import { getQueryErrorMessage } from '../common/QueryState';
 
@@ -181,8 +182,8 @@ function ProjectDetailPanelInner({
       {
         label: 'Median PSF',
         data: trendData.map(d => getAggField(d, AggField.MEDIAN_PSF) || 0),
-        borderColor: 'rgba(84, 119, 146, 1)',
-        backgroundColor: 'rgba(84, 119, 146, 0.1)',
+        borderColor: CHART_COLORS.oceanAlpha100,
+        backgroundColor: CHART_COLORS.oceanAlpha10,
         fill: true,
         tension: 0.3,
         yAxisID: 'y',
@@ -190,8 +191,8 @@ function ProjectDetailPanelInner({
       {
         label: 'Observations',
         data: trendData.map(d => getAggField(d, AggField.COUNT) || 0),
-        borderColor: 'rgba(33, 52, 72, 0.8)',
-        backgroundColor: 'rgba(33, 52, 72, 0.1)',
+        borderColor: CHART_COLORS.navyDeepAlpha80,
+        backgroundColor: CHART_COLORS.navyDeepAlpha10,
         fill: false,
         tension: 0.3,
         yAxisID: 'y1',
@@ -264,8 +265,8 @@ function ProjectDetailPanelInner({
       {
         label: 'Median PSF',
         data: priceData.map(d => getAggField(d, AggField.MEDIAN_PSF) || 0),
-        backgroundColor: 'rgba(84, 119, 146, 0.8)',
-        borderColor: 'rgba(84, 119, 146, 1)',
+        backgroundColor: CHART_COLORS.oceanAlpha80,
+        borderColor: CHART_COLORS.oceanAlpha100,
         borderWidth: 1,
       },
     ],

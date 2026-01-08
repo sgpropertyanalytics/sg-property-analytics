@@ -109,7 +109,7 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, o
         type: 'bar',
         label: 'Resale Transactions',
         data: transactionCounts,
-        backgroundColor: 'rgba(100, 116, 139, 0.7)',  // Slate 500 - light, recedes
+        backgroundColor: CHART_COLORS.slate500Alpha70,  // Slate 500 - light, recedes
         borderColor: CHART_COLORS.ocean,  // Slate 700 border for definition
         borderWidth: 1,
         borderRadius: 3,
@@ -121,7 +121,7 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, o
         label: 'Total Transaction Value',
         data: totalValues,
         borderColor: CHART_COLORS.navy,  // Slate 900 - bold, pops forward
-        backgroundColor: 'rgba(15, 23, 42, 0.05)',
+        backgroundColor: CHART_COLORS.navyAlpha05,
         borderWidth: 3,
         pointRadius: 0,
         pointHoverRadius: 6,
@@ -157,10 +157,10 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, o
         },
       },
       tooltip: {
-        backgroundColor: 'rgba(15, 23, 42, 0.95)',  // Slate 900
+        backgroundColor: CHART_COLORS.navyAlpha95,  // Slate 900
         titleColor: CHART_COLORS.slate100,  // Slate 100
         bodyColor: CHART_COLORS.slate400,   // Slate 400
-        borderColor: 'rgba(100, 116, 139, 0.3)',
+        borderColor: CHART_COLORS.slate500Alpha30,
         borderWidth: 1,
         cornerRadius: 8,
         padding: 12,
@@ -205,7 +205,7 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, o
           ...CHART_AXIS_DEFAULTS.title,
         },
         grid: {
-          color: 'rgba(148, 180, 193, 0.15)',  // Sky at 15%
+          color: CHART_COLORS.skyAlpha15,  // Sky at 15%
           drawTicks: false,
         },
         ticks: {

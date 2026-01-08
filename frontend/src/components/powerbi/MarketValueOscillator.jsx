@@ -202,7 +202,7 @@ function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawDat
         label: 'CCR-RCR Z-Score',
         data: data.map(d => d.zCcrRcr),
         borderColor: CHART_COLORS.navy, // Navy
-        backgroundColor: 'rgba(33, 52, 72, 0.1)',
+        backgroundColor: CHART_COLORS.navyDeepAlpha10,
         borderWidth: 2.5,
         pointRadius: 0,
         pointHoverRadius: 5,
@@ -217,7 +217,7 @@ function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawDat
         label: 'RCR-OCR Z-Score',
         data: data.map(d => d.zRcrOcr),
         borderColor: CHART_COLORS.ocean, // Ocean blue
-        backgroundColor: 'rgba(84, 119, 146, 0.1)',
+        backgroundColor: CHART_COLORS.oceanAlpha10,
         borderWidth: 2.5,
         borderDash: [6, 4],
         pointRadius: 0,
@@ -275,7 +275,7 @@ function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawDat
             type: 'box',
             yMin: 2.0,
             yMax: yAxisBounds.max,
-            backgroundColor: 'rgba(239, 68, 68, 0.20)',
+            backgroundColor: CHART_COLORS.redAlpha20,
             borderWidth: 0,
           },
           // Elevated zone (light red) - +1σ to +2σ
@@ -283,7 +283,7 @@ function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawDat
             type: 'box',
             yMin: 1.0,
             yMax: 2.0,
-            backgroundColor: 'rgba(239, 68, 68, 0.08)',
+            backgroundColor: CHART_COLORS.redAlpha08,
             borderWidth: 0,
           },
           // Normal zone (grey) - between -1σ and +1σ
@@ -291,7 +291,7 @@ function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawDat
             type: 'box',
             yMin: -1.0,
             yMax: 1.0,
-            backgroundColor: 'rgba(148, 180, 193, 0.15)',
+            backgroundColor: CHART_COLORS.skyAlpha15,
             borderWidth: 0,
           },
           // Compressed zone (light green) - -2σ to -1σ
@@ -299,7 +299,7 @@ function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawDat
             type: 'box',
             yMin: -2.0,
             yMax: -1.0,
-            backgroundColor: 'rgba(16, 185, 129, 0.08)',
+            backgroundColor: CHART_COLORS.emeraldAlpha08,
             borderWidth: 0,
           },
           // Extreme undervalued zone (dark green) - beyond -2σ
@@ -307,7 +307,7 @@ function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawDat
             type: 'box',
             yMin: yAxisBounds.min,
             yMax: -2.0,
-            backgroundColor: 'rgba(16, 185, 129, 0.20)',
+            backgroundColor: CHART_COLORS.emeraldAlpha20,
             borderWidth: 0,
           },
         },

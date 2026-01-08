@@ -29,8 +29,8 @@ const COLORS = {
   oceanBlue: REGION.RCR,      // slate-700
   skyBlue: REGION.OCR,        // slate-500
   sand: CANVAS.grid,          // slate-200
-  protectedFill: 'rgba(16, 185, 129, 0.12)', // Light green
-  cautionFill: 'rgba(239, 68, 68, 0.12)',    // Light red
+  protectedFill: CHART_COLORS.emeraldAlpha12, // Light green
+  cautionFill: CHART_COLORS.redAlpha12,    // Light red
   unitMarker: REGION.RCR,     // slate-700
 };
 
@@ -163,7 +163,7 @@ function PriceBandChartBase({
         xValue: lastIndex,
         yValue: unitPsf,
         content: `$${unitPsf.toLocaleString()} psf`,
-        backgroundColor: 'rgba(15, 23, 42, 0.9)',  // slate-900
+        backgroundColor: CHART_COLORS.navyAlpha90,  // slate-900
         color: CHART_COLORS.white,
         font: { size: 11, weight: 'bold' },
         padding: { x: 6, y: 4 },
@@ -196,7 +196,7 @@ function PriceBandChartBase({
         tooltip: {
           mode: 'index',
           intersect: false,
-          backgroundColor: 'rgba(15, 23, 42, 0.95)',  // slate-900
+          backgroundColor: CHART_COLORS.navyAlpha95,  // slate-900
           titleColor: CHART_COLORS.white,
           bodyColor: CHART_COLORS.white,
           borderColor: COLORS.skyBlue,
