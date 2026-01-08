@@ -6,4 +6,3 @@ export {
   LandingMonoPill,
   LandingSectionDivider,
 } from './LandingSectionHeader.jsx';
-export { default as AtlasStatusTicker } from './AtlasStatusTicker.jsx';
