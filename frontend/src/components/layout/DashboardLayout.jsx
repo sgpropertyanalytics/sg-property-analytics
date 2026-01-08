@@ -151,34 +151,20 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
   const handleMobileNavClose = () => setMobileNavOpen(false);
 
   return (
-    <div className="flex h-screen bg-mono-canvas overflow-hidden text-mono-ink">
+    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: '#F4F4F5' }}>
       {/* ===== GLOBAL NAV RAIL (Primary Sidebar) ===== */}
-      {/* Desktop: Collapsible with premium physics animation | Mobile: Hidden */}
+      {/* Desktop: Collapsible mini-dock with mechanical 0.2s animation | Mobile: Hidden */}
       <div
-        className="hidden lg:flex flex-shrink-0 relative overflow-visible"
+        className="hidden lg:flex flex-shrink-0 relative overflow-visible transition-[width] duration-200 ease-out"
         style={{
-          width: isNavCollapsed ? NAV_WIDTH_COLLAPSED : NAV_WIDTH_EXPANDED,
-          transition: 'none'
+          width: isNavCollapsed ? NAV_WIDTH_COLLAPSED : NAV_WIDTH_EXPANDED
         }}
       >
-        <GlobalNavRail activePage={activePage} collapsed={isNavCollapsed} />
-
-        {/* Collapse Toggle Button - Positioned at sidebar edge */}
-        <button
-          onClick={toggleNavCollapse}
-          className="absolute -right-3 top-6 z-10 w-6 h-6 rounded-none bg-mono-canvas border border-mono-muted flex items-center justify-center text-mono-dark hover:bg-mono-dark hover:text-white transition-none weapon-shadow"
-          aria-label={isNavCollapsed ? 'Expand navigation' : 'Collapse navigation'}
-        >
-          <svg
-            className="w-3.5 h-3.5 transition-transform duration-0"
-            style={{ transform: isNavCollapsed ? 'rotate(180deg)' : 'rotate(0deg)' }}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
+        <GlobalNavRail
+          activePage={activePage}
+          collapsed={isNavCollapsed}
+          onToggleCollapse={toggleNavCollapse}
+        />
       </div>
 
       {/* Mobile Nav Drawer Overlay */}
@@ -198,7 +184,7 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
             {/* Close button overlay */}
               <button
                 onClick={handleMobileNavClose}
-                className="absolute top-4 right-4 p-2 rounded-none bg-mono-ink text-mono-canvas hover:bg-mono-dark min-h-[44px] min-w-[44px] flex items-center justify-center active:bg-mono-ink active:scale-[0.98]"
+                className="absolute top-4 right-4 p-2 rounded-none bg-white border border-zinc-300 text-zinc-600 hover:bg-zinc-100 min-h-[44px] min-w-[44px] flex items-center justify-center shadow-sm"
                 aria-label="Close navigation"
               >
 
@@ -212,14 +198,26 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
 
       {/* ===== MAIN CONTENT AREA ===== */}
       {/* min-w-0 prevents flex children from overflowing - critical for nested grids */}
-      <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden relative">
+        {/* Background Grid Pattern */}
+        <div
+          className="absolute inset-0 pointer-events-none opacity-[0.4]"
+          style={{
+            backgroundImage: `
+              linear-gradient(to right, #E4E4E7 1px, transparent 1px),
+              linear-gradient(to bottom, #E4E4E7 1px, transparent 1px)
+            `,
+            backgroundSize: '24px 24px'
+          }}
+        />
+
         {/* Mobile Header */}
-        <header className="lg:hidden sticky top-0 z-40 bg-mono-canvas px-3 py-2 flex-shrink-0 border-b border-mono-muted weapon-noise">
+        <header className="lg:hidden sticky top-0 z-40 bg-white px-3 py-2 flex-shrink-0 border-b border-[#E4E4E7]">
           <div className="flex items-center justify-between gap-2">
             {/* Hamburger Menu */}
             <button
               onClick={() => setMobileNavOpen(true)}
-              className="flex items-center justify-center p-2 rounded-none bg-mono-canvas border border-mono-muted text-mono-dark min-h-[44px] min-w-[44px] hover:bg-mono-muted/50 transition-none"
+              className="flex items-center justify-center p-2 rounded-none bg-white border border-zinc-300 text-zinc-600 min-h-[44px] min-w-[44px] hover:bg-zinc-100 transition-none shadow-sm"
               aria-label="Open navigation menu"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -238,9 +236,8 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
 
           {/* Mobile Page Indicator */}
             <div className="mt-2 flex justify-center">
-               <div className="inline-flex rounded-none bg-card border border-mono-muted px-3 py-1.5">
-
-                <span className="text-black/70 font-mono text-[10px] uppercase tracking-[0.18em]">
+               <div className="inline-flex rounded-none bg-white border border-zinc-200 px-3 py-1.5 shadow-sm">
+                <span className="text-zinc-600 font-mono text-[10px] uppercase tracking-[0.18em]">
                 {NAV_ITEMS.find(item => item.id === activePage)?.label || 'Market Core'}
               </span>
             </div>
@@ -248,17 +245,20 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
         </header>
 
         {/* Main Content - Wrapped with Suspense + ErrorBoundary */}
-        {/* IMPORTANT: Suspense is HERE so nav rail stays mounted during lazy loading */}
-        {/* min-w-0 on main and wrapper prevents nested grid overflow */}
-        {/* Warm stone canvas (#F0EDE8) creates depth for warm cream cards */}
-        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden flex flex-col bg-canvas">
-          <ErrorBoundary name="Page Content">
-            <Suspense fallback={<ContentLoadingFallback />}>
-              <div className="flex-1 min-w-0">
-                {content}
-              </div>
-            </Suspense>
-          </ErrorBoundary>
+        {/* FLOATING CARD ARCHITECTURE - White card with margins on all sides */}
+        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden flex flex-col p-4 lg:p-6 relative z-10">
+          {/* Floating White Card - Visible gap from sidebar, margins on all sides */}
+          <div className="flex-1 min-w-0 bg-white border border-[#E4E4E7] shadow-[4px_4px_0px_0px_rgba(0,0,0,0.08)] ml-2 lg:ml-4">
+            <div className="p-4 lg:p-6">
+              <ErrorBoundary name="Page Content">
+                <Suspense fallback={<ContentLoadingFallback />}>
+                  <div className="flex-1 min-w-0 text-[#18181B]">
+                    {content}
+                  </div>
+                </Suspense>
+              </ErrorBoundary>
+            </div>
+          </div>
 
           {/* Upgrade CTA - Sticky footer for free users */}
           <UpgradeFooterCTA />

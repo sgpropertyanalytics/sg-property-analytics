@@ -3,6 +3,18 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { UserProfileMenu } from './UserProfileMenu';
 import { AccountSettingsModal } from '../AccountSettingsModal';
+import {
+  BarChart3,
+  Map,
+  Building2,
+  Package,
+  Search,
+  CircleDollarSign,
+  DoorOpen,
+  Terminal,
+  Info,
+  ChevronLeft
+} from 'lucide-react';
 
 /**
  * GlobalNavRail - Primary Navigation Sidebar
@@ -35,32 +47,43 @@ import { AccountSettingsModal } from '../AccountSettingsModal';
  */
 
 // Design token: Nav rail width (defined once, used in DashboardLayout)
-export const NAV_WIDTH_EXPANDED = 256; // px - icons + labels
-export const NAV_WIDTH_COLLAPSED = 72; // px - icons only
+export const NAV_WIDTH_EXPANDED = 240; // px - icons + labels
+export const NAV_WIDTH_COLLAPSED = 64; // px - icons only (mini-dock)
 export const NAV_WIDTH = NAV_WIDTH_EXPANDED; // backwards compat
 
 // WEAPON AESTHETIC: Instant snap - no "premium physics"
 // Machine precision, no ease, instant response
 const TRANSITION_CLASS = "transition-none";
 
+// Icon components for nav items (Lucide React, 18px, stroke-width 1.5)
+const NAV_ICONS = {
+  overview: BarChart3,
+  districts: Map,
+  'new-launches': Building2,
+  supply: Package,
+  explore: Search,
+  'value-check': CircleDollarSign,
+  'exit-risk': DoorOpen,
+};
+
 export const NAV_GROUPS = [
   {
     id: 'market-intelligence',
     label: 'Market Intelligence',
     items: [
-      { id: 'overview', path: '/market-overview', label: 'Market Overview', icon: '📊' },
-      { id: 'districts', path: '/district-overview', label: 'District Overview', icon: '🗺️' },
-      { id: 'new-launches', path: '/new-launch-market', label: 'New Launch Market', icon: '🏗️' },
-      { id: 'supply', path: '/supply-inventory', label: 'Supply & Inventory', icon: '📦' },
+      { id: 'overview', path: '/market-overview', label: 'Market Overview' },
+      { id: 'districts', path: '/district-overview', label: 'District Overview' },
+      { id: 'new-launches', path: '/new-launch-market', label: 'New Launch Market' },
+      { id: 'supply', path: '/supply-inventory', label: 'Supply & Inventory' },
     ],
   },
   {
     id: 'project-tools',
     label: 'Project Tools',
     items: [
-      { id: 'explore', path: '/explore', label: 'Explore', icon: '🔍' },
-      { id: 'value-check', path: '/value-check', label: 'Value Check', icon: '💰' },
-      { id: 'exit-risk', path: '/exit-risk', label: 'Exit Risk', icon: '🚪' },
+      { id: 'explore', path: '/explore', label: 'Explore' },
+      { id: 'value-check', path: '/value-check', label: 'Value Check' },
+      { id: 'exit-risk', path: '/exit-risk', label: 'Exit Risk' },
     ],
   },
 ];
@@ -69,46 +92,17 @@ export const NAV_GROUPS = [
 export const NAV_ITEMS = NAV_GROUPS.flatMap(g => g.items);
 
 /**
- * NavItem - Individual navigation item with 44px touch target
+ * NavItem - Technical Index Style
  *
- * Design System (Senior UI Pattern):
- * - Active: bg-white/10 + ring-1 ring-white/10 + blue accent bar
- * - Inactive: text-brand-sky with opacity transitions
- * - Hover: text-white + bg-white/5
- * - Coming Soon: opacity-50 + cursor-not-allowed
- *
- * Collapse Animation (Premium Physics):
- * - Collapsing: Fade text out fast, then shrink width
- * - Expanding: Grow width first, then fade text in (delayed)
+ * Design System:
+ * - Active: Solid black box (bg-black), white text/icon, rounded-[4px]
+ * - Inactive: Zinc-600 text, zinc-900 icon
+ * - Hover: Black text, faint grey background (bg-zinc-200/50)
+ * - Typography: Sans-serif 14px for links
  */
 function NavItem({ item, isActive, onClick, collapsed = false }) {
   const isComingSoon = item.comingSoon;
-
-  // Base styles for layout - INDUSTRIAL MACHINE: "Physical LED" with light physics
-  const baseStyles = `
-    group relative w-full min-h-[44px] px-3 py-2 rounded-none
-    flex items-center text-left min-w-0
-    font-mono text-[11px] font-medium uppercase tracking-tight
-    border-b border-mono-edge
-    border-l-[3px]
-    transition-all duration-200
-    outline-none select-none
-    focus-visible:ring-2 focus-visible:ring-white/20 focus-visible:ring-offset-2 focus-visible:ring-offset-mono-void
-  `;
-
-   // State-specific styles (INDUSTRIAL MACHINE - "Physical LED Light Source")
-   // Active: The Source (border) + The Spill (gradient) + The Reflection (inset shadow)
-   // Text: Warm off-white (#E7E5E4) to reduce glare against lighter sidebar
-   const activeStyles = 'border-emerald-500 text-nav-text bg-gradient-to-r from-emerald-500/10 to-transparent shadow-[inset_10px_0_15px_-3px_rgba(16,185,129,0.2)]';
-   // Inactive: Warm stone (#A8A29E) instead of cold zinc for atmospheric harmony
-   const inactiveStyles = 'border-transparent text-nav-muted hover:text-nav-text hover:bg-white/5';
-   const comingSoonStyles = 'border-transparent text-mono-mid cursor-not-allowed opacity-60';
-
-   // Badge styles (VOID THEME)
-   const badgeBase = 'ml-auto flex-shrink-0 text-data-xs font-bold tracking-wide px-1.5 py-0.5 rounded-none border transition-none';
-   const badgeActive = 'bg-mono-canvas text-mono-void border-mono-canvas';
-   const badgeInactive = 'bg-mono-surface text-mono-light border-mono-edge group-hover:bg-mono-canvas group-hover:text-mono-void';
-   const badgeComingSoon = 'bg-mono-surface text-mono-mid border-mono-edge';
+  const IconComponent = NAV_ICONS[item.id];
 
   return (
     <button
@@ -116,67 +110,63 @@ function NavItem({ item, isActive, onClick, collapsed = false }) {
       disabled={isComingSoon}
       title={item.label}
       className={`
-        ${baseStyles}
-        ${collapsed ? 'justify-center' : 'gap-3'}
-        ${isActive ? activeStyles : isComingSoon ? comingSoonStyles : inactiveStyles}
+        group relative min-h-[44px] py-2 rounded-[4px]
+        flex items-center text-left min-w-0
+        transition-all duration-200
+        outline-none select-none
+        focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2
+        ${collapsed
+          ? 'w-10 h-10 justify-center mx-auto'
+          : 'w-full gap-3'
+        }
+        ${isActive
+          ? 'bg-black text-white'
+          : isComingSoon
+            ? 'text-zinc-400 cursor-not-allowed opacity-60'
+            : 'text-zinc-600 hover:text-black hover:bg-zinc-200/50'
+        }
       `}
       aria-current={isActive ? 'page' : undefined}
       aria-label={item.label}
     >
-      {/* Icon - Light source glow when active, dimmed when inactive */}
-      <span className={`
-        text-sm flex-shrink-0 transition-all duration-200
-        ${isActive
-          ? 'text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]'
-          : 'opacity-70 text-nav-muted group-hover:text-nav-text'
-        }
-      `}>
-        {item.icon}
-      </span>
+      {/* Icon container - fixed 18px width for vertical alignment */}
+      <div className={`flex-shrink-0 w-[18px] flex items-center justify-center ${collapsed ? '' : ''}`}>
+        {IconComponent && (
+          <IconComponent
+            size={18}
+            strokeWidth={1.5}
+            className={`transition-colors duration-200 ${
+              isActive ? 'text-white' : 'text-zinc-900 group-hover:text-black'
+            }`}
+          />
+        )}
+      </div>
 
-      {/* Label - Staggered animation: fade fast on collapse, fade in delayed on expand */}
-      <span className={`
-        whitespace-nowrap overflow-hidden truncate
-        ${TRANSITION_CLASS}
-        ${collapsed
-          ? 'w-0 opacity-0 translate-x-4'
-          : 'w-auto opacity-100 translate-x-0 delay-75'
-        }
-      `}>
-        {item.label}
-      </span>
-
-       {/* "COMING SOON" badge for unfinished features only */}
-       {(!collapsed && isComingSoon) && (
-         <span
-           className={`${badgeBase} ${badgeComingSoon} ${collapsed ? 'opacity-0 w-0' : 'opacity-100'}`}
-         >
-           SOON
-         </span>
-       )}
-
-
-      {/* Tooltip - WEAPON: hard edges, instant */}
-       {collapsed && (
-         <div className="
-           absolute left-full ml-2 z-50
-           hidden group-hover:block
-           px-2 py-1.5
-           font-mono text-data-xs uppercase tracking-[0.18em] text-mono-canvas
-           bg-black border border-black/20
-           rounded-none weapon-shadow
-           whitespace-nowrap
-         ">
-
+      {/* Label */}
+      {!collapsed && (
+        <span className="text-sm font-normal whitespace-nowrap overflow-hidden truncate">
           {item.label}
-          {isComingSoon && <span className="ml-1 text-brand-sky/60">(SOON)</span>}
+        </span>
+      )}
+
+      {/* "COMING SOON" badge */}
+      {(!collapsed && isComingSoon) && (
+        <span className="ml-auto flex-shrink-0 text-[10px] font-medium tracking-wide px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 border border-zinc-200">
+          SOON
+        </span>
+      )}
+
+      {/* Tooltip when collapsed */}
+      {collapsed && (
+        <div className="absolute left-full ml-2 z-50 hidden group-hover:block px-2 py-1.5 text-xs font-medium text-white bg-zinc-900 rounded shadow-lg whitespace-nowrap">
+          {item.label}
         </div>
       )}
     </button>
   );
 }
 
-export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onPageChange, collapsed = false }) {
+export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onPageChange, collapsed = false, onToggleCollapse }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { showPaywall } = useSubscription();
@@ -191,26 +181,6 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
     NAV_ITEMS.find(item => item.path && currentPath.startsWith(item.path))?.id ||
     'overview';
 
-  // Find which group contains the active item
-  const activeGroupId = NAV_GROUPS.find(g =>
-    g.items.some(item => item.id === activeItem)
-  )?.id;
-
-  // Collapsible state - all groups expanded by default
-  const [expandedGroups, setExpandedGroups] = useState(() => {
-    const initial = {};
-    NAV_GROUPS.forEach(g => {
-      initial[g.id] = true; // All groups expanded by default
-    });
-    return initial;
-  });
-
-  const toggleGroup = (groupId) => {
-    setExpandedGroups(prev => ({
-      ...prev,
-      [groupId]: !prev[groupId]
-    }));
-  };
 
   const handleNavClick = (item) => {
     if (!item.path) return;
@@ -225,178 +195,95 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
   return (
       <nav
         className={`
-          relative w-full h-full flex flex-col py-4 flex-shrink-0
-          overflow-y-auto overflow-x-visible
-          z-50
-          transition-all duration-300 ease-in-out
-          ${collapsed ? 'px-2' : 'px-3'}
+          relative w-full h-full flex flex-col
+          overflow-y-auto overflow-x-hidden
+          z-50 bg-transparent
+          pt-6 pb-4
+          ${collapsed ? 'px-2' : 'px-4'}
           ${isPending ? 'opacity-90' : ''}
-
-          /* THE OBSIDIAN BLEND - Atmospheric Perspective */
-          /* Heavy Iron (#262321) at 95% opacity - derived by darkening beige by 85% */
-          /* Contains same yellow/orange DNA as paper for perfect blending */
-          bg-nav-bg/95
-
-          /* THE ATMOSPHERE - Frosted Dark Glass Effect */
-          /* Subtle see-through creates "translucent material" not "solid wall" */
-          backdrop-blur-md
-
-          /* THE SOFT SEAM - Warm Brown Shadow (not black) */
-          /* Colored shadow like coffee staining paper, not artificial drop shadow */
-          shadow-[10px_0_40px_-10px_rgba(40,35,30,0.6)]
         `}
         aria-label="Main navigation"
       >
-        {/* HUD corners - tactical frame */}
-        <div className="absolute top-0 left-0 w-3 h-3 border-t border-l border-mono-edge pointer-events-none" />
-        <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-mono-edge pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-mono-edge pointer-events-none" />
-        <div className="absolute bottom-0 right-0 w-3 h-3 border-b border-r border-mono-edge pointer-events-none" />
-
-
-      {/* Logo / Home - Links to Market Overview (VOID THEME) */}
+      {/* Logo - SGPropertyAnalytics branding */}
+      {/* Aligned with nav item icons on left edge */}
       <button
         onClick={() => startTransition(() => navigate('/market-overview'))}
-        className={`group relative mb-6 flex items-center w-full min-h-[44px] min-w-0 select-none ${TRANSITION_CLASS} ${collapsed ? 'justify-center px-0' : 'gap-3 px-2'} hover:bg-white/[0.05]`}
-        aria-label="Go to Home"
+        className={`group flex items-center min-w-0 select-none ${collapsed ? 'justify-center' : 'gap-3'}`}
+        aria-label="Go to Dashboard"
       >
-        <div className="w-10 h-10 rounded-none bg-mono-surface border border-mono-edge flex items-center justify-center transition-none group-hover:bg-white/[0.05] flex-shrink-0">
-          <svg className="w-6 h-6 text-mono-light group-hover:text-mono-canvas" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-          </svg>
+        {/* Icon aligned with nav item icons */}
+        <div className="flex-shrink-0 w-[18px] flex items-center justify-center">
+          <Terminal size={18} strokeWidth={1.5} className="text-zinc-900" />
         </div>
-        {/* Home label - staggered animation (VOID THEME) */}
-        <span className={`
-          font-mono text-data-xs uppercase tracking-[0.18em] text-mono-light group-hover:text-mono-canvas whitespace-nowrap overflow-hidden
-          ${TRANSITION_CLASS}
-          ${collapsed ? 'w-0 opacity-0 -translate-x-4' : 'w-auto opacity-100 translate-x-0 delay-100'}
-        `}>
-          HOME
-        </span>
-
-        {/* Tooltip when collapsed - WEAPON: hard edges */}
+        {!collapsed && (
+          <span className="font-mono text-sm font-bold tracking-tight text-zinc-900">
+            SGPropertyAnalytics
+          </span>
+        )}
         {collapsed && (
-          <div className="
-            absolute left-full ml-2 z-50
-            hidden group-hover:block
-            px-2 py-1.5
-            text-xs font-mono uppercase tracking-[0.18em] text-white
-            bg-black border border-black/20
-            rounded-none weapon-shadow
-            whitespace-nowrap
-          ">
-            HOME
+          <div className="absolute left-full ml-2 z-50 hidden group-hover:block px-2 py-1 text-xs text-white bg-zinc-900 rounded shadow-lg whitespace-nowrap">
+            SGPropertyAnalytics
           </div>
         )}
       </button>
 
       {/* Navigation Groups */}
-      <div className="flex-1 w-full">
-        {NAV_GROUPS.map((group, groupIndex) => {
-          const isExpanded = expandedGroups[group.id];
-          const hasActiveItem = group.id === activeGroupId;
-
-          return (
-            <div key={group.id} className={groupIndex > 0 ? 'mt-6' : ''}>
-              {/* SectionHeader - "Stamped Metal" Labels (INDUSTRIAL MACHINE)
-                  Laser-etched labels on server rack casing.
-                  Typography: Condensed, tight tracking, stone-600 (#525252) */}
-               {!collapsed && (
-                 <button
-                   onClick={() => toggleGroup(group.id)}
-                   className={`
-                     w-full px-3 py-2 rounded-none
-                     flex items-center gap-2 text-left min-w-0
-                     transition-none
-                     select-none
-                     ${hasActiveItem
-                       ? 'text-mono-light'
-                       : 'text-mono-mid hover:text-mono-light'
-                     }
-                   `}
-                   aria-expanded={isExpanded}
-                 >
-                   <span className="font-mono text-data-xs uppercase tracking-[0.15em] leading-none min-w-0 flex-1 font-bold tabular-nums">
-                     {group.label}
-                   </span>
-                   <svg
-                     className={`w-3 h-3 flex-shrink-0 transition-transform duration-200 opacity-60 ${isExpanded ? 'rotate-180' : ''}`}
-                     fill="none"
-                     stroke="currentColor"
-                     viewBox="0 0 24 24"
-                   >
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                   </svg>
-                 </button>
-               )}
-
-
-              {/* Collapsed: Show separator line instead of header (VOID THEME) */}
-               {collapsed && (
-                 <div className="h-px bg-mono-edge mx-2 my-2" />
-               )}
-
-
-              {/* Group Items - Collapsible (always expanded when collapsed sidebar) */}
-              <div
-                className={`
-                  overflow-hidden transition-all duration-200 ease-in-out
-                  ${(isExpanded || collapsed) ? 'max-h-96 opacity-100 mt-1' : 'max-h-0 opacity-0'}
-                `}
-              >
-                <div className={`space-y-1 ${collapsed ? 'pl-0' : 'pl-2'}`}>
-                  {group.items.map(item => (
-                    <NavItem
-                      key={item.id}
-                      item={item}
-                      isActive={activeItem === item.id}
-                      onClick={handleNavClick}
-                      collapsed={collapsed}
-                    />
-                  ))}
-                </div>
+      <div className="mt-6 space-y-5">
+        {NAV_GROUPS.map((group, groupIndex) => (
+          <div key={group.id}>
+            {/* Section Header - aligned with icon column (18px + gap) */}
+            {!collapsed && (
+              <div className="mb-2 flex items-center gap-3">
+                <div className="w-[18px]" /> {/* Spacer to align with icons */}
+                <span className="text-[10px] uppercase tracking-wider font-mono text-zinc-400">
+                  {group.label}
+                </span>
               </div>
+            )}
+            {collapsed && groupIndex > 0 && (
+              <div className="h-px bg-zinc-200 mb-2" />
+            )}
+            {/* Nav Items */}
+            <div className="space-y-0.5">
+              {group.items.map(item => (
+                <NavItem
+                  key={item.id}
+                  item={item}
+                  isActive={activeItem === item.id}
+                  onClick={handleNavClick}
+                  collapsed={collapsed}
+                />
+              ))}
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
 
-      {/* Bottom section - Info links + User Profile (VOID THEME) */}
-      <div className="mt-auto w-full">
-        {/* Separator */}
-         <div className="border-t border-mono-edge mb-3 mx-2" />
+      {/* Spacer */}
+      <div className="flex-1 min-h-4" />
+
+      {/* Bottom section */}
+      <div className="space-y-1 border-t border-zinc-200 pt-3">
 
 
-        {/* Methodology Link - WEAPON: hard edges, rack-mount style (VOID THEME) */}
-         <button
-           onClick={() => startTransition(() => navigate('/methodology'))}
-           className={`group relative w-full min-h-[44px] px-3 py-2 rounded-none border-b border-mono-edge flex items-center text-left min-w-0 font-mono text-[11px] font-medium uppercase tracking-[0.18em] text-mono-light hover:text-mono-canvas hover:bg-white/[0.05] active:bg-white/[0.08] ${TRANSITION_CLASS} select-none ${collapsed ? 'justify-center' : 'gap-3'}`}
-           aria-label="Methodology"
-         >
-           <span className="text-sm flex-shrink-0 text-mono-mid group-hover:text-mono-canvas">ℹ️</span>
-
-          <span className={`
-            text-sm font-medium whitespace-nowrap overflow-hidden
-            ${TRANSITION_CLASS}
-            ${collapsed ? 'w-0 opacity-0 translate-x-4' : 'w-auto opacity-100 translate-x-0 delay-75'}
-          `}>
-            Methodology
-          </span>
-
-          {/* Tooltip when collapsed - WEAPON: hard edges */}
+        {/* Methodology Link - aligned with nav items */}
+        <button
+          onClick={() => startTransition(() => navigate('/methodology'))}
+          className={`group relative min-h-[44px] py-2 rounded-[4px] flex items-center text-left min-w-0 text-zinc-600 hover:text-black hover:bg-zinc-200/50 transition-all duration-200 select-none ${collapsed ? 'w-10 h-10 justify-center mx-auto' : 'w-full gap-3'}`}
+          aria-label="Methodology"
+        >
+          <div className="flex-shrink-0 w-[18px] flex items-center justify-center">
+            <Info size={18} strokeWidth={1.5} className="text-zinc-900" />
+          </div>
+          {!collapsed && (
+            <span className="text-sm font-normal whitespace-nowrap">
+              Methodology
+            </span>
+          )}
           {collapsed && (
-             <div className="
-               absolute left-full ml-2 z-50
-               hidden group-hover:block
-               px-2 py-1.5
-               font-mono text-data-xs uppercase tracking-[0.18em] text-mono-canvas
-               bg-black border border-black/20
-               rounded-none weapon-shadow
-               whitespace-nowrap
-             ">
-               METHODOLOGY
-             </div>
-
+            <div className="absolute left-full ml-2 z-50 hidden group-hover:block px-2 py-1.5 text-xs font-medium text-white bg-zinc-900 rounded shadow-lg whitespace-nowrap">
+              Methodology
+            </div>
           )}
         </button>
 
@@ -406,23 +293,22 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
           onOpenSettings={() => setShowAccountSettings(true)}
         />
 
-        {/* System Metrics Footer - "Hacker Density" */}
-        {!collapsed && (
-          <div className="p-4 border-t border-mono-edge">
-            <div className="grid grid-cols-2 gap-2 text-data-xs font-mono text-mono-mid">
-              <div className="flex flex-col">
-                <span className="opacity-50">LATENCY</span>
-                <span className="text-emerald-500 tabular-nums">12ms</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="opacity-50">BUILD</span>
-                <span className="tabular-nums">v2.0.4</span>
-              </div>
-              <div className="flex flex-col col-span-2 mt-2">
-                <span className="opacity-50">STATUS</span>
-                <span className="text-nav-muted">SYSTEM_OPTIMAL</span>
-              </div>
-            </div>
+
+        {/* Collapse Toggle Button - Technical square button at bottom */}
+        {onToggleCollapse && (
+          <div className={`px-3 pb-3 ${collapsed ? 'flex justify-center' : ''}`}>
+            <button
+              onClick={onToggleCollapse}
+              className="w-8 h-8 flex items-center justify-center bg-transparent border border-[#E5E5E5] text-zinc-500 hover:text-black hover:border-zinc-400 hover:bg-zinc-200/50 transition-all duration-200"
+              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              <ChevronLeft
+                size={16}
+                strokeWidth={1.5}
+                className="transition-transform duration-200"
+                style={{ transform: collapsed ? 'rotate(180deg)' : 'rotate(0deg)' }}
+              />
+            </button>
           </div>
         )}
       </div>
