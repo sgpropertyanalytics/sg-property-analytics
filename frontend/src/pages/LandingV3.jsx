@@ -94,11 +94,12 @@ function MonoPill({ children, leftDot = null }) {
 
 function SectionDivider() {
   return (
-    <div className="relative h-px bg-black/10 max-w-7xl mx-auto">
-      {/* Aerospace-style decorative markers */}
-      <div className="absolute left-1/4 -top-1 w-2 h-2 border border-black/15 bg-[#fafafa] rotate-45" />
-      <div className="absolute left-1/2 -translate-x-1/2 -top-1.5 w-3 h-3 border border-black/20 bg-[#fafafa] rotate-45" />
-      <div className="absolute right-1/4 -top-1 w-2 h-2 border border-black/15 bg-[#fafafa] rotate-45" />
+    <div className="w-full max-w-7xl mx-auto border-t border-black/10 flex justify-between items-center px-6 py-2 bg-[#fafafa]">
+      <div className="w-2 h-2 bg-black/20 rotate-45" />
+      <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-black/30">
+        SYSTEM_PARTITION // VERTICAL_SYNC
+      </span>
+      <div className="w-2 h-2 bg-black/20 rotate-45" />
     </div>
   );
 }
@@ -1062,7 +1063,7 @@ function formatBedroom(bedroom) {
 
 // Pulse Ticker - auto-scrolling horizontal event feed with structured data packets
 // Format: [DISTRICT] PROJECT [PRICE] // separated by double forward slash
-function PulseTicker({ transactions, onTransactionClick, activeDistrict, isLoading }) {
+function PulseTicker({ transactions, onTransactionClick, isLoading }) {
   const doubled = useMemo(() => {
     if (!transactions?.length) return [];
     return [...transactions, ...transactions];
@@ -1070,7 +1071,7 @@ function PulseTicker({ transactions, onTransactionClick, activeDistrict, isLoadi
 
   if (isLoading) {
     return (
-      <div className="w-full h-10 border-y border-black/10 flex items-center bg-[#fafafa]">
+      <div className="w-full h-12 border-y border-black/10 flex items-center bg-[#fafafa]">
         {/* Status Badge */}
         <div className="flex items-center gap-2 px-4 h-full border-r border-black/10 shrink-0">
           <span className="relative flex h-1.5 w-1.5">
@@ -1090,7 +1091,7 @@ function PulseTicker({ transactions, onTransactionClick, activeDistrict, isLoadi
 
   if (!transactions?.length) {
     return (
-      <div className="w-full h-10 border-y border-black/10 flex items-center bg-[#fafafa]">
+      <div className="w-full h-12 border-y border-black/10 flex items-center bg-[#fafafa]">
         {/* Status Badge */}
         <div className="flex items-center gap-2 px-4 h-full border-r border-black/10 shrink-0">
           <span className="relative flex h-1.5 w-1.5">
@@ -1109,14 +1110,14 @@ function PulseTicker({ transactions, onTransactionClick, activeDistrict, isLoadi
   }
 
   return (
-    <div className="w-full h-10 border-y border-black/10 flex items-center bg-[#fafafa]">
+    <div className="w-full h-12 border-y border-black/10 flex items-center bg-[#fafafa]">
       {/* Status Badge - Fixed Width */}
       <div className="flex items-center gap-2 px-4 h-full border-r border-black/10 shrink-0">
         <span className="relative flex h-1.5 w-1.5">
           <span className="animate-ping absolute inline-flex h-full w-full bg-emerald-500 opacity-75" />
           <span className="relative inline-flex h-1.5 w-1.5 bg-emerald-500" />
         </span>
-        <span className="font-mono text-[10px] tracking-[0.15em] uppercase text-black font-medium">
+        <span className="font-mono text-[10px] tracking-[0.15em] uppercase text-black/70">
           ACTIVE (LATEST TXS)
         </span>
       </div>
@@ -1129,11 +1130,7 @@ function PulseTicker({ transactions, onTransactionClick, activeDistrict, isLoadi
               key={`${tx.project}-${idx}`}
               type="button"
               onClick={() => onTransactionClick(tx.district)}
-              className={`font-mono text-[10px] tracking-wide transition-colors flex items-center uppercase ${
-                activeDistrict === tx.district
-                  ? 'text-emerald-600'
-                  : 'text-black/50 hover:text-black/70'
-              }`}
+              className="font-mono text-[10px] tracking-wide transition-colors flex items-center uppercase text-black/50 hover:text-black/70"
             >
               <span className="text-black/30">[</span>
               <span className="text-black/60">{tx.district}</span>
@@ -1462,7 +1459,6 @@ function LiveSignalEcosystem() {
         <PulseTicker
           transactions={transactions}
           onTransactionClick={handleTransactionClick}
-          activeDistrict={highlightedDistrict}
           isLoading={isLoading}
         />
       </motion.div>
@@ -1644,7 +1640,7 @@ export default function LandingV3() {
 
       <main className="relative z-10">
         {/* HERO */}
-        <section className="relative pt-24 md:pt-28 pb-16 md:pb-24 overflow-hidden">
+        <section className="relative pt-24 md:pt-28 pb-4 overflow-hidden">
           {/* Gradient mesh - subtle corner accent */}
           <div
             className="absolute top-0 right-0 w-1/2 h-1/2 pointer-events-none"
@@ -1704,7 +1700,7 @@ export default function LandingV3() {
                     transition={{ duration: 0.6, delay: 0.15 }}
                     className="mt-6 font-mono text-xs leading-relaxed text-black/50 max-w-md tracking-wide"
                   >
-                    <span className="text-black/70">103,379</span> transactions indexed // <span className="text-black/70">28</span> districts // <span className="text-black/70">5Y</span> historical depth
+                    <span className="text-black/70">103,379</span> transactions indexed // <span className="text-black/70">28</span> districts
                   </motion.div>
 
                   <motion.div
@@ -1726,6 +1722,20 @@ export default function LandingV3() {
                       <TerminalOutput lines={terminalLines} isLive />
                       <StatusPanel />
                     </div>
+                  </motion.div>
+
+                  {/* System Log Filler - balances Globe height */}
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.6, delay: 0.4 }}
+                    className="mt-4 font-mono text-[10px] text-black/40 h-20 overflow-hidden border-l border-black/10 pl-3"
+                  >
+                    <div className="opacity-50">sys_check: integrity_scan... OK</div>
+                    <div className="opacity-50">net_ops: handshake_ura... OK</div>
+                    <div className="opacity-50">cache_warmup: districts=28... OK</div>
+                    <div className="opacity-50">index_projects: count=1,247... OK</div>
+                    <div className="text-emerald-600">{'>>'} awaiting_input_</div>
                   </motion.div>
                 </div>
 
@@ -1749,7 +1759,7 @@ export default function LandingV3() {
         <SectionDivider />
 
         {/* STATS */}
-        <section className="py-16 md:py-24 section-overlap-down" onMouseEnter={onSectionEnter} onMouseLeave={onSectionLeave}>
+        <section className="pt-4 pb-16 md:pb-24 section-overlap-down" onMouseEnter={onSectionEnter} onMouseLeave={onSectionLeave}>
           <div className="max-w-7xl mx-auto px-4 md:px-6">
             <SectionTitle
               eyebrow="COVERAGE"
