@@ -15,9 +15,9 @@ import { getKpiSummaryV2, getAggregate, getDashboard } from '../api/client';
 import { useData } from '../context/DataContext';
 import { transformCompressionSeries } from '../adapters';
 // Standardized responsive UI components (layout wrappers only)
-import { ErrorBoundary, ChartWatermark, KPICardV2, KPICardV2Group, KPIHeroContent } from '../components/ui';
+import { ErrorBoundary, ChartPanel, ChartWatermark, DataSection, KPICardV2, KPICardV2Group, KPIHeroContent } from '../components/ui';
 // Containment primitives (L0 → L1 → L2 layer system for visual hierarchy)
-import { PageCanvas, ContentSection, ControlRibbon } from '../components/layout';
+import { PageCanvas, ControlRibbon } from '../components/layout';
 // Desktop-first chart height with mobile guardrail
 // Phase 2: Using TanStack Query via useAppQuery wrapper
 import { useChartHeight, MOBILE_CAPS, useAppQuery } from '../hooks';
@@ -241,7 +241,7 @@ export function MacroOverviewContent() {
       {/* Analytics View - Dashboard with charts */}
       <div className="animate-view-enter">
         {/* KPI Section - Key metrics in contained section */}
-        <ContentSection title="KEY METRICS">
+        <DataSection title="KEY METRICS">
           <KPICardV2Group columns={4}>
                 {/* Card 1: Market Momentum */}
                 <KPICardV2
@@ -335,15 +335,15 @@ export function MacroOverviewContent() {
                   loading={kpis.loading}
                 />
           </KPICardV2Group>
-        </ContentSection>
+        </DataSection>
 
         {/* Charts Section - Market trend analysis */}
-        <ContentSection title="MARKET TRENDS">
+        <DataSection title="MARKET TRENDS">
           {/* Charts Grid - Responsive: 1 col mobile, 2 cols desktop */}
           {/* Each chart wrapped with ErrorBoundary to prevent cascade failures */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
                 {/* Time Trend Chart - Full width on all screens */}
-                <div className="lg:col-span-2">
+                <ChartPanel className="lg:col-span-2">
                   <ErrorBoundary name="Time Trend Chart" compact>
                     <TimeTrendChart
                       onDrillThrough={(value) => handleDrillThrough(`Transactions in ${value}`)}
@@ -352,7 +352,7 @@ export function MacroOverviewContent() {
                       staggerIndex={0}
                     />
                   </ErrorBoundary>
-                </div>
+                </ChartPanel>
 
                 {/* Market Compression + Absolute PSF - Side by side (Watermarked for free users) */}
                 {/* Desktop/Tablet: 50/50 grid | Mobile: Stacked */}
@@ -393,7 +393,7 @@ export function MacroOverviewContent() {
                 {/* Market Value Oscillator - Full width, Z-score normalized spread analysis */}
                 {/* Lazy-loaded with Suspense for faster initial page load */}
                 {/* SHARED DATA: Receives compressionRaw to eliminate duplicate aggregate request (P0 fix) */}
-                <div className="lg:col-span-2">
+                <ChartPanel className="lg:col-span-2">
                   <ErrorBoundary name="Market Value Oscillator" compact>
                     <ChartWatermark>
                       <Suspense fallback={<ChartLoadingFallback height={oscillatorHeight} />}>
@@ -407,14 +407,14 @@ export function MacroOverviewContent() {
                       </Suspense>
                     </ChartWatermark>
                   </ErrorBoundary>
-                </div>
+                </ChartPanel>
 
                 {/* Price Distribution + Beads Chart - Side by side */}
                 <div
                   ref={panelsRef}
                   className="lg:col-span-2 grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6"
                 >
-                  <div>
+                  <ChartPanel>
                     <ErrorBoundary name="Price Distribution" compact>
                       <ChartWatermark>
                         <PriceDistributionChart
@@ -427,9 +427,9 @@ export function MacroOverviewContent() {
                         />
                       </ChartWatermark>
                     </ErrorBoundary>
-                  </div>
+                  </ChartPanel>
 
-                  <div>
+                  <ChartPanel>
                     <ErrorBoundary name="Price by Region & Bedroom" compact>
                       <ChartWatermark>
                         <BeadsChart
@@ -441,10 +441,10 @@ export function MacroOverviewContent() {
                         />
                       </ChartWatermark>
                     </ErrorBoundary>
-                  </div>
+                  </ChartPanel>
                 </div>
           </div>
-        </ContentSection>
+        </DataSection>
       </div>
 
       {/* Transaction Detail Modal */}

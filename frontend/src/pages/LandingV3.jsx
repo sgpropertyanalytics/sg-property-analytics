@@ -96,9 +96,9 @@ function SectionDivider() {
   return (
     <div className="relative h-px bg-black/10 max-w-7xl mx-auto">
       {/* Aerospace-style decorative markers */}
-      <div className="absolute left-1/4 -top-1 w-2 h-2 border border-black/15 bg-[#fafafa] rotate-45" />
-      <div className="absolute left-1/2 -translate-x-1/2 -top-1.5 w-3 h-3 border border-black/20 bg-[#fafafa] rotate-45" />
-      <div className="absolute right-1/4 -top-1 w-2 h-2 border border-black/15 bg-[#fafafa] rotate-45" />
+      <div className="absolute left-1/4 -top-1 w-2 h-2 border border-black/15 bg-mono-canvas rotate-45" />
+      <div className="absolute left-1/2 -translate-x-1/2 -top-1.5 w-3 h-3 border border-black/20 bg-mono-canvas rotate-45" />
+      <div className="absolute right-1/4 -top-1 w-2 h-2 border border-black/15 bg-mono-canvas rotate-45" />
     </div>
   );
 }
@@ -224,7 +224,7 @@ function CommandBar({ onExecute }) {
 
   return (
     <div className="relative">
-      <div className="flex items-stretch border border-black/10 bg-[#fafafa] command-bar-focus">
+      <div className="flex items-stretch border border-black/10 bg-mono-canvas command-bar-focus">
         <div className="flex items-center gap-2 px-3 border-r border-black/10">
           <Command className="h-4 w-4 text-black/60" />
           <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60 hidden sm:inline">
@@ -265,7 +265,7 @@ function CommandBar({ onExecute }) {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 8 }}
-            className="absolute left-0 right-0 mt-2 border border-black/10 bg-[#fafafa]"
+            className="absolute left-0 right-0 mt-2 border border-black/10 bg-mono-canvas"
           >
             {filtered.map((s, i) => (
               <button

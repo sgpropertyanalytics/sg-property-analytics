@@ -9,6 +9,7 @@ import { useZustandFilters } from '../../stores';
 import { getAggregate } from '../../api/client';
 import { PreviewChartOverlay, ChartSlot } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
+import { CHART_COLORS } from '../../constants/chartPalette';
 // SaleType imports removed - Market Core is Resale-only
 import { transformTimeSeries, logFetchDebug, assertKnownVersion, validateResponseGrain } from '../../adapters';
 import { niceMax } from '../../utils/niceAxisMax';
@@ -109,7 +110,7 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, o
         label: 'Resale Transactions',
         data: transactionCounts,
         backgroundColor: 'rgba(100, 116, 139, 0.7)',  // Slate 500 - light, recedes
-        borderColor: '#334155',  // Slate 700 border for definition
+        borderColor: CHART_COLORS.ocean,  // Slate 700 border for definition
         borderWidth: 1,
         borderRadius: 3,
         yAxisID: 'y',
@@ -119,13 +120,13 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, o
         type: 'line',
         label: 'Total Transaction Value',
         data: totalValues,
-        borderColor: '#0F172A',  // Slate 900 - bold, pops forward
+        borderColor: CHART_COLORS.navy,  // Slate 900 - bold, pops forward
         backgroundColor: 'rgba(15, 23, 42, 0.05)',
         borderWidth: 3,
         pointRadius: 0,
         pointHoverRadius: 6,
-        pointHoverBackgroundColor: '#E5E7EB',  // Slate 200 fill on hover
-        pointHoverBorderColor: '#0F172A',
+        pointHoverBackgroundColor: CHART_COLORS.slate200,  // Slate 200 fill on hover
+        pointHoverBorderColor: CHART_COLORS.navy,
         pointHoverBorderWidth: 2,
         tension: 0.3,
         fill: false,
@@ -150,15 +151,15 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, o
           pointStyle: 'rectRounded',
           padding: 20,
           font: { size: 12, weight: '500' },
-          color: '#475569',
+          color: CHART_COLORS.slate500,
           boxWidth: 12,
           boxHeight: 12,
         },
       },
       tooltip: {
         backgroundColor: 'rgba(15, 23, 42, 0.95)',  // Slate 900
-        titleColor: '#F1F5F9',  // Slate 100
-        bodyColor: '#94A3B8',   // Slate 400
+        titleColor: CHART_COLORS.slate100,  // Slate 100
+        bodyColor: CHART_COLORS.slate400,   // Slate 400
         borderColor: 'rgba(100, 116, 139, 0.3)',
         borderWidth: 1,
         cornerRadius: 8,

@@ -2,6 +2,8 @@ import React from 'react';
 import { ErrorState } from "./ErrorState";
 import { ChartSkeleton } from "./ChartSkeleton";
 import { useDebugMode } from '../../context/DebugContext';
+import EmptyState from '../primitives/EmptyState';
+import Skeleton from '../primitives/Skeleton';
 
 /**
  * Get user-friendly error message from an error object.
@@ -115,7 +117,11 @@ export const QueryState = React.memo(function QueryState({ loading, error, onRet
     if (skeleton) {
       return <ChartSkeleton type={skeleton} height={height} />;
     }
-    return <div className="p-3 text-sm text-brand-blue">Loading…</div>;
+    return (
+      <div className="p-3">
+        <Skeleton className="h-4 w-24" />
+      </div>
+    );
   }
   if (error) return <ErrorState message={getQueryErrorMessage(error)} onRetry={onRetry} />;
   if (empty) {
@@ -123,7 +129,11 @@ export const QueryState = React.memo(function QueryState({ loading, error, onRet
     if (debugMode && debugInfo) {
       return <DebugEmptyState debugInfo={debugInfo} />;
     }
-    return <div className="p-3 text-sm text-brand-blue">No data for selected filters.</div>;
+    return (
+      <div className="p-3">
+        <EmptyState title="No data for selected filters." className="items-start text-left" />
+      </div>
+    );
   }
   return children;
 });

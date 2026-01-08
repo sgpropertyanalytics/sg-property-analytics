@@ -20,6 +20,7 @@ import { isFloorDirection, FloorDirectionLabels } from '../../schemas/apiContrac
 import { ChartSlot } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 import { REGION, INK, CANVAS } from '../../constants/colors';
+import { CHART_COLORS } from '../../constants/chartPalette';
 import { VerdictBadge, VerdictBadgeLarge } from './VerdictBadge';
 
 // Colors from centralized colors.js + chart-specific fills
@@ -151,7 +152,7 @@ function PriceBandChartBase({
         xValue: lastIndex,
         yValue: unitPsf,
         backgroundColor: COLORS.unitMarker,
-        borderColor: '#fff',
+        borderColor: CHART_COLORS.white,
         borderWidth: 2,
         radius: 8,
         drawTime: 'afterDatasetsDraw',
@@ -163,7 +164,7 @@ function PriceBandChartBase({
         yValue: unitPsf,
         content: `$${unitPsf.toLocaleString()} psf`,
         backgroundColor: 'rgba(15, 23, 42, 0.9)',  // slate-900
-        color: '#fff',
+        color: CHART_COLORS.white,
         font: { size: 11, weight: 'bold' },
         padding: { x: 6, y: 4 },
         borderRadius: 4,
@@ -196,8 +197,8 @@ function PriceBandChartBase({
           mode: 'index',
           intersect: false,
           backgroundColor: 'rgba(15, 23, 42, 0.95)',  // slate-900
-          titleColor: '#fff',
-          bodyColor: '#fff',
+          titleColor: CHART_COLORS.white,
+          bodyColor: CHART_COLORS.white,
           borderColor: COLORS.skyBlue,
           borderWidth: 1,
           padding: 12,

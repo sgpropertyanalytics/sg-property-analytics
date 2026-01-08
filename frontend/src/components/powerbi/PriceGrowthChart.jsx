@@ -16,6 +16,7 @@ import { Line } from 'react-chartjs-2';
 import { ChartSlot } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 import { REGION, CANVAS } from '../../constants/colors';
+import { CHART_COLORS } from '../../constants/chartPalette';
 import { ChartFrame } from '../common/ChartFrame';
 import { getTxnField, TxnField } from '../../schemas/apiContract';
 
@@ -199,8 +200,8 @@ function PriceGrowthChartBase({
           mode: 'index',
           intersect: false,
           backgroundColor: 'rgba(15, 23, 42, 0.95)',  // slate-900
-          titleColor: '#fff',
-          bodyColor: '#fff',
+          titleColor: CHART_COLORS.white,
+          bodyColor: CHART_COLORS.white,
           borderColor: COLORS.skyBlue,
           borderWidth: 1,
           padding: 12,

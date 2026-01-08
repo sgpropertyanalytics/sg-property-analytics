@@ -9,6 +9,7 @@ import { useZustandFilters } from '../../stores';
 import { getDashboard } from '../../api/client';
 import { KeyInsightBox, PreviewChartOverlay, ChartSlot, InlineCard, InlineCardRow } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
+import { CHART_COLORS } from '../../constants/chartPalette';
 import {
   transformDistributionSeries,
   formatPrice,
@@ -187,7 +188,7 @@ function PriceDistributionChartBase({
         content: `Median: ${formatPrice(stats?.median)}`,
         position: 'start',
         backgroundColor: 'rgba(33, 52, 72, 0.9)',
-        color: '#fff',
+        color: CHART_COLORS.white,
         font: { size: 10, weight: 'bold' },
         padding: { x: 6, y: 3 },
         borderRadius: 3,
