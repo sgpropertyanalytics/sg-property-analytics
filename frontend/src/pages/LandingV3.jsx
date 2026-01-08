@@ -27,6 +27,7 @@ import {
   LandingSectionDivider,
   LandingSectionHeader,
   LandingMonoPill,
+  AtlasStatusTicker,
 } from '../components/patterns';
 
 const CANVAS = CANVAS_TOKENS.base;
@@ -222,8 +223,11 @@ function CommandBar({ onExecute }) {
         <button
           type="button"
           onClick={() => execute(value || filtered[0] || '')}
-          className="group flex items-center gap-2 px-4 bg-black hover:bg-black/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
+          className="group relative flex items-center gap-2 px-4 bg-black hover:bg-black/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
         >
+          {/* Bracketed corners */}
+          <span className="absolute top-0 left-0 w-2 h-2 border-t border-l border-white/40" />
+          <span className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-white/40" />
           <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-white">Enter Terminal</span>
           <ArrowRight className="h-4 w-4 text-white group-hover:translate-x-0.5 transition-transform" />
         </button>
@@ -248,7 +252,7 @@ function CommandBar({ onExecute }) {
                   setValue(s);
                   setIsOpen(false);
                 }}
-                className={`w-full px-3 py-2 flex items-center justify-between gap-3 text-left hover:bg-black/[0.02] border-t first:border-t-0 border-black/05 ${
+                className={`w-full px-3 py-2 flex items-center justify-between gap-3 text-left hover:bg-black/[0.02] border-t first:border-t-0 border-black/10 ${
                   i === activeIndex ? 'bg-black/[0.02]' : ''
                 }`}
               >
@@ -549,12 +553,12 @@ function ParticleGlobe() {
     >
       <canvas ref={canvasRef} className="absolute inset-0" />
       <div className="absolute top-4 right-4 text-right">
-        <div className="font-mono text-[10px] uppercase tracking-wider text-black/60">
+        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
           GLOBAL_NETWORK
         </div>
         <div className="mt-1 flex items-center justify-end gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="font-mono text-[10px] uppercase tracking-wider text-emerald-600">LIVE</span>
+          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-emerald-600">LIVE</span>
         </div>
       </div>
     </div>
@@ -585,7 +589,7 @@ function StatusPanel() {
 
   return (
     <div className="border border-black/10 bg-mono-canvas h-[240px] flex flex-col">
-      <div className="px-3 py-2 border-b border-black/05 flex items-center justify-between">
+      <div className="px-3 py-2 border-b border-black/10 flex items-center justify-between">
         <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
           System Status
         </div>
@@ -620,7 +624,7 @@ function StatusPanel() {
           <div className="mt-1 font-mono text-xs text-black/60 tabular-nums transition-all duration-300">{integrity.toFixed(1)}%</div>
         </div>
       </div>
-      <div className="px-3 py-2 border-t border-black/05 flex items-center justify-between mt-auto">
+      <div className="px-3 py-2 border-t border-black/10 flex items-center justify-between mt-auto">
         <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
           LAST SYNC: {syncAgo}s ago
         </div>
@@ -683,7 +687,7 @@ function DotMatrixMap() {
       <div className="absolute top-0 left-1/4 w-px h-1 bg-black/20" />
       <div className="absolute top-0 left-1/2 w-px h-1.5 bg-black/30" />
       <div className="absolute top-0 left-3/4 w-px h-1 bg-black/20" />
-      <div className="px-3 py-2 border-b border-black/05 flex items-center justify-between">
+      <div className="px-3 py-2 border-b border-black/10 flex items-center justify-between">
         <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">MAP</div>
         <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">SINGAPORE FOCUS</div>
       </div>
@@ -752,7 +756,7 @@ function CapabilityCard({ icon: Icon, title, desc, code }) {
 function InsightRow({ label, value, delta }) {
   const isNegative = delta?.startsWith('-');
   return (
-    <div className="flex items-center justify-between gap-6 border-t border-black/05 py-3 first:border-t-0">
+    <div className="flex items-center justify-between gap-6 border-t border-black/10 py-3 first:border-t-0">
       <div className="min-w-0">
         <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">{label}</div>
       </div>
@@ -785,7 +789,7 @@ function TerminalChartWrapper({ title, subtitle, children, showLive = false, loc
       <div className="absolute top-0 left-1/2 w-px h-1.5 bg-black/30" />
       <div className="absolute top-0 left-3/4 w-px h-1 bg-black/20" />
       {/* Header */}
-      <div className="px-4 py-3 border-b border-black/05 flex items-center justify-between">
+      <div className="px-4 py-3 border-b border-black/10 flex items-center justify-between">
         <div>
           <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">{title}</div>
           {subtitle && (
@@ -858,7 +862,7 @@ function RegionalPricingPreview() {
           </div>
         </div>
       ))}
-      <div className="flex items-center justify-between pt-2 border-t border-black/05">
+      <div className="flex items-center justify-between pt-2 border-t border-black/10">
         <div className="font-mono text-[9px] uppercase tracking-[0.12em] text-black/60">
           MEDIAN_PSF_BY_BR
         </div>
@@ -947,7 +951,7 @@ function DistrictGrowthPreview() {
           </div>
         </div>
       ))}
-      <div className="pt-2 border-t border-black/05 flex items-center justify-between">
+      <div className="pt-2 border-t border-black/10 flex items-center justify-between">
         <div className="font-mono text-[9px] uppercase tracking-[0.12em] text-black/60">
           PSF_DELTA_5Y
         </div>
@@ -969,7 +973,7 @@ function MomentumGridPreview() {
       {MOMENTUM_GRID_DATA.map((d) => (
         <div
           key={d.id}
-          className="aspect-square border border-black/05 p-1 flex flex-col items-center justify-center"
+          className="aspect-square border border-black/10 p-1 flex flex-col items-center justify-center"
         >
           <div className="font-mono text-[7px] text-black/60">{d.id}</div>
           {/* Mini sparkline */}
@@ -1034,7 +1038,7 @@ function PulseTicker({ transactions, onTransactionClick, activeDistrict, isLoadi
   if (isLoading) {
     return (
       <div className="overflow-hidden border border-black/10 bg-mono-canvas h-10 flex items-center justify-center">
-        <div className="font-mono text-[11px] text-black/40 tracking-wider">LOADING_FEED...</div>
+        <div className="font-mono text-[11px] text-black/40 tracking-[0.18em]">LOADING_FEED...</div>
       </div>
     );
   }
@@ -1042,7 +1046,7 @@ function PulseTicker({ transactions, onTransactionClick, activeDistrict, isLoadi
   if (!transactions?.length) {
     return (
       <div className="overflow-hidden border border-black/10 bg-mono-canvas h-10 flex items-center justify-center">
-        <div className="font-mono text-[11px] text-black/40 tracking-wider">NO_SIGNAL</div>
+        <div className="font-mono text-[11px] text-black/40 tracking-[0.18em]">NO_SIGNAL</div>
       </div>
     );
   }
@@ -1125,7 +1129,7 @@ function GhostMap({ highlightedDistrict, activePulses, onPulseFade }) {
   if (!geoData || !centroids) {
     return (
       <div className="h-[280px] border border-black/10 bg-slate-50 flex items-center justify-center">
-        <div className="font-mono text-[10px] text-black/40 tracking-wider">LOADING_MAP...</div>
+        <div className="font-mono text-[10px] text-black/40 tracking-[0.18em]">LOADING_MAP...</div>
       </div>
     );
   }
@@ -1290,7 +1294,7 @@ function GhostMap({ highlightedDistrict, activePulses, onPulseFade }) {
       </svg>
 
       {/* Timestamp overlay */}
-      <div className="absolute bottom-2 right-3 font-mono text-[9px] text-slate-400 tracking-wider">
+      <div className="absolute bottom-2 right-3 font-mono text-[9px] text-slate-400 tracking-[0.18em]">
         SIG_FEED // LIVE
       </div>
     </div>
@@ -1566,88 +1570,118 @@ export default function LandingV3() {
       </nav>
 
       <main className="relative z-10">
-        {/* HERO */}
-        <section className="relative pt-24 md:pt-28 pb-16 md:pb-24 overflow-hidden">
-          {/* Gradient mesh - subtle corner accent */}
-          <div
-            className="absolute top-0 right-0 w-1/2 h-1/2 pointer-events-none"
-            style={{
-              background: 'radial-gradient(ellipse at top right, rgba(0,0,0,0.02) 0%, transparent 60%)',
-            }}
-          />
+        {/* ATLAS STATUS TICKER - Full width, outside Container */}
+        <AtlasStatusTicker />
+
+        {/* HERO - Atlas Editorial Layout */}
+        <section
+          className="relative py-16 md:py-24 overflow-hidden"
+          style={{ backgroundColor: 'var(--color-atlas-parchment)' }}
+        >
+          {/* Sub-header row */}
           <Container>
-            <div>
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-                {/* 60/40 asymmetric split for visual interest */}
-                <div className="lg:col-span-7">
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.5 }}
-                    className="flex items-center gap-3"
-                  >
-                    <MonoPill leftDot={<LiveDot />}>Live URA Data</MonoPill>
-                    <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
-                      v3 // preview
-                    </div>
-                  </motion.div>
-
-                  <motion.h1
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.6, delay: 0.05 }}
-                    className="mt-6 font-display text-4xl sm:text-5xl md:text-6xl xl:text-7xl font-bold tracking-tighter leading-[1.05]"
-                  >
-                    <span className="block text-black">Singapore Condo</span>
-                    <span className="block text-black/60" style={{ whiteSpace: 'nowrap' }}>Market Intelligence</span>
-                  </motion.h1>
-
-                  <motion.p
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.6, delay: 0.12 }}
-                    className="mt-6 text-base sm:text-lg leading-relaxed text-black/60 max-w-xl"
-                  >
-                    Data-driven price benchmarking across projects, locations, and market segments — based on 100,000+ private property transactions.
-                  </motion.p>
-
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.6, delay: 0.24 }}
-                    className="mt-6"
-                  >
-                    <CommandBar onExecute={onAnyCTA} />
-                  </motion.div>
-
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.6, delay: 0.3 }}
-                    className="mt-8"
-                  >
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
-                      <TerminalOutput lines={terminalLines} isLive />
-                      <StatusPanel />
-                    </div>
-                  </motion.div>
-                </div>
-
-                {/* Globe column - slightly overflow for tension */}
-                <div className="lg:col-span-5 lg:-mr-8">
-                  <motion.div
-                    className="globe-bloom"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.8, delay: 0.2 }}
-                  >
-                    <ParticleGlobe />
-                  </motion.div>
-                </div>
+            <div className="flex items-center justify-between py-4 border-b mb-12" style={{ borderColor: 'var(--color-atlas-border)' }}>
+              <div className="font-mono text-xs uppercase tracking-[0.18em]" style={{ color: 'var(--color-atlas-text)', opacity: 0.6 }}>
+                URA DATA ANALYTICS / SINGAPORE
+              </div>
+              <div
+                className="font-mono text-xs uppercase tracking-[0.18em] border px-4 py-2 hidden md:block"
+                style={{ color: 'var(--color-atlas-text)', opacity: 0.6, borderColor: 'var(--color-atlas-border)' }}
+              >
+                SYSTEM MODE: ACTIVE DATA PIPELINE
               </div>
             </div>
           </Container>
 
+          {/* Main 2-Column Hero - ASYMMETRIC 7/5 Split (Editorial 60% / Schematic 40%) */}
+          <Container>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+
+              {/* LEFT COLUMN - 7 cols (~60%) - Editorial Content */}
+              <div className="lg:col-span-7 space-y-6">
+                {/* Headline - Playfair Display italic */}
+                <motion.h1
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.6 }}
+                  className="font-serif italic text-4xl sm:text-5xl md:text-6xl lg:text-6xl xl:text-7xl tracking-tighter"
+                  style={{ lineHeight: 'var(--leading-tight)' }}
+                >
+                  <span className="block" style={{ color: 'var(--color-atlas-text)' }}>Singapore Condo</span>
+                  <span className="block" style={{ color: 'var(--color-atlas-text)', opacity: 0.5 }}>Market Intelligence</span>
+                </motion.h1>
+
+                {/* Body text - monospace */}
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.6, delay: 0.1 }}
+                  className="font-mono text-sm sm:text-base leading-relaxed max-w-md"
+                  style={{ color: 'var(--color-atlas-text)', opacity: 0.6 }}
+                >
+                  Data-driven price benchmarking across projects, locations, and market segments — based on 100,000+ private property transactions.
+                </motion.p>
+
+                {/* CommandBar - KEPT AS-IS with atlas-brackets wrapper */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.6, delay: 0.2 }}
+                  className="atlas-brackets"
+                >
+                  <CommandBar onExecute={onAnyCTA} />
+                </motion.div>
+              </div>
+
+              {/* RIGHT COLUMN - 5 cols (~40%) - Globe + Panels */}
+              <div className="lg:col-span-5 relative">
+                {/* Top panels row: System Log + Stats Display */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.6, delay: 0.15 }}
+                  className="flex flex-col sm:flex-row items-stretch gap-4 mb-4"
+                >
+                  {/* System Log Panel */}
+                  <div className="flex-1 border p-4" style={{ borderColor: 'var(--color-atlas-border)' }}>
+                    <div className="font-mono text-data-xs uppercase tracking-[0.18em] mb-2" style={{ color: 'var(--color-atlas-text)', opacity: 0.6 }}>
+                      [ SYSTEM LOG ]
+                    </div>
+                    <div className="font-mono text-xs space-y-1" style={{ color: 'var(--color-atlas-text)', opacity: 0.8 }}>
+                      <div># INIT... OK</div>
+                      <div># URA PIPELINE... CONNECTED</div>
+                      <div># DATA QUALITY... VERIFIED</div>
+                      <div># SYNC STATUS... LIVE</div>
+                    </div>
+                  </div>
+
+                  {/* Stats Display */}
+                  <div className="border p-4 text-right" style={{ borderColor: 'var(--color-atlas-border)' }}>
+                    <div className="font-mono text-data-xs uppercase tracking-[0.18em]" style={{ color: 'var(--color-atlas-text)', opacity: 0.6 }}>
+                      TX COUNT:
+                    </div>
+                    <div className="font-mono text-2xl font-bold tabular-nums" style={{ color: 'var(--color-atlas-text)' }}>
+                      103,247
+                    </div>
+                    <div className="font-mono text-data-xs uppercase tracking-[0.18em]" style={{ color: 'var(--color-atlas-text)', opacity: 0.6 }}>
+                      RESALE
+                    </div>
+                  </div>
+                </motion.div>
+
+                {/* Globe with corner brackets */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.8, delay: 0.25 }}
+                  className="atlas-brackets"
+                >
+                  <ParticleGlobe />
+                </motion.div>
+              </div>
+
+            </div>
+          </Container>
         </section>
 
         <SectionDivider />
@@ -1804,7 +1838,7 @@ export default function LandingV3() {
                 <div className="absolute top-0 left-1/4 w-px h-1 bg-black/20" />
                 <div className="absolute top-0 left-1/2 w-px h-1.5 bg-black/30" />
                 <div className="absolute top-0 left-3/4 w-px h-1 bg-black/20" />
-                <div className="px-4 py-3 border-b border-black/05 flex items-center justify-between">
+                <div className="px-4 py-3 border-b border-black/10 flex items-center justify-between">
                   <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">Metrics</div>
                   <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
                     Snapshot · non-binding
@@ -1816,7 +1850,7 @@ export default function LandingV3() {
                   <InsightRow label="Volume" value="2,104" delta="+4.1% QoQ" />
                   <InsightRow label="Dispersion" value="LOW" delta="-1.2% QoQ" />
 
-                  <div className="mt-2 border-t border-black/05 pt-3 pb-1">
+                  <div className="mt-2 border-t border-black/10 pt-3 pb-1">
                     <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
                       Tagged entities
                     </div>
@@ -1842,7 +1876,7 @@ export default function LandingV3() {
                     </div>
                   </div>
                 </div>
-                <div className="px-4 py-4 border-t border-black/05">
+                <div className="px-4 py-4 border-t border-black/10">
                   <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">Notes</div>
                   <div className="mt-2 text-sm leading-relaxed text-black/60">
                     Preview signals are illustrative. Authenticate to unlock full district/project drilldowns, export, and
@@ -1957,7 +1991,7 @@ export default function LandingV3() {
         <footer className="py-10 footer-grid-pattern">
           <Container>
             {/* System Status Row */}
-            <div className="system-status-row pb-6 border-b border-black/05">
+            <div className="system-status-row pb-6 border-b border-black/10">
               <div className="status-item">
                 <span className="relative flex h-2 w-2">
                   <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-70 animate-ping" />

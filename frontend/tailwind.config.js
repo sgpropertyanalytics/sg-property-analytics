@@ -61,12 +61,21 @@ export default {
           bg: 'var(--color-skeleton-bg)',
           border: 'var(--color-skeleton-border)',
         },
+        // Atlas Editorial Palette
+        atlas: {
+          parchment: 'var(--color-atlas-parchment)',
+          blue: 'var(--color-atlas-blue)',
+          orange: 'var(--color-atlas-orange)',
+          border: 'var(--color-atlas-border)',
+          text: 'var(--color-atlas-text)',
+        },
       },
       fontFamily: {
         display: ['var(--font-display)'],
         data: ['var(--font-mono)'],
         sans: ['var(--font-sans)'],
         mono: ['var(--font-mono)'],
+        serif: ['var(--font-serif)'],
       },
       spacing: {
         0: 'var(--space-0)',

@@ -2,6 +2,7 @@
   --font-display: "JetBrains Mono", "Geist Sans", system-ui, -apple-system, sans-serif;
   --font-sans: "Inter", system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace;
+  --font-serif: "Playfair Display", Georgia, "Times New Roman", serif;
 
   /* Core surfaces */
   --color-bg: #F2EFE9;
@@ -150,6 +151,12 @@
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
   --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.16);
 
+  /* Typography - Line Heights */
+  --leading-tight: 1.1;
+  --leading-snug: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+
   /* Motion */
   --duration-fast: 150ms;
   --duration-base: 250ms;
@@ -210,6 +217,13 @@
   --color-beads-3-rgb: 51 65 85;
   --color-beads-4-rgb: 15 23 42;
   --color-beads-5-rgb: 120 80 60;
+
+  /* Atlas Editorial Palette */
+  --color-atlas-parchment: #fcfbf7;
+  --color-atlas-blue: #85d7ff;
+  --color-atlas-orange: #ff6e41;
+  --color-atlas-border: #e2e2e2;
+  --color-atlas-text: #1a1a1a;
 }
 
 [data-theme='dark'] {
