@@ -27,6 +27,7 @@ import {
   LandingSectionDivider,
   LandingSectionHeader,
   LandingMonoPill,
+  AtlasStatusTicker,
 } from '../components/patterns';
 
 const CANVAS = CANVAS_TOKENS.base;
@@ -1566,88 +1567,117 @@ export default function LandingV3() {
       </nav>
 
       <main className="relative z-10">
-        {/* HERO */}
-        <section className="relative pt-24 md:pt-28 pb-16 md:pb-24 overflow-hidden">
-          {/* Gradient mesh - subtle corner accent */}
-          <div
-            className="absolute top-0 right-0 w-1/2 h-1/2 pointer-events-none"
-            style={{
-              background: 'radial-gradient(ellipse at top right, rgba(0,0,0,0.02) 0%, transparent 60%)',
-            }}
-          />
+        {/* ATLAS STATUS TICKER - Full width, outside Container */}
+        <AtlasStatusTicker />
+
+        {/* HERO - Atlas Editorial Layout */}
+        <section
+          className="relative py-16 md:py-24 overflow-hidden"
+          style={{ backgroundColor: 'var(--color-atlas-parchment)' }}
+        >
+          {/* Sub-header row */}
           <Container>
-            <div>
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-                {/* 60/40 asymmetric split for visual interest */}
-                <div className="lg:col-span-7">
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.5 }}
-                    className="flex items-center gap-3"
-                  >
-                    <MonoPill leftDot={<LiveDot />}>Live URA Data</MonoPill>
-                    <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
-                      v3 // preview
-                    </div>
-                  </motion.div>
-
-                  <motion.h1
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.6, delay: 0.05 }}
-                    className="mt-6 font-display text-4xl sm:text-5xl md:text-6xl xl:text-7xl font-bold tracking-tighter leading-[1.05]"
-                  >
-                    <span className="block text-black">Singapore Condo</span>
-                    <span className="block text-black/60" style={{ whiteSpace: 'nowrap' }}>Market Intelligence</span>
-                  </motion.h1>
-
-                  <motion.p
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.6, delay: 0.12 }}
-                    className="mt-6 text-base sm:text-lg leading-relaxed text-black/60 max-w-xl"
-                  >
-                    Data-driven price benchmarking across projects, locations, and market segments — based on 100,000+ private property transactions.
-                  </motion.p>
-
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.6, delay: 0.24 }}
-                    className="mt-6"
-                  >
-                    <CommandBar onExecute={onAnyCTA} />
-                  </motion.div>
-
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.6, delay: 0.3 }}
-                    className="mt-8"
-                  >
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
-                      <TerminalOutput lines={terminalLines} isLive />
-                      <StatusPanel />
-                    </div>
-                  </motion.div>
-                </div>
-
-                {/* Globe column - slightly overflow for tension */}
-                <div className="lg:col-span-5 lg:-mr-8">
-                  <motion.div
-                    className="globe-bloom"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.8, delay: 0.2 }}
-                  >
-                    <ParticleGlobe />
-                  </motion.div>
-                </div>
+            <div className="flex items-center justify-between py-4 border-b mb-8 lg:mb-12" style={{ borderColor: 'var(--color-atlas-border)' }}>
+              <div className="font-mono text-xs uppercase tracking-widest" style={{ color: 'var(--color-atlas-text)', opacity: 0.6 }}>
+                URA DATA ANALYTICS / SINGAPORE
+              </div>
+              <div
+                className="font-mono text-xs uppercase tracking-widest border px-4 py-2 hidden md:block"
+                style={{ color: 'var(--color-atlas-text)', opacity: 0.6, borderColor: 'var(--color-atlas-border)' }}
+              >
+                SYSTEM MODE: ACTIVE DATA PIPELINE
               </div>
             </div>
           </Container>
 
+          {/* Main 2-Column Hero - ASYMMETRIC 5/7 Split */}
+          <Container>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+
+              {/* LEFT COLUMN - 5 cols (~40%) - Editorial Content */}
+              <div className="lg:col-span-5 space-y-6">
+                {/* Headline - Playfair Display italic */}
+                <motion.h1
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.6 }}
+                  className="font-serif italic text-4xl sm:text-5xl lg:text-6xl xl:text-7xl leading-[1.1]"
+                >
+                  <span className="block" style={{ color: 'var(--color-atlas-text)' }}>Singapore Condo</span>
+                  <span className="block" style={{ color: 'var(--color-atlas-text)', opacity: 0.5 }}>Market Intelligence</span>
+                </motion.h1>
+
+                {/* Body text - monospace */}
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.6, delay: 0.1 }}
+                  className="font-mono text-sm sm:text-base leading-relaxed max-w-md"
+                  style={{ color: 'var(--color-atlas-text)', opacity: 0.6 }}
+                >
+                  Data-driven price benchmarking across projects, locations, and market segments — based on 100,000+ private property transactions.
+                </motion.p>
+
+                {/* CommandBar - KEPT AS-IS with atlas-brackets wrapper */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.6, delay: 0.2 }}
+                  className="atlas-brackets"
+                >
+                  <CommandBar onExecute={onAnyCTA} />
+                </motion.div>
+              </div>
+
+              {/* RIGHT COLUMN - 7 cols (~60%) - Globe + Panels */}
+              <div className="lg:col-span-7 relative">
+                {/* Top panels row: System Log + Stats Display */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.6, delay: 0.15 }}
+                  className="flex flex-col sm:flex-row items-stretch gap-4 mb-4"
+                >
+                  {/* System Log Panel */}
+                  <div className="flex-1 border p-4" style={{ borderColor: 'var(--color-atlas-border)' }}>
+                    <div className="font-mono text-data-xs uppercase tracking-widest mb-2" style={{ color: 'var(--color-atlas-text)', opacity: 0.6 }}>
+                      [ SYSTEM LOG ]
+                    </div>
+                    <div className="font-mono text-xs space-y-1" style={{ color: 'var(--color-atlas-text)', opacity: 0.8 }}>
+                      <div># INIT... OK</div>
+                      <div># URA PIPELINE... CONNECTED</div>
+                      <div># DATA QUALITY... VERIFIED</div>
+                      <div># SYNC STATUS... LIVE</div>
+                    </div>
+                  </div>
+
+                  {/* Stats Display */}
+                  <div className="border p-4 text-right" style={{ borderColor: 'var(--color-atlas-border)' }}>
+                    <div className="font-mono text-data-xs uppercase tracking-widest" style={{ color: 'var(--color-atlas-text)', opacity: 0.6 }}>
+                      TX COUNT:
+                    </div>
+                    <div className="font-mono text-2xl font-bold tabular-nums" style={{ color: 'var(--color-atlas-text)' }}>
+                      103,247
+                    </div>
+                    <div className="font-mono text-data-xs uppercase tracking-widest" style={{ color: 'var(--color-atlas-text)', opacity: 0.6 }}>
+                      RESALE
+                    </div>
+                  </div>
+                </motion.div>
+
+                {/* Globe with corner brackets */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.8, delay: 0.25 }}
+                  className="atlas-brackets"
+                >
+                  <ParticleGlobe />
+                </motion.div>
+              </div>
+
+            </div>
+          </Container>
         </section>
 
         <SectionDivider />

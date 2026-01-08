@@ -2,6 +2,7 @@
   --font-display: "JetBrains Mono", "Geist Sans", system-ui, -apple-system, sans-serif;
   --font-sans: "Inter", system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace;
+  --font-serif: "Playfair Display", Georgia, "Times New Roman", serif;
 
   /* Core surfaces */
   --color-bg: #F2EFE9;
@@ -210,6 +211,13 @@
   --color-beads-3-rgb: 51 65 85;
   --color-beads-4-rgb: 15 23 42;
   --color-beads-5-rgb: 120 80 60;
+
+  /* Atlas Editorial Palette */
+  --color-atlas-parchment: #fcfbf7;
+  --color-atlas-blue: #85d7ff;
+  --color-atlas-orange: #ff6e41;
+  --color-atlas-border: #e2e2e2;
+  --color-atlas-text: #1a1a1a;
 }
 
 [data-theme='dark'] {
