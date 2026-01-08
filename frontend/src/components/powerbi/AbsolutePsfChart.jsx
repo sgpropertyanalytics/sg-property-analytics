@@ -1,17 +1,18 @@
 import React, { useRef } from 'react';
 import { useInView } from 'react-intersection-observer';
 // Phase 2: Using TanStack Query via useAppQuery wrapper
-import { useAppQuery } from '../../hooks';
+import { useAppQuery } from '../../hooks/useAppQuery';
 import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
 import { Line } from 'react-chartjs-2';
 import { getAggregate } from '../../api/client';
 // Phase 3.2: Migrated from usePowerBIFilters to useZustandFilters
-import { useZustandFilters } from '../../stores';
+import { useZustandFilters } from '../../stores/filterStore';
 import { TIME_GROUP_BY } from '../../context/PowerBIFilter';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { PreviewChartOverlay, ChartSlot, InlineCard, InlineCardRow } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
+import { CHART_COLORS } from '../../constants/chartPalette';
 import { REGION } from '../../constants/colors';
 import {
   transformCompressionSeries,

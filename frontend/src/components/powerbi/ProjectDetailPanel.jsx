@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 // Chart.js components registered globally in chartSetup.js
 import { Line, Bar } from 'react-chartjs-2';
 // Phase 3.3: Migrated from usePowerBIFilters to useZustandFilters
-import { useZustandFilters } from '../../stores';
+import { useZustandFilters } from '../../stores/filterStore';
 // Phase 2: Using TanStack Query via useAppQuery wrapper (CLAUDE.md Rule 9)
-import { useAppQuery } from '../../hooks';
+import { useAppQuery } from '../../hooks/useAppQuery';
 import { getAggregate, getProjectInventory, getDashboard } from '../../api/client';
 import { DISTRICT_NAMES } from '../../constants';
 import {
