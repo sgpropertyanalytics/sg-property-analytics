@@ -1,14 +1,16 @@
 import React, { useRef, useMemo } from 'react';
 // Phase 2: Using TanStack Query via useAppQuery wrapper
-import { useAppQuery, useDebugOverlay, QueryStatus } from '../../hooks';
+import { useAppQuery, QueryStatus } from '../../hooks/useAppQuery';
+import { useDebugOverlay } from '../../hooks/useDebugOverlay';
 import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
 import { Bubble } from 'react-chartjs-2';
 // Phase 3.2: Migrated from usePowerBIFilters to useZustandFilters
-import { useZustandFilters } from '../../stores';
+import { useZustandFilters } from '../../stores/filterStore';
 import { getDashboard } from '../../api/client';
 import { KeyInsightBox, ChartSlot } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
+import { CHART_COLORS } from '../../constants/chartPalette';
 import { REGIONS } from '../../constants';
 import { REGION } from '../../constants/colors';
 import {

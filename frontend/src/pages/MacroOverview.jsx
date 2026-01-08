@@ -2,7 +2,7 @@ import React, { useState, useMemo, lazy, Suspense } from 'react';
 import { useInView } from 'react-intersection-observer';
 // Phase 3.4: PowerBIFilterProvider removed - useZustandFilters is self-contained
 import { TIME_GROUP_BY } from '../context/PowerBIFilter';
-import { useZustandFilters } from '../stores';
+import { useZustandFilters } from '../stores/filterStore';
 import { TimeTrendChart } from '../components/powerbi/TimeTrendChart';
 import { PriceDistributionChart } from '../components/powerbi/PriceDistributionChart';
 import { BeadsChart } from '../components/powerbi/BeadsChart';
@@ -21,7 +21,8 @@ import { FilterBar, PageHeader } from '../components/patterns';
 import { PageCanvas, ControlRibbon } from '../components/layout';
 // Desktop-first chart height with mobile guardrail
 // Phase 2: Using TanStack Query via useAppQuery wrapper
-import { useChartHeight, MOBILE_CAPS, useAppQuery } from '../hooks';
+import { useChartHeight, MOBILE_CAPS } from '../hooks/useChartHeight';
+import { useAppQuery } from '../hooks/useAppQuery';
 // Unified filter bar component (handles desktop + mobile)
 
 // Lazy-loaded below-fold charts (reduces initial bundle by ~150KB)

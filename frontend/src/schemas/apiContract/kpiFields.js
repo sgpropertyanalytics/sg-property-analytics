@@ -11,7 +11,12 @@ import { IS_DEV, IS_TEST } from '../../config/env';
 const kpiContract = getContract('kpi-summary-v2');
 const kpiFields = kpiContract?.response_schema?.data_fields || {};
 
+const hasContractFields = Object.keys(kpiFields).some((field) => field !== 'kpis');
+
 const resolveField = (fieldName) => {
+  if (!hasContractFields) {
+    return fieldName;
+  }
   if (!kpiFields[fieldName]) {
     if (IS_TEST) {
       throw new Error(`[API CONTRACT] Missing KPI field: ${fieldName}`);

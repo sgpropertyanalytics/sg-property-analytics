@@ -16,9 +16,9 @@
 // =============================================================================
 
 export const VOID = {
-  base: '#0A0A0A',      // The void - nav background (denser than dark)
-  surface: '#1A1A1A',   // Elevated cards on void
-  edge: '#333333',      // Machined metal borders on dark
+  base: 'var(--color-void)',      // The void - nav background (denser than dark)
+  surface: 'var(--color-void-surface)',   // Elevated cards on void
+  edge: 'var(--color-void-edge)',      // Machined metal borders on dark
 };
 
 // =============================================================================
@@ -26,9 +26,9 @@ export const VOID = {
 // =============================================================================
 
 export const CANVAS = {
-  base: '#FAFAFA',      // Main content background
-  paper: '#FFFFFF',     // Cards, modals
-  grid: '#E5E7EB',      // Chart grids, subtle borders (replaces sand)
+  base: 'var(--color-canvas)',      // Main content background
+  paper: 'var(--color-canvas-paper)',     // Cards, modals
+  grid: 'var(--color-canvas-grid)',      // Chart grids, subtle borders (replaces sand)
 };
 
 // =============================================================================
@@ -36,11 +36,11 @@ export const CANVAS = {
 // =============================================================================
 
 export const INK = {
-  primary: '#0F172A',   // Slate 900 - Primary data, headers, chart bars
-  dense: '#1E293B',     // Slate 800 - Secondary emphasis
-  mid: '#475569',       // Slate 600 - Body text
-  muted: '#94A3B8',     // Slate 400 - Ghost data, historical, placeholders
-  light: '#CBD5E1',     // Slate 300 - Subtle borders
+  primary: 'var(--color-ink)',   // Slate 900 - Primary data, headers, chart bars
+  dense: 'var(--color-ink-dense)',     // Slate 800 - Secondary emphasis
+  mid: 'var(--color-ink-mid)',       // Slate 600 - Body text
+  muted: 'var(--color-ink-muted)',     // Slate 400 - Ghost data, historical, placeholders
+  light: 'var(--color-ink-light)',     // Slate 300 - Subtle borders
 };
 
 // =============================================================================
@@ -48,9 +48,9 @@ export const INK = {
 // =============================================================================
 
 export const REGION = {
-  CCR: '#0F172A',       // Slate 900 - Premium/Core (darkest)
-  RCR: '#334155',       // Slate 700 - Mid-tier
-  OCR: '#64748B',       // Slate 500 - Suburban (lightest)
+  CCR: 'var(--color-region-ccr)',       // Slate 900 - Premium/Core (darkest)
+  RCR: 'var(--color-region-rcr)',       // Slate 700 - Mid-tier
+  OCR: 'var(--color-region-ocr)',       // Slate 500 - Suburban (lightest)
 };
 
 // =============================================================================
@@ -58,9 +58,9 @@ export const REGION = {
 // =============================================================================
 
 export const SIGNAL = {
-  accent: '#F97316',    // Orange 500 - Buttons, large graphics, highlights
-  accentA11y: '#EA580C', // Orange 600 - Text/borders on light (accessible)
-  focus: '#2563EB',     // Blue 600 - Focus rings, interactive states
+  accent: 'var(--color-signal-accent)',    // Orange 500 - Buttons, large graphics, highlights
+  accentA11y: 'var(--color-signal-a11y)', // Orange 600 - Text/borders on light (accessible)
+  focus: 'var(--color-signal-focus)',     // Blue 600 - Focus rings, interactive states
 };
 
 // =============================================================================
@@ -68,9 +68,9 @@ export const SIGNAL = {
 // =============================================================================
 
 export const DELTA = {
-  positive: '#059669',  // Emerald 600 - Gains, positive change
-  negative: '#DC2626',  // Red 600 - Losses, negative change
-  neutral: '#64748B',   // Slate 500 - No change
+  positive: 'var(--color-delta-positive)',  // Emerald 600 - Gains, positive change
+  negative: 'var(--color-delta-negative)',  // Red 600 - Losses, negative change
+  neutral: 'var(--color-delta-neutral)',   // Slate 500 - No change
 };
 
 // =============================================================================
@@ -78,10 +78,10 @@ export const DELTA = {
 // =============================================================================
 
 export const SUPPLY = {
-  unsold: '#0F172A',    // Slate 900 - Heaviest (most urgent)
-  upcoming: '#334155',  // Slate 700 - Pipeline
-  gls: '#64748B',       // Slate 500 - GLS sites
-  total: '#94A3B8',     // Slate 400 - Totals (lightest)
+  unsold: 'var(--color-supply-unsold)',    // Slate 900 - Heaviest (most urgent)
+  upcoming: 'var(--color-supply-upcoming)',  // Slate 700 - Pipeline
+  gls: 'var(--color-supply-gls)',       // Slate 500 - GLS sites
+  total: 'var(--color-supply-total)',     // Slate 400 - Totals (lightest)
 };
 
 // =============================================================================
@@ -89,10 +89,10 @@ export const SUPPLY = {
 // =============================================================================
 
 export const LIQUIDITY = {
-  low: '#F59E0B',       // Amber 500 - Low Liquidity (<5 per 100 units)
-  healthy: '#059669',   // Emerald 600 - Healthy Liquidity (5-15 per 100 units)
-  high: '#DC2626',      // Red 600 - Elevated Turnover (>15 per 100 units)
-  unknown: '#94A3B8',   // Slate 400 - Unknown
+  low: 'var(--color-liquidity-low)',       // Amber 500 - Low Liquidity (<5 per 100 units)
+  healthy: 'var(--color-liquidity-healthy)',   // Emerald 600 - Healthy Liquidity (5-15 per 100 units)
+  high: 'var(--color-liquidity-high)',      // Red 600 - Elevated Turnover (>15 per 100 units)
+  unknown: 'var(--color-liquidity-unknown)',   // Slate 400 - Unknown
 };
 
 // =============================================================================
@@ -100,9 +100,9 @@ export const LIQUIDITY = {
 // =============================================================================
 
 export const STATUS = {
-  live: '#059669',      // Emerald 600 - Live/active indicators
-  positive: '#059669',  // Alias
-  negative: '#DC2626',  // Red 600 - Errors, alerts
+  live: 'var(--color-status-live)',      // Emerald 600 - Live/active indicators
+  positive: 'var(--color-status-live)',  // Alias
+  negative: 'var(--color-status-negative)',  // Red 600 - Errors, alerts
 };
 
 // =============================================================================
@@ -111,16 +111,16 @@ export const STATUS = {
 
 export const CHART = {
   // Primary data series (use INK for monochrome charts)
-  primary: INK.primary,
-  secondary: INK.muted,
-  tertiary: INK.light,
+  primary: 'var(--color-chart-1)',
+  secondary: 'var(--color-chart-3)',
+  tertiary: 'var(--color-chart-4)',
 
   // Signal color for emphasis
   accent: SIGNAL.accent,
 
   // Grid and axes
-  grid: 'rgba(15, 23, 42, 0.05)',   // Slate 900 at 5%
-  axis: 'rgba(15, 23, 42, 0.3)',    // Slate 900 at 30%
+  grid: 'rgb(var(--color-chart-1-rgb) / 0.05)',   // Slate 900 at 5%
+  axis: 'rgb(var(--color-chart-1-rgb) / 0.3)',    // Slate 900 at 30%
 
   // Region colors (for geographic data)
   regionCCR: REGION.CCR,
