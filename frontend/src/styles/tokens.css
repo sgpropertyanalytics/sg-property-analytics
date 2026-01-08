@@ -49,9 +49,6 @@
   --color-delta-positive: #059669;
   --color-delta-negative: #DC2626;
   --color-delta-neutral: #64748B;
-  --color-supply-unsold: #0F172A;
-  --color-supply-upcoming: #334155;
-  --color-supply-gls: #64748B;
   --color-supply-total: #94A3B8;
   --color-liquidity-low: #F59E0B;
   --color-liquidity-healthy: #059669;
@@ -97,14 +94,30 @@
   --color-text-muted-strong: #374151;
   --color-slate-100: #F1F5F9;
   --color-slate-200: #E5E7EB;
+  --color-slate-300: #CBD5E1;
   --color-slate-400: #94A3B8;
   --color-slate-500: #64748B;
+  --color-slate-600: #475569;
   --color-slate-700: #334155;
+  --color-slate-800: #1E293B;
+  --color-slate-900: #0F172A;
+  --color-slate-700-rgb: 51 65 85;
+  --color-slate-500-rgb: 100 116 139;
+  --color-slate-900-rgb: 15 23 42;
   --color-white: #FFFFFF;
   --color-red: #EF4444;
   --color-red-rgb: 239 68 68;
   --color-emerald: #10B981;
   --color-emerald-rgb: 16 185 129;
+  --color-orange: #F97316;
+  --color-orange-rgb: 249 115 22;
+  --color-yellow: #FACC15;
+  --color-yellow-rgb: 250 204 21;
+
+  /* Supply chart color aliases (using waterfall colors) */
+  --color-supply-unsold: var(--color-waterfall-unsold);
+  --color-supply-upcoming: var(--color-waterfall-upcoming);
+  --color-supply-gls: var(--color-waterfall-gls);
 
   /* Spacing scale (4/8-based) */
   --space-0: 0px;

@@ -2,6 +2,7 @@ import React, { useRef, useMemo } from 'react';
 import { Chart } from 'react-chartjs-2';
 import { BASE_CHART_OPTIONS } from '../../constants/chartOptions';
 import { getRegionForDistrict, DISTRICT_NAMES, isRegionDark } from '../../constants';
+import { CHART_COLORS } from '../../constants/chartPalette';
 
 // Singleton registration - ensures Chart.js components are registered once
 import '../../lib/chartjs-registry';
@@ -38,7 +39,7 @@ export const DistrictMicroChart = React.memo(function DistrictMicroChart({ distr
   const headerText = REGION_HEADER_TEXT[region] || REGION_HEADER_TEXT.OCR;
 
   // Standard line color (black for all charts)
-  const lineColor = '#1f2937'; // Dark gray/black
+  const lineColor = CHART_COLORS.slate800;
 
   // Calculate local min/max and growth metrics
   const { latestPsf, paddedMin, paddedMax, growthPercent, isSparse } = useMemo(() => {

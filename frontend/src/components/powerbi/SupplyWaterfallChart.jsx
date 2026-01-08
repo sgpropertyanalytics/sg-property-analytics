@@ -32,6 +32,7 @@ import {
   getDistrictChartOptions,
   waterfallConnectorPlugin,
 } from '../../adapters/supply/waterfallAdapter';
+import { CHART_COLORS } from '../../constants/chartPalette';
 
 // Register custom waterfall connector plugin (chart-specific)
 registerPlugin(waterfallConnectorPlugin);
@@ -137,16 +138,16 @@ function SupplyWaterfallChartBase({
             <div className="flex flex-wrap items-center gap-4 text-xs">
               <span className="text-brand-blue font-medium">Supply:</span>
               <div className="flex items-center gap-1.5">
-                <div className="w-4 h-3 rounded" style={{ backgroundColor: '#6b4226' }} />
+                <div className="w-4 h-3 rounded" style={{ backgroundColor: CHART_COLORS.supplyUnsold }} />
                 <span className="text-brand-navy">Unsold Inventory</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <div className="w-4 h-3 rounded" style={{ backgroundColor: '#9c6644' }} />
+                <div className="w-4 h-3 rounded" style={{ backgroundColor: CHART_COLORS.supplyUpcoming }} />
                 <span className="text-brand-navy">Upcoming Launches</span>
               </div>
               {includeGls && (
                 <div className="flex items-center gap-1.5">
-                  <div className="w-4 h-3 rounded" style={{ backgroundColor: '#c4a77d' }} />
+                  <div className="w-4 h-3 rounded" style={{ backgroundColor: CHART_COLORS.supplyGls }} />
                   <span className="text-brand-navy">GLS Pipeline</span>
                 </div>
               )}

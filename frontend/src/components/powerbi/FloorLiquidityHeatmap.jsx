@@ -9,6 +9,7 @@ import {
   LIQUIDITY_COLORS,
   getLiquidityColor,
 } from '../../constants';
+import { CHART_COLORS } from '../../constants/chartPalette';
 import { assertKnownVersion } from '../../adapters';
 import {
   FloorLiquidityField,
@@ -487,7 +488,7 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
                       // Color intensity based on percentage (higher % = darker)
                       const intensity = Math.min(percentage / 40, 1); // 40% = max intensity
                       const bgColor = hasData
-                        ? `rgba(51, 65, 85, ${0.15 + intensity * 0.45})`  // slate-700
+                        ? CHART_COLORS.slate700Alpha(0.15 + intensity * 0.45)
                         : LIQUIDITY_COLORS.insufficient;
 
                       return (
