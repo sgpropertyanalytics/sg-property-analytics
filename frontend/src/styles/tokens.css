@@ -1,13 +1,14 @@
 :root {
   --font-display: "JetBrains Mono", "Geist Sans", system-ui, -apple-system, sans-serif;
+  --font-display-serif: "Playfair Display", Georgia, serif;
   --font-sans: "Inter", system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace;
 
   /* Core surfaces */
-  --color-bg: #F2EFE9;
+  --color-bg: #FAF8F5;  /* Warm cream / bond paper (Atlas aesthetic) */
   --color-surface: transparent;
   --color-surface-elevated: #1A1A1A;
-  --color-border: #A8A29E;
+  --color-border: #E8E4DE;  /* Warm gray borders */
   --color-border-strong: #333333;
 
   /* Text */
@@ -32,9 +33,9 @@
   --color-void: #0A0A0A;
   --color-void-surface: #1A1A1A;
   --color-void-edge: #333333;
-  --color-canvas: #F2EFE9;
+  --color-canvas: #FAF8F5;  /* Warm cream / bond paper */
   --color-canvas-paper: transparent;
-  --color-canvas-grid: #A8A29E;
+  --color-canvas-grid: #E8E4DE;  /* Warm gray grid lines */
   --color-ink: #0F172A;
   --color-ink-dense: #1E293B;
   --color-ink-mid: #475569;
