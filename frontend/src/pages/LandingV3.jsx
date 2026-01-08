@@ -69,13 +69,13 @@ function SectionTitle({ eyebrow, title, muted, rightSlot }) {
     <div className="flex items-end justify-between gap-6">
       <div>
         {eyebrow ? (
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
+          <div className="font-mono text-[10px] uppercase tracking-[0.15em] text-black/40">
             {eyebrow}
           </div>
         ) : null}
-        <div className="mt-2 font-display text-2xl md:text-3xl font-bold tracking-tighter text-black glitch-hover cursor-default">
+        <div className="mt-2 font-display text-2xl md:text-3xl font-normal uppercase tracking-[-0.02em] text-black cursor-default">
           {title}{' '}
-          {muted ? <span className="text-black/60">{muted}</span> : null}
+          {muted ? <span className="text-black/40">{muted}</span> : null}
         </div>
       </div>
       {rightSlot ? <div className="hidden md:block">{rightSlot}</div> : null}
@@ -105,10 +105,10 @@ function SectionDivider() {
 
 function LiveDot() {
   return (
-    <span className="relative inline-flex h-2 w-2">
+    <span className="relative inline-flex h-1.5 w-1.5">
       <span className="absolute inline-flex h-full w-full bg-emerald-500 opacity-70 animate-ping" />
       <span
-        className="relative inline-flex h-2 w-2 bg-emerald-600 rounded-full"
+        className="relative inline-flex h-1.5 w-1.5 bg-emerald-500"
         style={{ boxShadow: '0 0 8px rgba(16, 185, 129, 0.6)' }}
       />
     </span>
@@ -222,38 +222,47 @@ function CommandBar({ onExecute }) {
     }
   };
 
+  const [cursorVisible, setCursorVisible] = useState(true);
+
+  useEffect(() => {
+    const interval = setInterval(() => setCursorVisible(v => !v), 530);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="relative">
-      <div className="flex items-stretch border border-black/10 bg-[#fafafa] command-bar-focus">
-        <div className="flex items-center gap-2 px-3 border-r border-black/10">
-          <Command className="h-4 w-4 text-black/60" />
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60 hidden sm:inline">
-            Cmd
+      {/* CLI-style input with bottom border only */}
+      <div className="flex items-stretch bg-transparent command-bar-focus">
+        <div className="flex items-center gap-2 pr-3">
+          <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-black/40">
+            root@sg-terminal:~$
           </span>
         </div>
-        <input
-          ref={inputRef}
-          value={value}
-          onChange={(e) => {
-            setValue(e.target.value);
-            setIsOpen(true);
-            setActiveIndex(0);
-          }}
-          onFocus={() => setIsOpen(true)}
-          onBlur={() => {
-            window.setTimeout(() => setIsOpen(false), 120);
-          }}
-          onKeyDown={onKeyDown}
-          placeholder="Type a command…"
-          className="flex-1 min-w-0 px-3 py-3 font-mono text-xs tracking-wide text-black/70 placeholder:text-black/60 bg-transparent outline-none"
-        />
+        <div className="flex-1 border-b border-black/30 flex items-center">
+          <span className={`font-mono text-sm text-black ${cursorVisible ? 'opacity-100' : 'opacity-0'}`}>█</span>
+          <input
+            ref={inputRef}
+            value={value}
+            onChange={(e) => {
+              setValue(e.target.value);
+              setIsOpen(true);
+              setActiveIndex(0);
+            }}
+            onFocus={() => setIsOpen(true)}
+            onBlur={() => {
+              window.setTimeout(() => setIsOpen(false), 120);
+            }}
+            onKeyDown={onKeyDown}
+            placeholder="scan --target=D10 --type=New Sale --psf<2800"
+            className="flex-1 min-w-0 py-2 font-mono text-xs tracking-wide text-black/80 placeholder:text-black/30 bg-transparent outline-none"
+          />
+        </div>
         <button
           type="button"
           onClick={() => execute(value || filtered[0] || '')}
-          className="group flex items-center gap-2 px-4 bg-black hover:bg-black/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
+          className="group flex items-center gap-2 ml-4 px-4 py-2 border border-black bg-transparent hover:bg-black hover:text-white text-black focus:outline-none transition-colors duration-0"
         >
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-white">Enter Terminal</span>
-          <ArrowRight className="h-4 w-4 text-white group-hover:translate-x-0.5 transition-transform" />
+          <span className="font-mono text-[10px] uppercase tracking-[0.15em]">[ EXECUTE_ ]</span>
         </button>
       </div>
 
@@ -1061,46 +1070,86 @@ function PulseTicker({ transactions, onTransactionClick, activeDistrict, isLoadi
 
   if (isLoading) {
     return (
-      <div className="overflow-hidden border border-black/10 bg-[#fafafa] h-10 flex items-center justify-center">
-        <div className="font-mono text-[11px] text-black/40 tracking-wider">LOADING_FEED...</div>
+      <div className="w-full h-10 border-y border-black/10 flex items-center bg-[#fafafa]">
+        {/* Status Badge */}
+        <div className="flex items-center gap-2 px-4 h-full border-r border-black/10 shrink-0">
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="relative inline-flex h-1.5 w-1.5 bg-black/30" />
+          </span>
+          <span className="font-mono text-[10px] tracking-[0.15em] uppercase text-black/40">
+            LOADING
+          </span>
+        </div>
+        {/* Marquee Area */}
+        <div className="flex-1 flex items-center justify-center">
+          <span className="font-mono text-[10px] text-black/40 tracking-wider uppercase">LOADING_FEED...</span>
+        </div>
       </div>
     );
   }
 
   if (!transactions?.length) {
     return (
-      <div className="overflow-hidden border border-black/10 bg-[#fafafa] h-10 flex items-center justify-center">
-        <div className="font-mono text-[11px] text-black/40 tracking-wider">NO_SIGNAL</div>
+      <div className="w-full h-10 border-y border-black/10 flex items-center bg-[#fafafa]">
+        {/* Status Badge */}
+        <div className="flex items-center gap-2 px-4 h-full border-r border-black/10 shrink-0">
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="relative inline-flex h-1.5 w-1.5 bg-black/30" />
+          </span>
+          <span className="font-mono text-[10px] tracking-[0.15em] uppercase text-black/40">
+            OFFLINE
+          </span>
+        </div>
+        {/* Marquee Area */}
+        <div className="flex-1 flex items-center justify-center">
+          <span className="font-mono text-[10px] text-black/40 tracking-wider uppercase">NO_SIGNAL</span>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="overflow-hidden border border-black/10 bg-[#fafafa] h-10">
-      <div className="flex items-center h-full animate-ticker whitespace-nowrap px-4">
-        {doubled.map((tx, idx) => (
-          <button
-            key={`${tx.project}-${idx}`}
-            type="button"
-            onClick={() => onTransactionClick(tx.district)}
-            className={`font-mono text-[11px] tracking-wide transition-colors flex items-center ${
-              activeDistrict === tx.district
-                ? 'text-emerald-600'
-                : 'text-black/50 hover:text-black/70'
-            }`}
-          >
-            <span className="text-black/30">[</span>
-            <span className="text-black/60">{tx.district}</span>
-            <span className="text-black/30">]</span>
-            <span className="mx-1.5">{tx.project}</span>
-            <span className="text-black/30">|</span>
-            <span className="ml-1.5 text-black/50">{formatBedroom(tx.bedroom)}</span>
-            <span className="ml-1.5 text-black/30">[</span>
-            <span>{formatPrice(tx.price)}</span>
-            <span className="text-black/30">]</span>
-            <span className="mx-4 text-black/20">//</span>
-          </button>
-        ))}
+    <div className="w-full h-10 border-y border-black/10 flex items-center bg-[#fafafa]">
+      {/* Status Badge - Fixed Width */}
+      <div className="flex items-center gap-2 px-4 h-full border-r border-black/10 shrink-0">
+        <span className="relative flex h-1.5 w-1.5">
+          <span className="animate-ping absolute inline-flex h-full w-full bg-emerald-500 opacity-75" />
+          <span className="relative inline-flex h-1.5 w-1.5 bg-emerald-500" />
+        </span>
+        <span className="font-mono text-[10px] tracking-[0.15em] uppercase text-black font-medium">
+          ACTIVE (LATEST TXS)
+        </span>
+      </div>
+
+      {/* Marquee Area - Fills remaining space */}
+      <div className="flex-1 overflow-hidden relative flex items-center">
+        <div className="flex items-center h-full animate-ticker whitespace-nowrap pl-4">
+          {doubled.map((tx, idx) => (
+            <button
+              key={`${tx.project}-${idx}`}
+              type="button"
+              onClick={() => onTransactionClick(tx.district)}
+              className={`font-mono text-[10px] tracking-wide transition-colors flex items-center uppercase ${
+                activeDistrict === tx.district
+                  ? 'text-emerald-600'
+                  : 'text-black/50 hover:text-black/70'
+              }`}
+            >
+              <span className="text-black/30">[</span>
+              <span className="text-black/60">{tx.district}</span>
+              <span className="text-black/30">]</span>
+              <span className="mx-1.5">{tx.project}</span>
+              <span className="text-black/30">|</span>
+              <span className="ml-1.5 text-black/50">{formatBedroom(tx.bedroom)}</span>
+              <span className="ml-1.5 text-black/30">[</span>
+              <span>{formatPrice(tx.price)}</span>
+              <span className="text-black/30">]</span>
+              <span className="mx-4 text-black/20">//</span>
+            </button>
+          ))}
+        </div>
+        {/* Right-side fade gradient */}
+        <div className="absolute right-0 top-0 h-full w-16 bg-gradient-to-l from-[#fafafa] to-transparent z-10 pointer-events-none" />
       </div>
     </div>
   );
@@ -1577,16 +1626,16 @@ export default function LandingV3() {
               <button
                 type="button"
                 onClick={onAnyCTA}
-                className="px-4 py-2 border border-black/10 text-black font-medium hover:border-black/20 hover:bg-black/[0.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
+                className="px-4 py-2 border border-black bg-transparent text-black font-mono text-[10px] uppercase tracking-[0.15em] hover:bg-black hover:text-white focus:outline-none transition-colors duration-0"
               >
-                Log In
+                LOG IN
               </button>
               <button
                 type="button"
                 onClick={onAnyCTA}
-                className="px-4 py-2 bg-black text-[#fafafa] font-medium hover:bg-black/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
+                className="px-4 py-2 border border-black bg-black text-white font-mono text-[10px] uppercase tracking-[0.15em] hover:bg-transparent hover:text-black focus:outline-none transition-colors duration-0"
               >
-                Request Access
+                REQUEST ACCESS
               </button>
             </div>
           </div>
@@ -1612,32 +1661,51 @@ export default function LandingV3() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.5 }}
-                    className="flex items-center gap-3"
+                    className="flex items-center gap-4"
                   >
-                    <MonoPill leftDot={<LiveDot />}>Live URA Data</MonoPill>
-                    <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
-                      v3 // preview
+                    <div className="flex items-center gap-2">
+                      <LiveDot />
+                      <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-emerald-600">
+                        SYSTEM ONLINE
+                      </span>
                     </div>
+                    <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-black/40">
+                      //
+                    </span>
+                    <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-black/50">
+                      DATA INTEGRITY: 100%
+                    </span>
                   </motion.div>
 
+                  {/* Sector Label */}
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.5, delay: 0.05 }}
+                    className="mt-4 font-mono text-[11px] uppercase tracking-[0.2em] text-black/50"
+                  >
+                    SECTOR: PRIVATE RESIDENTIAL // SINGAPORE
+                  </motion.div>
+
+                  {/* Main Headline - Tight, Structural */}
                   <motion.h1
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ duration: 0.6, delay: 0.05 }}
-                    className="mt-6 font-display text-4xl sm:text-5xl md:text-6xl xl:text-7xl font-bold tracking-tighter leading-[1.05]"
+                    transition={{ duration: 0.6, delay: 0.1 }}
+                    className="mt-2 font-display text-4xl sm:text-5xl md:text-6xl xl:text-7xl font-normal uppercase tracking-[-0.04em] leading-[0.95]"
                   >
-                    <span className="block text-black">Singapore Condo</span>
-                    <span className="block text-black/60" style={{ whiteSpace: 'nowrap' }}>Market Intelligence</span>
+                    <span className="block text-black">SGP:Terminal</span>
+                    <span className="block text-black/60 text-lg sm:text-xl md:text-2xl mt-2">Private Residential Intelligence</span>
                   </motion.h1>
 
-                  <motion.p
+                  <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ duration: 0.6, delay: 0.12 }}
-                    className="mt-6 text-base sm:text-lg leading-relaxed text-black/60 max-w-xl"
+                    transition={{ duration: 0.6, delay: 0.15 }}
+                    className="mt-6 font-mono text-xs leading-relaxed text-black/50 max-w-md tracking-wide"
                   >
-                    Data-driven price benchmarking across projects, locations, and market segments — based on 100,000+ private property transactions.
-                  </motion.p>
+                    <span className="text-black/70">103,379</span> transactions indexed // <span className="text-black/70">28</span> districts // <span className="text-black/70">5Y</span> historical depth
+                  </motion.div>
 
                   <motion.div
                     initial={{ opacity: 0 }}
@@ -1774,7 +1842,6 @@ export default function LandingV3() {
               eyebrow="SURVEILLANCE"
               title="SIGNAL_FEED"
               muted="live_stream"
-              rightSlot={<MonoPill leftDot={<div className="heartbeat-led" />}>ACTIVE</MonoPill>}
             />
             <div className="mt-6">
               <LiveSignalEcosystem />
