@@ -14,7 +14,7 @@ export function DebugModeIndicator() {
   return (
     <button
       onClick={toggleDebugMode}
-      className="fixed bottom-4 left-4 z-[9999] flex items-center gap-2 px-3 py-2 bg-black/90 text-green-400 text-xs font-mono rounded-lg shadow-lg border border-green-500/50 hover:bg-black transition-colors"
+      className="fixed bottom-4 left-4 z-debug flex items-center gap-2 px-3 py-2 bg-black/90 text-green-400 text-xs font-mono rounded-lg shadow-lg border border-green-500/50 hover:bg-black transition-colors"
       title="Click to disable debug mode (or press Ctrl+Shift+D)"
     >
       <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />

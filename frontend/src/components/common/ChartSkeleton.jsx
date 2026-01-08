@@ -41,7 +41,7 @@ export function ChartSkeleton({ type = 'default', height = 300, className = '' }
 // Shared header skeleton
 function SkeletonHeader({ hasSubtitle = true }) {
   return (
-    <div className="px-4 py-3 border-b border-[#d4d0c8]/25 shrink-0">
+    <div className="px-4 py-3 border-b border-skeleton-border/25 shrink-0">
       <div className="skeleton-shimmer h-5 w-48 rounded" />
       {hasSubtitle && (
         <div className="skeleton-shimmer h-3 w-32 rounded mt-2" />
@@ -53,7 +53,7 @@ function SkeletonHeader({ hasSubtitle = true }) {
 // Shared footer skeleton
 function SkeletonFooter() {
   return (
-    <div className="shrink-0 h-11 px-4 bg-[#f5f2ed]/40 border-t border-[#d4d0c8]/30 flex items-center justify-between">
+    <div className="shrink-0 h-11 px-4 bg-skeleton-bg/40 border-t border-skeleton-border/30 flex items-center justify-between">
       <div className="skeleton-shimmer h-3 w-24 rounded" />
       <div className="skeleton-shimmer h-3 w-32 rounded" />
     </div>
@@ -92,7 +92,7 @@ function BarSkeleton({ height, className }) {
         </div>
 
         {/* X-axis line */}
-        <div className="absolute bottom-3 left-12 right-4 h-px bg-[#d4d0c8]/30" />
+        <div className="absolute bottom-3 left-12 right-4 h-px bg-skeleton-border/30" />
 
         {/* X-axis labels */}
         <div className="absolute bottom-0 left-12 right-4 flex justify-around">
@@ -265,7 +265,7 @@ function GridSkeleton({ height, className }) {
           {Array.from({ length: rows * cols }).map((_, i) => (
             <div
               key={i}
-              className="skeleton-shimmer rounded border border-[#d4d0c8]/15"
+              className="skeleton-shimmer rounded border border-skeleton-border/15"
               style={{ animationDelay: `${(i % cols) * 0.12 + Math.floor(i / cols) * 0.08}s` }}
             />
           ))}
@@ -288,7 +288,7 @@ function TableSkeleton({ height, className }) {
       {/* Table area */}
       <div className="flex-1 overflow-hidden">
         {/* Table header */}
-        <div className="flex gap-4 px-4 py-2.5 bg-[#f5f2ed]/30 border-b border-[#d4d0c8]/25">
+        <div className="flex gap-4 px-4 py-2.5 bg-skeleton-bg/30 border-b border-skeleton-border/25">
           <div className="skeleton-shimmer h-3.5 w-20 rounded" />
           <div className="skeleton-shimmer h-3.5 w-32 rounded flex-1" />
           <div className="skeleton-shimmer h-3.5 w-16 rounded" />
@@ -301,7 +301,7 @@ function TableSkeleton({ height, className }) {
           {Array.from({ length: rows }).map((_, rowIdx) => (
             <div
               key={rowIdx}
-              className="flex gap-4 py-2.5 border-b border-[#d4d0c8]/12"
+              className="flex gap-4 py-2.5 border-b border-skeleton-border/12"
             >
               <div className="skeleton-shimmer h-3.5 w-20 rounded" style={{ animationDelay: `${rowIdx * 0.1}s` }} />
               <div className="skeleton-shimmer h-3.5 w-32 rounded flex-1" style={{ animationDelay: `${rowIdx * 0.1 + 0.05}s` }} />
@@ -323,7 +323,7 @@ function MapSkeleton({ height, className }) {
   return (
     <div className={className} style={{ height }}>
       {/* Map header with filter placeholders */}
-      <div className="px-4 py-3 border-b border-[#d4d0c8]/25 shrink-0">
+      <div className="px-4 py-3 border-b border-skeleton-border/25 shrink-0">
         <div className="flex items-center justify-between">
           <div>
             <div className="skeleton-shimmer h-5 w-40 rounded" />
@@ -338,7 +338,7 @@ function MapSkeleton({ height, className }) {
       </div>
 
       {/* Map area */}
-      <div className="flex-1 relative bg-[#fcfcfb]" style={{ height: height - 100 }}>
+      <div className="flex-1 relative bg-white" style={{ height: height - 100 }}>
         <svg
           className="w-full h-full p-6"
           viewBox="0 0 400 280"
@@ -413,7 +413,7 @@ function MapSkeleton({ height, className }) {
         </svg>
 
         {/* Legend placeholder */}
-        <div className="absolute bottom-4 right-4 bg-white/90 rounded-lg p-3 border border-[#d4d0c8]/20">
+        <div className="absolute bottom-4 right-4 bg-white/90 rounded-lg p-3 border border-skeleton-border/20">
           <div className="skeleton-shimmer h-3 w-16 rounded mb-2" />
           <div className="flex items-center gap-1">
             {[0, 1, 2, 3, 4].map((i) => (

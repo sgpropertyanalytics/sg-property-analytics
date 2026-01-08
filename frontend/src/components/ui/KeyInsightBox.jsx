@@ -129,7 +129,7 @@ export function KeyInsightBox({
                   ref={refs.setFloating}
                   style={floatingStyles}
                   {...getFloatingProps()}
-                  className="z-[9999] w-72 max-w-[calc(100vw-2rem)] p-3 bg-brand-navy text-white text-xs leading-relaxed rounded shadow-lg whitespace-pre-line"
+                  className="z-toast w-72 max-w-[calc(100vw-2rem)] p-3 bg-brand-navy text-white text-xs leading-relaxed rounded shadow-lg whitespace-pre-line"
                 >
                   {tooltip}
                 </div>

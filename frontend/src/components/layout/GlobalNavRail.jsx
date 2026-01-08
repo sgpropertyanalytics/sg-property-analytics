@@ -18,7 +18,7 @@ import { AccountSettingsModal } from '../AccountSettingsModal';
  * - Text: mono-light (#A3A3A3) inactive → mono-canvas (#FAFAFA) active/hover
  *
  * Section Headers ("Structural Dividers"):
- * - text-[10px] font-mono uppercase tracking-[0.18em]
+ * - text-data-xs font-mono uppercase tracking-[0.18em]
  * - Color: mono-mid → mono-light on active group
  *
  * NavItem ("Interactive Targets"):
@@ -99,13 +99,13 @@ function NavItem({ item, isActive, onClick, collapsed = false }) {
    // State-specific styles (INDUSTRIAL MACHINE - "Physical LED Light Source")
    // Active: The Source (border) + The Spill (gradient) + The Reflection (inset shadow)
    // Text: Warm off-white (#E7E5E4) to reduce glare against lighter sidebar
-   const activeStyles = 'border-emerald-500 text-[#E7E5E4] bg-gradient-to-r from-emerald-500/10 to-transparent shadow-[inset_10px_0_15px_-3px_rgba(16,185,129,0.2)]';
+   const activeStyles = 'border-emerald-500 text-nav-text bg-gradient-to-r from-emerald-500/10 to-transparent shadow-[inset_10px_0_15px_-3px_rgba(16,185,129,0.2)]';
    // Inactive: Warm stone (#A8A29E) instead of cold zinc for atmospheric harmony
-   const inactiveStyles = 'border-transparent text-[#A8A29E] hover:text-[#E7E5E4] hover:bg-white/5';
+   const inactiveStyles = 'border-transparent text-nav-muted hover:text-nav-text hover:bg-white/5';
    const comingSoonStyles = 'border-transparent text-mono-mid cursor-not-allowed opacity-60';
 
    // Badge styles (VOID THEME)
-   const badgeBase = 'ml-auto flex-shrink-0 text-[10px] font-bold tracking-wide px-1.5 py-0.5 rounded-none border transition-none';
+   const badgeBase = 'ml-auto flex-shrink-0 text-data-xs font-bold tracking-wide px-1.5 py-0.5 rounded-none border transition-none';
    const badgeActive = 'bg-mono-canvas text-mono-void border-mono-canvas';
    const badgeInactive = 'bg-mono-surface text-mono-light border-mono-edge group-hover:bg-mono-canvas group-hover:text-mono-void';
    const badgeComingSoon = 'bg-mono-surface text-mono-mid border-mono-edge';
@@ -128,7 +128,7 @@ function NavItem({ item, isActive, onClick, collapsed = false }) {
         text-sm flex-shrink-0 transition-all duration-200
         ${isActive
           ? 'text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]'
-          : 'opacity-70 text-[#A8A29E] group-hover:text-[#E7E5E4]'
+          : 'opacity-70 text-nav-muted group-hover:text-nav-text'
         }
       `}>
         {item.icon}
@@ -162,7 +162,7 @@ function NavItem({ item, isActive, onClick, collapsed = false }) {
            absolute left-full ml-2 z-50
            hidden group-hover:block
            px-2 py-1.5
-           font-mono text-[10px] uppercase tracking-[0.18em] text-mono-canvas
+           font-mono text-data-xs uppercase tracking-[0.18em] text-mono-canvas
            bg-black border border-black/20
            rounded-none weapon-shadow
            whitespace-nowrap
@@ -235,7 +235,7 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
           /* THE OBSIDIAN BLEND - Atmospheric Perspective */
           /* Heavy Iron (#262321) at 95% opacity - derived by darkening beige by 85% */
           /* Contains same yellow/orange DNA as paper for perfect blending */
-          bg-[#262321]/95
+          bg-nav-bg/95
 
           /* THE ATMOSPHERE - Frosted Dark Glass Effect */
           /* Subtle see-through creates "translucent material" not "solid wall" */
@@ -267,7 +267,7 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
         </div>
         {/* Home label - staggered animation (VOID THEME) */}
         <span className={`
-          font-mono text-[10px] uppercase tracking-[0.18em] text-mono-light group-hover:text-mono-canvas whitespace-nowrap overflow-hidden
+          font-mono text-data-xs uppercase tracking-[0.18em] text-mono-light group-hover:text-mono-canvas whitespace-nowrap overflow-hidden
           ${TRANSITION_CLASS}
           ${collapsed ? 'w-0 opacity-0 -translate-x-4' : 'w-auto opacity-100 translate-x-0 delay-100'}
         `}>
@@ -311,12 +311,12 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
                      select-none
                      ${hasActiveItem
                        ? 'text-mono-light'
-                       : 'text-[#525252] hover:text-mono-light'
+                       : 'text-mono-mid hover:text-mono-light'
                      }
                    `}
                    aria-expanded={isExpanded}
                  >
-                   <span className="font-mono text-[10px] uppercase tracking-[0.15em] leading-none min-w-0 flex-1 font-bold tabular-nums">
+                   <span className="font-mono text-data-xs uppercase tracking-[0.15em] leading-none min-w-0 flex-1 font-bold tabular-nums">
                      {group.label}
                    </span>
                    <svg
@@ -389,7 +389,7 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
                absolute left-full ml-2 z-50
                hidden group-hover:block
                px-2 py-1.5
-               font-mono text-[10px] uppercase tracking-[0.18em] text-mono-canvas
+               font-mono text-data-xs uppercase tracking-[0.18em] text-mono-canvas
                bg-black border border-black/20
                rounded-none weapon-shadow
                whitespace-nowrap
@@ -408,8 +408,8 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
 
         {/* System Metrics Footer - "Hacker Density" */}
         {!collapsed && (
-          <div className="p-4 border-t border-[#292524]">
-            <div className="grid grid-cols-2 gap-2 text-[10px] font-mono text-[#78716C]">
+          <div className="p-4 border-t border-mono-edge">
+            <div className="grid grid-cols-2 gap-2 text-data-xs font-mono text-mono-mid">
               <div className="flex flex-col">
                 <span className="opacity-50">LATENCY</span>
                 <span className="text-emerald-500 tabular-nums">12ms</span>
@@ -420,7 +420,7 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
               </div>
               <div className="flex flex-col col-span-2 mt-2">
                 <span className="opacity-50">STATUS</span>
-                <span className="text-[#A8A29E]">SYSTEM_OPTIMAL</span>
+                <span className="text-nav-muted">SYSTEM_OPTIMAL</span>
               </div>
             </div>
           </div>

@@ -67,6 +67,17 @@
   color: var(--color-mono-mid);
 }
 
+/* Data typography scale - standardized small text sizes */
+.text-data-xs {
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.text-data-2xs {
+  font-size: 8px;
+  line-height: 1.4;
+}
+
 /* Content Card Base - Industrial Wireframe aesthetic */
 .weapon-card {
   background: transparent;

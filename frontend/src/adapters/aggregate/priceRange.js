@@ -20,6 +20,7 @@
 
 import { assertKnownVersion } from './validation';
 import { BEDROOM_ORDER_NUMERIC } from '../../constants';
+import { PRICE_RANGE } from '../../constants/colors';
 
 // K-anonymity threshold (same as budget heatmap)
 const MIN_CELL_COUNT = 5;
@@ -188,25 +189,25 @@ export function getBudgetZoneStyle(zone) {
     case 'bargain':
       return {
         label: 'Good deal',
-        color: '#166534', // green-800
-        bgColor: '#DCFCE7', // green-100
+        color: PRICE_RANGE.below.text,
+        bgColor: PRICE_RANGE.below.bg,
       };
     case 'fair':
       return {
         label: 'Fair price',
-        color: '#1E40AF', // blue-800
-        bgColor: '#DBEAFE', // blue-100
+        color: PRICE_RANGE.within.text,
+        bgColor: PRICE_RANGE.within.bg,
       };
     case 'premium':
       return {
         label: 'Above market',
-        color: '#9A3412', // orange-800
-        bgColor: '#FEF3C7', // amber-100
+        color: PRICE_RANGE.above.text,
+        bgColor: PRICE_RANGE.above.bg,
       };
     default:
       return {
         label: '',
-        color: '#6B7280',
+        color: PRICE_RANGE.unknown.text,
         bgColor: 'transparent',
       };
   }

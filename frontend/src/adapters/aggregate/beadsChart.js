@@ -15,19 +15,14 @@
  */
 
 import { isDev } from './validation';
+import { BEADS, INK } from '../../constants/colors';
 
 /**
  * Color palette for bedroom types.
  * High-contrast progression for clear differentiation.
- * Default view (2BR, 3BR, 4BR) uses sky/blue/navy for maximum contrast.
+ * Imported from design system (colors.js → tokens.css).
  */
-const BEDROOM_COLORS = {
-  1: 'rgba(229, 231, 235, 0.9)', // Slate 200 #E5E7EB - lightest
-  2: 'rgba(148, 163, 184, 0.9)', // Slate 400 #94A3B8 - light
-  3: 'rgba(51, 65, 85, 0.9)', // Slate 700 #334155 - medium
-  4: 'rgba(15, 23, 42, 0.9)', // Slate 900 #0F172A - dark
-  5: 'rgba(120, 80, 60, 0.9)', // Brown accent for 5BR to stand out
-};
+const BEDROOM_COLORS = BEADS;
 
 /**
  * Bedroom labels for display.
@@ -157,7 +152,7 @@ export const transformBeadsChartSeries = (rawData) => {
     hoverBackgroundColor: BEDROOM_COLORS[br]
       ? BEDROOM_COLORS[br].replace('0.9', '1')
       : BEDROOM_COLORS[5].replace('0.9', '1'),
-    hoverBorderColor: '#0F172A',
+    hoverBorderColor: INK.primary,
     hoverBorderWidth: 3,
   }));
 

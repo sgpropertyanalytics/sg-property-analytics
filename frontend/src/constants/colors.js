@@ -139,6 +139,62 @@ export const REGION_BADGE_CLASSES = {
 };
 
 // =============================================================================
+// WATERFALL (Supply Chart - Warm Earth Tones)
+// =============================================================================
+
+export const WATERFALL = {
+  unsoldInventory: 'var(--color-waterfall-unsold)',
+  upcomingLaunches: 'var(--color-waterfall-upcoming)',
+  glsPipeline: 'var(--color-waterfall-gls)',
+  glsExcluded: 'rgba(196, 167, 125, 0.3)',  // GLS @ 30% opacity
+  total: 'var(--color-waterfall-total)',
+  spacer: 'transparent',
+  connector: 'var(--color-waterfall-connector)',
+};
+
+export const WATERFALL_BORDER = {
+  unsoldInventory: 'var(--color-waterfall-unsold-border)',
+  upcomingLaunches: 'var(--color-waterfall-upcoming-border)',
+  glsPipeline: 'var(--color-waterfall-gls-border)',
+  glsExcluded: 'rgba(166, 139, 100, 0.5)',
+  total: 'var(--color-waterfall-total-border)',
+};
+
+// =============================================================================
+// PRICE_RANGE (Semantic Colors for Price Categories)
+// =============================================================================
+
+export const PRICE_RANGE = {
+  below: {
+    text: 'var(--color-price-below-text)',
+    bg: 'var(--color-price-below-bg)',
+  },
+  within: {
+    text: 'var(--color-price-within-text)',
+    bg: 'var(--color-price-within-bg)',
+  },
+  above: {
+    text: 'var(--color-price-above-text)',
+    bg: 'var(--color-price-above-bg)',
+  },
+  unknown: {
+    text: 'var(--color-price-unknown-text)',
+  },
+};
+
+// =============================================================================
+// BEADS (Bedroom Distribution Chart)
+// =============================================================================
+
+export const BEADS = {
+  1: 'rgb(var(--color-beads-1-rgb) / 0.9)',  // Slate 200
+  2: 'rgb(var(--color-beads-2-rgb) / 0.9)',  // Slate 400
+  3: 'rgb(var(--color-beads-3-rgb) / 0.9)',  // Slate 700
+  4: 'rgb(var(--color-beads-4-rgb) / 0.9)',  // Slate 900
+  5: 'rgb(var(--color-beads-5-rgb) / 0.9)',  // Brown accent for 5BR
+};
+
+// =============================================================================
 // HELPER FUNCTIONS
 // =============================================================================
 

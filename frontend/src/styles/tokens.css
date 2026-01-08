@@ -153,6 +153,50 @@
   --z-overlay: 50;
   --z-modal: 70;
   --z-toast: 90;
+  --z-debug: 100;
+
+  /* Nav-specific colors (Smoked Obsidian aesthetic) */
+  --color-nav-bg: #262321;
+  --color-nav-bg-rgb: 38 35 33;
+  --color-nav-text: #E7E5E4;
+  --color-nav-text-muted: #A8A29E;
+
+  /* Skeleton loading colors (for ChartSkeleton) */
+  --color-skeleton-bg: #f5f2ed;
+  --color-skeleton-bg-rgb: 245 242 237;
+  --color-skeleton-border: #d4d0c8;
+  --color-skeleton-border-rgb: 212 208 200;
+
+  /* Canvas RGB for opacity variants */
+  --color-canvas-rgb: 242 239 233;
+  --color-bg-rgb: 242 239 233;
+
+  /* Waterfall chart palette (warm earth tones for supply visualization) */
+  --color-waterfall-unsold: #6b4226;
+  --color-waterfall-upcoming: #9c6644;
+  --color-waterfall-gls: #c4a77d;
+  --color-waterfall-total: #e8dcc8;
+  --color-waterfall-connector: #c4a77d;
+  --color-waterfall-unsold-border: #5a361f;
+  --color-waterfall-upcoming-border: #7d5236;
+  --color-waterfall-gls-border: #a68b64;
+  --color-waterfall-total-border: #d4c9b8;
+
+  /* Price range semantic colors */
+  --color-price-below-text: #166534;
+  --color-price-below-bg: #DCFCE7;
+  --color-price-within-text: #1E40AF;
+  --color-price-within-bg: #DBEAFE;
+  --color-price-above-text: #9A3412;
+  --color-price-above-bg: #FEF3C7;
+  --color-price-unknown-text: #6B7280;
+
+  /* Beads chart palette (slate with opacity) */
+  --color-beads-1-rgb: 229 231 235;
+  --color-beads-2-rgb: 148 163 184;
+  --color-beads-3-rgb: 51 65 85;
+  --color-beads-4-rgb: 15 23 42;
+  --color-beads-5-rgb: 120 80 60;
 }
 
 [data-theme='dark'] {

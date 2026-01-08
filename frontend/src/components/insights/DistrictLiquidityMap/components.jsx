@@ -30,7 +30,7 @@ export function InfoTooltip({ text, color = '#64748B' }) {  // slate-500
         i
       </span>
       {/* Tooltip - positioned ABOVE icon to avoid clipping by overflow-x-auto containers */}
-      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-xs text-brand-navy bg-white border border-brand-sky/40 rounded-lg shadow-lg whitespace-normal w-52 text-left opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[9999]">
+      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-xs text-brand-navy bg-white border border-brand-sky/40 rounded-lg shadow-lg whitespace-normal w-52 text-left opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-toast">
         {text}
         {/* Arrow pointing down */}
         <span className="absolute top-full left-1/2 -translate-x-1/2 border-[6px] border-transparent border-t-white"></span>
