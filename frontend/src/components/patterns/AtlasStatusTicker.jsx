@@ -35,10 +35,10 @@ export default function AtlasStatusTicker() {
         backgroundColor: 'var(--color-atlas-parchment)',
       }}
     >
-      <div className="flex items-center justify-between h-8 px-4 lg:px-8">
+      <div className="flex items-center justify-between px-4 lg:px-8" style={{ height: 'var(--space-8)' }}>
         {/* Left: Status text */}
         <div
-          className="font-mono text-data-xs uppercase tracking-widest"
+          className="font-mono text-data-xs uppercase tracking-[0.18em]"
           style={{ color: 'var(--color-atlas-text)', opacity: 0.6 }}
         >
           URA DATA SYNC: ACTIVE
@@ -46,7 +46,7 @@ export default function AtlasStatusTicker() {
 
         {/* Center: Label */}
         <div
-          className="font-mono text-data-xs uppercase tracking-widest hidden md:block"
+          className="font-mono text-data-xs uppercase tracking-[0.18em] hidden md:block"
           style={{ color: 'var(--color-atlas-text)', opacity: 0.8 }}
         >
           SINGAPORE PROPERTY ANALYTICS
@@ -55,7 +55,7 @@ export default function AtlasStatusTicker() {
         {/* Right: Timestamp + Live indicator */}
         <div className="flex items-center gap-4">
           <span
-            className="font-mono text-data-xs uppercase tracking-widest tabular-nums hidden sm:inline"
+            className="font-mono text-data-xs uppercase tracking-[0.18em] tabular-nums hidden sm:inline"
             style={{ color: 'var(--color-atlas-text)', opacity: 0.6 }}
           >
             SGT {formatTime(time)}
@@ -66,7 +66,7 @@ export default function AtlasStatusTicker() {
               <span className="relative inline-flex h-1.5 w-1.5 bg-emerald-600 rounded-full" />
             </span>
             <span
-              className="font-mono text-data-xs uppercase tracking-widest"
+              className="font-mono text-data-xs uppercase tracking-[0.18em]"
               style={{ color: 'var(--color-atlas-text)', opacity: 0.6 }}
             >
               LIVE
