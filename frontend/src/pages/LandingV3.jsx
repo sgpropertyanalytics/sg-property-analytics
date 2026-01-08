@@ -21,10 +21,11 @@ import {
   MOMENTUM_GRID_DATA,
   MAX_DISTRICT_PRICE,
 } from './landingPreviewData';
+import { CANVAS as CANVAS_TOKENS, INK as INK_TOKENS, STATUS, DELTA } from '../constants/colors';
 import Container from '../components/primitives/Container.jsx';
 
-const CANVAS = '#fafafa';
-const INK = '#000000';
+const CANVAS = CANVAS_TOKENS.base;
+const INK = INK_TOKENS.primary;
 
 function formatSgClock(date) {
   try {
@@ -613,7 +614,7 @@ function StatusPanel() {
   }, []);
 
   return (
-    <div className="border border-black/10 bg-[#fafafa] h-[240px] flex flex-col">
+    <div className="border border-black/10 bg-mono-canvas h-[240px] flex flex-col">
       <div className="px-3 py-2 border-b border-black/05 flex items-center justify-between">
         <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
           System Status
@@ -789,7 +790,7 @@ function InsightRow({ label, value, delta }) {
         <div className="font-mono text-xs text-black/60 tabular-nums">{value}</div>
         <div
           className="font-mono text-[10px] uppercase tracking-[0.18em] tabular-nums"
-          style={{ color: isNegative ? '#FF5500' : 'rgba(0,0,0,0.3)' }}
+          style={{ color: isNegative ? STATUS.negative : INK_TOKENS.muted }}
         >
           {delta}
         </div>
@@ -899,7 +900,7 @@ function RegionalPricingPreview() {
                 style={{
                   width: 6 + i * 2,
                   height: 6 + i * 2,
-                  backgroundColor: '#0F172A',  // slate-900
+                  backgroundColor: INK_TOKENS.primary,  // slate-900
                   opacity: 0.3 + i * 0.2,
                 }}
               />
@@ -1009,7 +1010,7 @@ function MomentumGridPreview() {
                 : 'M0 1 L5 3 L10 2 L15 5 L20 7'
               }
               fill="none"
-              stroke={d.trend === 'up' ? '#10B981' : '#FF5500'}
+              stroke={d.trend === 'up' ? DELTA.positive : STATUS.negative}
               strokeWidth="1"
             />
           </svg>
@@ -1062,7 +1063,7 @@ function PulseTicker({ transactions, onTransactionClick, activeDistrict, isLoadi
 
   if (isLoading) {
     return (
-      <div className="overflow-hidden border border-black/10 bg-[#fafafa] h-10 flex items-center justify-center">
+      <div className="overflow-hidden border border-black/10 bg-mono-canvas h-10 flex items-center justify-center">
         <div className="font-mono text-[11px] text-black/40 tracking-wider">LOADING_FEED...</div>
       </div>
     );
@@ -1070,14 +1071,14 @@ function PulseTicker({ transactions, onTransactionClick, activeDistrict, isLoadi
 
   if (!transactions?.length) {
     return (
-      <div className="overflow-hidden border border-black/10 bg-[#fafafa] h-10 flex items-center justify-center">
+      <div className="overflow-hidden border border-black/10 bg-mono-canvas h-10 flex items-center justify-center">
         <div className="font-mono text-[11px] text-black/40 tracking-wider">NO_SIGNAL</div>
       </div>
     );
   }
 
   return (
-    <div className="overflow-hidden border border-black/10 bg-[#fafafa] h-10">
+    <div className="overflow-hidden border border-black/10 bg-mono-canvas h-10">
       <div className="flex items-center h-full animate-ticker whitespace-nowrap px-4">
         {doubled.map((tx, idx) => (
           <button
@@ -1161,17 +1162,17 @@ function GhostMap({ highlightedDistrict, activePulses, onPulseFade }) {
 
   // The Land: Pure white "cutout" with subtle lift on interaction
   const getDistrictFill = (district) => {
-    if (highlightedDistrict === district) return '#F8FAFC'; // Slate-50 - slight tint on active
-    if (hoveredDistrict === district) return '#F8FAFC'; // Slate-50 - slight tint on hover
-    return '#FFFFFF'; // Pure white - the "positive space" cutout
+    if (highlightedDistrict === district) return CANVAS_TOKENS.base; // Slate-50 - slight tint on active
+    if (hoveredDistrict === district) return CANVAS_TOKENS.base; // Slate-50 - slight tint on hover
+    return CANVAS_TOKENS.paper; // Pure white - the "positive space" cutout
   };
 
   // The Skeleton: Whisper-thin lines for district boundaries
   const getDistrictStroke = (district) => {
     if (highlightedDistrict === district || hoveredDistrict === district) {
-      return '#CBD5E1'; // Slate-300 - crisper on interaction
+      return INK_TOKENS.light; // Slate-300 - crisper on interaction
     }
-    return '#E2E8F0'; // Slate-200 - barely-there pencil line
+    return CANVAS_TOKENS.grid; // Slate-200 - barely-there pencil line
   };
 
   // Get stats for hovered district (from API)
@@ -1183,7 +1184,7 @@ function GhostMap({ highlightedDistrict, activePulses, onPulseFade }) {
       className="relative border border-black/10"
       style={{
         // The Sea: Very pale blue-grey engineering surface
-        backgroundColor: '#F8FAFC', // Slate-50
+        backgroundColor: CANVAS_TOKENS.base, // Slate-50
       }}
       onMouseMove={handleMouseMove}
       onMouseLeave={() => setHoveredDistrict(null)}
@@ -1213,8 +1214,8 @@ function GhostMap({ highlightedDistrict, activePulses, onPulseFade }) {
             <div
               className="font-mono text-[10px] leading-tight"
               style={{
-                background: '#0F172A',
-                color: '#F8FAFC',
+                background: INK_TOKENS.primary,
+                color: CANVAS_TOKENS.base,
                 padding: '6px 10px',
                 boxShadow: '2px 2px 0 rgba(0,0,0,0.3)',
               }}
@@ -1480,7 +1481,7 @@ export default function LandingV3() {
   );
 
   return (
-    <div className="relative min-h-screen bg-[#fafafa] text-black overflow-x-hidden">
+    <div className="relative min-h-screen bg-mono-canvas text-black overflow-x-hidden">
       <style>{`
         :root { color-scheme: light; }
 
@@ -1543,8 +1544,8 @@ export default function LandingV3() {
       <nav
         className={`fixed top-0 left-0 right-0 z-50 border-b transition-all duration-200 ${
           isScrolled
-            ? 'bg-[#fafafa]/95 backdrop-blur-sm border-black/10 shadow-sm'
-            : 'bg-[#fafafa] border-black/10'
+            ? 'bg-mono-canvas/95 backdrop-blur-sm border-black/10 shadow-sm'
+            : 'bg-mono-canvas border-black/10'
         }`}
       >
         {/* Scroll progress indicator */}
@@ -1585,7 +1586,7 @@ export default function LandingV3() {
               <button
                 type="button"
                 onClick={onAnyCTA}
-                className="px-4 py-2 bg-black text-[#fafafa] font-medium hover:bg-black/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
+                className="px-4 py-2 bg-black text-mono-canvas font-medium hover:bg-black/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
               >
                 Request Access
               </button>
@@ -1827,7 +1828,7 @@ export default function LandingV3() {
             <SectionTitle eyebrow="READOUT" title="MARKET_SIGNALS" muted="realtime" />
 
             <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-4">
-              <div className="lg:col-span-7 relative border border-black/10 bg-[#fafafa]">
+              <div className="lg:col-span-7 relative border border-black/10 bg-mono-canvas">
                 <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
                 <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
                 <div className="absolute top-0 left-1/4 w-px h-1 bg-black/20" />
@@ -1882,7 +1883,7 @@ export default function LandingV3() {
 
               <div className="lg:col-span-5 grid grid-cols-1 gap-4">
                 <DotMatrixMap />
-                <div className="relative border border-black/10 bg-[#fafafa] p-4">
+                <div className="relative border border-black/10 bg-mono-canvas p-4">
                   <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
                   <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
                   <div className="absolute top-0 left-1/4 w-px h-1 bg-black/20" />
@@ -1918,52 +1919,52 @@ export default function LandingV3() {
         </section>
 
         {/* CTA */}
-        <section className="py-16 md:py-24 bg-black text-[#fafafa]">
+        <section className="py-16 md:py-24 bg-black text-mono-canvas">
           <Container>
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
               <div className="lg:col-span-8">
-                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#fafafa]/60">
+                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-mono-canvas/60">
                   Clearance
                 </div>
                 <div className="mt-3 font-display text-4xl md:text-5xl font-bold tracking-tighter">
                   Request terminal clearance
                 </div>
-                <div className="mt-4 text-base md:text-lg leading-relaxed text-[#fafafa]/70 max-w-2xl">
+                <div className="mt-4 text-base md:text-lg leading-relaxed text-mono-canvas/70 max-w-2xl">
                   Authenticate to access the full PropAnalytics intelligence surface. Export, drilldown, and data
                   validation are locked behind login.
                 </div>
               </div>
               <div className="lg:col-span-4">
-                <div className="border border-[#fafafa]/10 p-6">
+                <div className="border border-mono-canvas/10 p-6">
                   <div className="flex items-center justify-between">
-                    <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#fafafa]/60">Status</div>
-                    <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-[#fafafa]/70">
+                    <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-mono-canvas/60">Status</div>
+                    <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-mono-canvas/70">
                       <LiveDot />
                       <span>READY</span>
                     </div>
                   </div>
                   <div className="mt-4 grid grid-cols-2 gap-3">
-                    <div className="border border-[#fafafa]/10 p-3">
-                      <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#fafafa]/60">ROLE</div>
-                      <div className="mt-1 font-mono text-xs text-[#fafafa]/80">ANALYST</div>
+                    <div className="border border-mono-canvas/10 p-3">
+                      <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-mono-canvas/60">ROLE</div>
+                      <div className="mt-1 font-mono text-xs text-mono-canvas/80">ANALYST</div>
                     </div>
-                    <div className="border border-[#fafafa]/10 p-3">
-                      <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#fafafa]/60">MODE</div>
-                      <div className="mt-1 font-mono text-xs text-[#fafafa]/80">SECURE</div>
+                    <div className="border border-mono-canvas/10 p-3">
+                      <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-mono-canvas/60">MODE</div>
+                      <div className="mt-1 font-mono text-xs text-mono-canvas/80">SECURE</div>
                     </div>
                   </div>
                   <div className="mt-5 flex flex-col gap-2">
                     <button
                       type="button"
                       onClick={onAnyCTA}
-                      className="w-full px-5 py-3 bg-[#fafafa] text-black font-medium hover:bg-[#fafafa]/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#fafafa]/30"
+                      className="w-full px-5 py-3 bg-mono-canvas text-black font-medium hover:bg-mono-canvas/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-mono-canvas/30"
                     >
                       Continue to Login
                     </button>
                     <button
                       type="button"
                       onClick={onAnyCTA}
-                      className="w-full px-5 py-3 border border-[#fafafa]/20 text-[#fafafa] font-medium hover:border-[#fafafa]/35 hover:bg-[#fafafa]/[0.03] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#fafafa]/30"
+                      className="w-full px-5 py-3 border border-mono-canvas/20 text-mono-canvas font-medium hover:border-mono-canvas/35 hover:bg-mono-canvas/[0.03] focus:outline-none focus-visible:ring-2 focus-visible:ring-mono-canvas/30"
                     >
                       Request Access
                     </button>
@@ -1972,11 +1973,11 @@ export default function LandingV3() {
               </div>
             </div>
 
-            <div className="mt-10 flex items-center justify-between gap-4 border-t border-[#fafafa]/10 pt-6">
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#fafafa]/60">
+            <div className="mt-10 flex items-center justify-between gap-4 border-t border-mono-canvas/10 pt-6">
+              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-mono-canvas/60">
                 PROPANALYTICS.SG · TERMINAL
               </div>
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#fafafa]/50">
+              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-mono-canvas/50">
                 DO NOT DISTRIBUTE
               </div>
             </div>
@@ -2024,7 +2025,7 @@ export default function LandingV3() {
                 <button
                   type="button"
                   onClick={onAnyCTA}
-                  className="px-4 py-2 bg-black text-[#fafafa] font-medium hover:bg-black/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 btn-scan-sweep"
+                  className="px-4 py-2 bg-black text-mono-canvas font-medium hover:bg-black/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 btn-scan-sweep"
                 >
                   Enter
                 </button>
