@@ -83,6 +83,28 @@
   --color-chart-3: #64748B;
   --color-chart-4: #94A3B8;
   --color-chart-5: #E5E7EB;
+  --color-chart-1-rgb: 15 23 42;
+  --color-chart-2-rgb: 51 65 85;
+  --color-chart-3-rgb: 100 116 139;
+  --color-chart-4-rgb: 148 163 184;
+  --color-chart-5-rgb: 229 231 235;
+  --color-navy-deep: #213448;
+  --color-navy-deep-rgb: 33 52 72;
+  --color-ocean: #547792;
+  --color-ocean-rgb: 84 119 146;
+  --color-sky: #94B4C1;
+  --color-sky-rgb: 148 180 193;
+  --color-text-muted-strong: #374151;
+  --color-slate-100: #F1F5F9;
+  --color-slate-200: #E5E7EB;
+  --color-slate-400: #94A3B8;
+  --color-slate-500: #64748B;
+  --color-slate-700: #334155;
+  --color-white: #FFFFFF;
+  --color-red: #EF4444;
+  --color-red-rgb: 239 68 68;
+  --color-emerald: #10B981;
+  --color-emerald-rgb: 16 185 129;
 
   /* Spacing scale (4/8-based) */
   --space-0: 0px;

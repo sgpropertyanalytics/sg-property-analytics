@@ -1,6 +1,6 @@
 import React from 'react';
 // Phase 3.3: Migrated from usePowerBIFilters to useZustandFilters
-import { useZustandFilters } from '../../stores';
+import { useZustandFilters } from '../../stores/filterStore';
 
 /**
  * Drill-down Breadcrumb Navigation
