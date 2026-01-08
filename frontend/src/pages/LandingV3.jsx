@@ -1455,236 +1455,163 @@ export default function LandingV3() {
   );
 
   return (
-    <div className="relative min-h-screen bg-mono-canvas text-black overflow-x-hidden">
+    // OUTER WRAPPER - The "Void/Desk" (DARK background)
+    <div className="min-h-screen bg-zinc-950 flex justify-center p-4 md:p-6 lg:p-8">
       <style>{`
         :root { color-scheme: light; }
-
-        @keyframes landingV3-dotDrift {
-          0%, 100% { transform: translate3d(0, 0, 0); opacity: 0.82; }
-          50% { transform: translate3d(0, var(--landingV3-dotShift, 0px), 0); opacity: 1; }
-        }
-
-        @keyframes landingV3-dotPulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.68; }
-        }
-
-        .landingV3-dot {
-          will-change: transform, opacity;
-          animation: landingV3-dotDrift var(--landingV3-dotDur, 3.2s) ease-in-out infinite;
-          animation-delay: var(--landingV3-dotDelay, 0s);
-        }
-
-        .landingV3-dotSg {
-          will-change: opacity;
-          animation: landingV3-dotPulse 2.6s ease-in-out infinite;
-          animation-delay: var(--landingV3-dotDelay, 0s);
-        }
-
         @media (prefers-reduced-motion: reduce) {
-          .landingV3-scanline { display: none !important; }
-          .landingV3-dot, .landingV3-dotSg { animation: none !important; }
+          .animate-pulse { animation: none !important; }
         }
       `}</style>
 
-      {/* Subtle crosshatch grid @ 80px - brightens on section hover */}
-      <div
-        className={`pointer-events-none fixed inset-0 z-0 transition-opacity duration-300 ${isGridHot ? 'opacity-[0.04]' : 'opacity-[0.015]'}`}
-        style={{
-          backgroundImage:
-            'linear-gradient(to right, rgba(0,0,0,1) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,1) 1px, transparent 1px)',
-          backgroundSize: '80px 80px',
-        }}
-      />
+      {/* MASTER CONTAINER - The "Paper" (beige paper on dark desk) */}
+      <div className="w-full max-w-[1400px] bg-[#F3F3EE] border border-zinc-900 flex flex-col">
 
-      {/* Scanline overlay */}
-      <div
-        className="landingV3-scanline pointer-events-none fixed inset-0 z-0 opacity-[0.06]"
-        style={{
-          backgroundImage:
-            'repeating-linear-gradient(0deg, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 10px, rgba(0,0,0,0.05) 11px)',
-        }}
-      />
-
-      {/* Noise texture */}
-      <div
-        className="pointer-events-none fixed inset-0 z-0 opacity-[0.035]"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
-        }}
-      />
-
-      {/* NAV */}
-      <nav
-        className={`fixed top-0 left-0 right-0 z-50 border-b transition-all duration-200 ${
-          isScrolled
-            ? 'bg-mono-canvas/95 backdrop-blur-sm border-black/10 shadow-sm'
-            : 'bg-mono-canvas border-black/10'
-        }`}
-      >
-        {/* Scroll progress indicator */}
-        <div
-          className="absolute bottom-0 left-0 h-px bg-black/30 transition-all duration-75"
-          style={{ width: `${scrollProgress}%` }}
-        />
-        <Container className="py-3">
+        {/* NAV - Inside container, NOT fixed, scrolls with page */}
+        <nav className="border-b border-zinc-900 px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="border border-black/10 p-2">
-                <Terminal className="h-5 w-5 text-black" />
+            {/* Logo + Title - MONO font */}
+            <div className="flex items-center gap-4">
+              <div className="border border-zinc-900 p-2">
+                <Terminal className="h-5 w-5 text-zinc-900" />
               </div>
-              <div className="min-w-0">
-                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
+              <div>
+                <div className="font-mono text-[10px] uppercase tracking-widest text-zinc-900">
                   PROPANALYTICS.SG
                 </div>
-                <div className="text-sm font-bold tracking-tight text-black">
+                <div className="font-mono text-xs uppercase tracking-widest text-zinc-900 font-medium">
                   Intelligence Terminal
                 </div>
               </div>
             </div>
 
-            <div className="hidden lg:flex items-center gap-3">
-              <MonoPill leftDot={<LiveDot />}>URA LINK: ONLINE</MonoPill>
-              <MonoPill>PIPELINE: HEALTHY</MonoPill>
-              <MonoPill>RESTRICTED ACCESS // CLASSIFIED</MonoPill>
+            {/* Center Nav - MONO, uppercase, tracking-widest */}
+            <div className="hidden lg:flex items-center gap-6">
+              <span className="font-mono text-[10px] uppercase tracking-widest text-zinc-900 hover:text-zinc-600 cursor-pointer">Process</span>
+              <span className="font-mono text-[10px] uppercase tracking-widest text-zinc-900 hover:text-zinc-600 cursor-pointer">Data</span>
+              <span className="font-mono text-[10px] uppercase tracking-widest text-zinc-900 hover:text-zinc-600 cursor-pointer">Resources</span>
+              <span className="font-mono text-[10px] uppercase tracking-widest text-zinc-900 hover:text-zinc-600 cursor-pointer">Contact</span>
             </div>
 
-            <div className="flex items-center gap-2">
+            {/* Buttons - MONO, uppercase, rounded-none */}
+            <div className="flex items-center gap-3">
               <button
                 type="button"
                 onClick={onAnyCTA}
-                className="px-4 py-2 border border-black/10 text-black font-medium hover:border-black/20 hover:bg-black/[0.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
+                className="px-4 py-2 border border-zinc-900 text-zinc-900 font-mono text-[10px] uppercase tracking-widest rounded-none hover:bg-zinc-900 hover:text-[#F3F3EE] transition-colors"
               >
                 Log In
               </button>
               <button
                 type="button"
                 onClick={onAnyCTA}
-                className="px-4 py-2 bg-black text-mono-canvas font-medium hover:bg-black/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
+                className="px-4 py-2 bg-zinc-900 text-[#F3F3EE] font-mono text-[10px] uppercase tracking-widest rounded-none hover:bg-zinc-800 transition-colors"
               >
                 Request Access
               </button>
             </div>
           </div>
-        </Container>
-      </nav>
+        </nav>
 
-      <main className="relative z-10">
-        {/* ATLAS STATUS TICKER - Full width, outside Container */}
-        <AtlasStatusTicker />
-
-        {/* HERO - Atlas Editorial Layout */}
-        <section
-          className="relative py-16 md:py-24 overflow-hidden"
-          style={{ backgroundColor: 'var(--color-atlas-parchment)' }}
-        >
-          {/* Sub-header row */}
-          <Container>
-            <div className="flex items-center justify-between py-4 border-b mb-12" style={{ borderColor: 'var(--color-atlas-border)' }}>
-              <div className="font-mono text-xs uppercase tracking-[0.18em]" style={{ color: 'var(--color-atlas-text)', opacity: 0.6 }}>
-                URA DATA ANALYTICS / SINGAPORE
-              </div>
-              <div
-                className="font-mono text-xs uppercase tracking-[0.18em] border px-4 py-2 hidden md:block"
-                style={{ color: 'var(--color-atlas-text)', opacity: 0.6, borderColor: 'var(--color-atlas-border)' }}
-              >
-                SYSTEM MODE: ACTIVE DATA PIPELINE
+        {/* STATUS TICKER - MONO, uppercase, visible border */}
+        <div className="border-b border-zinc-900 px-6 lg:px-8 py-2">
+          <div className="flex items-center justify-between">
+            <div className="font-mono text-[10px] uppercase tracking-widest text-zinc-900">
+              URA DATA SYNC: ACTIVE
+            </div>
+            <div className="font-mono text-[10px] uppercase tracking-widest text-zinc-900 hidden md:block">
+              SINGAPORE PROPERTY ANALYTICS
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="font-mono text-[10px] uppercase tracking-widest text-zinc-900 tabular-nums hidden sm:inline">
+                SGT {new Date().toLocaleTimeString('en-SG', { timeZone: 'Asia/Singapore', hour12: false, hour: '2-digit', minute: '2-digit' })}
+              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 bg-emerald-500" />
+                <span className="font-mono text-[10px] uppercase tracking-widest text-zinc-900">
+                  LIVE
+                </span>
               </div>
             </div>
-          </Container>
+          </div>
+        </div>
 
-          {/* Main 2-Column Hero - ASYMMETRIC 7/5 Split (Editorial 60% / Schematic 40%) */}
-          <Container>
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+        {/* MAIN CONTENT - Inside the paper */}
+        <main className="flex-1">
 
-              {/* LEFT COLUMN - 7 cols (~60%) - Editorial Content */}
-              <div className="lg:col-span-7 space-y-6">
-                {/* Headline - Playfair Display italic */}
-                <motion.h1
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.6 }}
-                  className="font-serif italic text-4xl sm:text-5xl md:text-6xl lg:text-6xl xl:text-7xl tracking-tighter"
-                  style={{ lineHeight: 'var(--leading-tight)' }}
-                >
-                  <span className="block" style={{ color: 'var(--color-atlas-text)' }}>Singapore Condo</span>
-                  <span className="block" style={{ color: 'var(--color-atlas-text)', opacity: 0.5 }}>Market Intelligence</span>
-                </motion.h1>
+        {/* HERO - Two columns with visible grid border between them */}
+        <section className="grid grid-cols-1 lg:grid-cols-2">
 
-                {/* Body text - monospace */}
-                <motion.p
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.6, delay: 0.1 }}
-                  className="font-mono text-sm sm:text-base leading-relaxed max-w-md"
-                  style={{ color: 'var(--color-atlas-text)', opacity: 0.6 }}
-                >
-                  Data-driven price benchmarking across projects, locations, and market segments — based on 100,000+ private property transactions.
-                </motion.p>
-
-                {/* CommandBar - KEPT AS-IS with atlas-brackets wrapper */}
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.6, delay: 0.2 }}
-                  className="atlas-brackets"
-                >
-                  <CommandBar onExecute={onAnyCTA} />
-                </motion.div>
+          {/* LEFT COLUMN - Editorial Content (SERIF headline, MONO body) */}
+          <div className="p-6 lg:p-10 lg:border-r border-zinc-900">
+            {/* Sub-header - MONO */}
+            <div className="flex items-center justify-between mb-8 pb-4 border-b border-zinc-900">
+              <div className="font-mono text-[10px] uppercase tracking-widest text-zinc-900">
+                URA Data Analytics / Singapore
               </div>
-
-              {/* RIGHT COLUMN - 5 cols (~40%) - Globe + Panels */}
-              <div className="lg:col-span-5 relative">
-                {/* Top panels row: System Log + Stats Display */}
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.6, delay: 0.15 }}
-                  className="flex flex-col sm:flex-row items-stretch gap-4 mb-4"
-                >
-                  {/* System Log Panel */}
-                  <div className="flex-1 border p-4" style={{ borderColor: 'var(--color-atlas-border)' }}>
-                    <div className="font-mono text-data-xs uppercase tracking-[0.18em] mb-2" style={{ color: 'var(--color-atlas-text)', opacity: 0.6 }}>
-                      [ SYSTEM LOG ]
-                    </div>
-                    <div className="font-mono text-xs space-y-1" style={{ color: 'var(--color-atlas-text)', opacity: 0.8 }}>
-                      <div># INIT... OK</div>
-                      <div># URA PIPELINE... CONNECTED</div>
-                      <div># DATA QUALITY... VERIFIED</div>
-                      <div># SYNC STATUS... LIVE</div>
-                    </div>
-                  </div>
-
-                  {/* Stats Display */}
-                  <div className="border p-4 text-right" style={{ borderColor: 'var(--color-atlas-border)' }}>
-                    <div className="font-mono text-data-xs uppercase tracking-[0.18em]" style={{ color: 'var(--color-atlas-text)', opacity: 0.6 }}>
-                      TX COUNT:
-                    </div>
-                    <div className="font-mono text-2xl font-bold tabular-nums" style={{ color: 'var(--color-atlas-text)' }}>
-                      103,247
-                    </div>
-                    <div className="font-mono text-data-xs uppercase tracking-[0.18em]" style={{ color: 'var(--color-atlas-text)', opacity: 0.6 }}>
-                      RESALE
-                    </div>
-                  </div>
-                </motion.div>
-
-                {/* Globe with corner brackets */}
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.8, delay: 0.25 }}
-                  className="atlas-brackets"
-                >
-                  <ParticleGlobe />
-                </motion.div>
+              <div className="font-mono text-[10px] uppercase tracking-widest text-zinc-900 hidden md:block">
+                System Mode: Active
               </div>
-
             </div>
-          </Container>
+
+            {/* Headline - SERIF, huge, tight tracking */}
+            <h1 className="font-serif text-5xl sm:text-6xl md:text-7xl lg:text-8xl tracking-tighter leading-[0.9] text-zinc-900 mb-8">
+              Singapore Condo<br />
+              <span className="text-zinc-400">Market Intelligence</span>
+            </h1>
+
+            {/* Body text - MONO */}
+            <p className="font-mono text-sm leading-relaxed text-zinc-900 max-w-md mb-8">
+              Data-driven price benchmarking across projects, locations, and market segments — based on 100,000+ private property transactions.
+            </p>
+
+            {/* CTA Button - MONO, no rounded corners */}
+            <button
+              type="button"
+              onClick={onAnyCTA}
+              className="px-6 py-3 bg-zinc-900 text-[#F3F3EE] font-mono text-[10px] uppercase tracking-widest rounded-none hover:bg-zinc-800 transition-colors"
+            >
+              Enter Terminal
+            </button>
+          </div>
+
+          {/* RIGHT COLUMN - Schematic/Data Display */}
+          <div className="p-6 lg:p-10 flex flex-col">
+            {/* System Log Panel */}
+            <div className="border border-zinc-900 p-4 mb-4">
+              <div className="font-mono text-[10px] uppercase tracking-widest text-zinc-900 mb-3">
+                [ System Log ]
+              </div>
+              <div className="font-mono text-xs text-zinc-900 space-y-1">
+                <div># INIT... OK</div>
+                <div># URA PIPELINE... CONNECTED</div>
+                <div># DATA QUALITY... VERIFIED</div>
+                <div># SYNC STATUS... LIVE</div>
+              </div>
+            </div>
+
+            {/* Stats Panel */}
+            <div className="border border-zinc-900 p-4 mb-4">
+              <div className="font-mono text-[10px] uppercase tracking-widest text-zinc-900 mb-2">
+                TX Count:
+              </div>
+              <div className="font-mono text-3xl font-bold tabular-nums text-zinc-900">
+                103,247
+              </div>
+              <div className="font-mono text-[10px] uppercase tracking-widest text-zinc-900 mt-1">
+                Resale Transactions
+              </div>
+            </div>
+
+            {/* Globe Visualization */}
+            <div className="flex-1 border border-zinc-900 min-h-[300px] flex items-center justify-center">
+              <ParticleGlobe />
+            </div>
+          </div>
         </section>
 
-        <SectionDivider />
+        {/* Section Divider - visible border */}
+        <div className="border-b border-zinc-900" />
 
         {/* STATS */}
         <section className="py-16 md:py-24 section-overlap-down" onMouseEnter={onSectionEnter} onMouseLeave={onSectionLeave}>
@@ -2041,6 +1968,7 @@ export default function LandingV3() {
 
       {/* Keep strict palette visible to readers */}
       <div className="sr-only">{CANVAS}{INK}</div>
+      </div>
     </div>
   );
 }
