@@ -252,38 +252,41 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
           {/* Content Card - Technical dot grid background */}
           <div className="flex-1 min-w-0 flex flex-col border border-gray-200 bg-white">
             {/* Console Header - Terminal Block (auto-applied to all pages) */}
-            <div className="flex items-center justify-between px-6 py-4 bg-[#0F172A] border-b border-slate-700">
-              <div className="flex flex-col gap-1">
-                <h1 className="text-lg font-semibold text-white tracking-wide">
-                  {NAV_ITEMS.find(item => item.id === activePage)?.label || 'Dashboard'}
-                </h1>
-                <span className="text-xs text-slate-400 font-mono uppercase tracking-wider">
-                  // SG_PROPERTY_ANALYTICS
-                </span>
-              </div>
+            <div className="flex items-center justify-between px-6 py-2 bg-[#0F172A] border-b border-slate-700">
+              {/* Page Title */}
+              <h1 className="text-sm font-semibold text-white tracking-wide">
+                {NAV_ITEMS.find(item => item.id === activePage)?.label || 'Dashboard'}
+              </h1>
 
-              <div className="flex items-center gap-4">
+              {/* Metadata - Original wording preserved */}
+              <div className="flex items-center gap-3 text-xs text-slate-400">
+                {apiMetadata && (
+                  <>
+                    <span>
+                      Last updated: {apiMetadata.last_updated
+                        ? new Date(apiMetadata.last_updated).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+                        : 'N/A'}
+                    </span>
+                    {apiMetadata.total_records > 0 && (
+                      <span>
+                        | Total records: {apiMetadata.total_records.toLocaleString()}
+                        {apiMetadata.records_added_last_ingestion > 0 && (
+                          <> (+{apiMetadata.records_added_last_ingestion.toLocaleString()} new)</>
+                        )}
+                      </span>
+                    )}
+                    {apiMetadata.outliers_excluded > 0 && (
+                      <span>| Statistical outliers removed: {apiMetadata.outliers_excluded.toLocaleString()}</span>
+                    )}
+                  </>
+                )}
                 {/* Live Indicator */}
-                <div className="flex items-center gap-2">
-                  <span className="relative flex h-2 w-2">
+                <div className="flex items-center gap-1.5 ml-2">
+                  <span className="relative flex h-1.5 w-1.5">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
                   </span>
-                  <span className="text-xs text-emerald-400 font-mono">LIVE</span>
-                </div>
-
-                <div className="h-4 w-px bg-slate-700" />
-
-                {/* Metadata */}
-                <div className="text-right">
-                  <p className="text-xs text-slate-400 font-mono">
-                    UPDATED: {apiMetadata?.last_updated
-                      ? new Date(apiMetadata.last_updated).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()
-                      : '—'}
-                  </p>
-                  <p className="text-[10px] text-slate-500 font-mono">
-                    RECORDS: {apiMetadata?.total_records?.toLocaleString() || '—'}
-                  </p>
+                  <span className="text-emerald-400 text-[10px] font-mono">LIVE</span>
                 </div>
               </div>
             </div>
