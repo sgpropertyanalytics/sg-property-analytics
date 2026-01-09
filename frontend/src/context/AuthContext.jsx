@@ -42,6 +42,15 @@ export const isAbortError = (err) => {
   return err?.name === 'CanceledError' || err?.name === 'AbortError';
 };
 
+const logAuthError = (message, err, details = {}) => {
+  console.error(message, {
+    ...details,
+    message: err?.message,
+    code: err?.code,
+    status: err?.response?.status,
+  });
+};
+
 /**
  * Authentication Context
  *
@@ -77,7 +86,7 @@ export function useAuth() {
 
 /**
  * Token status state machine
- * - 'present': Token exists in localStorage
+ * - 'present': Token synced with backend for this session
  * - 'missing': No token, user authenticated (need sync)
  * - 'refreshing': Token sync in progress
  * - 'error': Token sync failed (non-abort)
@@ -102,10 +111,8 @@ export function AuthProvider({ children }) {
   // Cleared when onAuthStateChanged fires (Firebase auth state is known)
   const [authUiLoading, setAuthUiLoading] = useState(true);
 
-  // Token status state machine - initialize based on localStorage
-  const [tokenStatus, setTokenStatus] = useState(() => {
-    return localStorage.getItem('token') ? TokenStatus.PRESENT : TokenStatus.MISSING;
-  });
+  // Token status state machine - initialize as missing (cookie is HttpOnly)
+  const [tokenStatus, setTokenStatus] = useState(TokenStatus.MISSING);
 
   // Track previous status for safe abort recovery (restore on abort, don't downgrade)
   const prevTokenStatusRef = useRef(tokenStatus);
@@ -176,22 +183,22 @@ export function AuthProvider({ children }) {
                 signal: authStateGuardRef.current.getSignal(),
               });
 
-              if (!authStateGuardRef.current.isStale(requestId) && response.data.token) {
-                localStorage.setItem('token', response.data.token);
+              if (!authStateGuardRef.current.isStale(requestId)) {
                 // Bootstrap subscription from firebase-sync response
                 if (response.data.subscription) {
                   bootstrapSubscriptionRef.current(response.data.subscription, result.user.email);
                 }
+                setTokenStatus(TokenStatus.PRESENT);
               }
             } catch (err) {
               if (err.name !== 'CanceledError' && err.name !== 'AbortError') {
-                console.error('[Auth] Backend sync failed after redirect:', err);
+                logAuthError('[Auth] Backend sync failed after redirect', err);
               }
             }
           }
         })
         .catch((err) => {
-          console.error('[Auth] Redirect result error:', err);
+          logAuthError('[Auth] Redirect result error', err);
         });
 
       const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -221,8 +228,8 @@ export function AuthProvider({ children }) {
           if (!firebaseUser) {
             // No user → token not needed (treat as 'present' for gating purposes)
             setTokenStatus(TokenStatus.PRESENT);
-          } else if (localStorage.getItem('token')) {
-            // User exists, token exists (page refresh)
+          } else if (tokenStatusRef.current === TokenStatus.PRESENT) {
+            // User exists, token already synced in this session
             setTokenStatus(TokenStatus.PRESENT);
             // Fetch subscription from backend (no firebase-sync on refresh)
             ensureSubscriptionRef.current(firebaseUser.email, { reason: 'auth_listener' });
@@ -253,7 +260,7 @@ export function AuthProvider({ children }) {
                 // Non-abort error → set error state
                 // P0 FIX: Bootstrap subscription with free tier to break deadlock.
                 // Without this, subscription stays in PENDING forever because:
-                // 1. fetchSubscription checks for token (missing) and returns early
+                // 1. Backend sync failed
                 // 2. Subscription never transitions out of PENDING
                 // 3. AppReadyContext waits forever
                 // By bootstrapping free tier, we ensure subscription resolves and boot completes.
@@ -269,7 +276,7 @@ export function AuthProvider({ children }) {
           // Catch-all: Log unexpected errors but NEVER let them block boot.
           // initialized was already set above, so this is just for logging.
           if (!isAbortError(err)) {
-            console.error('[Auth] Unexpected error in auth state handler:', err);
+            logAuthError('[Auth] Unexpected error in auth state handler', err);
           }
         } finally {
           // SAFETY NET: Guarantee initialized is set even if everything above fails.
@@ -307,16 +314,11 @@ export function AuthProvider({ children }) {
             return { ok: false, aborted: false, stale: true };
           }
 
-          if (response.data.token) {
-            localStorage.setItem('token', response.data.token);
-            // Bootstrap subscription from firebase-sync response
-            if (response.data.subscription) {
-              bootstrapSubscription(response.data.subscription, firebaseUser.email);
-            }
-            return { ok: true, aborted: false };
+          // Bootstrap subscription from firebase-sync response
+          if (response.data.subscription) {
+            bootstrapSubscription(response.data.subscription, firebaseUser.email);
           }
-
-          return { ok: false, aborted: false, error: new Error('No token in response') };
+          return { ok: true, aborted: false };
         } catch (err) {
           // Abort/cancel is EXPECTED control flow (not an error)
           if (isAbortError(err)) {
@@ -332,14 +334,14 @@ export function AuthProvider({ children }) {
           }
 
           // Real error - log but don't throw (non-blocking)
-          console.error('[Auth] Backend token sync failed:', err);
+          logAuthError('[Auth] Backend token sync failed', err);
           return { ok: false, aborted: false, error: err };
         }
       }
 
       return () => unsubscribe();
     } catch (err) {
-      console.error('Failed to initialize Firebase auth:', err);
+      logAuthError('Failed to initialize Firebase auth', err);
       setLoading(false);
       setInitialized(true);
       // If init fails, mark token as present (no blocking)
@@ -371,13 +373,9 @@ export function AuthProvider({ children }) {
       // Guard: Don't update if request is stale
       if (isStale(requestId)) return null;
 
-      // Store JWT for subsequent API calls
-      if (response.data.token) {
-        localStorage.setItem('token', response.data.token);
-        // Bootstrap subscription from firebase-sync response
-        if (response.data.subscription) {
-          bootstrapSubscription(response.data.subscription, firebaseUser.email);
-        }
+      // Bootstrap subscription from firebase-sync response
+      if (response.data.subscription) {
+        bootstrapSubscription(response.data.subscription, firebaseUser.email);
       }
 
       return response.data;
@@ -389,7 +387,7 @@ export function AuthProvider({ children }) {
       // Guard: Check stale after error
       if (isStale(requestId)) return null;
 
-      console.error('Backend sync failed:', err);
+      logAuthError('Backend sync failed', err);
       // Don't fail auth - user is still signed in with Firebase
       // Backend sync will retry on next API call
       return null;
@@ -436,13 +434,13 @@ export function AuthProvider({ children }) {
           await signInWithRedirect(auth, provider);
           return null; // Redirect navigates away
         } catch (redirectErr) {
-          console.error('Google sign-in redirect error:', redirectErr);
+          logAuthError('Google sign-in redirect error', redirectErr);
           setError(getErrorMessage(redirectErr.code));
           throw redirectErr;
         }
       }
 
-      console.error('Google sign-in error:', err);
+      logAuthError('Google sign-in error', err);
       setError(getErrorMessage(err.code));
       throw err;
     }
@@ -452,8 +450,7 @@ export function AuthProvider({ children }) {
   const logout = useCallback(async () => {
     setError(null);
 
-    // Clear JWT token
-    localStorage.removeItem('token');
+    setTokenStatus(TokenStatus.MISSING);
     // Clear subscription state
     clearSubscription();
     // Clear TanStack Query cache to prevent stale data from previous user
@@ -461,14 +458,16 @@ export function AuthProvider({ children }) {
 
     if (!isFirebaseConfigured()) {
       setUser(null);
+      await apiClient.post('/auth/logout');
       return;
     }
 
     try {
       const auth = getFirebaseAuth();
       await signOut(auth);
+      await apiClient.post('/auth/logout');
     } catch (err) {
-      console.error('Sign-out error:', err);
+      logAuthError('Sign-out error', err);
       setError('Failed to sign out. Please try again.');
       throw err;
     }
@@ -499,7 +498,7 @@ export function AuthProvider({ children }) {
   // Returns structured result: { ok: boolean, tokenStored: boolean, reason?: string }
   // P0 FIX: Uses separate tokenRefreshGuard to avoid aborting syncTokenWithBackend
   const refreshToken = useCallback(async () => {
-    console.warn('[Auth] refreshToken called, user:', user?.email);
+    console.warn('[Auth] refreshToken called');
 
     if (!user) {
       console.warn('[Auth] Cannot refresh token - no user');
@@ -515,11 +514,7 @@ export function AuthProvider({ children }) {
 
     try {
       // Force refresh the Firebase ID token
-      console.warn('[Auth] Getting fresh Firebase ID token...');
       const idToken = await user.getIdToken(true); // true = force refresh
-      console.warn('[Auth] Got Firebase ID token, length:', idToken?.length);
-
-      console.warn('[Auth] Calling /auth/firebase-sync...');
       const response = await apiClient.post('/auth/firebase-sync', {
         idToken,
         email: user.email,
@@ -529,36 +524,17 @@ export function AuthProvider({ children }) {
         signal: tokenRefreshGuard.getSignal(),
       });
 
-      console.warn('[Auth] firebase-sync response:', {
-        status: response.status,
-        hasToken: !!response.data?.token,
-        tokenLength: response.data?.token?.length,
-        subscription: response.data?.subscription,
-      });
-
       // Guard: Don't update if request is stale
       if (tokenRefreshGuard.isStale(requestId)) {
         return { ok: false, tokenStored: false, reason: 'stale_request' };
       }
 
-      // Store new JWT
-      if (response.data.token) {
-        localStorage.setItem('token', response.data.token);
-        // Bootstrap subscription from firebase-sync response
-        if (response.data.subscription) {
-          bootstrapSubscription(response.data.subscription, user.email);
-        }
-        const storedToken = localStorage.getItem('token');
-        const tokenStored = storedToken === response.data.token;
-        console.warn('[Auth] Token stored successfully:', tokenStored);
-        // Update token status
-        setTokenStatus(TokenStatus.PRESENT);
-        return { ok: true, tokenStored, reason: null };
+      // Bootstrap subscription from firebase-sync response
+      if (response.data.subscription) {
+        bootstrapSubscription(response.data.subscription, user.email);
       }
-
-      console.warn('[Auth] firebase-sync response missing token');
-      setTokenStatus(TokenStatus.ERROR);
-      return { ok: false, tokenStored: false, reason: 'no_token_in_response' };
+      setTokenStatus(TokenStatus.PRESENT);
+      return { ok: true, tokenStored: true, reason: null };
     } catch (err) {
       // Handle abort/cancel errors - restore previous status
       if (err.name === 'CanceledError' || err.name === 'AbortError') {
@@ -579,12 +555,7 @@ export function AuthProvider({ children }) {
         : err.message?.includes('Network') ? 'network_error'
         : 'unknown_error';
 
-      console.error('[Auth] Token refresh failed:', {
-        reason,
-        status: err.response?.status,
-        message: err.message,
-        data: err.response?.data,
-      });
+      logAuthError('[Auth] Token refresh failed', err, { reason });
 
       // Non-abort error → set error state
       setTokenStatus(TokenStatus.ERROR);
@@ -625,26 +596,13 @@ export function AuthProvider({ children }) {
         return { ok: false, reason: 'stale_request' };
       }
 
-      if (response.data.token) {
-        localStorage.setItem('token', response.data.token);
-        // Bootstrap subscription from firebase-sync response
-        if (response.data.subscription) {
-          bootstrapSubscription(response.data.subscription, user.email);
-        }
-        setTokenStatus(TokenStatus.PRESENT);
-        console.warn('[Auth] Token sync retry succeeded');
-        return { ok: true, reason: null };
+      // Bootstrap subscription from firebase-sync response
+      if (response.data.subscription) {
+        bootstrapSubscription(response.data.subscription, user.email);
       }
-
-      // No token in response → set ERROR and bootstrap free tier
-      // P0 FIX: Ensure subscription is resolved to break deadlock
-      console.warn('[Auth] Token sync response missing token');
-      setTokenStatus(TokenStatus.ERROR);
-      bootstrapSubscription(
-        { tier: 'free', subscribed: false, ends_at: null },
-        user.email
-      );
-      return { ok: false, reason: 'no_token_in_response' };
+      setTokenStatus(TokenStatus.PRESENT);
+      console.warn('[Auth] Token sync retry succeeded');
+      return { ok: true, reason: null };
     } catch (err) {
       // Abort is transient - restore prev status (never stay in REFRESHING)
       if (isAbortError(err)) {
@@ -661,7 +619,7 @@ export function AuthProvider({ children }) {
       }
 
       // P0 FIX: Bootstrap free tier on error to ensure subscription resolves
-      console.error('[Auth] Token sync retry failed:', err);
+      logAuthError('[Auth] Token sync retry failed', err);
       setTokenStatus(TokenStatus.ERROR);
       bootstrapSubscription(
         { tier: 'free', subscribed: false, ends_at: null },
@@ -725,7 +683,7 @@ export function AuthProvider({ children }) {
           }));
         }
       } catch (err) {
-        console.error('[Auth] Token refresh threw error:', err);
+          logAuthError('[Auth] Token refresh threw error', err);
       } finally {
         isRefreshing = false;
       }

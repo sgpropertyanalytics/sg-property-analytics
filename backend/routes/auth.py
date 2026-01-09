@@ -6,8 +6,9 @@ Includes:
 - Firebase/Google OAuth sync
 - Subscription status endpoints
 """
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from datetime import datetime, timedelta
+import secrets
 import jwt
 import os
 from models.database import db
@@ -16,6 +17,55 @@ from config import Config
 from api.contracts import api_contract
 
 auth_bp = Blueprint('auth', __name__)
+
+def _cookie_secure():
+    return not Config.DEBUG
+
+
+def set_auth_cookie(response, token):
+    response.set_cookie(
+        Config.AUTH_COOKIE_NAME,
+        token,
+        httponly=True,
+        secure=_cookie_secure(),
+        samesite="Lax",
+        max_age=Config.JWT_EXPIRATION_HOURS * 3600,
+        path="/",
+    )
+    return response
+
+
+def set_csrf_cookie(response):
+    token = secrets.token_urlsafe(32)
+    response.set_cookie(
+        Config.CSRF_COOKIE_NAME,
+        token,
+        httponly=False,
+        secure=_cookie_secure(),
+        samesite="Strict",
+        max_age=Config.JWT_EXPIRATION_HOURS * 3600,
+        path="/",
+    )
+    return response
+
+
+def issue_auth_cookies(response, token):
+    set_auth_cookie(response, token)
+    set_csrf_cookie(response)
+    return response
+
+
+def clear_auth_cookie(response):
+    response.delete_cookie(Config.AUTH_COOKIE_NAME, path="/")
+    response.delete_cookie(Config.CSRF_COOKIE_NAME, path="/")
+    return response
+
+
+def get_auth_token_from_request():
+    auth_header = request.headers.get('Authorization')
+    if auth_header and auth_header.startswith('Bearer '):
+        return auth_header.split(' ')[1]
+    return request.cookies.get(Config.AUTH_COOKIE_NAME)
 
 # Firebase Admin SDK (lazy initialization)
 # None = not attempted, False = failed, otherwise = app instance
@@ -120,16 +170,17 @@ def register():
         
         # Generate token
         token = generate_token(user.id, user.email)
-        
-        return jsonify({
+
+        response = jsonify({
             "message": "User registered successfully",
             "user": user.to_dict(),
-            "token": token
-        }), 201
+        })
+        return issue_auth_cookies(response, token), 201
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.exception("Register failed")
+        return jsonify({"error": "Internal server error"}), 500
 
 
 @auth_bp.route("/login", methods=["POST"])
@@ -153,15 +204,16 @@ def login():
         
         # Generate token
         token = generate_token(user.id, user.email)
-        
-        return jsonify({
+
+        response = jsonify({
             "message": "Login successful",
             "user": user.to_dict(),
-            "token": token
-        }), 200
+        })
+        return issue_auth_cookies(response, token), 200
         
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.exception("Login failed")
+        return jsonify({"error": "Internal server error"}), 500
 
 
 @auth_bp.route("/me", methods=["GET"])
@@ -169,12 +221,9 @@ def login():
 def get_current_user():
     """Get current user info (requires authentication)"""
     try:
-        # Get token from Authorization header
-        auth_header = request.headers.get('Authorization')
-        if not auth_header or not auth_header.startswith('Bearer '):
-            return jsonify({"error": "Authorization header required"}), 401
-
-        token = auth_header.split(' ')[1]
+        token = get_auth_token_from_request()
+        if not token:
+            return jsonify({"error": "Authorization required"}), 401
         user_id = verify_token(token)
 
         if not user_id:
@@ -189,7 +238,8 @@ def get_current_user():
         }), 200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.exception("Get current user failed")
+        return jsonify({"error": "Internal server error"}), 500
 
 
 @auth_bp.route("/firebase-sync", methods=["POST"])
@@ -274,9 +324,8 @@ def firebase_sync():
         entitlement = user.entitlement_info()
         access_expires_at = entitlement.get("access_expires_at")
 
-        return jsonify({
+        response = jsonify({
             "message": "Sync successful",
-            "token": token,
             "user": user.to_dict(),
             "subscription": {
                 "tier": user.normalized_tier(),
@@ -286,12 +335,13 @@ def firebase_sync():
                 "access_expires_at": access_expires_at.isoformat() if access_expires_at else None,
                 "ends_at": access_expires_at.isoformat() if access_expires_at else None,
             }
-        }), 200
+        })
+        return issue_auth_cookies(response, token), 200
 
     except Exception as e:
         db.session.rollback()
         print(f"Firebase sync error: {e}")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Internal server error"}), 500
 
 
 @auth_bp.route("/subscription", methods=["GET"])
@@ -319,28 +369,17 @@ def get_subscription():
                 },
             }), 503
 
-        # Get token from Authorization header
-        auth_header = request.headers.get('Authorization')
-        if not auth_header or not auth_header.startswith('Bearer '):
-            return jsonify({"error": "Authorization header required"}), 401
-
-        token = auth_header.split(' ')[1]
+        token = get_auth_token_from_request()
+        if not token:
+            return jsonify({"error": "Authorization required"}), 401
         user_id = verify_token(token)
 
-        # Debug logging
-        print(f"[Auth] /subscription - token length: {len(token)}, user_id from token: {user_id}")
-
         if not user_id:
-            print(f"[Auth] /subscription - token verification failed")
             return jsonify({"error": "Invalid or expired token"}), 401
 
         user = User.query.get(user_id)
         if not user:
-            print(f"[Auth] /subscription - user_id {user_id} not found in database")
             return jsonify({"error": "User not found"}), 404
-
-        # Debug logging
-        print(f"[Auth] /subscription - user_id: {user.id}, email: {user.email}, tier: {user.normalized_tier()}, has_access: {user.is_subscribed()}")
 
         entitlement = user.entitlement_info()
         access_expires_at = entitlement.get("access_expires_at")
@@ -355,7 +394,7 @@ def get_subscription():
         }), 200
 
     except Exception as e:
-        print(f"[Auth] /subscription - error: {e}")
+        current_app.logger.exception("Get subscription failed")
         return jsonify({"error": "Internal server error"}), 500
 
 
@@ -369,11 +408,9 @@ def delete_account():
     """
     try:
         # Verify JWT
-        auth_header = request.headers.get('Authorization')
-        if not auth_header or not auth_header.startswith('Bearer '):
+        token = get_auth_token_from_request()
+        if not token:
             return jsonify({"error": "Authorization required"}), 401
-
-        token = auth_header.split(' ')[1]
         user_id = verify_token(token)
         if not user_id:
             return jsonify({"error": "Invalid or expired token"}), 401
@@ -395,7 +432,7 @@ def delete_account():
                     )
                     for sub in subscriptions.data:
                         stripe.Subscription.delete(sub.id)
-                        print(f"Cancelled subscription {sub.id} for user {user.email}")
+                        print(f"Cancelled subscription {sub.id} for user {user.id}")
             except Exception as stripe_error:
                 print(f"Failed to cancel Stripe subscription: {stripe_error}")
                 # Continue with account deletion even if Stripe cancellation fails
@@ -403,13 +440,20 @@ def delete_account():
         # Delete user from database
         db.session.delete(user)
         db.session.commit()
-        print(f"User account deleted: {user.email}")
+        print(f"User account deleted: {user.id}")
 
-        return jsonify({
+        response = jsonify({
             "message": "Account deleted successfully"
-        }), 200
+        })
+        return clear_auth_cookie(response), 200
 
     except Exception as e:
         db.session.rollback()
-        print(f"Account deletion error: {e}")
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.exception("Account deletion failed")
+        return jsonify({"error": "Internal server error"}), 500
+
+
+@auth_bp.route("/logout", methods=["POST"])
+def logout():
+    response = jsonify({"message": "Logged out"})
+    return clear_auth_cookie(response), 200

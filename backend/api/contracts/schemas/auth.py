@@ -40,7 +40,6 @@ REGISTER_RESPONSE_SCHEMA = ResponseSchema(
     data_fields={
         "message": FieldSpec(name="message", type=str, required=True),
         "user": FieldSpec(name="user", type=dict, required=True),
-        "token": FieldSpec(name="token", type=str, required=True),
     },
     meta_fields=make_meta_fields(),
     required_meta=make_required_meta(),
@@ -49,7 +48,7 @@ REGISTER_RESPONSE_SCHEMA = ResponseSchema(
 
 REGISTER_CONTRACT = EndpointContract(
     endpoint="auth/register",
-    version="v3",
+    version="v4",
     pydantic_model=RegisterParams,
     response_schema=REGISTER_RESPONSE_SCHEMA,
 )
@@ -65,7 +64,6 @@ LOGIN_RESPONSE_SCHEMA = ResponseSchema(
     data_fields={
         "message": FieldSpec(name="message", type=str, required=True),
         "user": FieldSpec(name="user", type=dict, required=True),
-        "token": FieldSpec(name="token", type=str, required=True),
     },
     meta_fields=make_meta_fields(),
     required_meta=make_required_meta(),
@@ -74,7 +72,7 @@ LOGIN_RESPONSE_SCHEMA = ResponseSchema(
 
 LOGIN_CONTRACT = EndpointContract(
     endpoint="auth/login",
-    version="v3",
+    version="v4",
     pydantic_model=LoginParams,
     response_schema=LOGIN_RESPONSE_SCHEMA,
 )
@@ -112,7 +110,6 @@ register_contract(ME_CONTRACT)
 FIREBASE_SYNC_RESPONSE_SCHEMA = ResponseSchema(
     data_fields={
         "message": FieldSpec(name="message", type=str, required=True),
-        "token": FieldSpec(name="token", type=str, required=True),
         "user": FieldSpec(name="user", type=dict, required=True),
         "subscription": FieldSpec(name="subscription", type=dict, required=True),
     },
@@ -123,7 +120,7 @@ FIREBASE_SYNC_RESPONSE_SCHEMA = ResponseSchema(
 
 FIREBASE_SYNC_CONTRACT = EndpointContract(
     endpoint="auth/firebase-sync",
-    version="v3",
+    version="v4",
     pydantic_model=FirebaseSyncParams,
     response_schema=FIREBASE_SYNC_RESPONSE_SCHEMA,
 )

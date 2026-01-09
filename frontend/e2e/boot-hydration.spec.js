@@ -117,10 +117,14 @@ test.describe('Boot Hydration Smoke Tests', () => {
 
   test.describe('Hard Refresh Flow', () => {
     test('hard refresh while logged in shows skeleton, not "Free" or "No data" flash', async ({ page, context }) => {
-      // Simulate logged-in state with premium subscription
+      await page.goto('/');
+      const baseUrl = new URL(page.url()).origin;
+      await context.addCookies([{
+        name: 'auth_token',
+        value: 'mock-jwt-token-for-testing',
+        url: baseUrl,
+      }]);
       await context.addInitScript(() => {
-        // Mock auth token
-        localStorage.setItem('token', 'mock-jwt-token-for-testing');
         // Mock subscription cache (premium)
         localStorage.setItem('subscription_cache', JSON.stringify({
           tier: 'premium',
@@ -162,9 +166,14 @@ test.describe('Boot Hydration Smoke Tests', () => {
     });
 
     test('hard refresh shows charts loading in correct order', async ({ page, context }) => {
-      // Set up logged-in state
+      await page.goto('/');
+      const baseUrl = new URL(page.url()).origin;
+      await context.addCookies([{
+        name: 'auth_token',
+        value: 'mock-jwt-token-for-testing',
+        url: baseUrl,
+      }]);
       await context.addInitScript(() => {
-        localStorage.setItem('token', 'mock-jwt-token-for-testing');
         localStorage.setItem('subscription_cache', JSON.stringify({
           tier: 'premium',
           subscribed: true,

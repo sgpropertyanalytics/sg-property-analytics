@@ -14,11 +14,14 @@ Admin endpoints:
 """
 from flask import Blueprint, request, jsonify, g
 import time
+import os
+from functools import wraps
 from models.database import db
 from models.gls_tender import GLSTender
 from sqlalchemy import desc, asc, extract
 from utils.normalize import to_int
 from api.contracts import api_contract
+from config import Config
 
 gls_bp = Blueprint('gls', __name__)
 
@@ -35,6 +38,24 @@ def add_contract_version_header(response):
 
 # Minimum year for frontend display (2024 data used only for backend linking)
 MIN_DISPLAY_YEAR = 2025
+
+
+def require_gls_admin_secret(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        expected = os.getenv("ADMIN_API_SECRET") or os.getenv("GLS_CRON_SECRET", "")
+        if not expected:
+            if Config.DEBUG:
+                return fn(*args, **kwargs)
+            return jsonify({"error": "Admin secret not configured"}), 503
+
+        provided = request.headers.get("X-Admin-Secret", "")
+        if provided != expected:
+            return jsonify({"error": "Forbidden"}), 403
+
+        return fn(*args, **kwargs)
+
+    return wrapper
 
 
 # --- Public endpoints ---
@@ -110,12 +131,13 @@ def get_all():
     except Exception as e:
         elapsed = time.time() - start
         print(f"GET /api/gls/all ERROR (took {elapsed:.4f}s): {e}")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Internal server error"}), 500
 
 
 # --- Admin endpoints ---
 @gls_bp.route("/needs-review", methods=["GET"])
 @api_contract("gls/needs-review")
+@require_gls_admin_secret
 def get_needs_review():
     """
     Get tenders that need manual review.
@@ -141,10 +163,11 @@ def get_needs_review():
     except Exception as e:
         elapsed = time.time() - start
         print(f"GET /api/gls/needs-review ERROR (took {elapsed:.4f}s): {e}")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Internal server error"}), 500
 
 
 @gls_bp.route("/scrape", methods=["POST"])
+@require_gls_admin_secret
 def trigger_scrape():
     """
     Trigger a GLS scrape (admin endpoint).
@@ -182,10 +205,11 @@ def trigger_scrape():
         print(f"POST /api/gls/scrape ERROR (took {elapsed:.4f}s): {e}")
         import traceback
         traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Internal server error"}), 500
 
 
 @gls_bp.route("/reset", methods=["POST"])
+@require_gls_admin_secret
 def reset_and_rescrape():
     """
     Reset GLS data and rescrape from URA.
@@ -197,7 +221,6 @@ def reset_and_rescrape():
     Returns:
         Scrape statistics after reset
     """
-    import os
     start = time.time()
 
     year = to_int(request.args.get("year"), default=2025, field="year")
@@ -290,10 +313,11 @@ def reset_and_rescrape():
         print(f"POST /api/gls/reset ERROR (took {elapsed:.4f}s): {e}")
         import traceback
         traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Internal server error"}), 500
 
 
 @gls_bp.route("/cron-refresh", methods=["POST"])
+@require_gls_admin_secret
 def cron_refresh():
     """
     Cron job endpoint for scheduled GLS data refresh.
@@ -303,21 +327,13 @@ def cron_refresh():
 
     Query params:
         - year: Year to scrape (default: 2025)
-        - secret: Optional secret key for security (set GLS_CRON_SECRET env var)
 
     Returns:
         Scrape statistics
     """
-    import os
     start = time.time()
 
     year = to_int(request.args.get("year"), default=2025, field="year")
-    secret = request.args.get("secret", "")
-
-    # Optional security check - if GLS_CRON_SECRET is set, require it
-    expected_secret = os.environ.get("GLS_CRON_SECRET", "")
-    if expected_secret and secret != expected_secret:
-        return jsonify({"error": "Invalid secret"}), 403
 
     try:
         from services.gls_scheduler import cron_refresh as do_cron_refresh
@@ -335,10 +351,11 @@ def cron_refresh():
         print(f"POST /api/gls/cron-refresh ERROR (took {elapsed:.4f}s): {e}")
         import traceback
         traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Internal server error"}), 500
 
 
 @gls_bp.route("/refresh-status", methods=["GET"])
+@require_gls_admin_secret
 def get_refresh_status():
     """
     Get the status of GLS data and any ongoing refresh.
@@ -367,10 +384,11 @@ def get_refresh_status():
 
     except Exception as e:
         print(f"GET /api/gls/refresh-status ERROR: {e}")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Internal server error"}), 500
 
 
 @gls_bp.route("/trigger-refresh", methods=["POST"])
+@require_gls_admin_secret
 def trigger_background_refresh():
     """
     Trigger a background refresh of GLS data.
@@ -418,4 +436,4 @@ def trigger_background_refresh():
         print(f"POST /api/gls/trigger-refresh ERROR (took {elapsed:.4f}s): {e}")
         import traceback
         traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Internal server error"}), 500

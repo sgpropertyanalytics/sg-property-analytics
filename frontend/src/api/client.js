@@ -1,5 +1,5 @@
 /**
- * API Client - Axios instance with JWT token interceptor
+ * API Client - Axios instance with cookie-based auth
  *
  * Canonical API base: '/api' for all environments.
  *
@@ -21,6 +21,17 @@ const getApiBase = () => {
 };
 
 const API_BASE = getApiBase();
+const CSRF_HEADER = 'X-CSRF-Token';
+
+const getCookie = (name) => {
+  if (typeof document === 'undefined') return null;
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) {
+    return parts.pop().split(';').shift() || null;
+  }
+  return null;
+};
 
 // ===== Concurrent Request Limiter =====
 // Limits the number of simultaneous API requests to prevent server overload
@@ -87,6 +98,7 @@ const queueRequest = (executeFn, options = {}) => {
 const apiClient = axios.create({
   baseURL: API_BASE,
   timeout: 45000, // 45 seconds - generous for cold starts
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -211,26 +223,18 @@ if (!apiClient.__retryInterceptorInstalled) {
   apiClient.__retryInterceptorInstalled = true;
 }
 
-// Request interceptor - attach JWT token
-apiClient.interceptors.request.use(
-  (config) => {
-    // Attach JWT token if available
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
 // Response interceptor - handle errors
-// Use debounced token clear to prevent race conditions when multiple requests fail with 401
-let tokenClearTimeout = null;
-const TOKEN_CLEAR_DELAY = 500; // Wait 500ms of consecutive 401s before clearing
+
+apiClient.interceptors.request.use((config) => {
+  const method = (config.method || 'get').toLowerCase();
+  if (method !== 'get' && method !== 'head') {
+    const csrfToken = getCookie('csrf_token');
+    if (csrfToken) {
+      config.headers[CSRF_HEADER] = csrfToken;
+    }
+  }
+  return config;
+});
 
 /**
  * Normalize error to include user-friendly message.
@@ -308,12 +312,6 @@ export function unwrapEnvelope(body) {
 
 apiClient.interceptors.response.use(
   (response) => {
-    // Success - cancel any pending token clear (valid token exists)
-    if (tokenClearTimeout) {
-      clearTimeout(tokenClearTimeout);
-      tokenClearTimeout = null;
-    }
-
     // Unwrap api_contract envelope using helper
     const unwrapped = unwrapEnvelope(response.data);
     response.data = unwrapped.data;
@@ -330,33 +328,13 @@ apiClient.interceptors.response.use(
       // Use startsWith to avoid false positives (e.g., /analytics/auth/... would match includes)
       const isAuthEndpoint = requestUrl.startsWith('/auth/');
 
-      if (isAuthEndpoint) {
-        // 401 on auth endpoint - schedule token clear with debounce
-        // This prevents race conditions when multiple requests fail simultaneously
-        if (!tokenClearTimeout) {
-          tokenClearTimeout = setTimeout(() => {
-            console.warn('[API] Auth failure, clearing token after debounce');
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            // Note: Do NOT clear subscription_cache here - let SubscriptionContext handle it
-            // based on isAuthenticated state change
-            tokenClearTimeout = null;
-          }, TOKEN_CLEAR_DELAY);
-        }
-      } else {
+      if (!isAuthEndpoint) {
         // 401 on non-auth endpoint - emit event for token refresh
         // This allows components to retry after token refresh
         window.dispatchEvent(new CustomEvent('auth:token-expired', {
           detail: { url: requestUrl }
         }));
       }
-    } else {
-      // Non-401 error - cancel any pending token clear (network recovered)
-      if (tokenClearTimeout) {
-        clearTimeout(tokenClearTimeout);
-        tokenClearTimeout = null;
-      }
-    }
     return Promise.reject(error);
   }
 );

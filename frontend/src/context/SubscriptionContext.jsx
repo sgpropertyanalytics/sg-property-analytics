@@ -279,7 +279,7 @@ export function SubscriptionProvider({ children }) {
       console.warn('[Subscription] Bootstrap called without valid email - skipping cache');
     }
 
-    console.warn('[Subscription] Bootstrapping:', sub, 'for user:', normalizedEmail);
+    console.warn('[Subscription] Bootstrapping subscription');
     const newSub = {
       tier: sub.tier,
       subscribed: sub.subscribed || false,
@@ -310,16 +310,10 @@ export function SubscriptionProvider({ children }) {
    * 1. Load per-user cache first (fast display)
    * 2. Fetch from API to verify/update
    *
-   * RACE GUARD: Checks token at start AND after fetch to prevent overwriting
+   * RACE GUARD: Checks current user after fetch to prevent overwriting
    * clearSubscription() state if logout happened during the request.
    */
   const fetchSubscription = useCallback(async (email) => {
-    // Race guard: If no token, user logged out - don't fetch
-    if (!localStorage.getItem('token')) {
-      console.warn('[Subscription] No token, skipping fetch');
-      return;
-    }
-
     // Duplicate guard: If bootstrapSubscription was called in this session, skip ONCE
     // This prevents the onAuthStateChanged → fetchSubscription duplicate after sign-in
     // Deterministic: no timing assumptions, just "was bootstrap called before this fetch?"
@@ -343,7 +337,7 @@ export function SubscriptionProvider({ children }) {
     // Avoid repeated fetch calls for the same user while a request is in flight
     if (activeRequestRef.current.type === 'fetch'
       && activeRequestRef.current.email === (normalizedEmail || email)) {
-      console.warn('[Subscription] Fetch already in progress for:', normalizedEmail || email);
+      console.warn('[Subscription] Fetch already in progress');
       return;
     }
 
@@ -362,7 +356,7 @@ export function SubscriptionProvider({ children }) {
     // Step 1: Load per-user cache first (fast display while verifying)
     const cachedSub = normalizedEmail ? getCachedSubscription(normalizedEmail) : null;
     if (cachedSub) {
-      console.warn('[Subscription] Loaded from cache for:', normalizedEmail, cachedSub);
+      console.warn('[Subscription] Loaded subscription from cache');
       setSubscription(cachedSub);
       setStatus(SubscriptionStatus.RESOLVED);
       // Continue to verify from backend...
@@ -371,7 +365,7 @@ export function SubscriptionProvider({ children }) {
     const requestId = startRequest();
     lastFetchAttemptRef.current = { email: normalizedEmail, ts: now };
     activeRequestRef.current = { requestId, email: normalizedEmail || email, type: 'fetch' };
-    console.warn('[Subscription] Fetching /auth/subscription for:', normalizedEmail || email);
+    console.warn('[Subscription] Fetching /auth/subscription');
     setLoading(true);
     // Only set LOADING if we didn't have cache (avoid flash)
     if (!cachedSub) {
@@ -386,22 +380,15 @@ export function SubscriptionProvider({ children }) {
 
       if (isStale(requestId)) return;
 
-      // Race guard: Re-check token after fetch (logout may have occurred during request)
-      if (!localStorage.getItem('token')) {
-        console.warn('[Subscription] Token removed during fetch, discarding result');
-        return;
-      }
-
       // Race guard: User switched accounts mid-flight (email changed)
       if (normalizedEmail && currentUserEmailRef.current !== normalizedEmail) {
-        console.warn('[Subscription] Email changed during fetch, discarding result:',
-          { requested: normalizedEmail, current: currentUserEmailRef.current });
+        console.warn('[Subscription] User changed during fetch, discarding result');
         return;
       }
 
       const subData = unwrapSubscriptionResponse(response.data);
       if (subData) {
-        console.warn('[Subscription] Fetch success:', subData);
+        console.warn('[Subscription] Fetch success');
         setSubscription(subData);
         // Cache only if we have a valid normalized email
         if (normalizedEmail) {
@@ -410,7 +397,7 @@ export function SubscriptionProvider({ children }) {
         setStatus(SubscriptionStatus.RESOLVED);
         setLoading(false);
       } else {
-        console.error('[Subscription] Failed to parse response:', response.data);
+        console.error('[Subscription] Failed to parse subscription response');
         setFetchError(new Error('Failed to parse subscription response'));
         setStatus(SubscriptionStatus.ERROR);
         setLoading(false);
@@ -459,7 +446,7 @@ export function SubscriptionProvider({ children }) {
     if (!force
       && lastEnsureAttemptRef.current.email === normalizedEmail
       && now - lastEnsureAttemptRef.current.ts < ENSURE_DEBOUNCE_MS) {
-      console.warn('[Subscription] ensureSubscription debounced', { email: normalizedEmail, reason });
+      console.warn('[Subscription] ensureSubscription debounced', { reason });
       return;
     }
 
@@ -470,7 +457,6 @@ export function SubscriptionProvider({ children }) {
 
     if (!force && isSameUser && (isResolved || isLoading)) {
       console.warn('[Subscription] ensureSubscription skipped (already resolved/loading)', {
-        email: normalizedEmail,
         status,
         reason,
       });
@@ -479,7 +465,6 @@ export function SubscriptionProvider({ children }) {
 
     if (!force && isSameUser && isError) {
       console.warn('[Subscription] ensureSubscription skipped (error state requires manual retry)', {
-        email: normalizedEmail,
         reason,
       });
       return;
@@ -495,7 +480,7 @@ export function SubscriptionProvider({ children }) {
    */
   const clearSubscription = useCallback(() => {
     const email = currentUserEmailRef.current;
-    console.warn('[Subscription] Clearing (logout) for:', email);
+    console.warn('[Subscription] Clearing (logout)');
     setSubscription({ tier: 'free', subscribed: false, ends_at: null });
     setStatus(SubscriptionStatus.RESOLVED);
     setLoading(false);
@@ -515,7 +500,7 @@ export function SubscriptionProvider({ children }) {
   const refreshSubscription = useCallback(async () => {
     const email = currentUserEmailRef.current;
     if (activeRequestRef.current.type === 'refresh' && activeRequestRef.current.email === email) {
-      console.warn('[Subscription] Refresh already in progress for:', email);
+      console.warn('[Subscription] Refresh already in progress');
       return;
     }
     const now = Date.now();
@@ -526,7 +511,7 @@ export function SubscriptionProvider({ children }) {
     }
     const requestId = startRequest();
     activeRequestRef.current = { requestId, email, type: 'refresh' };
-    console.warn('[Subscription] Refreshing for:', email);
+    console.warn('[Subscription] Refreshing');
     setLoading(true);
     setStatus(SubscriptionStatus.LOADING);
     setFetchError(null);
@@ -540,7 +525,7 @@ export function SubscriptionProvider({ children }) {
 
       const subData = unwrapSubscriptionResponse(response.data);
       if (subData) {
-        console.warn('[Subscription] Refresh success:', subData);
+        console.warn('[Subscription] Refresh success');
         setSubscription(subData);
         cacheSubscription(subData, email);
         setStatus(SubscriptionStatus.RESOLVED);
@@ -581,7 +566,7 @@ export function SubscriptionProvider({ children }) {
       console.warn('[Subscription] Retry requested without current user email');
       return;
     }
-    console.warn('[Subscription] Manual retry triggered for:', email);
+    console.warn('[Subscription] Manual retry triggered');
     await refreshSubscription();
   }, [refreshSubscription]);
 

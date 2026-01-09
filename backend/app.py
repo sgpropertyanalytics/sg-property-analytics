@@ -190,6 +190,17 @@ def create_app():
 
         return response
 
+    @app.before_request
+    def enforce_csrf():
+        if request.method in {"POST", "PUT", "PATCH", "DELETE"} and request.path.startswith("/api/"):
+            auth_cookie = request.cookies.get(Config.AUTH_COOKIE_NAME)
+            if not auth_cookie:
+                return None
+            csrf_cookie = request.cookies.get(Config.CSRF_COOKIE_NAME)
+            csrf_header = request.headers.get("X-CSRF-Token", "")
+            if not csrf_cookie or csrf_cookie != csrf_header:
+                return jsonify({"error": "CSRF token missing or invalid"}), 403
+
     # SECURITY: Prevent caching of tier-sensitive API responses
     # This prevents premium data from being cached and served to free users
     @app.after_request

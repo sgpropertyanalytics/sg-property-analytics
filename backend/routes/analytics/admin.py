@@ -10,10 +10,31 @@ Endpoints:
 """
 
 import time
+import os
+from functools import wraps
 from datetime import timedelta
 from flask import request, jsonify
 from routes.analytics import analytics_bp, reader
 from constants import SALE_TYPE_NEW, SALE_TYPE_RESALE
+from config import Config
+
+
+def require_admin_secret(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        expected = os.getenv("ADMIN_API_SECRET", "")
+        if not expected:
+            if Config.DEBUG:
+                return fn(*args, **kwargs)
+            return jsonify({"error": "Admin secret not configured"}), 503
+
+        provided = request.headers.get("X-Admin-Secret", "")
+        if provided != expected:
+            return jsonify({"error": "Forbidden"}), 403
+
+        return fn(*args, **kwargs)
+
+    return wrapper
 
 
 @analytics_bp.route("/ping", methods=["GET"])
@@ -101,11 +122,12 @@ def health():
     except Exception as e:
         return jsonify({
             "status": "error",
-            "error": str(e)
+            "error": "Internal server error"
         }), 500
 
 
 @analytics_bp.route("/debug/data-status", methods=["GET"])
+@require_admin_secret
 def debug_data_status():
     """
     Diagnostic endpoint to check data integrity after migration.
@@ -199,6 +221,7 @@ def debug_data_status():
 
 
 @analytics_bp.route("/dashboard/cache", methods=["GET", "DELETE"])
+@require_admin_secret
 def dashboard_cache():
     """
     Dashboard cache management endpoint.
@@ -268,11 +291,12 @@ def get_metadata():
         })
     except Exception as e:
         return jsonify({
-            "error": str(e)
+            "error": "Internal server error"
         }), 500
 
 
 @analytics_bp.route("/admin/update-metadata", methods=["POST"])
+@require_admin_secret
 def admin_update_metadata():
     """
     Manually update the precomputed metadata with outlier/validation counts.
@@ -332,6 +356,7 @@ def admin_update_metadata():
 
 
 @analytics_bp.route("/admin/filter-outliers", methods=["GET", "POST"])
+@require_admin_secret
 def filter_outliers_endpoint():
     """
     Filter outliers from the database using IQR method.
