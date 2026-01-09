@@ -1788,7 +1788,7 @@ export default function LandingV3() {
                     className="mt-2 font-display text-4xl sm:text-5xl md:text-6xl xl:text-7xl font-normal uppercase tracking-[-0.04em] leading-[0.95]"
                   >
                     <span className="block text-black">SGP:Terminal</span>
-                    <span className="block text-black/60 text-lg sm:text-xl md:text-2xl mt-2">Private Residential Intelligence</span>
+                    <span className="block text-black/60 text-sm sm:text-base md:text-lg mt-3 font-mono uppercase tracking-[0.15em]">Private Residential Intelligence</span>
                   </motion.h1>
 
                   <motion.div
