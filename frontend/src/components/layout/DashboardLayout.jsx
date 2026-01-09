@@ -17,8 +17,8 @@ function ContentLoadingFallback() {
   return (
     <div className="h-full min-h-[50vh] flex items-center justify-center bg-transparent animate-fade-in">
       <div className="flex flex-col items-center gap-3">
-        <div className="w-8 h-8 border-2 border-[#5C5844] border-t-transparent rounded-full animate-spin" />
-        <span className="text-sm text-[#5C5844]">Loading...</span>
+        <div className="w-8 h-8 border-2 border-slate-600 border-t-transparent rounded-full animate-spin" />
+        <span className="text-sm text-slate-600">Loading...</span>
       </div>
     </div>
   );
@@ -151,7 +151,7 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
   const handleMobileNavClose = () => setMobileNavOpen(false);
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: '#F5F0E6' }}>
+    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: '#F4F4F5' }}>
       {/* ===== GLOBAL NAV RAIL (Primary Sidebar) ===== */}
       {/* Desktop: Collapsible mini-dock with mechanical 0.2s animation | Mobile: Hidden */}
       <div
@@ -184,7 +184,7 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
             {/* Close button overlay */}
               <button
                 onClick={handleMobileNavClose}
-                className="absolute top-4 right-4 p-2 rounded-none bg-[#F5F0E6] border border-[#C4BFA8] text-[#5C5844] hover:bg-[#EAE6D8] min-h-[44px] min-w-[44px] flex items-center justify-center shadow-sm"
+                className="absolute top-4 right-4 p-2 rounded-none bg-white border border-zinc-300 text-zinc-600 hover:bg-zinc-100 min-h-[44px] min-w-[44px] flex items-center justify-center shadow-sm"
                 aria-label="Close navigation"
               >
 
@@ -199,26 +199,25 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
       {/* ===== MAIN CONTENT AREA ===== */}
       {/* min-w-0 prevents flex children from overflowing - critical for nested grids */}
       <div className="flex-1 min-w-0 flex flex-col overflow-hidden relative">
-        {/* Background Cross (+) Grid Pattern - Ream aesthetic */}
+        {/* Background Grid Pattern */}
         <div
-          className="absolute inset-0 pointer-events-none opacity-[0.3]"
+          className="absolute inset-0 pointer-events-none opacity-[0.4]"
           style={{
             backgroundImage: `
-              linear-gradient(to right, #C4BFA8 1px, transparent 1px),
-              linear-gradient(to bottom, #C4BFA8 1px, transparent 1px)
+              linear-gradient(to right, #E4E4E7 1px, transparent 1px),
+              linear-gradient(to bottom, #E4E4E7 1px, transparent 1px)
             `,
-            backgroundSize: '40px 40px',
-            backgroundPosition: '-0.5px -0.5px'
+            backgroundSize: '24px 24px'
           }}
         />
 
         {/* Mobile Header */}
-        <header className="lg:hidden sticky top-0 z-40 bg-[#F5F0E6] px-3 py-2 flex-shrink-0 border-b border-[#C4BFA8]">
+        <header className="lg:hidden sticky top-0 z-40 bg-white px-3 py-2 flex-shrink-0 border-b border-[#E4E4E7]">
           <div className="flex items-center justify-between gap-2">
             {/* Hamburger Menu */}
             <button
               onClick={() => setMobileNavOpen(true)}
-              className="flex items-center justify-center p-2 rounded-none bg-[#F5F0E6] border border-[#C4BFA8] text-[#5C5844] min-h-[44px] min-w-[44px] hover:bg-[#EAE6D8] transition-none shadow-sm"
+              className="flex items-center justify-center p-2 rounded-none bg-white border border-zinc-300 text-zinc-600 min-h-[44px] min-w-[44px] hover:bg-zinc-100 transition-none shadow-sm"
               aria-label="Open navigation menu"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -227,7 +226,7 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
             </button>
 
             {/* Title */}
-            <h1 className="text-[#3D3A2E] font-mono text-[10px] uppercase tracking-[0.18em] truncate flex-1 text-center">
+            <h1 className="text-black font-mono text-[10px] uppercase tracking-[0.18em] truncate flex-1 text-center">
               SG Property Analytics
             </h1>
 
@@ -237,8 +236,8 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
 
           {/* Mobile Page Indicator */}
             <div className="mt-2 flex justify-center">
-               <div className="inline-flex rounded-none bg-[#F5F0E6] border border-[#D4CEB8] px-3 py-1.5 shadow-sm">
-                <span className="text-[#5C5844] font-mono text-[10px] uppercase tracking-[0.18em]">
+               <div className="inline-flex rounded-none bg-white border border-zinc-200 px-3 py-1.5 shadow-sm">
+                <span className="text-zinc-600 font-mono text-[10px] uppercase tracking-[0.18em]">
                 {NAV_ITEMS.find(item => item.id === activePage)?.label || 'Market Core'}
               </span>
             </div>
@@ -246,14 +245,14 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
         </header>
 
         {/* Main Content - Wrapped with Suspense + ErrorBoundary */}
-        {/* FLOATING CARD ARCHITECTURE - Cream card with margins on all sides */}
+        {/* FLOATING CARD ARCHITECTURE - White card with margins on all sides */}
         <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden flex flex-col p-4 lg:p-6 relative z-10">
-          {/* Floating Cream Card - Visible gap from sidebar, margins on all sides */}
-          <div className="flex-1 min-w-0 bg-[#F5F0E6] border border-[#C4BFA8] shadow-[4px_4px_0px_0px_rgba(61,58,46,0.08)] ml-2 lg:ml-4">
+          {/* Floating White Card - Visible gap from sidebar, margins on all sides */}
+          <div className="flex-1 min-w-0 bg-white border border-[#E4E4E7] shadow-[4px_4px_0px_0px_rgba(0,0,0,0.08)] ml-2 lg:ml-4">
             <div className="p-4 lg:p-6">
               <ErrorBoundary name="Page Content">
                 <Suspense fallback={<ContentLoadingFallback />}>
-                  <div className="flex-1 min-w-0 text-[#3D3A2E]">
+                  <div className="flex-1 min-w-0 text-[#18181B]">
                     {content}
                   </div>
                 </Suspense>
