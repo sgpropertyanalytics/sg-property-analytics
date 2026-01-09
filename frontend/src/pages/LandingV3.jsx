@@ -340,7 +340,7 @@ function CommandBar({ onExecute }) {
         {/* Status bar */}
         <div className="px-4 py-1.5 bg-neutral-900/50 border-t border-neutral-800 flex justify-between items-center text-[10px] text-neutral-400 font-mono">
           <span>STATUS: LISTENING</span>
-          <span>[ENTER] to EXECUTE</span>
+          <span><span className="text-emerald-500">[ENTER]</span> to EXECUTE</span>
         </div>
       </div>
 
@@ -1762,22 +1762,9 @@ export default function LandingV3() {
                         SYSTEM ONLINE
                       </span>
                     </div>
-                    <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-black/40">
-                      //
-                    </span>
                     <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-black/50">
-                      DATA INTEGRITY: 100%
+                      // SECTOR: PRIVATE RESIDENTIAL // SINGAPORE
                     </span>
-                  </motion.div>
-
-                  {/* Sector Label */}
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.5, delay: 0.05 }}
-                    className="mt-4 font-mono text-[11px] uppercase tracking-[0.2em] text-black/50"
-                  >
-                    SECTOR: PRIVATE RESIDENTIAL // SINGAPORE
                   </motion.div>
 
                   {/* Main Headline - Tight, Structural */}
@@ -1788,7 +1775,7 @@ export default function LandingV3() {
                     className="mt-2 font-display text-4xl sm:text-5xl md:text-6xl xl:text-7xl font-normal uppercase tracking-[-0.04em] leading-[0.95]"
                   >
                     <span className="block text-black">SGP:Terminal</span>
-                    <span className="block text-black/60 text-sm sm:text-base md:text-lg mt-3 font-mono uppercase tracking-[0.15em]">Private Residential Intelligence</span>
+                    <span className="block text-black/60 text-sm sm:text-base md:text-lg mt-3 font-mono uppercase tracking-[0.15em]">Market Intelligence</span>
                   </motion.h1>
 
                   <motion.div
