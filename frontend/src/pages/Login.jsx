@@ -53,10 +53,41 @@ function Login() {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 min-h-screen">
+    <div className="grid grid-cols-1 lg:grid-cols-2 min-h-screen relative">
+
+      {/* ===== GLOBAL NOISE OVERLAY ===== */}
+      <div
+        className="fixed inset-0 pointer-events-none z-50 opacity-[0.04]"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+        }}
+      />
+
+      {/* ===== CENTER VERTICAL RULER (Desktop only) ===== */}
+      <div className="hidden lg:block fixed left-1/2 top-0 bottom-0 -translate-x-1/2 z-40 pointer-events-none">
+        {/* Main vertical line with fade */}
+        <div
+          className="absolute left-1/2 top-0 bottom-0 w-px bg-black/10"
+          style={{
+            maskImage: 'linear-gradient(to bottom, transparent 0%, black 25%, black 75%, transparent 100%)',
+            WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 25%, black 75%, transparent 100%)'
+          }}
+        />
+        {/* Tick marks - from 15% to 85% of screen height */}
+        {[...Array(12)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute left-1/2 flex items-center"
+            style={{ top: `calc(15% + ${i * 60}px)` }}
+          >
+            <div className="w-2 h-px bg-black/30 -translate-x-1/2" />
+            <span className="font-mono text-[8px] text-black/30 ml-2">{String((i + 1) * 60).padStart(4, '0')}</span>
+          </div>
+        ))}
+      </div>
 
       {/* ===== MOBILE: Image Panel (stacks above on mobile) ===== */}
-      <div className="lg:hidden relative h-[200px] overflow-hidden bg-[#fafafa]">
+      <div className="lg:hidden relative h-[280px] overflow-hidden bg-[#fafafa]">
         {/* Data Atmosphere - Mobile */}
         <div className="absolute inset-0 flex justify-around opacity-[0.04] overflow-hidden pointer-events-none">
           <div className="flex flex-col items-center font-mono text-[8px] text-black tracking-wider">
@@ -69,31 +100,46 @@ function Login() {
         <img
           src="/ZG.png"
           alt="Zyon Grand"
-          className="absolute bottom-0 right-0 w-full h-full object-cover object-top"
+          className="absolute bottom-0 right-0 h-[220%] object-contain object-right -translate-y-60"
         />
 
-        {/* Corner Label - Mobile */}
-        <div className="absolute top-4 left-4 font-mono text-[9px] uppercase tracking-widest text-black/40">
-          <span className="text-[#FF6600]">|</span> Zyon Grand
-        </div>
       </div>
 
       {/* ===== LEFT COLUMN - Form/Content ===== */}
       <div className="relative bg-[#fafafa] flex flex-col justify-center items-center px-6 md:px-12 py-12 overflow-hidden order-2 lg:order-1 lg:border-r border-neutral-200">
 
-        {/* Diagonal Pinstripe Background */}
+        {/* Executive Pinstripe Background */}
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
+            backgroundColor: '#ffffff',
             backgroundImage: `repeating-linear-gradient(
-              45deg,
+              -45deg,
               transparent,
-              transparent 7px,
-              #E5E5E5 7px,
-              #E5E5E5 8px
+              transparent 4px,
+              #e5e5e5 4px,
+              #e5e5e5 5px
             )`
           }}
         />
+
+        {/* ===== PASSIVE DATA BLOCKS ===== */}
+
+        {/* Version + Memory - Bottom Left */}
+        <div className="absolute bottom-4 left-4 font-mono text-[9px] text-black/25 uppercase tracking-widest z-20 space-y-1">
+          <div>v.2.0.4 [STABLE]</div>
+          <div>:: MEMORY_USAGE : 14%</div>
+          <div>:: CACHE_HIT : 0.97</div>
+        </div>
+
+        {/* System Hash - Bottom Right (on left panel) */}
+        <div className="absolute bottom-4 right-4 font-mono text-[8px] text-black/20 z-20 text-right space-y-0.5 hidden lg:block">
+          <div>0x7F3A9B2E</div>
+          <div>0x4C8D1F6A</div>
+          <div>0xE2B5A0C3</div>
+        </div>
+
+
 
         {/* Back Button - Outside the frame */}
         <button
@@ -105,7 +151,7 @@ function Login() {
         </button>
 
         {/* ===== TECHNICAL FRAME ===== */}
-        <div className="relative w-full max-w-[480px] bg-white border border-black p-10 md:p-12 z-10 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+        <div className="relative w-full max-w-[480px] bg-white border-2 border-black p-10 md:p-12 z-10 shadow-[8px_8px_0px_0px_#000000]">
 
           {/* Corner Accents - Registration Marks */}
           {/* Top-Left */}
@@ -117,16 +163,16 @@ function Login() {
           {/* Bottom-Right */}
           <div className="absolute -bottom-[7px] -right-[7px] text-black/40 font-mono text-sm leading-none">+</div>
 
+
           {/* Top Border Label - breaks the border line */}
           <div className="absolute -top-[10px] left-1/2 -translate-x-1/2 bg-white px-3">
             <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-black/40">
-              :: Auth_Module ::
+              :: SYSTEM_ENTRY_POINT ::
             </span>
           </div>
 
-          {/* Micro Label - Red/Orange Pipe */}
-          <div className="border-l-2 border-black pl-4 mb-6 flex items-center gap-1">
-            <span className="text-[#FF6600] font-mono text-[10px]">|</span>
+          {/* Micro Label */}
+          <div className="mb-6">
             <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-gray-500">
               System Access
             </span>
@@ -143,8 +189,8 @@ function Login() {
           </h1>
 
           {/* Subtext */}
-          <p className="font-mono text-sm text-black/50 mb-10 tracking-wide">
-            Institutional clearance required. Preview mode active.
+          <p className="font-mono text-xs text-black/50 mb-10 tracking-wide">
+            Evaluate with the latest data + market trends
           </p>
 
           {/* Error Message */}
@@ -181,7 +227,7 @@ function Login() {
                   <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
                   <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                 </svg>
-                {isSigningIn ? 'Authenticating...' : 'Continue with Google'}
+                {isSigningIn ? '[ AUTHENTICATING... ]' : '[ CONTINUE WITH GOOGLE ]'}
               </span>
             </motion.button>
           ) : (
@@ -192,7 +238,7 @@ function Login() {
               <svg className="w-4 h-4 opacity-50" viewBox="0 0 24 24">
                 <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
               </svg>
-              Continue with Google
+              [ CONTINUE WITH GOOGLE ]
             </button>
           )}
 
@@ -300,71 +346,61 @@ function Login() {
       {/* ===== RIGHT COLUMN - Kaiju Towers (Desktop) ===== */}
       <div className="hidden lg:block relative h-full overflow-hidden bg-[#F5F5F7] order-2">
 
-        {/* Grid Sky - 3D Wireframe Pattern */}
+        {/* Kaiju Image - Sits BEHIND the grid (Schematic Approach) */}
         <div
-          className="absolute inset-0 pointer-events-none opacity-[0.04]"
+          className="absolute bottom-0 left-0 right-0 h-[95%] z-0"
           style={{
-            backgroundImage: `
-              linear-gradient(to right, #000 1px, transparent 1px),
-              linear-gradient(to bottom, #000 1px, transparent 1px)
-            `,
-            backgroundSize: '60px 60px',
-            maskImage: 'linear-gradient(to bottom, black 0%, black 40%, transparent 70%)',
-            WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 40%, transparent 70%)'
-          }}
-        />
-
-        {/* Perspective Grid Overlay - adds depth */}
-        <div
-          className="absolute inset-0 pointer-events-none opacity-[0.02]"
-          style={{
-            backgroundImage: `radial-gradient(circle at 1px 1px, #000 1px, transparent 0)`,
-            backgroundSize: '20px 20px',
-            maskImage: 'linear-gradient(to bottom, black 0%, transparent 50%)',
-            WebkitMaskImage: 'linear-gradient(to bottom, black 0%, transparent 50%)'
-          }}
-        />
-
-        {/* Directive Text Block - Data Column */}
-        <div className="absolute top-8 left-8 z-20 max-w-[320px]">
-          {/* Primary Directive - Headline */}
-          <div className="mb-4">
-            <p className="font-mono font-bold text-base text-black leading-tight">
-              {'>'} DIRECTIVE // INSTITUTIONAL-GRADE ANALYTICS : SINGAPORE_PRIVATE_PROPERTY
-            </p>
-          </div>
-
-          {/* Execution Parameters - Body */}
-          <div className="font-mono text-sm text-neutral-600 leading-relaxed">
-            <p>// EXECUTE: Decision_making with latest raw data + market_trends</p>
-          </div>
-        </div>
-
-        {/* Kaiju Image - Massive towers anchored bottom-right with top fade */}
-        <div
-          className="absolute bottom-0 left-0 right-0 h-[82%]"
-          style={{
-            maskImage: 'linear-gradient(to bottom, transparent 0%, black 10%, black 100%)',
-            WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 10%, black 100%)'
+            maskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 80%, transparent 100%), linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)',
+            WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 80%, transparent 100%), linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)',
+            maskComposite: 'intersect',
+            WebkitMaskComposite: 'source-in'
           }}
         >
           <img
             src="/ZG.png"
             alt="Zyon Grand"
-            className="w-full h-full object-cover object-bottom"
+            className="h-[200%] object-contain object-right ml-auto -translate-y-80 opacity-70"
+            style={{
+              filter: 'contrast(0.8) brightness(1.15) grayscale(100%)',
+              mixBlendMode: 'multiply'
+            }}
           />
         </div>
 
-        {/* Corner Technical Labels */}
-        <div className="absolute top-6 right-6 font-mono text-[10px] uppercase tracking-widest text-black/30 z-10">
-          <span className="text-[#FF6600]">|</span> Zyon Grand
+        {/* Grid Sky - Now ABOVE the building (z-10) */}
+        <div
+          className="absolute inset-0 pointer-events-none opacity-[0.06] z-10"
+          style={{
+            backgroundImage: `
+              linear-gradient(to right, #000 1px, transparent 1px),
+              linear-gradient(to bottom, #000 1px, transparent 1px)
+            `,
+            backgroundSize: '60px 60px'
+          }}
+        />
+
+        {/* Perspective Grid Overlay - adds depth */}
+        <div
+          className="absolute inset-0 pointer-events-none opacity-[0.03] z-10"
+          style={{
+            backgroundImage: `radial-gradient(circle at 1px 1px, #000 1px, transparent 0)`,
+            backgroundSize: '20px 20px'
+          }}
+        />
+
+        {/* Directive Text Block - Data Column */}
+        <div className="absolute top-8 left-8 z-20 space-y-2">
+          {/* Primary Directive - Headline */}
+          <p className="font-mono text-sm leading-tight whitespace-nowrap tracking-wide">
+            <span className="font-normal text-black/50">{'>'} DIRECTIVE //</span>
+            <span className="font-semibold text-black"> INSTITUTIONAL-GRADE ANALYTICS</span>
+            <span className="font-normal text-black/50"> : SINGAPORE_PRIVATE_PROPERTY</span>
+          </p>
+          <p className="font-mono text-sm leading-tight whitespace-nowrap tracking-wide font-normal text-black/50">
+            {'>'} CCR [D09] // River Valley
+          </p>
         </div>
-        <div className="absolute bottom-6 left-6 font-mono text-[10px] uppercase tracking-widest text-black/30 z-10">
-          01.3521°N / 103.8198°E
-        </div>
-        <div className="absolute bottom-6 right-6 font-mono text-[10px] uppercase tracking-widest text-black/40 z-10">
-          SG_D15 // NEW_LAUNCH
-        </div>
+
       </div>
     </div>
   );
