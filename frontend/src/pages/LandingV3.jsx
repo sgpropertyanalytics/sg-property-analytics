@@ -1723,9 +1723,9 @@ export default function LandingV3() {
               <button
                 type="button"
                 onClick={onAnyCTA}
-                className="px-4 py-2 border border-black bg-black text-white font-mono text-[10px] uppercase tracking-[0.15em] hover:bg-transparent hover:text-black focus:outline-none transition-colors duration-0"
+                className="px-4 py-2 border border-black bg-transparent text-black font-mono text-[10px] uppercase tracking-[0.15em] hover:bg-black hover:text-white focus:outline-none transition-colors duration-0"
               >
-                [ ACCESS ]
+                // LOGIN
               </button>
             </div>
           </div>
