@@ -166,6 +166,8 @@ function CommandBar({ onExecute }) {
   const [value, setValue] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isFocused, setIsFocused] = useState(false);
+  const [placeholder, setPlaceholder] = useState('');
 
   const suggestions = useMemo(
     () => [
@@ -176,9 +178,55 @@ function CommandBar({ onExecute }) {
       'stream latest resale prints',
       'validate ura pipeline health',
       'find mispricing: 721 sqft > $2,480 psf',
+      'analyze new launch vs resale spread',
     ],
     [],
   );
+
+  // Typewriter effect for dynamic placeholders
+  const examples = useMemo(() => [
+    "scan --target=D10 --type=New_Sale",
+    "analyze --project='Canninghill Piers'",
+    "query --psf < 2800 --district=09"
+  ], []);
+
+  useEffect(() => {
+    let currentExample = 0;
+    let charIndex = 0;
+    let isDeleting = false;
+    let pauseCounter = 0;
+
+    const typeLoop = setInterval(() => {
+      const currentText = examples[currentExample];
+
+      // Pause at the end before deleting
+      if (pauseCounter > 0) {
+        pauseCounter--;
+        return;
+      }
+
+      if (!isDeleting && charIndex <= currentText.length) {
+        setPlaceholder(currentText.substring(0, charIndex));
+        charIndex++;
+      } else if (isDeleting && charIndex >= 0) {
+        setPlaceholder(currentText.substring(0, charIndex));
+        charIndex--;
+      }
+
+      if (charIndex === currentText.length + 1 && !isDeleting) {
+        isDeleting = true;
+        pauseCounter = 20; // Pause before deleting
+      }
+
+      if (charIndex === -1 && isDeleting) {
+        isDeleting = false;
+        currentExample = (currentExample + 1) % examples.length;
+        charIndex = 0;
+      }
+    }, 120);
+
+    return () => clearInterval(typeLoop);
+  }, [examples]);
 
   const filtered = useMemo(() => {
     const q = value.trim().toLowerCase();
@@ -223,81 +271,117 @@ function CommandBar({ onExecute }) {
     }
   };
 
-  const [cursorVisible, setCursorVisible] = useState(true);
-
-  useEffect(() => {
-    const interval = setInterval(() => setCursorVisible(v => !v), 530);
-    return () => clearInterval(interval);
-  }, []);
+  const showSuggestions = isOpen && filtered.length > 0;
 
   return (
-    <div className="relative">
-      {/* CLI-style input with bottom border only */}
-      <div className="flex items-stretch bg-transparent command-bar-focus">
-        <div className="flex items-center gap-2 pr-3">
-          <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-black/40">
-            root@sg-terminal:~$
+    <div className="relative group">
+      {/* Glow effect */}
+      <div className={`absolute -inset-0.5 bg-gradient-to-r from-emerald-500 to-cyan-500 blur opacity-0 group-hover:opacity-20 transition duration-500 ${isFocused ? 'opacity-30' : ''}`} />
+
+      {/* Terminal chassis - smoked glass effect */}
+      <div className={`relative bg-[#0a0a0a]/80 backdrop-blur-md border border-neutral-800 shadow-2xl overflow-hidden z-20 transition-all duration-200 ${showSuggestions ? 'border-b-0 rounded-b-none' : ''}`}>
+
+        {/* Terminal header bar */}
+        <div className="flex items-center justify-between px-4 py-2 bg-neutral-900 border-b border-neutral-800">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-red-500/80" />
+            <div className="w-2 h-2 rounded-full bg-yellow-500/80" />
+            <div className="w-2 h-2 rounded-full bg-emerald-500/80" />
+          </div>
+          <div className="text-[10px] font-mono text-neutral-500 tracking-widest uppercase">
+            SGP_INTEL // v.2.0.4
+          </div>
+        </div>
+
+        {/* Input area */}
+        <div className="flex items-center px-4 py-4 font-mono text-sm">
+          {/* Prompt label */}
+          <span className="text-emerald-500 mr-3 select-none text-xs shrink-0">
+            root@sg-node:~$
           </span>
+
+          {/* Input container */}
+          <div className="relative flex-1">
+            <input
+              ref={inputRef}
+              type="text"
+              value={value}
+              onChange={(e) => {
+                setValue(e.target.value);
+                setIsOpen(true);
+                setActiveIndex(0);
+              }}
+              onFocus={() => {
+                setIsFocused(true);
+              }}
+              onClick={() => {
+                setIsOpen((prev) => !prev);
+              }}
+              onBlur={() => {
+                setIsFocused(false);
+                window.setTimeout(() => setIsOpen(false), 120);
+              }}
+              onKeyDown={onKeyDown}
+              className="w-full bg-transparent text-white text-xs outline-none caret-emerald-500"
+              autoComplete="off"
+              spellCheck="false"
+            />
+
+            {/* Ghost placeholder with typewriter effect */}
+            {!value && (
+              <span className="absolute left-0 top-1/2 -translate-y-1/2 text-neutral-500 text-xs pointer-events-none truncate w-full">
+                {placeholder}
+              </span>
+            )}
+          </div>
+
         </div>
-        <div className="flex-1 border-b border-black/30 flex items-center">
-          <span className={`font-mono text-sm text-black ${cursorVisible ? 'opacity-100' : 'opacity-0'}`}>█</span>
-          <input
-            ref={inputRef}
-            value={value}
-            onChange={(e) => {
-              setValue(e.target.value);
-              setIsOpen(true);
-              setActiveIndex(0);
-            }}
-            onFocus={() => setIsOpen(true)}
-            onBlur={() => {
-              window.setTimeout(() => setIsOpen(false), 120);
-            }}
-            onKeyDown={onKeyDown}
-            placeholder="scan --target=D10 --type=New Sale --psf<2800"
-            className="flex-1 min-w-0 py-2 font-mono text-xs tracking-wide text-black/80 placeholder:text-black/30 bg-transparent outline-none"
-          />
+
+        {/* Status bar */}
+        <div className="px-4 py-1.5 bg-neutral-900/50 border-t border-neutral-800 flex justify-between items-center text-[10px] text-neutral-600 font-mono">
+          <span>STATUS: LISTENING</span>
+          <span>[ENTER] to EXECUTE</span>
         </div>
-        <button
-          type="button"
-          onClick={() => execute(value || filtered[0] || '')}
-          className="group flex items-center gap-2 ml-4 px-4 py-2 border border-black bg-transparent hover:bg-black hover:text-white text-black focus:outline-none transition-colors duration-0"
-        >
-          <span className="font-mono text-[10px] uppercase tracking-[0.15em]">[ EXECUTE_ ]</span>
-        </button>
       </div>
 
-
-
+      {/* Suggestions drawer - seamlessly extends from terminal */}
       <AnimatePresence>
-        {isOpen && filtered.length ? (
+        {showSuggestions && (
           <motion.div
-            initial={{ opacity: 0, y: 8 }}
+            initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 8 }}
-            className="absolute left-0 right-0 mt-2 border border-black/10 bg-[#fafafa]"
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.15 }}
+            className="absolute top-full left-0 right-0 mt-0 bg-neutral-900/95 border-x border-b border-neutral-800 rounded-t-none border-t-0 backdrop-blur-md z-10"
           >
-            {filtered.map((s, i) => (
-              <button
-                key={s}
-                type="button"
-                onMouseEnter={() => setActiveIndex(i)}
-                onClick={() => {
-                  setValue(s);
-                  setIsOpen(false);
-                }}
-                className={`w-full px-3 py-2 flex items-center justify-between gap-3 text-left hover:bg-black/[0.02] border-t first:border-t-0 border-black/05 ${
-                  i === activeIndex ? 'bg-black/[0.02]' : ''
-                }`}
-              >
-                <div className="min-w-0">
-                  <div className="font-mono text-xs text-black/70 truncate">{s}</div>
-                </div>
-                <ChevronRight className="h-4 w-4 text-black/60" />
-              </button>
-            ))}
+            {/* Drawer header */}
+            <div className="px-4 py-1.5 bg-neutral-800/50 text-[10px] text-emerald-500/50 font-mono tracking-widest uppercase border-b border-neutral-800/50">
+              Available Protocols
+            </div>
+
+            {/* Protocol list */}
+            <ul className="py-1">
+              {filtered.map((s, i) => (
+                <li
+                  key={s}
+                  onMouseEnter={() => setActiveIndex(i)}
+                  onClick={() => {
+                    setValue(s);
+                    setIsOpen(false);
+                  }}
+                  className={`px-4 py-2 font-mono text-xs cursor-pointer flex items-center group transition-colors ${
+                    i === activeIndex ? 'text-white bg-emerald-500/10' : 'text-neutral-400 hover:text-white hover:bg-emerald-500/10'
+                  }`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full mr-3 transition-colors ${
+                    i === activeIndex ? 'bg-emerald-400' : 'bg-neutral-600 group-hover:bg-emerald-400'
+                  }`} />
+                  {s}
+                </li>
+              ))}
+            </ul>
           </motion.div>
-        ) : null}
+        )}
       </AnimatePresence>
     </div>
   );
@@ -367,6 +451,10 @@ function ParticleGlobe() {
   const canvasRef = useRef(null);
   const rafRef = useRef(0);
   const dragRef = useRef({ isDown: false, x: 0, y: 0 });
+  const [clock, setClock] = useState(() => formatSgClock(new Date()));
+
+  // Live clock update
+  useInterval(() => setClock(formatSgClock(new Date())), 1000);
 
   const stateRef = useRef({
     t: 0,
@@ -588,7 +676,10 @@ function ParticleGlobe() {
       <canvas ref={canvasRef} className="absolute inset-0" />
       <div className="absolute top-4 right-4 text-right">
         <div className="font-mono text-[10px] uppercase tracking-wider text-black/60">
-          GLOBAL_NETWORK
+          SINGAPORE_NETWORK
+        </div>
+        <div className="mt-1 font-mono text-[10px] uppercase tracking-wider text-black/50">
+          SG {clock}
         </div>
         <div className="mt-1 flex items-center justify-end gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -603,23 +694,38 @@ function ParticleGlobe() {
 
 function StatusPanel() {
   const [clock, setClock] = useState(() => formatSgClock(new Date()));
-  const [txCount, setTxCount] = useState(103247);
-  const [integrity, setIntegrity] = useState(99.2);
-  const [syncAgo, setSyncAgo] = useState(0);
-  
+  const [data, setData] = useState({ total_records: null, last_updated: null, outliers_excluded: null });
+
   useInterval(() => setClock(formatSgClock(new Date())), 1000);
-  
+
+  // Simple fetch on mount
   useEffect(() => {
-    const id = setInterval(() => {
-      setTxCount(prev => prev + Math.floor(Math.random() * 3) + 1);
-      setIntegrity(prev => {
-        const delta = (Math.random() - 0.5) * 0.1;
-        return Math.min(99.9, Math.max(99.0, prev + delta));
-      });
-      setSyncAgo(prev => (prev + 2) % 60);
-    }, 2000);
-    return () => clearInterval(id);
+    fetch('/api/metadata')
+      .then(r => r.json())
+      .then(d => setData(d))
+      .catch(() => {});
   }, []);
+
+  const txCount = data.total_records;
+  const outliers = data.outliers_excluded || 0;
+  const integrity = txCount ? (((txCount - outliers) / txCount) * 100).toFixed(1) : null;
+
+  // Calculate time since last sync
+  const lastSyncText = useMemo(() => {
+    if (!data.last_updated) return null;
+    try {
+      const lastUpdated = new Date(data.last_updated);
+      const now = new Date();
+      const diffMs = now - lastUpdated;
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      if (diffDays > 0) return `${diffDays}d ago`;
+      if (diffHours > 0) return `${diffHours}h ago`;
+      return 'Just now';
+    } catch {
+      return null;
+    }
+  }, [data.last_updated]);
 
   return (
     <div className="border border-black/10 bg-[#fafafa] h-[240px] flex flex-col">
@@ -631,41 +737,43 @@ function StatusPanel() {
           SG {clock}
         </div>
       </div>
-      <div className="p-3 grid grid-cols-2 gap-3 flex-1">
-        <div className="border border-black/10 px-3 py-2">
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">URA LINK</div>
-          <div className="mt-1 flex items-center gap-2">
-            <LiveDot />
-            <div className="font-mono text-xs text-black/60">ONLINE</div>
-          </div>
+
+      {/* Status chips */}
+      <div className="px-3 pt-3 grid grid-cols-2 gap-2">
+        <div className="flex items-center gap-1.5 px-2 py-1 border border-black/10 bg-white">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="font-mono text-[10px] uppercase tracking-wider text-black/60">URA: ONLINE</span>
         </div>
-        <div className="border border-black/10 px-3 py-2">
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">PIPELINE</div>
-          <div className="mt-1 flex items-center gap-2">
-            <span className="relative inline-flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full bg-emerald-500 opacity-50 animate-ping" style={{ animationDuration: '2s' }} />
-              <span className="relative inline-flex h-2 w-2 bg-emerald-600" />
-            </span>
-            <div className="font-mono text-xs text-black/60">STREAMING</div>
-          </div>
-        </div>
-        <div className="border border-black/10 px-3 py-2">
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">TRANSACTIONS</div>
-          <div className="mt-1 font-mono text-xs text-black/60 tabular-nums transition-all duration-300">{txCount.toLocaleString('en-SG')}</div>
-        </div>
-        <div className="border border-black/10 px-3 py-2">
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">INTEGRITY</div>
-          <div className="mt-1 font-mono text-xs text-black/60 tabular-nums transition-all duration-300">{integrity.toFixed(1)}%</div>
+        <div className="flex items-center gap-1.5 px-2 py-1 border border-black/10 bg-white">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="font-mono text-[10px] uppercase tracking-wider text-black/60">PIPE: STREAMING</span>
         </div>
       </div>
+
+      {/* Metrics */}
+      <div className="p-3 grid grid-cols-2 gap-3 flex-1">
+        <div className="border border-black/10 px-3 py-2">
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">TRANSACTIONS</div>
+          <div className="mt-1 font-mono text-sm text-black/70 tabular-nums transition-all duration-300">
+            {txCount ? txCount.toLocaleString('en-SG') : '—'}
+          </div>
+        </div>
+        <div className="border border-black/10 px-3 py-2">
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">INTEGRITY</div>
+          <div className="mt-1 font-mono text-sm text-black/70 tabular-nums transition-all duration-300">
+            {integrity ? `${integrity}%` : '—'}
+          </div>
+        </div>
+      </div>
+
       <div className="px-3 py-2 border-t border-black/05 flex items-center justify-between mt-auto">
-        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
-          LAST SYNC: {syncAgo}s ago
+        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">
+          {lastSyncText ? `LAST SYNC: ${lastSyncText}` : 'LOADING...'}
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-1 h-1 bg-emerald-500 animate-pulse" />
-          <div className="w-1 h-1 bg-emerald-500 animate-pulse" style={{ animationDelay: '0.2s' }} />
-          <div className="w-1 h-1 bg-emerald-500 animate-pulse" style={{ animationDelay: '0.4s' }} />
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" style={{ animationDelay: '0.2s' }} />
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" style={{ animationDelay: '0.4s' }} />
         </div>
       </div>
     </div>
@@ -1558,10 +1666,10 @@ export default function LandingV3() {
 
       {/* Subtle crosshatch grid @ 80px - brightens on section hover */}
       <div
-        className={`pointer-events-none fixed inset-0 z-0 transition-opacity duration-300 ${isGridHot ? 'opacity-[0.04]' : 'opacity-[0.015]'}`}
+        className={`pointer-events-none fixed inset-0 z-0 transition-opacity duration-300 ${isGridHot ? 'opacity-[0.02]' : 'opacity-[0.008]'}`}
         style={{
           backgroundImage:
-            'linear-gradient(to right, rgba(0,0,0,1) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,1) 1px, transparent 1px)',
+            'linear-gradient(to right, rgba(71,85,105,1) 1px, transparent 1px), linear-gradient(to bottom, rgba(71,85,105,1) 1px, transparent 1px)',
           backgroundSize: '80px 80px',
         }}
       />
@@ -1604,7 +1712,7 @@ export default function LandingV3() {
               </div>
               <div className="min-w-0">
                 <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
-                  PROPANALYTICS.SG
+                  SG Property Analytics
                 </div>
                 <div className="text-sm font-bold tracking-tight text-black">
                   Intelligence Terminal
@@ -1622,16 +1730,9 @@ export default function LandingV3() {
               <button
                 type="button"
                 onClick={onAnyCTA}
-                className="px-4 py-2 border border-black bg-transparent text-black font-mono text-[10px] uppercase tracking-[0.15em] hover:bg-black hover:text-white focus:outline-none transition-colors duration-0"
-              >
-                LOG IN
-              </button>
-              <button
-                type="button"
-                onClick={onAnyCTA}
                 className="px-4 py-2 border border-black bg-black text-white font-mono text-[10px] uppercase tracking-[0.15em] hover:bg-transparent hover:text-black focus:outline-none transition-colors duration-0"
               >
-                REQUEST ACCESS
+                [ ACCESS ]
               </button>
             </div>
           </div>
@@ -1653,6 +1754,9 @@ export default function LandingV3() {
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
                 {/* 60/40 asymmetric split for visual interest */}
                 <div className="lg:col-span-7">
+                  {/* Top spacer - balances bottom System Log Filler */}
+                  <div className="h-12" />
+
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -1724,19 +1828,8 @@ export default function LandingV3() {
                     </div>
                   </motion.div>
 
-                  {/* System Log Filler - balances Globe height */}
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.6, delay: 0.4 }}
-                    className="mt-4 font-mono text-[10px] text-black/40 h-20 overflow-hidden border-l border-black/10 pl-3"
-                  >
-                    <div className="opacity-50">sys_check: integrity_scan... OK</div>
-                    <div className="opacity-50">net_ops: handshake_ura... OK</div>
-                    <div className="opacity-50">cache_warmup: districts=28... OK</div>
-                    <div className="opacity-50">index_projects: count=1,247... OK</div>
-                    <div className="text-emerald-600">{'>>'} awaiting_input_</div>
-                  </motion.div>
+                  {/* Bottom spacer - balances top spacer */}
+                  <div className="mt-4 h-20" />
                 </div>
 
                 {/* Globe column - slightly overflow for tension */}
@@ -2050,7 +2143,7 @@ export default function LandingV3() {
 
             <div className="mt-10 flex items-center justify-between gap-4 border-t border-[#fafafa]/10 pt-6">
               <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#fafafa]/60">
-                PROPANALYTICS.SG · TERMINAL
+                SG Property Analytics · TERMINAL
               </div>
               <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#fafafa]/50">
                 DO NOT DISTRIBUTE
