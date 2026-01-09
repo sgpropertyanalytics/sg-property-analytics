@@ -335,6 +335,7 @@ apiClient.interceptors.response.use(
           detail: { url: requestUrl }
         }));
       }
+    }
     return Promise.reject(error);
   }
 );
