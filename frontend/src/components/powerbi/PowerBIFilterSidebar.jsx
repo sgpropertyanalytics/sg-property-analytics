@@ -115,16 +115,17 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
 
   // ==================== HORIZONTAL LAYOUT ====================
   // Industrial Wireframe: Segmented controls as "mechanical switches"
-  // Transparent backgrounds, sharp edges, structural borders
+  // Bordered container matches content cards below (same visual boundaries)
   // Single row layout: Property filters | Time Duration | Granularity | Reset
-  // Fixed height container (60px) for vertical alignment consistency
   if (layout === 'horizontal') {
     return (
-      <div className="h-[60px] py-3 bg-transparent max-w-full flex items-center">
-        {/* Responsive: wrap at lg (1024-1279px), no-wrap + scroll at xl+ (1280px+) */}
-        <div className="flex flex-wrap xl:flex-nowrap items-center justify-start gap-3 xl:gap-4 xl:overflow-x-auto xl:scrollbar-hide w-full">
-          {/* Property Filters - Region + District + Bedroom */}
-          <div className="flex items-center gap-4 flex-shrink-0 min-w-0">
+      <div className="py-3">
+        {/* Bordered container - matches KEY METRICS card styling exactly */}
+        <div className="bg-white border border-slate-300 px-5 py-3">
+          {/* Responsive: wrap at lg (1024-1279px), no-wrap + scroll at xl+ (1280px+) */}
+          <div className="flex flex-wrap xl:flex-nowrap items-center justify-start gap-3 xl:gap-4 xl:overflow-x-auto xl:scrollbar-hide w-full">
+            {/* Property Filters - Region + District + Bedroom */}
+            <div className="flex items-center gap-4 flex-shrink-0 min-w-0">
             {/* Region Segmented Control */}
             <div className="segmented-control">
               {/* "All" button */}
@@ -229,6 +230,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
               Reset
             </button>
           )}
+          </div>
         </div>
       </div>
     );
