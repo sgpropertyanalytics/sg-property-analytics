@@ -206,7 +206,7 @@ export function KPICardV2({
         <div className="flex-1 flex items-end min-w-0">
           {typeof value === 'string' ? (
             <div className="truncate" title={badge ? `${value} ${badge.text}` : value}>
-              <span className="text-[20px] sm:text-[24px] font-mono font-medium text-slate-900 leading-none tabular-nums">
+              <span className="text-xl sm:text-2xl font-mono font-medium text-slate-900 leading-none tabular-nums">
                 {value}
               </span>
               {badge && (
