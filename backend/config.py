@@ -73,6 +73,8 @@ class Config:
     JWT_SECRET = os.getenv('JWT_SECRET', os.getenv('SECRET_KEY', 'dev-jwt-secret-key'))
     JWT_ALGORITHM = os.getenv('JWT_ALGORITHM', 'HS256')
     JWT_EXPIRATION_HOURS = int(os.getenv('JWT_EXPIRATION_HOURS', '24'))
+    AUTH_COOKIE_NAME = os.getenv('AUTH_COOKIE_NAME', 'auth_token')
+    CSRF_COOKIE_NAME = os.getenv('CSRF_COOKIE_NAME', 'csrf_token')
 
     # Premium bypass for preview/testing environments
     # Comma-separated list of emails that always get premium access
@@ -104,4 +106,3 @@ class Config:
             'options': '-c statement_timeout=300000',  # 5 min query timeout
         }
     }
-

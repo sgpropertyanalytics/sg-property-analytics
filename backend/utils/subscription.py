@@ -20,18 +20,16 @@ from models.user import User
 
 def get_user_from_request():
     """
-    Extract and verify user from Authorization header.
+    Extract and verify user from Authorization header or auth cookie.
 
     Returns:
         User object if valid token, None otherwise
     """
-    from routes.auth import verify_token
+    from routes.auth import verify_token, get_auth_token_from_request
 
-    auth_header = request.headers.get('Authorization')
-    if not auth_header or not auth_header.startswith('Bearer '):
+    token = get_auth_token_from_request()
+    if not token:
         return None
-
-    token = auth_header.split(' ')[1]
     user_id = verify_token(token)
 
     if not user_id:

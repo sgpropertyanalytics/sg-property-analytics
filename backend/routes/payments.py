@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 import os
 from models.database import db
 from models.user import User
-from routes.auth import verify_token
+from routes.auth import verify_token, get_auth_token_from_request
 
 payments_bp = Blueprint('payments', __name__)
 
@@ -65,11 +65,9 @@ def create_checkout():
             return jsonify({"error": "Payment system not configured"}), 503
 
         # Verify JWT
-        auth_header = request.headers.get('Authorization')
-        if not auth_header or not auth_header.startswith('Bearer '):
+        token = get_auth_token_from_request()
+        if not token:
             return jsonify({"error": "Authorization required"}), 401
-
-        token = auth_header.split(' ')[1]
         user_id = verify_token(token)
         if not user_id:
             return jsonify({"error": "Invalid token"}), 401
@@ -270,11 +268,9 @@ def create_portal_session():
             return jsonify({"error": "Payment system not configured"}), 503
 
         # Verify JWT
-        auth_header = request.headers.get('Authorization')
-        if not auth_header or not auth_header.startswith('Bearer '):
+        token = get_auth_token_from_request()
+        if not token:
             return jsonify({"error": "Authorization required"}), 401
-
-        token = auth_header.split(' ')[1]
         user_id = verify_token(token)
         if not user_id:
             return jsonify({"error": "Invalid token"}), 401
