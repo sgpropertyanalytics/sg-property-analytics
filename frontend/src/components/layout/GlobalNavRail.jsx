@@ -12,8 +12,7 @@ import {
   CircleDollarSign,
   DoorOpen,
   Terminal,
-  Info,
-  ChevronLeft
+  Info
 } from 'lucide-react';
 
 /**
@@ -165,7 +164,7 @@ function NavItem({ item, isActive, onClick, collapsed = false }) {
   );
 }
 
-export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onPageChange, collapsed = false, onToggleCollapse }) {
+export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onPageChange, collapsed = false }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { showPaywall } = useSubscription();
@@ -291,23 +290,7 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
           />
         </div>
 
-        {/* Collapse Toggle Button - Luxury style */}
-        {onToggleCollapse && (
-          <div className={`mt-4 ${collapsed ? 'flex justify-center' : 'pl-6'}`}>
-            <button
-              onClick={onToggleCollapse}
-              className="w-8 h-8 flex items-center justify-center bg-transparent border border-slate-600/50 text-slate-500 hover:text-[#C4A484] hover:border-[#C4A484]/50 transition-all duration-150 rounded-[4px]"
-              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            >
-              <ChevronLeft
-                size={16}
-                strokeWidth={1.5}
-                className="transition-transform duration-150"
-                style={{ transform: collapsed ? 'rotate(180deg)' : 'rotate(0deg)' }}
-              />
-            </button>
-          </div>
-        )}
+        {/* Collapse Toggle moved to edge (IDE-style) in DashboardLayout */}
       </div>
 
       {/* Account Settings Modal */}

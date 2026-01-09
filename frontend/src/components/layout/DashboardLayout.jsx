@@ -165,8 +165,27 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
         <GlobalNavRail
           activePage={activePage}
           collapsed={isNavCollapsed}
-          onToggleCollapse={toggleNavCollapse}
         />
+        {/* IDE-style Edge Toggle - Positioned on the vertical dividing line */}
+        <button
+          onClick={toggleNavCollapse}
+          className="absolute top-1/2 -right-3 transform -translate-y-1/2 z-50 w-6 h-12 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-r-md flex items-center justify-center text-slate-400 hover:text-white transition-colors duration-150"
+          aria-label={isNavCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{ transform: isNavCollapsed ? 'rotate(180deg)' : 'rotate(0deg)' }}
+          >
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
       </div>
 
       {/* Mobile Nav Drawer Overlay */}
@@ -252,14 +271,15 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
           {/* Content Card - Technical dot grid background */}
           <div className="flex-1 min-w-0 flex flex-col border border-gray-200 bg-white">
             {/* Console Header - Terminal Block (auto-applied to all pages) */}
-            <div className="flex items-center justify-between px-6 py-2 bg-[#0F172A] border-b border-slate-700">
+            {/* Height: 48px (h-12), dense military precision */}
+            <div className="flex items-center justify-between px-6 h-12 bg-[#0F172A]">
               {/* Page Title */}
               <h1 className="text-sm font-semibold text-white tracking-wide">
                 {NAV_ITEMS.find(item => item.id === activePage)?.label || 'Dashboard'}
               </h1>
 
-              {/* Metadata - Original wording preserved */}
-              <div className="flex items-center gap-3 text-xs text-slate-400">
+              {/* Metadata - Monospace for raw system data look */}
+              <div className="flex items-center gap-3 text-xs text-slate-400 font-mono">
                 {apiMetadata && (
                   <>
                     <span>
@@ -286,13 +306,13 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                     <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
                   </span>
-                  <span className="text-emerald-400 text-[10px] font-mono">LIVE</span>
+                  <span className="text-emerald-400 text-[10px]">LIVE</span>
                 </div>
               </div>
             </div>
 
-            {/* Page Content */}
-            <div className="flex-1 min-w-0 technical-grid-bg p-6">
+            {/* Page Content - No top padding, attached to header like clipboard */}
+            <div className="flex-1 min-w-0 technical-grid-bg px-6 pt-4 pb-6">
               <ErrorBoundary name="Page Content">
                 <Suspense fallback={<ContentLoadingFallback />}>
                   <div className="flex-1 min-w-0 text-ink">
