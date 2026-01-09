@@ -120,8 +120,8 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
   if (layout === 'horizontal') {
     return (
       <div className="py-3">
-        {/* Bordered container - aligns with content cards (same border styling) */}
-        <div className="bg-white border border-slate-300 px-4 py-3">
+        {/* Bordered container - matches KEY METRICS card styling exactly */}
+        <div className="bg-white border border-slate-300 px-5 py-3">
           {/* Responsive: wrap at lg (1024-1279px), no-wrap + scroll at xl+ (1280px+) */}
           <div className="flex flex-wrap xl:flex-nowrap items-center justify-start gap-3 xl:gap-4 xl:overflow-x-auto xl:scrollbar-hide w-full">
             {/* Property Filters - Region + District + Bedroom */}
