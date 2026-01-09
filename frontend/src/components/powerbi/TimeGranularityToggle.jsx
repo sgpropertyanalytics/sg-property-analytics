@@ -21,9 +21,9 @@ export function TimeGranularityToggle({ className = '', layout = 'default' }) {
   const [showHelper, setShowHelper] = useState(false);
 
   const options = [
-    { value: 'year', label: 'Year' },
-    { value: 'quarter', label: 'Qtr' },
-    { value: 'month', label: 'Month' },
+    { value: 'year', label: 'Y' },
+    { value: 'quarter', label: 'Q' },
+    { value: 'month', label: 'M' },
   ];
 
   // Show helper on mount (first time only), auto-dismiss after 5s

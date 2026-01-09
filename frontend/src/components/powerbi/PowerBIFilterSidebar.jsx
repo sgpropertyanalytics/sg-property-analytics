@@ -120,116 +120,125 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
   if (layout === 'horizontal') {
     return (
       <div className="py-3">
-        {/* Bordered container with horizontal scroll */}
-        <div className="bg-white border border-slate-300 py-3 overflow-x-auto">
-          {/* Flex container - inline-flex + px-5 makes padding part of intrinsic width */}
-          <div className="inline-flex flex-nowrap items-center gap-3 xl:gap-4 px-5">
-            {/* Property Filters - Region + District + Bedroom */}
-            <div className="flex items-center gap-4 flex-shrink-0 min-w-0">
-            {/* Region Segmented Control */}
-            <div className="segmented-control">
-              {/* "All" button */}
-              <button
-                type="button"
-                onClick={() => setSegments([])}
-                className={`segmented-btn ${filters.segments.length === 0 ? 'active' : ''}`}
-              >
-                All
-              </button>
-              {REGIONS.map(seg => (
-                <button
-                  type="button"
-                  key={seg}
-                  onClick={(e) => handleFilterClick(e, seg, filters.segments, setSegments, toggleSegment)}
-                  className={`segmented-btn ${filters.segments.includes(seg) ? 'active' : ''}`}
-                  title="Shift+click to multi-select"
-                >
-                  {seg}
-                </button>
-              ))}
+        {/* Frame - visual boundary only */}
+        <div className="bg-white border border-slate-300 py-3">
+          {/* Rail - overflow safety, hidden scrollbar */}
+          <div className="overflow-x-auto scrollbar-none">
+            {/* Centering wrapper - centers when fits, left-anchors on overflow */}
+            <div className="flex justify-center">
+              {/* Content - intrinsic width + padding */}
+              <div className="flex flex-nowrap items-center gap-3 xl:gap-4 w-max px-5">
+                {/* Property Filters - Region + District + Bedroom */}
+                <div className="flex items-center gap-4">
+                {/* Region Segmented Control */}
+                <div className="segmented-control">
+                  {/* "All" button */}
+                  <button
+                    type="button"
+                    onClick={() => setSegments([])}
+                    className={`segmented-btn ${filters.segments.length === 0 ? 'active' : ''}`}
+                  >
+                    All
+                  </button>
+                  {REGIONS.map(seg => (
+                    <button
+                      type="button"
+                      key={seg}
+                      onClick={(e) => handleFilterClick(e, seg, filters.segments, setSegments, toggleSegment)}
+                      className={`segmented-btn ${filters.segments.includes(seg) ? 'active' : ''}`}
+                      title="Shift+click to multi-select"
+                    >
+                      {seg}
+                    </button>
+                  ))}
+                </div>
+
+                {/* District Dropdown */}
+                <MultiSelectDropdown
+                  options={(filterOptions.districtsRaw || []).map(d => {
+                    const areaName = DISTRICT_NAMES[d];
+                    const shortName = areaName ? areaName.split(',')[0].substring(0, 18) : d;
+                    return {
+                      value: d,
+                      label: areaName ? `${d} (${shortName})` : d
+                    };
+                  })}
+                  selected={filters.districts}
+                  onChange={setDistricts}
+                  placeholder="All Districts"
+                  searchable
+                  compact
+                  segmentedStyle
+                />
+
+                {/* Divider */}
+                <div className="hidden xl:block w-px h-7 bg-stone-400 flex-shrink-0" />
+
+                {/* Bedroom Segmented Control */}
+                <div className="segmented-control">
+                  {/* "All" button */}
+                  <button
+                    type="button"
+                    onClick={() => setBedroomTypes([])}
+                    className={`segmented-btn ${filters.bedroomTypes.length === 0 ? 'active' : ''}`}
+                  >
+                    All
+                  </button>
+                  {[1, 2, 3, 4, 5].map(br => (
+                    <button
+                      type="button"
+                      key={br}
+                      onClick={(e) => handleFilterClick(e, br, filters.bedroomTypes, setBedroomTypes, toggleBedroomType)}
+                      className={`segmented-btn ${filters.bedroomTypes.includes(br) ? 'active' : ''}`}
+                      title="Shift+click to multi-select"
+                    >
+                      {br}BR
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Divider - structural line */}
+              <div className="hidden xl:block w-px h-7 bg-stone-400 flex-shrink-0" />
+
+              {/* Time Controls - Period Presets */}
+              <div className="segmented-control flex-shrink-0">
+                {TIMEFRAME_OPTIONS.map(opt => (
+                  <button
+                    type="button"
+                    key={opt.id}
+                    onClick={(e) => { e.preventDefault(); handlePresetClick(opt.id); }}
+                    disabled={filterOptions.loading}
+                    className={`segmented-btn ${
+                      filterOptions.loading
+                        ? 'opacity-50 cursor-wait'
+                        : currentPreset === opt.id
+                          ? 'active'
+                          : ''
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Divider - structural line */}
+              <div className="hidden xl:block w-px h-7 bg-stone-400 flex-shrink-0" />
+
+              {/* Time Granularity Toggle */}
+              <TimeGranularityToggle layout="horizontal" />
+
+                {/* Reset button */}
+                {activeFilterCount > 0 && (
+                  <button
+                    onClick={handleResetFilters}
+                    className="segmented-btn border border-stone-400 text-stone-600 hover:border-red-500 hover:text-red-500"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
             </div>
-
-            {/* District Dropdown - pill-shaped to match tracks */}
-            <MultiSelectDropdown
-              options={(filterOptions.districtsRaw || []).map(d => {
-                const areaName = DISTRICT_NAMES[d];
-                const shortName = areaName ? areaName.split(',')[0].substring(0, 18) : d;
-                return {
-                  value: d,
-                  label: areaName ? `${d} (${shortName})` : d
-                };
-              })}
-              selected={filters.districts}
-              onChange={setDistricts}
-              placeholder="All Districts"
-              searchable
-              compact
-              segmentedStyle
-            />
-
-            {/* Bedroom Segmented Control */}
-            <div className="segmented-control">
-              {/* "All" button */}
-              <button
-                type="button"
-                onClick={() => setBedroomTypes([])}
-                className={`segmented-btn ${filters.bedroomTypes.length === 0 ? 'active' : ''}`}
-              >
-                All
-              </button>
-              {[1, 2, 3, 4, 5].map(br => (
-                <button
-                  type="button"
-                  key={br}
-                  onClick={(e) => handleFilterClick(e, br, filters.bedroomTypes, setBedroomTypes, toggleBedroomType)}
-                  className={`segmented-btn ${filters.bedroomTypes.includes(br) ? 'active' : ''}`}
-                  title="Shift+click to multi-select"
-                >
-                  {br}BR
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Divider - structural line */}
-          <div className="hidden xl:block w-px h-7 bg-stone-400 flex-shrink-0" />
-
-          {/* Time Controls - Period Presets */}
-          <div className="segmented-control flex-shrink-0">
-            {TIMEFRAME_OPTIONS.map(opt => (
-              <button
-                type="button"
-                key={opt.id}
-                onClick={(e) => { e.preventDefault(); handlePresetClick(opt.id); }}
-                disabled={filterOptions.loading}
-                className={`segmented-btn ${
-                  filterOptions.loading
-                    ? 'opacity-50 cursor-wait'
-                    : currentPreset === opt.id
-                      ? 'active'
-                      : ''
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Divider - structural line */}
-          <div className="hidden xl:block w-px h-7 bg-stone-400 flex-shrink-0" />
-
-          {/* Time Granularity Toggle */}
-          <TimeGranularityToggle layout="horizontal" />
-
-          {/* Reset button */}
-          {activeFilterCount > 0 && (
-            <button
-              onClick={handleResetFilters}
-              className="segmented-btn border border-stone-400 text-stone-600 hover:border-red-500 hover:text-red-500 flex-shrink-0"
-            >
-              Reset
-            </button>
-          )}
           </div>
         </div>
       </div>

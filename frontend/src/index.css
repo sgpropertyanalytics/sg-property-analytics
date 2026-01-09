@@ -27,6 +27,14 @@
   font-feature-settings: "tnum" 1;
 }
 
+/* Hide scrollbar but keep scroll functionality */
+.scrollbar-none {
+  scrollbar-width: none; /* Firefox */
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Edge */
+}
+
 /* =========================================
  * WHITE OPS / MUNITIONS-GRADE UTILITY CLASSES
  * ========================================= */
