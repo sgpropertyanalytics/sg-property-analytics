@@ -199,6 +199,18 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
       {/* ===== MAIN CONTENT AREA ===== */}
       {/* min-w-0 prevents flex children from overflowing - critical for nested grids */}
       <div className="flex-1 min-w-0 flex flex-col overflow-hidden relative">
+        {/* Background Grid Pattern */}
+        <div
+          className="absolute inset-0 pointer-events-none opacity-[0.4]"
+          style={{
+            backgroundImage: `
+              linear-gradient(to right, var(--color-border) 1px, transparent 1px),
+              linear-gradient(to bottom, var(--color-border) 1px, transparent 1px)
+            `,
+            backgroundSize: '24px 24px'
+          }}
+        />
+
         {/* Mobile Header */}
         <header className="lg:hidden sticky top-0 z-40 bg-white px-3 py-2 flex-shrink-0 border-b border-mono-muted">
           <div className="flex items-center justify-between gap-2">

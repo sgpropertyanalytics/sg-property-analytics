@@ -869,8 +869,8 @@ function MultiSelectDropdown({ options, selected, onChange, placeholder, searcha
     : `${compact ? 'min-w-[140px]' : 'w-full'} min-w-0 px-3 py-2.5 min-h-[44px] text-sm border border-stone-400 bg-transparent text-left flex items-center justify-between focus:outline-none focus:border-orange-500`;
 
   const dropdownClasses = segmentedStyle
-    ? `absolute z-50 ${compact ? 'w-64' : 'w-full'} mt-1 bg-[#F2EFE9] border border-stone-400 max-h-60 overflow-hidden`
-    : `absolute z-50 ${compact ? 'w-64' : 'w-full'} mt-1 bg-[#F2EFE9] border border-stone-400 max-h-60 overflow-hidden`;
+    ? `absolute z-50 ${compact ? 'w-64' : 'w-full'} mt-1 bg-white border border-stone-400 max-h-60 overflow-hidden`
+    : `absolute z-50 ${compact ? 'w-64' : 'w-full'} mt-1 bg-white border border-stone-400 max-h-60 overflow-hidden`;
 
   return (
     <div className={`relative multi-select-dropdown ${compact ? '' : 'w-full'}`}>
