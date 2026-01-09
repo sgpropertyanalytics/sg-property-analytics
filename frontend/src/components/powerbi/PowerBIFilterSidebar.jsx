@@ -122,8 +122,10 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
       <div className="py-3">
         {/* Bordered container - matches KEY METRICS card styling exactly */}
         {/* overflow-x-auto allows horizontal scroll when content exceeds container width */}
-        <div className="bg-white border border-slate-300 px-5 py-3 overflow-x-auto scrollbar-hide">
-          {/* Flex container - nowrap to keep all filters in one row, scrollable */}
+        {/* p-4 gives consistent 16px padding on all sides */}
+        <div className="bg-white border border-slate-300 p-4 overflow-x-auto scrollbar-hide">
+          {/* Flex container - nowrap keeps filters in one row, justify-start per design system */}
+          {/* w-max min-w-full: expands to content width for scroll, at least 100% for fill */}
           <div className="flex flex-nowrap items-center justify-start gap-3 xl:gap-4 w-max min-w-full">
             {/* Property Filters - Region + District + Bedroom */}
             <div className="flex items-center gap-4 flex-shrink-0 min-w-0">
@@ -222,7 +224,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
           {/* Time Granularity Toggle */}
           <TimeGranularityToggle layout="horizontal" />
 
-          {/* Reset button - wireframe text link */}
+          {/* Reset button - ml-auto pushes to right edge when visible */}
           {activeFilterCount > 0 && (
             <button
               onClick={handleResetFilters}
