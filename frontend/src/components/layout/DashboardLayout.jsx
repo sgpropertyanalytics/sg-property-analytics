@@ -154,6 +154,16 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ backgroundColor: 'var(--color-bg)' }}>
+      {/* Industrial Grid Background - Technical layer behind everything */}
+      <div
+        className="fixed inset-0 pointer-events-none z-0"
+        style={{
+          backgroundImage: 'linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)',
+          backgroundSize: '20px 20px',
+          opacity: 0.03
+        }}
+      />
+
       {/* ===== GLOBAL NAV RAIL (Primary Sidebar) ===== */}
       {/* Desktop: Collapsible mini-dock with mechanical 0.2s animation | Mobile: Hidden */}
       <div
@@ -275,12 +285,17 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
             {/* Border-bottom: Bronze accent line for visual anchoring ("the ledge") */}
             {/* Sticky at top-0 so it stays visible during scroll */}
             <div className="sticky top-0 z-40 flex items-center justify-between px-6 h-12 bg-[#0F172A] border-b-2 border-[#C4A484]">
-              {/* Page Title */}
-              <h1 className="text-sm font-semibold text-white tracking-wide">
-                {NAV_ITEMS.find(item => item.id === activePage)?.label || 'Dashboard'}
-              </h1>
+              {/* Left: Logo Box + Page Title - Industrial branding */}
+              <div className="flex items-center gap-3">
+                <div className="bg-white text-black px-1.5 py-0.5 font-mono text-[10px] font-bold tracking-tighter">
+                  SGP::ANA
+                </div>
+                <h1 className="text-sm font-medium text-white tracking-widest uppercase">
+                  {NAV_ITEMS.find(item => item.id === activePage)?.label?.replace(/ /g, '_') || 'Dashboard'} // V.2.0
+                </h1>
+              </div>
 
-              {/* Metadata - Monospace for raw system data look */}
+              {/* Right: Metadata - Monospace for raw system data look */}
               <div className="flex items-center gap-3 text-xs text-slate-400 font-mono">
                 {apiMetadata && (
                   <>

@@ -13,7 +13,7 @@ import Container from '../primitives/Container.jsx';
 
 export function PageCanvas({ children, className = '' }) {
   return (
-    <div className={`min-h-full py-4 md:py-6 lg:py-8 ${className}`}>
+    <div className={`min-h-full pt-2 pb-4 md:pt-3 md:pb-6 lg:pt-4 lg:pb-8 ${className}`}>
       <Container>
         {children}
       </Container>

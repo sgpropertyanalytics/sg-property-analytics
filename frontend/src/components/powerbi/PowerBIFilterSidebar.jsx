@@ -227,16 +227,6 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
 
               {/* Time Granularity Toggle */}
               <TimeGranularityToggle layout="horizontal" />
-
-                {/* Reset button */}
-                {activeFilterCount > 0 && (
-                  <button
-                    onClick={handleResetFilters}
-                    className="segmented-btn border border-stone-400 text-stone-600 hover:border-red-500 hover:text-red-500"
-                  >
-                    Reset
-                  </button>
-                )}
               </div>
             </div>
           </div>
