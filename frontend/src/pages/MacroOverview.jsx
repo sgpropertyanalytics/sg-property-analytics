@@ -15,7 +15,7 @@ import { getKpiSummaryV2, getAggregate, getDashboard } from '../api/client';
 // apiMetadata now displayed in DashboardLayout console header (useData removed)
 import { transformCompressionSeries } from '../adapters';
 // Standardized responsive UI components (layout wrappers only)
-import { ErrorBoundary, ChartPanel, ChartWatermark, DataSection, KPICardV2, KPICardV2Group, KPIHeroContent } from '../components/ui';
+import { ErrorBoundary, ChartPanel, ChartWatermark, DataSection, KPICardV2, KPIHudStrip, KPIHeroContent } from '../components/ui';
 import { FilterBar } from '../components/patterns';
 // Containment primitives (L0 → L1 → L2 layer system for visual hierarchy)
 import { PageCanvas, ControlRibbon } from '../components/layout';
@@ -211,102 +211,104 @@ export function MacroOverviewContent() {
 
       {/* Analytics View - Dashboard with charts */}
       <div className="animate-view-enter">
-        {/* KPI Section - Key metrics in contained section */}
-        <DataSection title="KEY METRICS">
-          <KPICardV2Group columns={4}>
-                {/* Card 1: Market Momentum */}
-                <KPICardV2
-                  title="Market Momentum"
-                  value={(() => {
-                    const kpi = getKpi('market_momentum');
-                    if (!kpi?.meta?.current_score) return '—';
-                    const { current_score, prev_score, score_change_pct, change_direction, condition_direction, label } = kpi.meta;
-                    const badgeColor = condition_direction === 'up' ? 'green' : condition_direction === 'down' ? 'red' : 'gray';
-                    return (
-                      <KPIHeroContent
-                        value={current_score}
-                        badge={label ? { text: label, color: badgeColor } : undefined}
-                        change={score_change_pct != null ? { value: score_change_pct, direction: change_direction } : undefined}
-                        previous={prev_score ? { value: prev_score } : undefined}
-                      />
-                    );
-                  })()}
-                  footnote={getKpiField(getKpi('market_momentum'), KpiField.INSIGHT)}
-                  tooltip={getKpi('market_momentum')?.meta?.description}
-                  loading={kpis.loading}
+        {/* KPI Section - Unified HUD Strip with technical panel aesthetic */}
+        <KPIHudStrip title="KEY METRICS" columns={4} className="mb-4 md:mb-6">
+          {/* Cell 1: Market Momentum */}
+          <KPICardV2
+            variant="cell"
+            title="Market Momentum"
+            value={(() => {
+              const kpi = getKpi('market_momentum');
+              if (!kpi?.meta?.current_score) return '—';
+              const { current_score, prev_score, score_change_pct, change_direction, condition_direction, label } = kpi.meta;
+              const badgeColor = condition_direction === 'up' ? 'green' : condition_direction === 'down' ? 'red' : 'gray';
+              return (
+                <KPIHeroContent
+                  value={current_score}
+                  badge={label ? { text: label, color: badgeColor } : undefined}
+                  change={score_change_pct != null ? { value: score_change_pct, direction: change_direction } : undefined}
+                  previous={prev_score ? { value: prev_score } : undefined}
                 />
+              );
+            })()}
+            footnote={getKpiField(getKpi('market_momentum'), KpiField.INSIGHT)}
+            tooltip={getKpi('market_momentum')?.meta?.description}
+            loading={kpis.loading}
+          />
 
-                {/* Card 2: Resale Median PSF (Q-o-Q) */}
-                <KPICardV2
-                  title="Resale Median PSF"
-                  value={(() => {
-                    const kpi = getKpi('median_psf');
-                    if (!kpi?.meta?.current_psf) return '—';
-                    const { current_psf, prev_psf, pct_change, direction } = kpi.meta;
-                    return (
-                      <KPIHeroContent
-                        value={`$${current_psf?.toLocaleString()}`}
-                        unit="psf"
-                        change={pct_change != null ? { value: pct_change, direction } : undefined}
-                        previous={prev_psf ? { value: `$${prev_psf?.toLocaleString()} psf` } : undefined}
-                      />
-                    );
-                  })()}
-                  footnote={getKpiField(getKpi('median_psf'), KpiField.INSIGHT)}
-                  tooltip={getKpi('median_psf')?.meta?.description}
-                  loading={kpis.loading}
+          {/* Cell 2: Resale Median PSF (Q-o-Q) */}
+          <KPICardV2
+            variant="cell"
+            title="Resale Median PSF"
+            value={(() => {
+              const kpi = getKpi('median_psf');
+              if (!kpi?.meta?.current_psf) return '—';
+              const { current_psf, prev_psf, pct_change, direction } = kpi.meta;
+              return (
+                <KPIHeroContent
+                  value={`$${current_psf?.toLocaleString()}`}
+                  unit="psf"
+                  change={pct_change != null ? { value: pct_change, direction } : undefined}
+                  previous={prev_psf ? { value: `$${prev_psf?.toLocaleString()} psf` } : undefined}
                 />
+              );
+            })()}
+            footnote={getKpiField(getKpi('median_psf'), KpiField.INSIGHT)}
+            tooltip={getKpi('median_psf')?.meta?.description}
+            loading={kpis.loading}
+          />
 
-                {/* Card 3: Total Resale Transactions (last 3 months) */}
-                <KPICardV2
-                  title="Total Resale Transactions"
-                  value={(() => {
-                    const kpi = getKpi('total_transactions');
-                    if (!kpi?.meta?.current_count && kpi?.meta?.current_count !== 0) return '—';
-                    const { current_count, previous_count, pct_change, direction, label } = kpi.meta;
-                    const badgeColor = direction === 'up' ? 'green' : direction === 'down' ? 'red' : 'gray';
-                    return (
-                      <KPIHeroContent
-                        value={current_count?.toLocaleString()}
-                        badge={label ? { text: label, color: badgeColor } : undefined}
-                        change={pct_change != null ? { value: pct_change, direction } : undefined}
-                        previous={previous_count != null ? { value: `${previous_count?.toLocaleString()} txns` } : undefined}
-                      />
-                    );
-                  })()}
-                  footnote={getKpiField(getKpi('total_transactions'), KpiField.INSIGHT)}
-                  tooltip={getKpi('total_transactions')?.meta?.description}
-                  loading={kpis.loading}
+          {/* Cell 3: Total Resale Transactions (last 3 months) */}
+          <KPICardV2
+            variant="cell"
+            title="Total Resale Txns"
+            value={(() => {
+              const kpi = getKpi('total_transactions');
+              if (!kpi?.meta?.current_count && kpi?.meta?.current_count !== 0) return '—';
+              const { current_count, previous_count, pct_change, direction, label } = kpi.meta;
+              const badgeColor = direction === 'up' ? 'green' : direction === 'down' ? 'red' : 'gray';
+              return (
+                <KPIHeroContent
+                  value={current_count?.toLocaleString()}
+                  badge={label ? { text: label, color: badgeColor } : undefined}
+                  change={pct_change != null ? { value: pct_change, direction } : undefined}
+                  previous={previous_count != null ? { value: `${previous_count?.toLocaleString()} txns` } : undefined}
                 />
+              );
+            })()}
+            footnote={getKpiField(getKpi('total_transactions'), KpiField.INSIGHT)}
+            tooltip={getKpi('total_transactions')?.meta?.description}
+            loading={kpis.loading}
+          />
 
-                {/* Card 4: Annualized Resale Velocity */}
-                <KPICardV2
-                  title="Annualized Resale Velocity"
-                  value={(() => {
-                    const kpi = getKpi('resale_velocity');
-                    if (!kpi?.value && kpi?.value !== 0) return '—';
-                    const { prior_annualized, pct_change } = kpi.meta || {};
-                    const trend = getKpiField(kpi, KpiField.TREND);
-                    const direction = trend?.direction;
-                    const label = trend?.label;
-                    const badgeColor = direction === 'up' ? 'green' : direction === 'down' ? 'red' : 'gray';
-                    // Change direction based on pct_change sign (separate from badge direction)
-                    const changeDirection = pct_change > 0 ? 'up' : pct_change < 0 ? 'down' : 'neutral';
-                    return (
-                      <KPIHeroContent
-                        value={getKpiField(kpi, KpiField.FORMATTED_VALUE)}
-                        badge={label ? { text: label, color: badgeColor } : undefined}
-                        change={pct_change != null ? { value: pct_change, direction: changeDirection } : undefined}
-                        previous={prior_annualized != null ? { value: `${prior_annualized}%` } : undefined}
-                      />
-                    );
-                  })()}
-                  footnote={getKpiField(getKpi('resale_velocity'), KpiField.INSIGHT)}
-                  tooltip={getKpi('resale_velocity')?.meta?.description}
-                  loading={kpis.loading}
+          {/* Cell 4: Annualized Resale Velocity */}
+          <KPICardV2
+            variant="cell"
+            title="Resale Velocity"
+            value={(() => {
+              const kpi = getKpi('resale_velocity');
+              if (!kpi?.value && kpi?.value !== 0) return '—';
+              const { prior_annualized, pct_change } = kpi.meta || {};
+              const trend = getKpiField(kpi, KpiField.TREND);
+              const direction = trend?.direction;
+              const label = trend?.label;
+              const badgeColor = direction === 'up' ? 'green' : direction === 'down' ? 'red' : 'gray';
+              // Change direction based on pct_change sign (separate from badge direction)
+              const changeDirection = pct_change > 0 ? 'up' : pct_change < 0 ? 'down' : 'neutral';
+              return (
+                <KPIHeroContent
+                  value={getKpiField(kpi, KpiField.FORMATTED_VALUE)}
+                  badge={label ? { text: label, color: badgeColor } : undefined}
+                  change={pct_change != null ? { value: pct_change, direction: changeDirection } : undefined}
+                  previous={prior_annualized != null ? { value: `${prior_annualized}%` } : undefined}
                 />
-          </KPICardV2Group>
-        </DataSection>
+              );
+            })()}
+            footnote={getKpiField(getKpi('resale_velocity'), KpiField.INSIGHT)}
+            tooltip={getKpi('resale_velocity')?.meta?.description}
+            loading={kpis.loading}
+          />
+        </KPIHudStrip>
 
         {/* Charts Section - Market trend analysis */}
         <DataSection title="MARKET TRENDS">
