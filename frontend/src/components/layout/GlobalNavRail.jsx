@@ -20,23 +20,26 @@ import {
  * GlobalNavRail - Primary Navigation Sidebar
  *
  * The far-left navigation component that provides app-wide page switching.
- * Uses REAM khaki-olive palette for warm industrial aesthetic.
+ * Uses VOID palette (#0A0A0A) for Palantir/tactical aesthetic continuity.
  *
- * DESIGN SYSTEM (REAM THEME - Khaki-Olive):
+ * DESIGN SYSTEM (VOID THEME - Dark Nav):
  * ─────────────────────────────────────────────────────────────────────────────
  * Colors:
- * - Background: khaki-olive (#9A9164) - warm tan-brown
- * - Borders: khaki-edge (#5C5844) - warm structural borders
- * - Text: khaki-muted (#A9A48E) inactive → cream (#F5F0E6) active/hover
+ * - Background: mono-void (#0A0A0A) - dense black, not default #171717
+ * - Borders: mono-edge (#333333) - machined metal effect
+ * - Text: mono-light (#A3A3A3) inactive → mono-canvas (#FAFAFA) active/hover
  *
  * Section Headers ("Structural Dividers"):
  * - text-data-xs font-mono uppercase tracking-[0.18em]
- * - Color: khaki-muted
+ * - Color: mono-mid → mono-light on active group
  *
  * NavItem ("Interactive Targets"):
- * - Active:  bg-khaki-900 (#3D3A2E) + cream text + coral accent
- * - Inactive: khaki-600 → hover:khaki-900 hover:bg-khaki-200/50
- * - Focus: coral focus ring
+ * - Active:  bg-mono-surface + text-mono-canvas + ring-mono-edge + blue accent bar
+ * - Inactive: text-mono-light → hover:text-mono-canvas hover:bg-white/5
+ * - Focus: ring-white/20 ring-offset-mono-void
+ *
+ * HUD Corners:
+ * - Tactical frame brackets in all 4 corners (border-mono-edge)
  *
  * Width: Parent controls width (w-full). DashboardLayout sets:
  * - Desktop (lg+): 256px (w-64)
@@ -91,10 +94,10 @@ export const NAV_ITEMS = NAV_GROUPS.flatMap(g => g.items);
 /**
  * NavItem - Technical Index Style
  *
- * Design System (REAM):
- * - Active: Khaki-900 box (#3D3A2E), cream text/icon, rounded-[4px]
- * - Inactive: Khaki-600 text, khaki-900 icon
- * - Hover: Khaki-900 text, faint khaki background
+ * Design System:
+ * - Active: Solid black box (bg-black), white text/icon, rounded-[4px]
+ * - Inactive: Zinc-600 text, zinc-900 icon
+ * - Hover: Black text, faint grey background (bg-zinc-200/50)
  * - Typography: Sans-serif 14px for links
  */
 function NavItem({ item, isActive, onClick, collapsed = false }) {
@@ -111,16 +114,16 @@ function NavItem({ item, isActive, onClick, collapsed = false }) {
         flex items-center text-left min-w-0
         transition-all duration-200
         outline-none select-none
-        focus-visible:ring-2 focus-visible:ring-[#E85C33] focus-visible:ring-offset-2
+        focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2
         ${collapsed
           ? 'w-10 h-10 justify-center mx-auto'
           : 'w-full gap-3'
         }
         ${isActive
-          ? 'bg-[#3D3A2E] text-[#F5F0E6]'
+          ? 'bg-black text-white'
           : isComingSoon
-            ? 'text-[#A9A48E] cursor-not-allowed opacity-60'
-            : 'text-[#5C5844] hover:text-[#3D3A2E] hover:bg-[#D4CEB8]/50'
+            ? 'text-zinc-400 cursor-not-allowed opacity-60'
+            : 'text-zinc-600 hover:text-black hover:bg-zinc-200/50'
         }
       `}
       aria-current={isActive ? 'page' : undefined}
@@ -133,7 +136,7 @@ function NavItem({ item, isActive, onClick, collapsed = false }) {
             size={18}
             strokeWidth={1.5}
             className={`transition-colors duration-200 ${
-              isActive ? 'text-[#F5F0E6]' : 'text-[#3D3A2E] group-hover:text-[#3D3A2E]'
+              isActive ? 'text-white' : 'text-zinc-900 group-hover:text-black'
             }`}
           />
         )}
@@ -148,14 +151,14 @@ function NavItem({ item, isActive, onClick, collapsed = false }) {
 
       {/* "COMING SOON" badge */}
       {(!collapsed && isComingSoon) && (
-        <span className="ml-auto flex-shrink-0 text-[10px] font-medium tracking-wide px-1.5 py-0.5 rounded bg-[#EAE6D8] text-[#8A8570] border border-[#D4CEB8]">
+        <span className="ml-auto flex-shrink-0 text-[10px] font-medium tracking-wide px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 border border-zinc-200">
           SOON
         </span>
       )}
 
       {/* Tooltip when collapsed */}
       {collapsed && (
-        <div className="absolute left-full ml-2 z-50 hidden group-hover:block px-2 py-1.5 text-xs font-medium text-[#F5F0E6] bg-[#3D3A2E] rounded shadow-lg whitespace-nowrap">
+        <div className="absolute left-full ml-2 z-50 hidden group-hover:block px-2 py-1.5 text-xs font-medium text-white bg-zinc-900 rounded shadow-lg whitespace-nowrap">
           {item.label}
         </div>
       )}
@@ -210,15 +213,15 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
       >
         {/* Icon aligned with nav item icons */}
         <div className="flex-shrink-0 w-[18px] flex items-center justify-center">
-          <Terminal size={18} strokeWidth={1.5} className="text-[#3D3A2E]" />
+          <Terminal size={18} strokeWidth={1.5} className="text-zinc-900" />
         </div>
         {!collapsed && (
-          <span className="font-mono text-sm font-bold tracking-tight text-[#3D3A2E]">
+          <span className="font-mono text-sm font-bold tracking-tight text-zinc-900">
             SGPropertyAnalytics
           </span>
         )}
         {collapsed && (
-          <div className="absolute left-full ml-2 z-50 hidden group-hover:block px-2 py-1 text-xs text-[#F5F0E6] bg-[#3D3A2E] rounded shadow-lg whitespace-nowrap">
+          <div className="absolute left-full ml-2 z-50 hidden group-hover:block px-2 py-1 text-xs text-white bg-zinc-900 rounded shadow-lg whitespace-nowrap">
             SGPropertyAnalytics
           </div>
         )}
@@ -232,13 +235,13 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
             {!collapsed && (
               <div className="mb-2 flex items-center gap-3">
                 <div className="w-[18px]" /> {/* Spacer to align with icons */}
-                <span className="text-[10px] uppercase tracking-wider font-mono text-[#A9A48E]">
+                <span className="text-[10px] uppercase tracking-wider font-mono text-zinc-400">
                   {group.label}
                 </span>
               </div>
             )}
             {collapsed && groupIndex > 0 && (
-              <div className="h-px bg-[#D4CEB8] mb-2" />
+              <div className="h-px bg-zinc-200 mb-2" />
             )}
             {/* Nav Items */}
             <div className="space-y-0.5">
@@ -260,17 +263,17 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
       <div className="flex-1 min-h-4" />
 
       {/* Bottom section */}
-      <div className="space-y-1 border-t border-[#D4CEB8] pt-3">
+      <div className="space-y-1 border-t border-zinc-200 pt-3">
 
 
         {/* Methodology Link - aligned with nav items */}
         <button
           onClick={() => startTransition(() => navigate('/methodology'))}
-          className={`group relative min-h-[44px] py-2 rounded-[4px] flex items-center text-left min-w-0 text-[#5C5844] hover:text-[#3D3A2E] hover:bg-[#D4CEB8]/50 transition-all duration-200 select-none ${collapsed ? 'w-10 h-10 justify-center mx-auto' : 'w-full gap-3'}`}
+          className={`group relative min-h-[44px] py-2 rounded-[4px] flex items-center text-left min-w-0 text-zinc-600 hover:text-black hover:bg-zinc-200/50 transition-all duration-200 select-none ${collapsed ? 'w-10 h-10 justify-center mx-auto' : 'w-full gap-3'}`}
           aria-label="Methodology"
         >
           <div className="flex-shrink-0 w-[18px] flex items-center justify-center">
-            <Info size={18} strokeWidth={1.5} className="text-[#3D3A2E]" />
+            <Info size={18} strokeWidth={1.5} className="text-zinc-900" />
           </div>
           {!collapsed && (
             <span className="text-sm font-normal whitespace-nowrap">
@@ -278,7 +281,7 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
             </span>
           )}
           {collapsed && (
-            <div className="absolute left-full ml-2 z-50 hidden group-hover:block px-2 py-1.5 text-xs font-medium text-[#F5F0E6] bg-[#3D3A2E] rounded shadow-lg whitespace-nowrap">
+            <div className="absolute left-full ml-2 z-50 hidden group-hover:block px-2 py-1.5 text-xs font-medium text-white bg-zinc-900 rounded shadow-lg whitespace-nowrap">
               Methodology
             </div>
           )}
@@ -296,7 +299,7 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
           <div className={`px-3 pb-3 ${collapsed ? 'flex justify-center' : ''}`}>
             <button
               onClick={onToggleCollapse}
-              className="w-8 h-8 flex items-center justify-center bg-transparent border border-[#C4BFA8] text-[#8A8570] hover:text-[#3D3A2E] hover:border-[#9A9164] hover:bg-[#D4CEB8]/50 transition-all duration-200"
+              className="w-8 h-8 flex items-center justify-center bg-transparent border border-[#E5E5E5] text-zinc-500 hover:text-black hover:border-zinc-400 hover:bg-zinc-200/50 transition-all duration-200"
               aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
               <ChevronLeft

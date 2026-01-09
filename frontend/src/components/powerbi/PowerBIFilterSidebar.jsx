@@ -297,7 +297,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                   </button>
                 ))}
               </div>
-              <p className="text-[10px] text-[#8A8570] mt-2 italic">
+              <p className="text-[10px] text-slate-500 mt-2 italic">
                 Click to switch, Shift+click to multi-select
               </p>
             </FilterGroup>
@@ -350,7 +350,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                 </button>
               ))}
             </div>
-            <p className="text-[10px] text-[#8A8570] mt-1 italic">
+            <p className="text-[10px] text-slate-500 mt-1 italic">
               Click to switch, Shift+click to multi-select
             </p>
           </FilterSection>
@@ -421,18 +421,18 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
             {showAdvanced && (
               <div className="space-y-2 mt-2 pt-2 border-t border-brand-sky/30">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-[#8A8570] w-10">From</span>
+                  <span className="text-xs text-slate-500 w-10">From</span>
                   <input
                     type="month"
                     value={timeFilter.start ? timeFilter.start.substring(0, 7) : ''}
                     onChange={(e) => handleCustomDateChange(e.target.value ? `${e.target.value}-01` : null, timeFilter.end)}
-                    className="flex-1 px-2 py-2.5 min-h-[44px] text-sm border border-[#C4BFA8] rounded-none focus:outline-none focus:ring-2 focus:ring-[#E85C33]"
+                    className="flex-1 px-2 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-none focus:outline-none focus:ring-2 focus:ring-blue-500"
                     min={filterOptions.dateRange.min ? filterOptions.dateRange.min.substring(0, 7) : undefined}
                     max={filterOptions.dateRange.max ? filterOptions.dateRange.max.substring(0, 7) : undefined}
                   />
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-[#8A8570] w-10">To</span>
+                  <span className="text-xs text-slate-500 w-10">To</span>
                   <input
                     type="month"
                     value={timeFilter.end ? timeFilter.end.substring(0, 7) : ''}
@@ -445,7 +445,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                         handleCustomDateChange(timeFilter.start, null);
                       }
                     }}
-                    className="flex-1 px-2 py-2.5 min-h-[44px] text-sm border border-[#C4BFA8] rounded-none focus:outline-none focus:ring-2 focus:ring-[#E85C33]"
+                    className="flex-1 px-2 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-none focus:outline-none focus:ring-2 focus:ring-blue-500"
                     min={filterOptions.dateRange.min ? filterOptions.dateRange.min.substring(0, 7) : undefined}
                     max={filterOptions.dateRange.max ? filterOptions.dateRange.max.substring(0, 7) : undefined}
                   />
@@ -453,7 +453,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
               </div>
             )}
             {filterOptions.dateRange.min && filterOptions.dateRange.max && (
-              <div className="text-[10px] text-[#8A8570] mt-2 italic">
+              <div className="text-[10px] text-slate-500 mt-2 italic">
                 Data: {new Date(filterOptions.dateRange.min).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })} to {new Date(filterOptions.dateRange.max).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}
               </div>
             )}
@@ -576,7 +576,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                 </button>
               ))}
             </div>
-            <p className="text-[10px] text-[#8A8570] mt-2 italic">
+            <p className="text-[10px] text-slate-500 mt-2 italic">
               Click to switch, Shift+click to multi-select
             </p>
           </FilterGroup>
@@ -631,7 +631,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
               </button>
             ))}
           </div>
-          <p className="text-[10px] text-[#8A8570] mt-1 italic">
+          <p className="text-[10px] text-slate-500 mt-1 italic">
             Click to switch, Shift+click to multi-select
           </p>
         </FilterSection>
@@ -711,18 +711,18 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
           {showAdvanced && (
             <div className="space-y-2 mt-2 pt-2 border-t border-brand-sky/30">
               <div className="flex items-center gap-2">
-                <span className="text-xs text-[#8A8570] w-10">From</span>
+                <span className="text-xs text-slate-500 w-10">From</span>
                 <input
                   type="month"
                   value={timeFilter.start ? timeFilter.start.substring(0, 7) : ''}
                   onChange={(e) => handleCustomDateChange(e.target.value ? `${e.target.value}-01` : null, timeFilter.end)}
-                  className="flex-1 px-2 py-2.5 min-h-[44px] text-sm border border-[#C4BFA8] rounded-none focus:outline-none focus:ring-2 focus:ring-[#E85C33]"
+                  className="flex-1 px-2 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-none focus:outline-none focus:ring-2 focus:ring-blue-500"
                   min={filterOptions.dateRange.min ? filterOptions.dateRange.min.substring(0, 7) : undefined}
                   max={filterOptions.dateRange.max ? filterOptions.dateRange.max.substring(0, 7) : undefined}
                 />
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-[#8A8570] w-10">To</span>
+                <span className="text-xs text-slate-500 w-10">To</span>
                 <input
                   type="month"
                   value={timeFilter.end ? timeFilter.end.substring(0, 7) : ''}
@@ -737,7 +737,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                       handleCustomDateChange(timeFilter.start, null);
                     }
                   }}
-                  className="flex-1 px-2 py-2.5 min-h-[44px] text-sm border border-[#C4BFA8] rounded-none focus:outline-none focus:ring-2 focus:ring-[#E85C33]"
+                  className="flex-1 px-2 py-2.5 min-h-[44px] text-sm border border-slate-300 rounded-none focus:outline-none focus:ring-2 focus:ring-blue-500"
                   min={filterOptions.dateRange.min ? filterOptions.dateRange.min.substring(0, 7) : undefined}
                   max={filterOptions.dateRange.max ? filterOptions.dateRange.max.substring(0, 7) : undefined}
                 />
@@ -747,7 +747,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
 
           {/* Data range info */}
           {filterOptions.dateRange.min && filterOptions.dateRange.max && (
-            <div className="text-[10px] text-[#8A8570] mt-2 italic">
+            <div className="text-[10px] text-slate-500 mt-2 italic">
               Data: {new Date(filterOptions.dateRange.min).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })} to {new Date(filterOptions.dateRange.max).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}
             </div>
           )}
@@ -869,8 +869,8 @@ function MultiSelectDropdown({ options, selected, onChange, placeholder, searcha
     : `${compact ? 'min-w-[140px]' : 'w-full'} min-w-0 px-3 py-2.5 min-h-[44px] text-sm border border-stone-400 bg-transparent text-left flex items-center justify-between focus:outline-none focus:border-orange-500`;
 
   const dropdownClasses = segmentedStyle
-    ? `absolute z-50 ${compact ? 'w-64' : 'w-full'} mt-1 bg-[#F2EFE9] border border-stone-400 max-h-60 overflow-hidden`
-    : `absolute z-50 ${compact ? 'w-64' : 'w-full'} mt-1 bg-[#F2EFE9] border border-stone-400 max-h-60 overflow-hidden`;
+    ? `absolute z-50 ${compact ? 'w-64' : 'w-full'} mt-1 bg-white border border-stone-400 max-h-60 overflow-hidden`
+    : `absolute z-50 ${compact ? 'w-64' : 'w-full'} mt-1 bg-white border border-stone-400 max-h-60 overflow-hidden`;
 
   return (
     <div className={`relative multi-select-dropdown ${compact ? '' : 'w-full'}`}>
