@@ -272,7 +272,9 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
           <div className="flex-1 min-w-0 flex flex-col border border-gray-200 bg-white">
             {/* Console Header - Terminal Block (auto-applied to all pages) */}
             {/* Height: 48px (h-12), dense military precision */}
-            <div className="flex items-center justify-between px-6 h-12 bg-[#0F172A]">
+            {/* Border-bottom: Bronze accent line for visual anchoring ("the ledge") */}
+            {/* Sticky at top-0 so it stays visible during scroll */}
+            <div className="sticky top-0 z-40 flex items-center justify-between px-6 h-12 bg-[#0F172A] border-b-2 border-[#C4A484]">
               {/* Page Title */}
               <h1 className="text-sm font-semibold text-white tracking-wide">
                 {NAV_ITEMS.find(item => item.id === activePage)?.label || 'Dashboard'}
@@ -300,13 +302,15 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
                     )}
                   </>
                 )}
-                {/* Live Indicator */}
+                {/* Live Indicator - Enhanced pulse ring animation */}
                 <div className="flex items-center gap-1.5 ml-2">
-                  <span className="relative flex h-1.5 w-1.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+                  <span className="relative flex h-2 w-2">
+                    {/* Pulse ring effect - expanding concentric rings */}
+                    <span className="pulse-ring pulse-ring-emerald absolute inline-flex h-full w-full rounded-full" />
+                    {/* Core LED - solid emerald dot */}
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
                   </span>
-                  <span className="text-emerald-400 text-[10px]">LIVE</span>
+                  <span className="text-emerald-400 text-[10px] font-mono uppercase tracking-wider">LIVE</span>
                 </div>
               </div>
             </div>

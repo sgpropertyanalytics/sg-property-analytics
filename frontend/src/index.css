@@ -145,22 +145,19 @@
  * High-End Fintech / Navy Bridge Aesthetic
  * ========================================= */
 
-/* Luxury Card - Subtle shadow with slate tint */
+/* Luxury Card - Technical panel aesthetic with structural border */
+/* No shadows for "Data-Intelligence" vibe - borders define edges */
 .luxury-card {
   background: white;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 6px;
-  box-shadow:
-    0 1px 3px rgba(15, 23, 42, 0.04),
-    0 4px 12px rgba(15, 23, 42, 0.03);
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  border: 1px solid #CBD5E1; /* Slate-300 - technical instrument panel */
+  border-radius: 4px; /* Slight round for technical, not brutalist */
+  box-shadow: none; /* No shadows - wireframe aesthetic */
+  transition: border-color 0.15s ease;
 }
 
 .luxury-card:hover {
-  box-shadow:
-    0 2px 6px rgba(15, 23, 42, 0.06),
-    0 8px 24px rgba(15, 23, 42, 0.05);
-  border-color: rgba(15, 23, 42, 0.12);
+  border-color: #94A3B8; /* Slate-400 on hover */
+  box-shadow: none;
 }
 
 /* Delta Pill Badges - Desaturated luxury style */
@@ -257,6 +254,7 @@
 }
 
 /* Individual button within the group */
+/* Height standardization: 32px strict for mechanical switch precision */
 .segmented-btn {
   background: transparent;
   border: none;
@@ -266,14 +264,16 @@
   font-size: 0.75rem; /* 12px technical */
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  padding: 0.5rem 1rem;
+  padding: 0 0.875rem; /* Horizontal padding only */
   border-radius: 0; /* SHARP - mandatory */
   cursor: pointer;
   transition: all 0.1s ease;
-  min-height: 36px;
+  height: 32px; /* Strict height for alignment */
+  min-height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
+  white-space: nowrap;
 }
 
 .segmented-btn:last-child {

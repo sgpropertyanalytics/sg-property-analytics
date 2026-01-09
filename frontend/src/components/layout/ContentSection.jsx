@@ -16,7 +16,7 @@
 export function ContentSection({ children, title, className = '' }) {
   return (
     <section
-      className={`bg-white border border-gray-200 p-4 md:p-6 mb-4 md:mb-6 ${className}`}
+      className={`bg-white border border-slate-300 p-4 md:p-6 mb-4 md:mb-6 ${className}`}
     >
       {title && (
         <h2 className="terminal-header pb-3 mb-4 border-b border-gray-200">
