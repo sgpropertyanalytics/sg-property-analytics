@@ -338,7 +338,7 @@ function CommandBar({ onExecute }) {
         </div>
 
         {/* Status bar */}
-        <div className="px-4 py-1.5 bg-neutral-900/50 border-t border-neutral-800 flex justify-between items-center text-[10px] text-neutral-600 font-mono">
+        <div className="px-4 py-1.5 bg-neutral-900/50 border-t border-neutral-800 flex justify-between items-center text-[10px] text-neutral-400 font-mono">
           <span>STATUS: LISTENING</span>
           <span>[ENTER] to EXECUTE</span>
         </div>
