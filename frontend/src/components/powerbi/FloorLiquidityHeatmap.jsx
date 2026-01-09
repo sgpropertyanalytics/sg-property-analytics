@@ -9,7 +9,7 @@ import {
   LIQUIDITY_COLORS,
   getLiquidityColor,
 } from '../../constants';
-import { CHART_COLORS } from '../../constants/chartPalette';
+import { CHART_COLORS } from '../../constants/colors';
 import { assertKnownVersion } from '../../adapters';
 import {
   FloorLiquidityField,

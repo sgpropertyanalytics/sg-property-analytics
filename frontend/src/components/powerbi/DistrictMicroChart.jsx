@@ -2,7 +2,7 @@ import React, { useRef, useMemo } from 'react';
 import { Chart } from 'react-chartjs-2';
 import { BASE_CHART_OPTIONS } from '../../constants/chartOptions';
 import { getRegionForDistrict, DISTRICT_NAMES, isRegionDark } from '../../constants';
-import { CHART_COLORS } from '../../constants/chartPalette';
+import { CHART_COLORS } from '../../constants/colors';
 
 // Singleton registration - ensures Chart.js components are registered once
 import '../../lib/chartjs-registry';

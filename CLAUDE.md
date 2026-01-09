@@ -249,29 +249,32 @@ RCR: D03, D04, D05, D08, D12, D13, D14, D15, D20
 OCR: D16-D19, D21-D28
 ```
 
-### Design System — Institutional Print / Slate
+### Design System — Blues + Warm Accents
 
-**Philosophy:** "Financial Print / Blueprint" — The Suit: Slate + Void. The Tie: Bloomberg Orange.
+**Philosophy:** Navy/Ocean/Sky blues with warm brown accents. Bloomberg Orange for CTAs.
 
-**Source of Truth:** `frontend/src/constants/colors.js`
+**Source of Truth:** `frontend/src/constants/colors.js` (hex values, works with Chart.js)
 
-| Palette | Token | Hex | Tailwind | Usage |
-|---------|-------|-----|----------|-------|
-| **INK** | primary | `#0F172A` | `slate-900` | Headers, primary data |
-| | mid | `#475569` | `slate-600` | Body text |
-| | muted | `#94A3B8` | `slate-400` | Placeholders, ghost data |
-| **VOID** | base | `#0A0A0A` | — | Nav background |
-| **CANVAS** | paper | `#FFFFFF` | `white` | Cards, modals |
-| | grid | `#E5E7EB` | `slate-200` | Borders, chart grids |
-| **SIGNAL** | accent | `#F97316` | `orange-500` | CTAs, highlights |
-| | focus | `#2563EB` | `blue-600` | Focus rings |
-| **DELTA** | positive | `#059669` | `emerald-600` | Gains |
-| | negative | `#DC2626` | `red-600` | Losses |
-| **REGION** | CCR | `#0F172A` | `slate-900` | Premium (darkest) |
-| | RCR | `#334155` | `slate-700` | Mid-tier |
-| | OCR | `#64748B` | `slate-500` | Suburban (lightest) |
+| Palette | Token | Hex | Usage |
+|---------|-------|-----|-------|
+| **REGION** | CCR | `#213448` | Navy - Premium (darkest) |
+| | RCR | `#547792` | Ocean - Mid-tier |
+| | OCR | `#94B4C1` | Sky - Suburban (lightest) |
+| **BEADS** | 1BR | `#EAE0CF` | Sand - lightest |
+| | 2BR | `#94B4C1` | Sky |
+| | 3BR | `#547792` | Ocean |
+| | 4BR | `#213448` | Navy - darkest |
+| | 5BR | `#78503C` | Brown accent |
+| **INK** | primary | `#0F172A` | Headers, primary data |
+| | mid | `#475569` | Body text |
+| | muted | `#94A3B8` | Placeholders |
+| **VOID** | base | `#0A0A0A` | Nav background |
+| **SIGNAL** | accent | `#F97316` | CTAs, highlights |
+| **DELTA** | positive | `#059669` | Gains |
+| | negative | `#DC2626` | Losses |
+| **SUPPLY** | unsold | `#6b4226` | Warm browns for waterfall |
 
-**Aesthetic:** Hard edges (`rounded-none`), instant transitions, monospace headers, structural borders.
+**Note:** All chart colors are hex/rgba values in colors.js (Chart.js cannot resolve CSS variables).
 
 ---
 

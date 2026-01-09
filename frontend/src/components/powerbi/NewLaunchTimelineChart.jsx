@@ -23,7 +23,7 @@ import { getNewLaunchTimeline, getNewLaunchAbsorption } from '../../api/client';
 import { PreviewChartOverlay, ChartSlot, KeyInsightBox } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 import { transformNewLaunchTimeline, transformNewLaunchAbsorption, is2020Period, assertKnownVersion, logFetchDebug } from '../../adapters';
-import { CHART_COLORS } from '../../constants/chartPalette';
+import { CHART_COLORS } from '../../constants/colors';
 
 // Singleton Chart.js registration
 import '../../lib/chartjs-registry';

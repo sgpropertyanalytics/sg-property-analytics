@@ -1,4 +1,5 @@
 :root {
+  /* Typography */
   --font-display: "JetBrains Mono", "Geist Sans", system-ui, -apple-system, sans-serif;
   --font-sans: "Inter", system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace;
@@ -21,63 +22,46 @@
 
   /* Brand + semantic */
   --color-brand: #0F172A;
-  --color-brand-secondary: #334155;
-  --color-brand-tertiary: #64748B;
   --color-accent: #F97316;
   --color-accent-strong: #EA580C;
-
-  /* Luxury Asset Management - Champagne Bronze */
   --color-bronze: #C4A484;
-  --color-bronze-light: #D4C4A8;
-  --color-bronze-dark: #A08060;
-  --color-bronze-rgb: 196 164 132;
   --color-focus: #2563EB;
   --color-success: #059669;
   --color-danger: #DC2626;
   --color-warning: #F59E0B;
 
-  /* Legacy palette mapping (kept for compatibility) */
+  /* Void (dark surfaces) */
   --color-void: #0A0A0A;
   --color-void-surface: #1A1A1A;
   --color-void-edge: #333333;
+
+  /* Canvas (light surfaces) */
   --color-canvas: var(--color-bg);
   --color-canvas-paper: transparent;
   --color-canvas-grid: #A8A29E;
+
+  /* Ink (text hierarchy) */
   --color-ink: #0F172A;
   --color-ink-dense: #1E293B;
   --color-ink-mid: #475569;
   --color-ink-muted: #94A3B8;
   --color-ink-light: #CBD5E1;
-  --color-region-ccr: #0F172A;
-  --color-region-rcr: #334155;
-  --color-region-ocr: #64748B;
-  --color-signal-accent: #F97316;
-  --color-signal-a11y: #EA580C;
-  --color-signal-focus: #2563EB;
-  --color-delta-positive: #059669;
-  --color-delta-negative: #DC2626;
-  --color-delta-neutral: #64748B;
 
-  /* Delta Pill Badges (Luxury desaturated style) */
-  --color-delta-positive-bg: #ECFDF5;
-  --color-delta-positive-text: #047857;
-  --color-delta-negative-bg: #FFF1F2;
-  --color-delta-negative-text: #BE123C;
-  --color-supply-total: #94A3B8;
-  --color-liquidity-low: #F59E0B;
-  --color-liquidity-healthy: #059669;
-  --color-liquidity-high: #DC2626;
-  --color-liquidity-unknown: #94A3B8;
+  /* Signal colors */
+  --color-signal-accent: #F97316;
+
+  /* Status */
   --color-status-live: #059669;
   --color-status-negative: #DC2626;
-  --color-brand-navy: #0F172A;
-  --color-brand-blue: #334155;
-  --color-brand-sky: #64748B;
-  --color-brand-sand: #E5E7EB;
+
+  /* Card */
   --color-card: transparent;
   --color-card-hover: rgba(255, 79, 0, 0.05);
 
-  /* Legacy mono aliases */
+  /* Slate for Tailwind classes */
+  --color-slate-500: #64748B;
+
+  /* Legacy mono aliases (used by index.css) */
   --color-mono-void: var(--color-void);
   --color-mono-surface: var(--color-void-surface);
   --color-mono-edge: var(--color-void-edge);
@@ -88,52 +72,7 @@
   --color-mono-muted: var(--color-canvas-grid);
   --color-mono-canvas: var(--color-canvas);
 
-  /* Chart palette */
-  --color-chart-1: #0F172A;
-  --color-chart-2: #334155;
-  --color-chart-3: #64748B;
-  --color-chart-4: #94A3B8;
-  --color-chart-5: #E5E7EB;
-  --color-chart-1-rgb: 15 23 42;
-  --color-chart-2-rgb: 51 65 85;
-  --color-chart-3-rgb: 100 116 139;
-  --color-chart-4-rgb: 148 163 184;
-  --color-chart-5-rgb: 229 231 235;
-  --color-navy-deep: #213448;
-  --color-navy-deep-rgb: 33 52 72;
-  --color-ocean: #547792;
-  --color-ocean-rgb: 84 119 146;
-  --color-sky: #94B4C1;
-  --color-sky-rgb: 148 180 193;
-  --color-text-muted-strong: #374151;
-  --color-slate-100: #F1F5F9;
-  --color-slate-200: #E5E7EB;
-  --color-slate-300: #CBD5E1;
-  --color-slate-400: #94A3B8;
-  --color-slate-500: #64748B;
-  --color-slate-600: #475569;
-  --color-slate-700: #334155;
-  --color-slate-800: #1E293B;
-  --color-slate-900: #0F172A;
-  --color-slate-700-rgb: 51 65 85;
-  --color-slate-500-rgb: 100 116 139;
-  --color-slate-900-rgb: 15 23 42;
-  --color-white: #FFFFFF;
-  --color-red: #EF4444;
-  --color-red-rgb: 239 68 68;
-  --color-emerald: #10B981;
-  --color-emerald-rgb: 16 185 129;
-  --color-orange: #F97316;
-  --color-orange-rgb: 249 115 22;
-  --color-yellow: #FACC15;
-  --color-yellow-rgb: 250 204 21;
-
-  /* Supply chart color aliases (using waterfall colors) */
-  --color-supply-unsold: var(--color-waterfall-unsold);
-  --color-supply-upcoming: var(--color-waterfall-upcoming);
-  --color-supply-gls: var(--color-waterfall-gls);
-
-  /* Spacing scale (4/8-based) */
+  /* Spacing scale */
   --space-0: 0px;
   --space-1: 4px;
   --space-2: 8px;
@@ -188,49 +127,14 @@
   --z-toast: 90;
   --z-debug: 100;
 
-  /* Nav-specific colors (Smoked Obsidian aesthetic) */
+  /* Nav-specific colors */
   --color-nav-bg: #262321;
-  --color-nav-bg-rgb: 38 35 33;
   --color-nav-text: #E7E5E4;
   --color-nav-text-muted: #A8A29E;
 
-  /* Skeleton loading colors (for ChartSkeleton) */
+  /* Skeleton loading */
   --color-skeleton-bg: #f5f2ed;
-  --color-skeleton-bg-rgb: 245 242 237;
   --color-skeleton-border: #d4d0c8;
-  --color-skeleton-border-rgb: 212 208 200;
-
-  /* Canvas RGB for opacity variants */
-  --color-canvas-rgb: 242 239 233;
-  --color-bg-rgb: 242 239 233;
-
-  /* Waterfall chart palette (warm earth tones for supply visualization) */
-  --color-waterfall-unsold: #6b4226;
-  --color-waterfall-upcoming: #9c6644;
-  --color-waterfall-gls: #c4a77d;
-  --color-waterfall-total: #e8dcc8;
-  --color-waterfall-connector: #c4a77d;
-  --color-waterfall-unsold-border: #5a361f;
-  --color-waterfall-upcoming-border: #7d5236;
-  --color-waterfall-gls-border: #a68b64;
-  --color-waterfall-total-border: #d4c9b8;
-
-  /* Price range semantic colors */
-  --color-price-below-text: #166534;
-  --color-price-below-bg: #DCFCE7;
-  --color-price-within-text: #1E40AF;
-  --color-price-within-bg: #DBEAFE;
-  --color-price-above-text: #9A3412;
-  --color-price-above-bg: #FEF3C7;
-  --color-price-unknown-text: #6B7280;
-
-  /* Beads chart palette (slate with opacity) */
-  --color-beads-1-rgb: 229 231 235;
-  --color-beads-2-rgb: 148 163 184;
-  --color-beads-3-rgb: 51 65 85;
-  --color-beads-4-rgb: 15 23 42;
-  --color-beads-5-rgb: 120 80 60;
-
 }
 
 [data-theme='dark'] {
@@ -245,7 +149,5 @@
   --color-text-subtle: #94A3B8;
   --color-text-inverse: #0A0A0A;
   --color-brand: #F2EFE9;
-  --color-brand-secondary: #CBD5E1;
-  --color-brand-tertiary: #94A3B8;
   --color-card: #1A1A1A;
 }
