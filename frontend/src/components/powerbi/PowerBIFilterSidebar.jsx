@@ -119,8 +119,9 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
   // Single row layout: Property filters | Time Duration | Granularity | Reset
   if (layout === 'horizontal') {
     return (
-      <div className="py-3 bg-transparent">
-        <div className="flex flex-wrap lg:flex-nowrap items-center justify-start gap-4 overflow-x-auto">
+      <div className="py-3 bg-transparent max-w-full">
+        {/* Responsive: wrap at lg (1024-1279px), no-wrap + scroll at xl+ (1280px+) */}
+        <div className="flex flex-wrap xl:flex-nowrap items-center justify-start gap-3 xl:gap-4 xl:overflow-x-auto xl:scrollbar-hide">
           {/* Property Filters - Region + District + Bedroom */}
           <div className="flex items-center gap-4 flex-shrink-0 min-w-0">
             {/* Region Segmented Control */}
@@ -189,7 +190,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
           </div>
 
           {/* Divider - structural line */}
-          <div className="hidden lg:block w-px h-7 bg-stone-400 flex-shrink-0" />
+          <div className="hidden xl:block w-px h-7 bg-stone-400 flex-shrink-0" />
 
           {/* Time Controls - Period Presets */}
           <div className="segmented-control flex-shrink-0">
@@ -213,7 +214,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
           </div>
 
           {/* Divider - structural line */}
-          <div className="hidden lg:block w-px h-7 bg-stone-400 flex-shrink-0" />
+          <div className="hidden xl:block w-px h-7 bg-stone-400 flex-shrink-0" />
 
           {/* Time Granularity Toggle */}
           <TimeGranularityToggle layout="horizontal" />
