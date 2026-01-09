@@ -1,10 +1,10 @@
 /**
- * INSTITUTIONAL PRINT COLOR SYSTEM
+ * REAM COLOR SYSTEM
  * Single Source of Truth for all color tokens
  *
- * Design Philosophy: "Financial Print / Blueprint Strategy"
- * Charts look like high-end architectural blueprints or printed financial reports.
- * The Suit: Slate + Void + Cool Gray | The Tie: Bloomberg Orange
+ * Design Philosophy: "Warm Industrial / Tactical Precision"
+ * Khaki-olive tones with cream backgrounds and coral accents.
+ * Sharp corners, cross-grid patterns, monospace typography.
  *
  * USAGE:
  * - Import specific palettes: import { INK, REGION, SIGNAL } from '../constants/colors'
@@ -133,9 +133,9 @@ export const CHART = {
 // =============================================================================
 
 export const REGION_BADGE_CLASSES = {
-  CCR: 'bg-slate-900 text-white',
-  RCR: 'bg-slate-700 text-white',
-  OCR: 'bg-slate-500 text-white',
+  CCR: 'bg-[#3D3A2E] text-white',
+  RCR: 'bg-[#5C5844] text-white',
+  OCR: 'bg-[#8A8570] text-white',
 };
 
 // =============================================================================
@@ -187,10 +187,10 @@ export const PRICE_RANGE = {
 // =============================================================================
 
 export const BEADS = {
-  1: 'rgb(var(--color-beads-1-rgb) / 0.9)',  // Slate 200
-  2: 'rgb(var(--color-beads-2-rgb) / 0.9)',  // Slate 400
-  3: 'rgb(var(--color-beads-3-rgb) / 0.9)',  // Slate 700
-  4: 'rgb(var(--color-beads-4-rgb) / 0.9)',  // Slate 900
+  1: 'rgb(var(--color-beads-1-rgb) / 0.9)',  // Khaki 200
+  2: 'rgb(var(--color-beads-2-rgb) / 0.9)',  // Khaki 400
+  3: 'rgb(var(--color-beads-3-rgb) / 0.9)',  // Khaki 700
+  4: 'rgb(var(--color-beads-4-rgb) / 0.9)',  // Khaki 900
   5: 'rgb(var(--color-beads-5-rgb) / 0.9)',  // Brown accent for 5BR
 };
 
