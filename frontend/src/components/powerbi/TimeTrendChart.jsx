@@ -109,8 +109,8 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, o
         type: 'bar',
         label: 'Resale Transactions',
         data: transactionCounts,
-        backgroundColor: CHART_COLORS.slate500Alpha70,  // Slate 500 - light, recedes
-        borderColor: CHART_COLORS.ocean,  // Slate 700 border for definition
+        backgroundColor: CHART_COLORS.oceanAlpha(0.7),  // Ocean blue - brand palette
+        borderColor: CHART_COLORS.ocean,  // Ocean border for definition
         borderWidth: 1,
         borderRadius: 3,
         yAxisID: 'y',

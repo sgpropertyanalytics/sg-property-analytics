@@ -1,87 +1,44 @@
 /**
- * COLOR SYSTEM - Single Source of Truth
- * All values are hex/rgba - works with Chart.js, DOM, everywhere.
+ * COLOR SYSTEM - Minimal, DRY, Chart.js Compatible
  *
- * Philosophy: Original blues palette (navy/ocean/sky) with warm accents.
+ * Architecture:
+ * 1. BASE - ~10 hex colors (single source of truth)
+ * 2. alpha() - generates rgba variants on-demand
+ * 3. Semantic exports - reference BASE, never duplicate
+ * 4. CHART_COLORS - flat namespace for Chart.js
  */
 
 // =============================================================================
-// REGION (blue gradient for CCR → RCR → OCR)
+// BASE PALETTE (Single Source of Truth)
 // =============================================================================
-export const REGION = {
-  CCR: '#213448',  // Navy - darkest (Core Central)
-  RCR: '#547792',  // Ocean - medium (Rest of Central)
-  OCR: '#94B4C1',  // Sky - lightest (Outside Central)
-};
-
-// =============================================================================
-// BEADS (bedroom bubbles - sand to navy progression)
-// =============================================================================
-export const BEADS = {
-  1: 'rgba(234, 224, 207, 0.9)',  // Sand - lightest
-  2: 'rgba(148, 180, 193, 0.9)',  // Sky
-  3: 'rgba(84, 119, 146, 0.9)',   // Ocean
-  4: 'rgba(33, 52, 72, 0.9)',     // Navy - darkest
-  5: 'rgba(120, 80, 60, 0.9)',    // Brown accent for 5BR
-};
-
-// =============================================================================
-// DELTA (financial +/-)
-// =============================================================================
-export const DELTA = {
-  positive: '#059669',  // Emerald
-  negative: '#DC2626',  // Red
-  neutral: '#64748B',   // Gray
-  // Pill badge variants
-  positiveBg: '#ECFDF5',
-  positiveText: '#047857',
-  negativeBg: '#FFF1F2',
-  negativeText: '#BE123C',
-};
-
-// =============================================================================
-// SUPPLY (waterfall chart - warm browns)
-// =============================================================================
-export const SUPPLY = {
-  unsold: '#6b4226',
-  upcoming: '#9c6644',
-  gls: '#c4a77d',
-  total: '#e8dcc8',
-};
-
-// =============================================================================
-// WATERFALL (explicit waterfall chart colors with borders)
-// =============================================================================
-export const WATERFALL = {
-  unsoldInventory: '#6b4226',
-  upcomingLaunches: '#9c6644',
-  glsPipeline: '#c4a77d',
-  glsExcluded: 'rgba(196, 167, 125, 0.3)',
-  total: '#e8dcc8',
-  spacer: 'transparent',
-  connector: '#c4a77d',
-};
-
-export const WATERFALL_BORDER = {
-  unsoldInventory: '#5a361f',
-  upcomingLaunches: '#7d5236',
-  glsPipeline: '#a68b64',
-  glsExcluded: 'rgba(166, 139, 100, 0.5)',
-  total: '#d4c9b8',
-};
-
-// =============================================================================
-// CHART (general chart colors - replaces CHART_COLORS)
-// =============================================================================
-export const CHART = {
-  // Base colors
+const BASE = {
+  // Blues (region gradient)
   navy: '#213448',
   ocean: '#547792',
   sky: '#94B4C1',
-  sand: '#EAE0CF',
-  white: '#FFFFFF',
 
-  // Slate palette for bars/grids
+  // Warm tones
+  sand: '#EAE0CF',
+  brown: '#78503C',
+  bronze: '#C4A484',
+
+  // Supply browns (waterfall)
+  supplyDark: '#6b4226',
+  supplyMid: '#9c6644',
+  supplyLight: '#c4a77d',
+  supplyPale: '#e8dcc8',
+
+  // Status
+  emerald: '#059669',
+  red: '#DC2626',
+  amber: '#F59E0B',
+
+  // Accent
+  orange: '#F97316',
+  orangeA11y: '#EA580C',
+  blue: '#2563EB',
+
+  // Neutrals (slate scale)
   slate100: '#F1F5F9',
   slate200: '#E5E7EB',
   slate300: '#CBD5E1',
@@ -92,116 +49,210 @@ export const CHART = {
   slate800: '#1E293B',
   slate900: '#0F172A',
 
-  // Grid and axis
-  grid: 'rgba(33, 52, 72, 0.1)',
-  gridLight: 'rgba(33, 52, 72, 0.05)',
-  axis: 'rgba(33, 52, 72, 0.3)',
-
-  // Alpha variants (most commonly used)
-  navyAlpha05: 'rgba(33, 52, 72, 0.05)',
-  navyAlpha90: 'rgba(33, 52, 72, 0.9)',
-  navyAlpha95: 'rgba(33, 52, 72, 0.95)',
-  oceanAlpha10: 'rgba(84, 119, 146, 0.1)',
-  oceanAlpha80: 'rgba(84, 119, 146, 0.8)',
-  oceanAlpha100: 'rgba(84, 119, 146, 1)',
-  skyAlpha15: 'rgba(148, 180, 193, 0.15)',
-  skyAlpha20: 'rgba(148, 180, 193, 0.2)',
-  slate500Alpha70: 'rgba(100, 116, 139, 0.7)',
-  slate500Alpha30: 'rgba(100, 116, 139, 0.3)',
-
-  // Status colors for charts
-  redAlpha08: 'rgba(239, 68, 68, 0.08)',
-  redAlpha12: 'rgba(239, 68, 68, 0.12)',
-  redAlpha20: 'rgba(239, 68, 68, 0.2)',
-  emeraldAlpha08: 'rgba(16, 185, 129, 0.08)',
-  emeraldAlpha12: 'rgba(16, 185, 129, 0.12)',
-  emeraldAlpha20: 'rgba(16, 185, 129, 0.2)',
-
-  // Text
-  textMuted: '#374151',
-};
-
-// Dynamic alpha function for intensity-based coloring
-CHART.slate700Alpha = (alpha) => `rgba(51, 65, 85, ${alpha})`;
-
-// =============================================================================
-// INK (text colors)
-// =============================================================================
-export const INK = {
-  primary: '#0F172A',   // Slate 900 - headers
-  dense: '#1E293B',     // Slate 800
-  mid: '#475569',       // Slate 600 - body
-  muted: '#94A3B8',     // Slate 400 - placeholders
-  light: '#CBD5E1',     // Slate 300
-};
-
-// =============================================================================
-// VOID (dark surfaces - navigation)
-// =============================================================================
-export const VOID = {
-  base: '#0A0A0A',
+  // Surfaces
+  white: '#FFFFFF',
+  black: '#0A0A0A',
   surface: '#1A1A1A',
   edge: '#333333',
+  canvasGrid: '#A8A29E',
 };
 
 // =============================================================================
-// CANVAS (light surfaces)
+// ALPHA FUNCTION (Generate rgba on-demand)
 // =============================================================================
+export const alpha = (hex, a) => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
+};
+
+// =============================================================================
+// SEMANTIC EXPORTS (Reference BASE - no duplication)
+// =============================================================================
+
+// Region colors (CCR = premium, OCR = suburban)
+export const REGION = {
+  CCR: BASE.navy,
+  RCR: BASE.ocean,
+  OCR: BASE.sky,
+};
+
+// Bedroom bubble colors (1BR lightest → 4BR darkest, 5BR brown accent)
+export const BEADS = {
+  1: alpha(BASE.sand, 0.9),
+  2: alpha(BASE.sky, 0.9),
+  3: alpha(BASE.ocean, 0.9),
+  4: alpha(BASE.navy, 0.9),
+  5: alpha(BASE.brown, 0.9),
+};
+
+// Financial delta (+/-)
+export const DELTA = {
+  positive: BASE.emerald,
+  negative: BASE.red,
+  neutral: BASE.slate500,
+  positiveBg: '#ECFDF5',
+  positiveText: '#047857',
+  negativeBg: '#FFF1F2',
+  negativeText: '#BE123C',
+};
+
+// Waterfall chart (supply pipeline)
+export const WATERFALL = {
+  unsoldInventory: BASE.supplyDark,
+  upcomingLaunches: BASE.supplyMid,
+  glsPipeline: BASE.supplyLight,
+  glsExcluded: alpha(BASE.supplyLight, 0.3),
+  total: BASE.supplyPale,
+  spacer: 'transparent',
+  connector: BASE.supplyLight,
+};
+
+export const WATERFALL_BORDER = {
+  unsoldInventory: '#5a361f',
+  upcomingLaunches: '#7d5236',
+  glsPipeline: '#a68b64',
+  glsExcluded: alpha('#a68b64', 0.5),
+  total: '#d4c9b8',
+};
+
+// Exit risk liquidity zones
+export const LIQUIDITY = {
+  low: BASE.amber,
+  healthy: BASE.emerald,
+  high: BASE.red,
+  unknown: BASE.slate400,
+};
+
+// Price range semantic colors
+export const PRICE_RANGE = {
+  below: { text: '#166534', bg: '#DCFCE7' },
+  within: { text: '#1E40AF', bg: '#DBEAFE' },
+  above: { text: '#9A3412', bg: '#FEF3C7' },
+  unknown: { text: BASE.slate500 },
+};
+
+// Text hierarchy
+export const INK = {
+  primary: BASE.slate900,
+  dense: BASE.slate800,
+  mid: BASE.slate600,
+  muted: BASE.slate400,
+  light: BASE.slate300,
+};
+
+// Dark surfaces (navigation)
+export const VOID = {
+  base: BASE.black,
+  surface: BASE.surface,
+  edge: BASE.edge,
+};
+
+// Light surfaces
 export const CANVAS = {
   base: '#FAFAFA',
   paper: 'transparent',
-  grid: '#A8A29E',
+  grid: BASE.canvasGrid,
 };
 
-// =============================================================================
-// SIGNAL (accent colors)
-// =============================================================================
+// Accent colors
 export const SIGNAL = {
-  accent: '#F97316',     // Orange 500
-  accentA11y: '#EA580C', // Orange 600 (accessible)
-  focus: '#2563EB',      // Blue 600
+  accent: BASE.orange,
+  accentA11y: BASE.orangeA11y,
+  focus: BASE.blue,
 };
 
-// =============================================================================
-// BRONZE (luxury accent)
-// =============================================================================
+// Luxury accent
 export const BRONZE = {
-  base: '#C4A484',
+  base: BASE.bronze,
   light: '#D4C4A8',
   dark: '#A08060',
 };
 
 // =============================================================================
-// LIQUIDITY (exit risk zones)
+// CHART_COLORS (Flat namespace for Chart.js - all hex/rgba)
 // =============================================================================
-export const LIQUIDITY = {
-  low: '#F59E0B',      // Amber
-  healthy: '#059669',  // Emerald
-  high: '#DC2626',     // Red
-  unknown: '#94A3B8',  // Gray
+export const CHART_COLORS = {
+  // Base colors (from BASE)
+  navy: BASE.navy,
+  ocean: BASE.ocean,
+  sky: BASE.sky,
+  sand: BASE.sand,
+  white: BASE.white,
+
+  // Slate palette
+  slate100: BASE.slate100,
+  slate200: BASE.slate200,
+  slate300: BASE.slate300,
+  slate400: BASE.slate400,
+  slate500: BASE.slate500,
+  slate600: BASE.slate600,
+  slate700: BASE.slate700,
+  slate800: BASE.slate800,
+  slate900: BASE.slate900,
+
+  // Grid/axis
+  grid: alpha(BASE.navy, 0.1),
+  gridLight: alpha(BASE.navy, 0.05),
+  axis: alpha(BASE.navy, 0.3),
+
+  // Navy alpha variants (common)
+  navyAlpha05: alpha(BASE.navy, 0.05),
+  navyAlpha90: alpha(BASE.navy, 0.9),
+  navyAlpha95: alpha(BASE.navy, 0.95),
+
+  // Navy deep alpha (annotations/overlays)
+  navyDeepAlpha04: alpha(BASE.navy, 0.04),
+  navyDeepAlpha05: alpha(BASE.navy, 0.05),
+  navyDeepAlpha08: alpha(BASE.navy, 0.08),
+  navyDeepAlpha10: alpha(BASE.navy, 0.1),
+  navyDeepAlpha20: alpha(BASE.navy, 0.2),
+  navyDeepAlpha50: alpha(BASE.navy, 0.5),
+  navyDeepAlpha80: alpha(BASE.navy, 0.8),
+  navyDeepAlpha90: alpha(BASE.navy, 0.9),
+
+  // Ocean alpha
+  oceanAlpha10: alpha(BASE.ocean, 0.1),
+  oceanAlpha80: alpha(BASE.ocean, 0.8),
+  oceanAlpha100: BASE.ocean,
+
+  // Sky alpha
+  skyAlpha15: alpha(BASE.sky, 0.15),
+  skyAlpha20: alpha(BASE.sky, 0.2),
+  skyAlpha30: alpha(BASE.sky, 0.3),
+
+  // Slate alpha
+  slate500Alpha30: alpha(BASE.slate500, 0.3),
+  slate500Alpha70: alpha(BASE.slate500, 0.7),
+
+  // Status alpha (for chart zones)
+  redAlpha08: alpha('#EF4444', 0.08),
+  redAlpha12: alpha('#EF4444', 0.12),
+  redAlpha20: alpha('#EF4444', 0.2),
+  emeraldAlpha08: alpha('#10B981', 0.08),
+  emeraldAlpha12: alpha('#10B981', 0.12),
+  emeraldAlpha20: alpha('#10B981', 0.2),
+
+  // Text
+  textMuted: BASE.slate700,
+
+  // Supply (waterfall legend)
+  supplyUnsold: BASE.supplyDark,
+  supplyUpcoming: BASE.supplyMid,
+  supplyGls: BASE.supplyLight,
+
+  // Dynamic alpha functions (for intensity-based coloring)
+  slate700Alpha: (a) => alpha(BASE.slate700, a),
+  oceanAlpha: (a) => alpha(BASE.ocean, a),
+  navyAlpha: (a) => alpha(BASE.navy, a),
 };
 
-// =============================================================================
-// STATUS
-// =============================================================================
-export const STATUS = {
-  live: '#059669',
-  positive: '#059669',
-  negative: '#DC2626',
-};
+// Alias for backward compatibility
+export const CHART = CHART_COLORS;
 
 // =============================================================================
-// PRICE_RANGE (semantic colors)
-// =============================================================================
-export const PRICE_RANGE = {
-  below: { text: '#166534', bg: '#DCFCE7' },
-  within: { text: '#1E40AF', bg: '#DBEAFE' },
-  above: { text: '#9A3412', bg: '#FEF3C7' },
-  unknown: { text: '#6B7280' },
-};
-
-// =============================================================================
-// BADGE CLASSES (Tailwind)
+// TAILWIND BADGE CLASSES
 // =============================================================================
 export const REGION_BADGE_CLASSES = {
   CCR: 'bg-slate-900 text-white',
@@ -228,7 +279,3 @@ export const getRegionBadgeClass = (region) => {
   return REGION_BADGE_CLASSES[r] || REGION_BADGE_CLASSES.OCR;
 };
 
-// =============================================================================
-// BACKWARD COMPATIBILITY - CHART_COLORS alias
-// =============================================================================
-export const CHART_COLORS = CHART;

@@ -15,11 +15,15 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useSupplyData } from '../../context/SupplyDataContext';
 import { ChartFrame } from '../common/ChartFrame';
 import { DISTRICT_NAMES, getRegionForDistrict, getRegionBadgeClass } from '../../constants';
-import { SUPPLY } from '../../constants/colors';
+import { WATERFALL } from '../../constants/colors';
 import { SupplyField, getSupplyField } from '../../schemas/apiContract';
 
-// Colors from centralized colors.js (muted warm tones)
-const COLORS = SUPPLY;
+// Map WATERFALL keys to simpler names for this component
+const COLORS = {
+  unsold: WATERFALL.unsoldInventory,
+  upcoming: WATERFALL.upcomingLaunches,
+  gls: WATERFALL.glsPipeline,
+};
 
 /**
  * Supply Breakdown Table Component

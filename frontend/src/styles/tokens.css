@@ -20,7 +20,13 @@
   --color-text-subtle: #94A3B8;
   --color-text-inverse: #F2EFE9;
 
-  /* Brand + semantic */
+  /* Brand palette (matches colors.js BASE) */
+  --color-brand-navy: #213448;
+  --color-brand-blue: #547792;
+  --color-brand-sky: #94B4C1;
+  --color-brand-sand: #EAE0CF;
+
+  /* Semantic */
   --color-brand: #0F172A;
   --color-accent: #F97316;
   --color-accent-strong: #EA580C;
