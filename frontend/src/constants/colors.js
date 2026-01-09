@@ -64,6 +64,16 @@ export const SIGNAL = {
 };
 
 // =============================================================================
+// BRONZE (Luxury Accent - "Champagne Bronze")
+// =============================================================================
+
+export const BRONZE = {
+  base: 'var(--color-bronze)',        // #C4A484 - Primary luxury accent
+  light: 'var(--color-bronze-light)', // #D4C4A8 - Hover states
+  dark: 'var(--color-bronze-dark)',   // #A08060 - Active states
+};
+
+// =============================================================================
 // DELTA (Financial +/-)
 // =============================================================================
 
@@ -71,6 +81,18 @@ export const DELTA = {
   positive: 'var(--color-delta-positive)',  // Emerald 600 - Gains, positive change
   negative: 'var(--color-delta-negative)',  // Red 600 - Losses, negative change
   neutral: 'var(--color-delta-neutral)',   // Slate 500 - No change
+  // Luxury pill badge colors (desaturated)
+  positiveBg: 'var(--color-delta-positive-bg)',    // Emerald 50
+  positiveText: 'var(--color-delta-positive-text)', // Emerald 700
+  negativeBg: 'var(--color-delta-negative-bg)',    // Rose 50
+  negativeText: 'var(--color-delta-negative-text)', // Rose 700
+};
+
+// Delta pill badge Tailwind classes
+export const DELTA_PILL_CLASSES = {
+  positive: 'bg-emerald-50 text-emerald-700 border border-emerald-100',
+  negative: 'bg-rose-50 text-rose-700 border border-rose-100',
+  neutral: 'bg-slate-50 text-slate-600 border border-slate-100',
 };
 
 // =============================================================================
@@ -118,14 +140,17 @@ export const CHART = {
   // Signal color for emphasis
   accent: SIGNAL.accent,
 
-  // Grid and axes
-  grid: 'rgb(var(--color-chart-1-rgb) / 0.05)',   // Slate 900 at 5%
-  axis: 'rgb(var(--color-chart-1-rgb) / 0.3)',    // Slate 900 at 30%
+  // Grid and axes - Luxury reduced opacity
+  grid: 'rgb(var(--color-chart-1-rgb) / 0.04)',   // Slate 900 at 4% (reduced for luxury)
+  axis: 'rgb(var(--color-chart-1-rgb) / 0.25)',   // Slate 900 at 25% (softer)
 
   // Region colors (for geographic data)
   regionCCR: REGION.CCR,
   regionRCR: REGION.RCR,
   regionOCR: REGION.OCR,
+
+  // Bar styling
+  barRadius: 2, // Rounded top corners (rounded-t-sm)
 };
 
 // =============================================================================

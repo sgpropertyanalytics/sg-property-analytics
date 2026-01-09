@@ -35,3 +35,6 @@ export { PageHeader } from './PageHeader';
 export { ChartPanel } from './ChartPanel';
 export { DataSection } from './DataSection';
 export { ChartSlot } from './ChartSlot';
+
+// Delta indicators (Luxury design system)
+export { DeltaPill, DeltaText } from './DeltaPill';
