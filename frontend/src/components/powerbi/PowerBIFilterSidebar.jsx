@@ -120,16 +120,10 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
   if (layout === 'horizontal') {
     return (
       <div className="py-3">
-        {/* Bordered container - RED background to show padding area */}
-        <div
-          className="border border-slate-300"
-          style={{ padding: '12px 20px', backgroundColor: 'rgba(255,0,0,0.1)' }}
-        >
-          {/* Flex container - BLUE background to show where flex items live */}
-          <div
-            className="flex flex-nowrap items-center gap-3 xl:gap-4"
-            style={{ backgroundColor: 'rgba(0,0,255,0.1)' }}
-          >
+        {/* Bordered container */}
+        <div className="bg-white border border-slate-300 py-3 px-5 overflow-x-auto">
+          {/* Flex container - w-max ensures it sizes to content for proper scroll */}
+          <div className="flex flex-nowrap items-center gap-3 xl:gap-4 w-max">
             {/* Property Filters - Region + District + Bedroom */}
             <div className="flex items-center gap-4 flex-shrink-0 min-w-0">
             {/* Region Segmented Control */}
@@ -236,6 +230,9 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
               Reset
             </button>
           )}
+          {/* End spacer - creates right padding inside scrollable area */}
+          {/* With overflow-x-auto, px-5 right padding gets clipped; this spacer provides visual spacing */}
+          <div className="w-5 flex-shrink-0" aria-hidden="true" />
           </div>
         </div>
       </div>
