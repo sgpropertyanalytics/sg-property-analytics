@@ -230,6 +230,9 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
               Reset
             </button>
           )}
+
+          {/* End spacer - overflow-x-auto clips right padding, this fixes it */}
+          <div className="w-5 flex-shrink-0" aria-hidden="true" />
           </div>
         </div>
       </div>
