@@ -667,19 +667,12 @@ function ParticleGlobe() {
   return (
     <div
       ref={wrapRef}
-      className="relative w-full aspect-[1/1] cursor-crosshair"
-      onMouseMove={onMouseMove}
-      onMouseDown={onMouseDown}
-      onMouseLeave={onMouseUp}
-      onMouseUp={onMouseUp}
+      className="relative w-full aspect-[1/1]"
     >
       <canvas ref={canvasRef} className="absolute inset-0" />
       <div className="absolute top-4 right-4 text-right">
         <div className="font-mono text-[10px] uppercase tracking-wider text-black/60">
           SINGAPORE_NETWORK
-        </div>
-        <div className="mt-1 font-mono text-[10px] uppercase tracking-wider text-black/50">
-          SG {clock}
         </div>
         <div className="mt-1 flex items-center justify-end gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
