@@ -120,10 +120,10 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
   if (layout === 'horizontal') {
     return (
       <div className="py-3">
-        {/* Bordered container - px-5 for horizontal breathing room, py-3 for vertical */}
-        <div className="bg-white border border-slate-300 px-5 py-3">
-          {/* Flex container - simple left-aligned row */}
-          <div className="flex flex-nowrap items-center gap-3 xl:gap-4">
+        {/* Bordered container */}
+        <div className="bg-white border border-slate-300 py-3">
+          {/* Flex container - px-5 here ensures padding is respected by flex children */}
+          <div className="flex flex-nowrap items-center gap-3 xl:gap-4 px-5">
             {/* Property Filters - Region + District + Bedroom */}
             <div className="flex items-center gap-4 flex-shrink-0 min-w-0">
             {/* Region Segmented Control */}
