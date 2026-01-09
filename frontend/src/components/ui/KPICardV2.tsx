@@ -5,6 +5,10 @@ import { FrostOverlay } from '../common/loading';
 /**
  * KPICardV2 - Universal Card System
  *
+ * Supports two variants:
+ * - "card" (default): Standalone card with luxury-card styling
+ * - "cell": Minimal cell for use inside KPIHudStrip (no card styling)
+ *
  * Two-layer architecture (title + hero):
  * ┌─────────────────────────────────────────┐
  * │ LABEL  (?)                     ← top    │
@@ -41,6 +45,8 @@ interface KPICardV2Props {
   transition?: string;
   loading?: boolean;
   className?: string;
+  /** Variant: "card" (standalone with styling) or "cell" (minimal for HUD strip) */
+  variant?: 'card' | 'cell';
 }
 
 // Badge color mapping
@@ -147,26 +153,77 @@ export function KPICardV2({
   transition,
   loading = false,
   className = '',
+  variant = 'card',
 }: KPICardV2Props) {
   // Combine tooltip and footnote for hover display
   const footerText = footnote || transition;
   const combinedTooltip = [tooltip, footerText].filter(Boolean).join('\n\n');
+
+  const isCell = variant === 'cell';
 
   // Loading state - show frost overlay
   if (loading) {
     return (
       <div
         className={`
-          luxury-card overflow-hidden
-          min-h-40
+          ${isCell ? '' : 'luxury-card'} overflow-hidden
+          ${isCell ? 'h-full' : 'min-h-40'}
           ${className}
         `.trim()}
       >
-        <FrostOverlay height={160} showSpinner={false} showProgress />
+        <FrostOverlay height={isCell ? 120 : 160} showSpinner={false} showProgress />
       </div>
     );
   }
 
+  // Cell variant - minimal styling for HUD strip
+  if (isCell) {
+    return (
+      <div
+        className={`
+          p-4 h-full flex flex-col
+          ${className}
+        `.trim()}
+      >
+        {/* Layer 1: Header - pinned to top */}
+        <div className="flex-shrink-0 mb-2">
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-slate-500">
+              {title}
+            </span>
+            {combinedTooltip && (
+              <HelpTooltip content={combinedTooltip} />
+            )}
+          </div>
+          {subtitle && (
+            <p className="text-[9px] text-slate-400 mt-0.5 leading-tight">
+              {subtitle}
+            </p>
+          )}
+        </div>
+
+        {/* Layer 2: Hero Data - fills remaining space, aligned to bottom */}
+        <div className="flex-1 flex items-end min-w-0">
+          {typeof value === 'string' ? (
+            <div className="truncate" title={badge ? `${value} ${badge.text}` : value}>
+              <span className="text-[20px] sm:text-[24px] font-mono font-medium text-slate-900 leading-none tabular-nums">
+                {value}
+              </span>
+              {badge && (
+                <span className={`ml-1.5 text-[10px] font-medium uppercase tracking-wider whitespace-nowrap ${BADGE_COLORS[badge.color]}`}>
+                  {badge.text.split(' ')[0]}
+                </span>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-0.5 min-w-0 overflow-hidden">{value}</div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Card variant (default) - standalone with luxury-card styling
   return (
     <div
       className={`
@@ -236,6 +293,78 @@ export function KPICardV2Group({
   return (
     <div className={`grid gap-3 md:gap-4 ${gridCols[columns]} ${className} overflow-visible`}>
       {children}
+    </div>
+  );
+}
+
+/**
+ * KPIHudStrip - Unified HUD Strip for KPI Metrics
+ *
+ * Technical panel aesthetic with corner brackets.
+ * Merges 4 KPIs into a single container with vertical dividers.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │  KEY METRICS                                                             │
+ * ├─────────────────┬─────────────────┬──────────────────┬───────────────────┤
+ * │   Metric 1      │   Metric 2      │    Metric 3      │    Metric 4       │
+ * └─────────────────┴─────────────────┴──────────────────┴───────────────────┘
+ */
+interface KPIHudStripProps {
+  /** Section title displayed in header */
+  title?: string;
+  /** KPI cells to render (should be KPICardV2 with variant="cell") */
+  children: React.ReactNode;
+  /** Number of columns (default 4) */
+  columns?: 2 | 3 | 4;
+  /** Additional CSS classes */
+  className?: string;
+}
+
+export function KPIHudStrip({
+  title = 'KEY METRICS',
+  children,
+  columns = 4,
+  className = '',
+}: KPIHudStripProps) {
+  // Grid columns mapping
+  const gridCols = {
+    2: 'grid-cols-1 sm:grid-cols-2',
+    3: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
+    4: 'grid-cols-2 lg:grid-cols-4',
+  };
+
+  // Convert children to array for mapping with dividers
+  const childArray = React.Children.toArray(children);
+
+  return (
+    <div
+      className={`
+        relative bg-white border border-slate-300 overflow-hidden
+        hud-corner
+        ${className}
+      `.trim()}
+    >
+      {/* Header - matches chart header styling exactly */}
+      <div className="px-5 py-3 border-b border-slate-300 bg-slate-50/50">
+        <h3 className="terminal-header text-slate-500">
+          {title}
+        </h3>
+      </div>
+
+      {/* KPI Grid - cells with vertical dividers (no gaps - brutalist touch) */}
+      <div className={`grid ${gridCols[columns]} divide-x divide-slate-200`}>
+        {childArray.map((child, index) => (
+          <div
+            key={index}
+            className={`
+              min-h-[120px]
+              ${index >= columns ? 'border-t border-slate-200' : ''}
+            `.trim()}
+          >
+            {child}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
