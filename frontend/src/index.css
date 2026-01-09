@@ -100,6 +100,13 @@
   background-size: 80px 80px;
 }
 
+/* Technical Dot Grid Background - Engineering blueprint aesthetic */
+.technical-grid-bg {
+  background-color: var(--color-bg);
+  background-image: radial-gradient(var(--color-grid-dot) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
 /* Noise Texture Overlay - fractal noise for depth */
 .weapon-noise {
   position: relative;

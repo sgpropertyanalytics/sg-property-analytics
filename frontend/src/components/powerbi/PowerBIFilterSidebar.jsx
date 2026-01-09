@@ -119,8 +119,8 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
   // Single row layout: Property filters | Time Duration | Granularity | Reset
   if (layout === 'horizontal') {
     return (
-      <div className="-mx-3 md:-mx-4 lg:-mx-6 px-3 md:px-4 lg:px-6 py-3 bg-transparent border-b border-stone-400">
-        <div className="flex flex-wrap lg:flex-nowrap items-center justify-start gap-4">
+      <div className="py-3 bg-transparent">
+        <div className="flex flex-wrap lg:flex-nowrap items-center justify-start gap-4 overflow-x-auto">
           {/* Property Filters - Region + District + Bedroom */}
           <div className="flex items-center gap-4 flex-shrink-0 min-w-0">
             {/* Region Segmented Control */}

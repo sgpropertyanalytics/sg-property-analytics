@@ -59,8 +59,8 @@ export function FilterBar() {
 
   return (
     <>
-      {/* Desktop: Horizontal sticky bar - sticky applied at wrapper level */}
-      <div className="hidden lg:block sticky top-0 z-30 mb-6">
+      {/* Desktop: Horizontal bar - sticky handled by parent ControlRibbon */}
+      <div className="hidden lg:block">
         <PowerBIFilterSidebar layout="horizontal" />
       </div>
 

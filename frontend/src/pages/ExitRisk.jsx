@@ -338,20 +338,20 @@ export function ExitRiskContent() {
       <div className="p-3 md:p-4 lg:p-6">
         {/* Header */}
         <div className="mb-4 md:mb-6">
-          <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-brand-navy">
+          <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-slate-900">
             Exit Risk Analysis
           </h1>
-          <p className="text-brand-blue text-sm mt-1">
+          <p className="text-slate-700 text-sm mt-1">
             Comprehensive exit queue and liquidity assessment for individual projects
           </p>
         </div>
 
         {/* Project Selector + Downside Protection Input */}
-        <div className="bg-card rounded-xl border border-brand-sky/30 mb-6">
+        <div className="bg-card rounded-xl border border-slate-500/30 mb-6">
           <div className="grid grid-cols-1 lg:grid-cols-2">
             {/* Left: Project Selector */}
             <div className="p-4 md:p-6">
-              <label className="block text-sm font-medium text-brand-navy mb-2">
+              <label className="block text-sm font-medium text-slate-900 mb-2">
                 Select a Project
               </label>
               <div className="relative" ref={dropdownRef}>
@@ -359,9 +359,9 @@ export function ExitRiskContent() {
                   type="button"
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   disabled={projectOptionsLoading}
-                  className="w-full px-3 py-2.5 text-sm border border-brand-sky/50 rounded-lg text-left bg-brand-sand/20 focus:outline-none focus:ring-2 focus:ring-brand-blue focus:border-transparent flex items-center justify-between min-w-0"
+                  className="w-full px-3 py-2.5 text-sm border border-slate-500/50 rounded-lg text-left bg-slate-200/20 focus:outline-none focus:ring-2 focus:ring-slate-700 focus:border-transparent flex items-center justify-between min-w-0"
                 >
-                  <span className={selectedProject ? 'text-brand-navy truncate font-medium min-w-0' : 'text-brand-sky min-w-0'}>
+                  <span className={selectedProject ? 'text-slate-900 truncate font-medium min-w-0' : 'text-slate-500 min-w-0'}>
                     {selectedProject
                       ? `${selectedProject.name} (${selectedProject.district})`
                       : projectOptionsLoading
@@ -373,14 +373,14 @@ export function ExitRiskContent() {
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); handleClearSelection(); }}
-                        className="p-1 hover:bg-brand-sky/30 rounded"
+                        className="p-1 hover:bg-slate-500/30 rounded"
                       >
-                        <svg className="w-4 h-4 text-brand-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
                       </button>
                     )}
-                    <svg className={`w-4 h-4 text-brand-blue transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className={`w-4 h-4 text-slate-700 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </div>
@@ -388,20 +388,20 @@ export function ExitRiskContent() {
 
                 {/* Dropdown Panel */}
                 {isDropdownOpen && (
-                  <div className="absolute z-50 w-full mt-1 bg-white border border-brand-sky/50 rounded-lg shadow-lg max-h-80 overflow-hidden">
-                    <div className="p-2 border-b border-brand-sky/30">
+                  <div className="absolute z-50 w-full mt-1 bg-white border border-slate-500/50 rounded-lg shadow-lg max-h-80 overflow-hidden">
+                    <div className="p-2 border-b border-slate-500/30">
                       <input
                         type="text"
                         placeholder="Type to search..."
                         value={projectSearch}
                         onChange={(e) => setProjectSearch(e.target.value)}
-                        className="w-full px-3 py-2 border border-brand-sky/50 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-blue text-brand-navy"
+                        className="w-full px-3 py-2 border border-slate-500/50 rounded text-sm focus:outline-none focus:ring-1 focus:ring-slate-700 text-slate-900"
                         autoFocus
                       />
                     </div>
                     <div className="max-h-60 overflow-y-auto">
                       {filteredProjects.length === 0 ? (
-                        <div className="px-3 py-4 text-sm text-brand-sky text-center">
+                        <div className="px-3 py-4 text-sm text-slate-500 text-center">
                           {projectOptionsLoading ? 'Loading...' : 'No projects found'}
                         </div>
                       ) : (
@@ -410,17 +410,17 @@ export function ExitRiskContent() {
                             key={p.name}
                             type="button"
                             onClick={() => handleProjectSelect(p)}
-                            className={`w-full px-3 py-2 text-left text-sm hover:bg-brand-sand/50 flex justify-between items-center min-w-0 ${
-                              selectedProject?.name === p.name ? 'bg-brand-sand/30 text-brand-navy font-medium' : 'text-brand-blue'
+                            className={`w-full px-3 py-2 text-left text-sm hover:bg-slate-200/50 flex justify-between items-center min-w-0 ${
+                              selectedProject?.name === p.name ? 'bg-slate-200/30 text-slate-900 font-medium' : 'text-slate-700'
                             }`}
                           >
                             <span className="truncate min-w-0">{p.name}</span>
-                            <span className="text-xs text-brand-sky ml-2 flex-shrink-0">{p.district}</span>
+                            <span className="text-xs text-slate-500 ml-2 flex-shrink-0">{p.district}</span>
                           </button>
                         ))
                       )}
                       {filteredProjects.length > 100 && (
-                        <div className="px-3 py-2 text-xs text-brand-sky text-center border-t border-brand-sky/30">
+                        <div className="px-3 py-2 text-xs text-slate-500 text-center border-t border-slate-500/30">
                           +{filteredProjects.length - 100} more projects
                         </div>
                       )}
@@ -430,19 +430,19 @@ export function ExitRiskContent() {
               </div>
 
               {!projectOptionsLoading && projectOptions.length > 0 && (
-                <p className="text-xs text-brand-sky mt-2">
+                <p className="text-xs text-slate-500 mt-2">
                   {projectOptions.length.toLocaleString()} projects available
                 </p>
               )}
             </div>
 
             {/* Right: Downside Protection Input */}
-            <div className="lg:border-l lg:border-brand-sky/30 bg-brand-blue/[0.03] p-4 md:p-6">
+            <div className="lg:border-l lg:border-slate-500/30 bg-slate-700/[0.03] p-4 md:p-6">
               <div className="mb-3">
-                <h2 className="text-sm font-semibold text-brand-navy mb-1">
+                <h2 className="text-sm font-semibold text-slate-900 mb-1">
                   Downside Protection Analysis
                 </h2>
-                <p className="text-xs text-brand-blue">
+                <p className="text-xs text-slate-700">
                   See where your unit PSF sits relative to historical price floors
                 </p>
               </div>
@@ -454,7 +454,7 @@ export function ExitRiskContent() {
               />
 
               {!selectedProject && (
-                <p className="text-xs text-brand-sky mt-2 italic">
+                <p className="text-xs text-slate-500 mt-2 italic">
                   Select a project first to analyze downside protection
                 </p>
               )}

@@ -4,11 +4,13 @@
   --font-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace;
 
   /* Core surfaces */
-  --color-bg: #F2EFE9;
+  --color-bg: #F9FAFB;
+  --color-bg-warm: #FAFAF9;
   --color-surface: transparent;
   --color-surface-elevated: #1A1A1A;
   --color-border: #A8A29E;
   --color-border-strong: #333333;
+  --color-grid-dot: #D4D4D4;
 
   /* Text */
   --color-text: #0F172A;
@@ -32,7 +34,7 @@
   --color-void: #0A0A0A;
   --color-void-surface: #1A1A1A;
   --color-void-edge: #333333;
-  --color-canvas: #F2EFE9;
+  --color-canvas: var(--color-bg);
   --color-canvas-paper: transparent;
   --color-canvas-grid: #A8A29E;
   --color-ink: #0F172A;
