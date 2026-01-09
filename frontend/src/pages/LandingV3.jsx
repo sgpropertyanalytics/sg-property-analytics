@@ -1762,22 +1762,9 @@ export default function LandingV3() {
                         SYSTEM ONLINE
                       </span>
                     </div>
-                    <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-black/40">
-                      //
-                    </span>
                     <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-black/50">
-                      DATA INTEGRITY: 100%
+                      // SECTOR: PRIVATE RESIDENTIAL // SINGAPORE
                     </span>
-                  </motion.div>
-
-                  {/* Sector Label */}
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.5, delay: 0.05 }}
-                    className="mt-4 font-mono text-[11px] uppercase tracking-[0.2em] text-black/50"
-                  >
-                    SECTOR: PRIVATE RESIDENTIAL // SINGAPORE
                   </motion.div>
 
                   {/* Main Headline - Tight, Structural */}
