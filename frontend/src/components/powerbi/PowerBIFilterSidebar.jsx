@@ -122,8 +122,8 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
       <div className="py-3">
         {/* Bordered container - px-5 for horizontal breathing room, py-3 for vertical */}
         <div className="bg-white border border-slate-300 px-5 py-3 overflow-x-auto scrollbar-hide">
-          {/* Flex container - justify-start per design system, spacer pushes right cluster */}
-          <div className="flex flex-nowrap items-center gap-3 xl:gap-4 w-max min-w-full">
+          {/* Flex container - simple left-aligned row */}
+          <div className="flex flex-nowrap items-center gap-3 xl:gap-4">
             {/* Property Filters - Region + District + Bedroom */}
             <div className="flex items-center gap-4 flex-shrink-0 min-w-0">
             {/* Region Segmented Control */}
@@ -215,10 +215,6 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
             ))}
           </div>
 
-          {/* Spacer - pushes right cluster to the edge (always present, unlike conditional Reset) */}
-          <div className="flex-grow" />
-
-          {/* === RIGHT CLUSTER === */}
           {/* Divider - structural line */}
           <div className="hidden xl:block w-px h-7 bg-stone-400 flex-shrink-0" />
 
