@@ -3,65 +3,90 @@
   --font-sans: "Inter", system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace;
 
-  /* Core surfaces */
-  --color-bg: #F2EFE9;
-  --color-surface: transparent;
-  --color-surface-elevated: #1A1A1A;
-  --color-border: #A8A29E;
-  --color-border-strong: #333333;
+  /* ==========================================================================
+     REAM THEME: Khaki-Olive + Cream + Coral
+     Philosophy: Warm industrial aesthetic with tactical precision
+     ========================================================================== */
 
-  /* Text */
-  --color-text: #0F172A;
-  --color-text-strong: #0F172A;
-  --color-text-muted: #475569;
-  --color-text-subtle: #94A3B8;
-  --color-text-inverse: #F2EFE9;
+  /* Core surfaces */
+  --color-bg: #F5F0E6;
+  --color-surface: transparent;
+  --color-surface-elevated: #7D7A52;
+  --color-border: #C4BFA8;
+  --color-border-strong: #9A9164;
+
+  /* Text hierarchy */
+  --color-text: #3D3A2E;
+  --color-text-strong: #3D3A2E;
+  --color-text-muted: #5C5844;
+  --color-text-subtle: #A9A48E;
+  --color-text-inverse: #F5F0E6;
 
   /* Brand + semantic */
-  --color-brand: #0F172A;
-  --color-brand-secondary: #334155;
-  --color-brand-tertiary: #64748B;
-  --color-accent: #F97316;
-  --color-accent-strong: #EA580C;
-  --color-focus: #2563EB;
+  --color-brand: #3D3A2E;
+  --color-brand-secondary: #5C5844;
+  --color-brand-tertiary: #8A8570;
+  --color-accent: #E85C33;
+  --color-accent-strong: #D14B26;
+  --color-focus: #E85C33;
   --color-success: #059669;
   --color-danger: #DC2626;
   --color-warning: #F59E0B;
 
-  /* Legacy palette mapping (kept for compatibility) */
-  --color-void: #0A0A0A;
-  --color-void-surface: #1A1A1A;
-  --color-void-edge: #333333;
-  --color-canvas: #F2EFE9;
+  /* Void → Khaki-Olive (sidenav, dark surfaces) */
+  --color-void: #9A9164;
+  --color-void-surface: #7D7A52;
+  --color-void-edge: #5C5844;
+
+  /* Canvas → Cream */
+  --color-canvas: #F5F0E6;
   --color-canvas-paper: transparent;
-  --color-canvas-grid: #A8A29E;
-  --color-ink: #0F172A;
-  --color-ink-dense: #1E293B;
-  --color-ink-mid: #475569;
-  --color-ink-muted: #94A3B8;
-  --color-ink-light: #CBD5E1;
-  --color-region-ccr: #0F172A;
-  --color-region-rcr: #334155;
-  --color-region-ocr: #64748B;
-  --color-signal-accent: #F97316;
-  --color-signal-a11y: #EA580C;
-  --color-signal-focus: #2563EB;
+  --color-canvas-grid: #C4BFA8;
+
+  /* Ink → Brown-Olive (text hierarchy) */
+  --color-ink: #3D3A2E;
+  --color-ink-dense: #4A4738;
+  --color-ink-mid: #5C5844;
+  --color-ink-muted: #A9A48E;
+  --color-ink-light: #C4BFA8;
+
+  /* Regions → Brown-Olive hierarchy (CCR darkest, OCR lightest) */
+  --color-region-ccr: #3D3A2E;
+  --color-region-rcr: #5C5844;
+  --color-region-ocr: #8A8570;
+
+  /* Signal → Coral */
+  --color-signal-accent: #E85C33;
+  --color-signal-a11y: #D14B26;
+  --color-signal-focus: #E85C33;
+
+  /* Delta (gains/losses) - keeping green/red for semantic clarity */
   --color-delta-positive: #059669;
   --color-delta-negative: #DC2626;
-  --color-delta-neutral: #64748B;
-  --color-supply-total: #94A3B8;
+  --color-delta-neutral: #8A8570;
+
+  /* Supply totals */
+  --color-supply-total: #A9A48E;
+
+  /* Liquidity indicators */
   --color-liquidity-low: #F59E0B;
   --color-liquidity-healthy: #059669;
   --color-liquidity-high: #DC2626;
-  --color-liquidity-unknown: #94A3B8;
+  --color-liquidity-unknown: #A9A48E;
+
+  /* Status */
   --color-status-live: #059669;
   --color-status-negative: #DC2626;
-  --color-brand-navy: #0F172A;
-  --color-brand-blue: #334155;
-  --color-brand-sky: #64748B;
-  --color-brand-sand: #E5E7EB;
+
+  /* Brand aliases (legacy compat) */
+  --color-brand-navy: #3D3A2E;
+  --color-brand-blue: #5C5844;
+  --color-brand-sky: #8A8570;
+  --color-brand-sand: #D4CEB8;
+
+  /* Card */
   --color-card: transparent;
-  --color-card-hover: rgba(255, 79, 0, 0.05);
+  --color-card-hover: rgba(232, 92, 51, 0.05);
 
   /* Legacy mono aliases */
   --color-mono-void: var(--color-void);
@@ -74,43 +99,61 @@
   --color-mono-muted: var(--color-canvas-grid);
   --color-mono-canvas: var(--color-canvas);
 
-  /* Chart palette */
-  --color-chart-1: #0F172A;
-  --color-chart-2: #334155;
-  --color-chart-3: #64748B;
-  --color-chart-4: #94A3B8;
-  --color-chart-5: #E5E7EB;
-  --color-chart-1-rgb: 15 23 42;
-  --color-chart-2-rgb: 51 65 85;
-  --color-chart-3-rgb: 100 116 139;
-  --color-chart-4-rgb: 148 163 184;
-  --color-chart-5-rgb: 229 231 235;
-  --color-navy-deep: #213448;
-  --color-navy-deep-rgb: 33 52 72;
-  --color-ocean: #547792;
-  --color-ocean-rgb: 84 119 146;
-  --color-sky: #94B4C1;
-  --color-sky-rgb: 148 180 193;
-  --color-text-muted-strong: #374151;
-  --color-slate-100: #F1F5F9;
-  --color-slate-200: #E5E7EB;
-  --color-slate-300: #CBD5E1;
-  --color-slate-400: #94A3B8;
-  --color-slate-500: #64748B;
-  --color-slate-600: #475569;
-  --color-slate-700: #334155;
-  --color-slate-800: #1E293B;
-  --color-slate-900: #0F172A;
-  --color-slate-700-rgb: 51 65 85;
-  --color-slate-500-rgb: 100 116 139;
-  --color-slate-900-rgb: 15 23 42;
+  /* Chart palette → Khaki-Olive gradient */
+  --color-chart-1: #3D3A2E;
+  --color-chart-2: #5C5844;
+  --color-chart-3: #7D7A52;
+  --color-chart-4: #9A9164;
+  --color-chart-5: #D4CEB8;
+
+  /* Functional chart colors */
+  --color-chart-volume: #C4BFA8;
+  --color-chart-volume-hover: #3D3A2E;
+  --color-chart-accent: #E85C33;
+  --color-chart-accent-light: #F07A56;
+
+  /* Chart RGB values for opacity variants */
+  --color-chart-volume-rgb: 196 191 168;
+  --color-chart-accent-rgb: 232 92 51;
+  --color-chart-1-rgb: 61 58 46;
+  --color-chart-2-rgb: 92 88 68;
+  --color-chart-3-rgb: 125 122 82;
+  --color-chart-4-rgb: 154 145 100;
+  --color-chart-5-rgb: 212 206 184;
+
+  /* Legacy chart colors mapped to khaki */
+  --color-navy-deep: #3D3A2E;
+  --color-navy-deep-rgb: 61 58 46;
+  --color-ocean: #7D7A52;
+  --color-ocean-rgb: 125 122 82;
+  --color-sky: #A9A48E;
+  --color-sky-rgb: 169 164 142;
+  --color-text-muted-strong: #5C5844;
+
+  /* Slate aliases → Khaki (Tailwind compat) */
+  --color-slate-100: #EAE6D8;
+  --color-slate-200: #D4CEB8;
+  --color-slate-300: #C4BFA8;
+  --color-slate-400: #A9A48E;
+  --color-slate-500: #8A8570;
+  --color-slate-600: #5C5844;
+  --color-slate-700: #4A4738;
+  --color-slate-800: #3D3A2E;
+  --color-slate-900: #2E2C24;
+
+  /* Slate RGB values */
+  --color-slate-700-rgb: 74 71 56;
+  --color-slate-500-rgb: 138 133 112;
+  --color-slate-900-rgb: 46 44 36;
+
+  /* Utility colors */
   --color-white: #FFFFFF;
   --color-red: #EF4444;
   --color-red-rgb: 239 68 68;
   --color-emerald: #10B981;
   --color-emerald-rgb: 16 185 129;
-  --color-orange: #F97316;
-  --color-orange-rgb: 249 115 22;
+  --color-orange: #E85C33;
+  --color-orange-rgb: 232 92 51;
   --color-yellow: #FACC15;
   --color-yellow-rgb: 250 204 21;
 
@@ -174,21 +217,21 @@
   --z-toast: 90;
   --z-debug: 100;
 
-  /* Nav-specific colors (Smoked Obsidian aesthetic) */
-  --color-nav-bg: #262321;
-  --color-nav-bg-rgb: 38 35 33;
-  --color-nav-text: #E7E5E4;
-  --color-nav-text-muted: #A8A29E;
+  /* Nav → Khaki-Olive */
+  --color-nav-bg: #9A9164;
+  --color-nav-bg-rgb: 154 145 100;
+  --color-nav-text: #F5F0E6;
+  --color-nav-text-muted: #D4CEB8;
 
-  /* Skeleton loading colors (for ChartSkeleton) */
-  --color-skeleton-bg: #f5f2ed;
-  --color-skeleton-bg-rgb: 245 242 237;
-  --color-skeleton-border: #d4d0c8;
-  --color-skeleton-border-rgb: 212 208 200;
+  /* Skeleton loading colors */
+  --color-skeleton-bg: #EAE6D8;
+  --color-skeleton-bg-rgb: 234 230 216;
+  --color-skeleton-border: #C4BFA8;
+  --color-skeleton-border-rgb: 196 191 168;
 
   /* Canvas RGB for opacity variants */
-  --color-canvas-rgb: 242 239 233;
-  --color-bg-rgb: 242 239 233;
+  --color-canvas-rgb: 245 240 230;
+  --color-bg-rgb: 245 240 230;
 
   /* Waterfall chart palette (warm earth tones for supply visualization) */
   --color-waterfall-unsold: #6b4226;
@@ -208,30 +251,30 @@
   --color-price-within-bg: #DBEAFE;
   --color-price-above-text: #9A3412;
   --color-price-above-bg: #FEF3C7;
-  --color-price-unknown-text: #6B7280;
+  --color-price-unknown-text: #5C5844;
 
-  /* Beads chart palette (slate with opacity) */
-  --color-beads-1-rgb: 229 231 235;
-  --color-beads-2-rgb: 148 163 184;
-  --color-beads-3-rgb: 51 65 85;
-  --color-beads-4-rgb: 15 23 42;
+  /* Beads chart palette (khaki with opacity) */
+  --color-beads-1-rgb: 212 206 184;
+  --color-beads-2-rgb: 169 164 142;
+  --color-beads-3-rgb: 92 88 68;
+  --color-beads-4-rgb: 61 58 46;
   --color-beads-5-rgb: 120 80 60;
 
 }
 
 [data-theme='dark'] {
-  --color-bg: #0A0A0A;
-  --color-surface: #1A1A1A;
-  --color-surface-elevated: #1A1A1A;
-  --color-border: #333333;
-  --color-border-strong: #475569;
-  --color-text: #F2EFE9;
+  --color-bg: #2E2C24;
+  --color-surface: #3D3A2E;
+  --color-surface-elevated: #4A4738;
+  --color-border: #5C5844;
+  --color-border-strong: #8A8570;
+  --color-text: #F5F0E6;
   --color-text-strong: #FAFAFA;
-  --color-text-muted: #CBD5E1;
-  --color-text-subtle: #94A3B8;
-  --color-text-inverse: #0A0A0A;
-  --color-brand: #F2EFE9;
-  --color-brand-secondary: #CBD5E1;
-  --color-brand-tertiary: #94A3B8;
-  --color-card: #1A1A1A;
+  --color-text-muted: #D4CEB8;
+  --color-text-subtle: #A9A48E;
+  --color-text-inverse: #2E2C24;
+  --color-brand: #F5F0E6;
+  --color-brand-secondary: #D4CEB8;
+  --color-brand-tertiary: #A9A48E;
+  --color-card: #3D3A2E;
 }
