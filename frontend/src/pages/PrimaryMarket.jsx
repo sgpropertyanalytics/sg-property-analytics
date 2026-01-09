@@ -5,7 +5,7 @@ import { NewVsResaleChart } from '../components/powerbi/NewVsResaleChart';
 import { NewLaunchTimelineChart } from '../components/powerbi/NewLaunchTimelineChart';
 import { ErrorBoundary, ChartWatermark } from '../components/ui';
 import { useChartHeight, MOBILE_CAPS } from '../hooks';
-import { PageHeader } from '../components/ui';
+// PageHeader removed - title now in DashboardLayout console header
 
 /**
  * Primary Market Page - New Sale vs Resale Comparison
@@ -23,14 +23,6 @@ export function PrimaryMarketContent() {
     <div className="min-h-full">
       {/* Main Content Area - scrolling handled by parent DashboardLayout */}
       <div className="p-3 md:p-4 lg:p-6">
-          {/* Header */}
-          <div className="mb-4 md:mb-6">
-            <PageHeader
-              title="New Launch Market"
-              subtitle="Compare New Sale vs Recently TOP transactions across the market"
-            />
-          </div>
-
           {/* Filter Bar - Unified component (desktop: sticky horizontal, mobile: drawer) */}
           <FilterBar />
 

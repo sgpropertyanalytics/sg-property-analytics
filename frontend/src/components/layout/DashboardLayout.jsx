@@ -4,6 +4,7 @@ import { GlobalNavRail, NAV_ITEMS, NAV_WIDTH_EXPANDED, NAV_WIDTH_COLLAPSED } fro
 import { ErrorBoundary } from '../ui';
 import { UpgradeFooterCTA } from '../ui/UpgradeFooterCTA';
 import { useSubscription } from '../../context/SubscriptionContext';
+import { useData } from '../../context/DataContext';
 import { PricingModal } from '../PricingModal';
 import { DebugModeIndicator } from '../debug/DebugModeIndicator';
 
@@ -48,6 +49,7 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
   const content = children || <Outlet />;
   const location = useLocation();
   const { showPricingModal, hidePaywall } = useSubscription();
+  const { apiMetadata } = useData();
 
   // Determine active page from URL or prop
   const getActivePageFromPath = (pathname) => {
@@ -248,8 +250,46 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
         {/* DASHBOARD LAYOUT - Tight 24px gutter, no floating gaps */}
         <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden flex flex-col pt-6 pr-6 pb-6 pl-6 relative z-10">
           {/* Content Card - Technical dot grid background */}
-          <div className="flex-1 min-w-0 technical-grid-bg border border-gray-200">
-            <div className="p-6">
+          <div className="flex-1 min-w-0 flex flex-col border border-gray-200 bg-white">
+            {/* Console Header - Terminal Block (auto-applied to all pages) */}
+            <div className="flex items-center justify-between px-6 py-4 bg-[#0F172A] border-b border-slate-700">
+              <div className="flex flex-col gap-1">
+                <h1 className="text-lg font-semibold text-white tracking-wide">
+                  {NAV_ITEMS.find(item => item.id === activePage)?.label || 'Dashboard'}
+                </h1>
+                <span className="text-xs text-slate-400 font-mono uppercase tracking-wider">
+                  // SG_PROPERTY_ANALYTICS
+                </span>
+              </div>
+
+              <div className="flex items-center gap-4">
+                {/* Live Indicator */}
+                <div className="flex items-center gap-2">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                  </span>
+                  <span className="text-xs text-emerald-400 font-mono">LIVE</span>
+                </div>
+
+                <div className="h-4 w-px bg-slate-700" />
+
+                {/* Metadata */}
+                <div className="text-right">
+                  <p className="text-xs text-slate-400 font-mono">
+                    UPDATED: {apiMetadata?.last_updated
+                      ? new Date(apiMetadata.last_updated).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()
+                      : '—'}
+                  </p>
+                  <p className="text-[10px] text-slate-500 font-mono">
+                    RECORDS: {apiMetadata?.total_records?.toLocaleString() || '—'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Page Content */}
+            <div className="flex-1 min-w-0 technical-grid-bg p-6">
               <ErrorBoundary name="Page Content">
                 <Suspense fallback={<ContentLoadingFallback />}>
                   <div className="flex-1 min-w-0 text-ink">

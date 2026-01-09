@@ -12,11 +12,11 @@ import { TransactionDetailModal } from '../components/powerbi/TransactionDetailM
 import { DrillBreadcrumb } from '../components/powerbi/DrillBreadcrumb';
 import { ProjectDetailPanel } from '../components/powerbi/ProjectDetailPanel';
 import { getKpiSummaryV2, getAggregate, getDashboard } from '../api/client';
-import { useData } from '../context/DataContext';
+// apiMetadata now displayed in DashboardLayout console header (useData removed)
 import { transformCompressionSeries } from '../adapters';
 // Standardized responsive UI components (layout wrappers only)
 import { ErrorBoundary, ChartPanel, ChartWatermark, DataSection, KPICardV2, KPICardV2Group, KPIHeroContent } from '../components/ui';
-import { FilterBar, PageHeader } from '../components/patterns';
+import { FilterBar } from '../components/patterns';
 // Containment primitives (L0 → L1 → L2 layer system for visual hierarchy)
 import { PageCanvas, ControlRibbon } from '../components/layout';
 // Desktop-first chart height with mobile guardrail
@@ -68,7 +68,7 @@ const ChartLoadingFallback = ({ height }) => (
 const SALE_TYPE = SaleType.RESALE;
 
 export function MacroOverviewContent() {
-  const { apiMetadata } = useData();
+  // apiMetadata now displayed in DashboardLayout console header
   // Phase 4: Simplified filter access - read values directly from Zustand
   const { filters, timeGrouping } = useZustandFilters();
 
@@ -201,34 +201,8 @@ export function MacroOverviewContent() {
 
   return (
     <PageCanvas>
-      {/* Header - Outside containment for page-level context */}
-      <PageHeader
-        title="Market Overview"
-        subtitle={
-          apiMetadata && (
-            <span>
-              Last updated: {apiMetadata.last_updated
-                ? new Date(apiMetadata.last_updated).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric'
-                  })
-                : 'N/A'}
-              {apiMetadata.total_records > 0 && (
-                <> | Total records: {apiMetadata.total_records.toLocaleString()}</>
-              )}
-              {apiMetadata.records_added_last_ingestion > 0 && (
-                <> (+{apiMetadata.records_added_last_ingestion.toLocaleString()} new)</>
-              )}
-              {apiMetadata.outliers_excluded > 0 && (
-                <> | Statistical outliers removed: {apiMetadata.outliers_excluded.toLocaleString()}</>
-              )}
-            </span>
-          )
-        }
-      >
-        <DrillBreadcrumb />
-      </PageHeader>
+      {/* Drill Breadcrumb - Shows current drill-down context */}
+      <DrillBreadcrumb />
 
       {/* Filter Bar - Contained in sticky ribbon */}
       <ControlRibbon>
