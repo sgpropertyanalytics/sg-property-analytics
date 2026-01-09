@@ -75,16 +75,14 @@ export const isDistrictInRegion = (district, region) => {
 // =============================================================================
 
 export {
-  // Core palettes (Institutional Print / Slate)
+  // Core palettes
   VOID,
   CANVAS,
   INK,
   REGION,
   SIGNAL,
   DELTA,
-  SUPPLY,
   LIQUIDITY,
-  STATUS,
   CHART,
   // Helpers
   REGION_BADGE_CLASSES,

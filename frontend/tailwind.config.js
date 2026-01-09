@@ -25,25 +25,12 @@ export default {
           negative: 'var(--color-status-negative)',  // Orange - negative deltas
           positive: 'var(--color-status-live)',  // Alias for consistency
         },
-        // Brand palette (Institutional Print / Slate)
+        // Brand palette (matches tokens.css --color-brand-*)
         brand: {
-          navy: 'var(--color-brand-navy)',      // slate-900 - CCR, primary
-          blue: 'var(--color-brand-blue)',      // slate-700 - RCR, secondary
-          sky: 'var(--color-brand-sky)',       // slate-500 - OCR, tertiary
-          sand: 'var(--color-brand-sand)',      // slate-200 - Backgrounds, accents
-        },
-        // Region aliases (Slate gradient: dark→light for CCR→OCR)
-        region: {
-          ccr: 'var(--color-region-ccr)',       // slate-900
-          rcr: 'var(--color-region-rcr)',       // slate-700
-          ocr: 'var(--color-region-ocr)',       // slate-500
-        },
-        // Supply palette (Slate progression - matches SUPPLY in colors.js)
-        supply: {
-          unsold: 'var(--color-supply-unsold)',    // Slate 900 - Heaviest (most urgent)
-          upcoming: 'var(--color-supply-upcoming)',  // Slate 700 - Pipeline
-          gls: 'var(--color-supply-gls)',       // Slate 500 - GLS sites
-          total: 'var(--color-supply-total)',     // Slate 400 - Totals (lightest)
+          navy: 'var(--color-brand-navy)',
+          blue: 'var(--color-brand-blue)',
+          sky: 'var(--color-brand-sky)',
+          sand: 'var(--color-brand-sand)',
         },
         // Card backgrounds
         card: {
@@ -60,14 +47,6 @@ export default {
         skeleton: {
           bg: 'var(--color-skeleton-bg)',
           border: 'var(--color-skeleton-border)',
-        },
-        // Atlas Editorial Palette
-        atlas: {
-          parchment: 'var(--color-atlas-parchment)',
-          blue: 'var(--color-atlas-blue)',
-          orange: 'var(--color-atlas-orange)',
-          border: 'var(--color-atlas-border)',
-          text: 'var(--color-atlas-text)',
         },
       },
       fontFamily: {

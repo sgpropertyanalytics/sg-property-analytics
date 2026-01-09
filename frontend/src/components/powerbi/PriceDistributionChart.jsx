@@ -131,11 +131,11 @@ function PriceDistributionChartBase({
   const q1BinIndex = findBinIndex(bins, stats?.p25);
   const q3BinIndex = findBinIndex(bins, stats?.p75);
 
-  // Determine color gradient based on count using theme colors
+  // Determine color gradient based on count using brand palette
   const maxValue = Math.max(...counts, 1);
-  const getBarColor = (count, alpha = 0.8) => {
+  const getBarColor = (count, a = 0.8) => {
     const intensity = 0.3 + (count / maxValue) * 0.7;
-    return CHART_COLORS.slate700Alpha(alpha * intensity);  // slate-700
+    return CHART_COLORS.oceanAlpha(a * intensity);  // Ocean blue - brand palette
   };
 
   const chartData = {

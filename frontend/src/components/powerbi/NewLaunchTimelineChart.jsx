@@ -167,7 +167,7 @@ function NewLaunchTimelineChartBase({ height = 300 }) {
         type: 'bar',
         label: 'Total Units',
         data: totalUnits,
-        backgroundColor: CHART_COLORS.slate500Alpha70, // slate-500
+        backgroundColor: CHART_COLORS.oceanAlpha(0.7), // Ocean blue - brand palette
         borderColor: CHART_COLORS.ocean,
         borderWidth: 1,
         borderRadius: 3,
