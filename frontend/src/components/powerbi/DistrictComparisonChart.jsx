@@ -12,7 +12,7 @@ import {
 } from '../../adapters';
 import { CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 import { REGION } from '../../constants/colors';
-import { CHART_COLORS } from '../../constants/chartPalette';
+import { CHART_COLORS } from '../../constants/colors';
 
 // Color palette from centralized colors.js - age band differentiated (Slate)
 const COLORS = {

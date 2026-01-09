@@ -9,7 +9,7 @@ import { useZustandFilters } from '../../stores';
 import { getDashboard } from '../../api/client';
 import { KeyInsightBox, PreviewChartOverlay, ChartSlot, InlineCard, InlineCardRow } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
-import { CHART_COLORS } from '../../constants/chartPalette';
+import { CHART_COLORS } from '../../constants/colors';
 import {
   transformDistributionSeries,
   formatPrice,

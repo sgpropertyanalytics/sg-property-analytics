@@ -10,7 +10,7 @@ import { useZustandFilters } from '../../stores/filterStore';
 import { getDashboard } from '../../api/client';
 import { KeyInsightBox, ChartSlot } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
-import { CHART_COLORS } from '../../constants/chartPalette';
+import { CHART_COLORS } from '../../constants/colors';
 import { REGIONS } from '../../constants';
 import { REGION } from '../../constants/colors';
 import {

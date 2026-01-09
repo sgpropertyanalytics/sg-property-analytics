@@ -9,7 +9,7 @@ import { useZustandFilters } from '../../stores';
 import { getAggregate } from '../../api/client';
 import { PreviewChartOverlay, ChartSlot } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
-import { CHART_COLORS } from '../../constants/chartPalette';
+import { CHART_COLORS } from '../../constants/colors';
 // SaleType imports removed - Market Core is Resale-only
 import { transformTimeSeries, logFetchDebug, assertKnownVersion, validateResponseGrain } from '../../adapters';
 import { niceMax } from '../../utils/niceAxisMax';

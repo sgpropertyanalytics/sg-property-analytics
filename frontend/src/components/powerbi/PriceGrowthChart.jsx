@@ -16,7 +16,7 @@ import { Line } from 'react-chartjs-2';
 import { ChartSlot } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 import { REGION, CANVAS } from '../../constants/colors';
-import { CHART_COLORS } from '../../constants/chartPalette';
+import { CHART_COLORS } from '../../constants/colors';
 import { ChartFrame } from '../common/ChartFrame';
 import { getTxnField, TxnField } from '../../schemas/apiContract';
 

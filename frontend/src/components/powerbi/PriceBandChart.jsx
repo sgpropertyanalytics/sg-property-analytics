@@ -20,7 +20,7 @@ import { isFloorDirection, FloorDirectionLabels } from '../../schemas/apiContrac
 import { ChartSlot } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 import { REGION, INK, CANVAS } from '../../constants/colors';
-import { CHART_COLORS } from '../../constants/chartPalette';
+import { CHART_COLORS } from '../../constants/colors';
 import { VerdictBadge, VerdictBadgeLarge } from './VerdictBadge';
 
 // Colors from centralized colors.js + chart-specific fills

@@ -11,7 +11,7 @@ import { TIME_GROUP_BY } from '../../context/PowerBIFilter';
 import { KeyInsightBox, PreviewChartOverlay, ChartSlot } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 import { transformNewVsResaleSeries, logFetchDebug, assertKnownVersion } from '../../adapters';
-import { CHART_COLORS } from '../../constants/chartPalette';
+import { CHART_COLORS } from '../../constants/colors';
 import {
   SaleType,
   SaleTypeLabels,

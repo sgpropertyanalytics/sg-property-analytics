@@ -15,7 +15,7 @@ import {
 } from '../../schemas/apiContract';
 import { SuppressedValue } from '../SuppressedValue';
 import { CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
-import { CHART_COLORS } from '../../constants/chartPalette';
+import { CHART_COLORS } from '../../constants/colors';
 import { ErrorState } from '../common/ErrorState';
 import { getQueryErrorMessage } from '../common/QueryState';
 

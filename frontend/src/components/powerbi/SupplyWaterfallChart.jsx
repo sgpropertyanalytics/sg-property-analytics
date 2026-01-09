@@ -32,7 +32,7 @@ import {
   getDistrictChartOptions,
   waterfallConnectorPlugin,
 } from '../../adapters/supply/waterfallAdapter';
-import { CHART_COLORS } from '../../constants/chartPalette';
+import { CHART_COLORS } from '../../constants/colors';
 
 // Register custom waterfall connector plugin (chart-specific)
 registerPlugin(waterfallConnectorPlugin);
