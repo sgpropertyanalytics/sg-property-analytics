@@ -8,16 +8,15 @@ import Container from '../primitives/Container.jsx';
  *
  * Features:
  * - Sticky positioning below console header (top-12)
- * - Solid white background with backdrop blur for glassmorphism
- * - Border-bottom separator line when scrolling
- * - Outer wrapper bleeds to page edges (full-width background)
+ * - Outer wrapper bleeds to page edges (full-width band)
  * - Inner Container ensures alignment with PageCanvas content
+ * - Visual styling (borders, background) handled by filter bar component
  *
  * @param {ReactNode} children - Filter controls (typically FilterBar)
  */
 export function ControlRibbon({ children }) {
   return (
-    <div className="sticky top-12 z-30 -mx-4 md:-mx-6 lg:-mx-8 bg-white/90 backdrop-blur-md border-b border-slate-200 mb-4">
+    <div className="sticky top-12 z-30 -mx-4 md:-mx-6 lg:-mx-8 mb-4">
       {/* Container ensures filter content aligns with PageCanvas content */}
       <Container className="py-0">
         {children}
