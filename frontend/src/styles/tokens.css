@@ -4,18 +4,20 @@
   --font-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace;
 
   /* Core surfaces */
-  --color-bg: #F4F4F5;
+  --color-bg: #F9FAFB;
+  --color-bg-warm: #FAFAF9;
   --color-surface: transparent;
   --color-surface-elevated: #1A1A1A;
-  --color-border: #E4E4E7;
+  --color-border: #A8A29E;
   --color-border-strong: #333333;
+  --color-grid-dot: #D4D4D4;
 
   /* Text */
   --color-text: #0F172A;
   --color-text-strong: #0F172A;
   --color-text-muted: #475569;
   --color-text-subtle: #94A3B8;
-  --color-text-inverse: #FAFAFA;
+  --color-text-inverse: #F2EFE9;
 
   /* Brand + semantic */
   --color-brand: #0F172A;
@@ -32,9 +34,9 @@
   --color-void: #0A0A0A;
   --color-void-surface: #1A1A1A;
   --color-void-edge: #333333;
-  --color-canvas: #FFFFFF;
+  --color-canvas: var(--color-bg);
   --color-canvas-paper: transparent;
-  --color-canvas-grid: #E4E4E7;
+  --color-canvas-grid: #A8A29E;
   --color-ink: #0F172A;
   --color-ink-dense: #1E293B;
   --color-ink-mid: #475569;
@@ -178,7 +180,7 @@
   --color-nav-bg: #262321;
   --color-nav-bg-rgb: 38 35 33;
   --color-nav-text: #E7E5E4;
-  --color-nav-text-muted: #A1A1AA;
+  --color-nav-text-muted: #A8A29E;
 
   /* Skeleton loading colors (for ChartSkeleton) */
   --color-skeleton-bg: #f5f2ed;
@@ -187,8 +189,8 @@
   --color-skeleton-border-rgb: 212 208 200;
 
   /* Canvas RGB for opacity variants */
-  --color-canvas-rgb: 255 255 255;
-  --color-bg-rgb: 244 244 245;
+  --color-canvas-rgb: 242 239 233;
+  --color-bg-rgb: 242 239 233;
 
   /* Waterfall chart palette (warm earth tones for supply visualization) */
   --color-waterfall-unsold: #6b4226;
@@ -225,12 +227,12 @@
   --color-surface-elevated: #1A1A1A;
   --color-border: #333333;
   --color-border-strong: #475569;
-  --color-text: #FAFAFA;
+  --color-text: #F2EFE9;
   --color-text-strong: #FAFAFA;
   --color-text-muted: #CBD5E1;
   --color-text-subtle: #94A3B8;
   --color-text-inverse: #0A0A0A;
-  --color-brand: #FAFAFA;
+  --color-brand: #F2EFE9;
   --color-brand-secondary: #CBD5E1;
   --color-brand-tertiary: #94A3B8;
   --color-card: #1A1A1A;

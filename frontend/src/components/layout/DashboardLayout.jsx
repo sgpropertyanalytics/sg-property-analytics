@@ -151,7 +151,7 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
   const handleMobileNavClose = () => setMobileNavOpen(false);
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: '#F4F4F5' }}>
+    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: 'var(--color-bg)' }}>
       {/* ===== GLOBAL NAV RAIL (Primary Sidebar) ===== */}
       {/* Desktop: Collapsible mini-dock with mechanical 0.2s animation | Mobile: Hidden */}
       <div
@@ -204,15 +204,15 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
           className="absolute inset-0 pointer-events-none opacity-[0.4]"
           style={{
             backgroundImage: `
-              linear-gradient(to right, #E4E4E7 1px, transparent 1px),
-              linear-gradient(to bottom, #E4E4E7 1px, transparent 1px)
+              linear-gradient(to right, var(--color-border) 1px, transparent 1px),
+              linear-gradient(to bottom, var(--color-border) 1px, transparent 1px)
             `,
             backgroundSize: '24px 24px'
           }}
         />
 
         {/* Mobile Header */}
-        <header className="lg:hidden sticky top-0 z-40 bg-white px-3 py-2 flex-shrink-0 border-b border-[#E4E4E7]">
+        <header className="lg:hidden sticky top-0 z-40 bg-white px-3 py-2 flex-shrink-0 border-b border-mono-muted">
           <div className="flex items-center justify-between gap-2">
             {/* Hamburger Menu */}
             <button
@@ -245,14 +245,14 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
         </header>
 
         {/* Main Content - Wrapped with Suspense + ErrorBoundary */}
-        {/* FLOATING CARD ARCHITECTURE - White card with margins on all sides */}
-        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden flex flex-col p-4 lg:p-6 relative z-10">
-          {/* Floating White Card - Visible gap from sidebar, margins on all sides */}
-          <div className="flex-1 min-w-0 bg-white border border-[#E4E4E7] shadow-[4px_4px_0px_0px_rgba(0,0,0,0.08)] ml-2 lg:ml-4">
-            <div className="p-4 lg:p-6">
+        {/* DASHBOARD LAYOUT - Tight 24px gutter, no floating gaps */}
+        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden flex flex-col pt-6 pr-6 pb-6 pl-6 relative z-10">
+          {/* Content Card - Technical dot grid background */}
+          <div className="flex-1 min-w-0 technical-grid-bg border border-gray-200">
+            <div className="p-6">
               <ErrorBoundary name="Page Content">
                 <Suspense fallback={<ContentLoadingFallback />}>
-                  <div className="flex-1 min-w-0 text-[#18181B]">
+                  <div className="flex-1 min-w-0 text-ink">
                     {content}
                   </div>
                 </Suspense>

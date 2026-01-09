@@ -108,22 +108,21 @@ function NavItem({ item, isActive, onClick, collapsed = false }) {
     <button
       onClick={() => !isComingSoon && onClick(item)}
       disabled={isComingSoon}
-      title={item.label}
       className={`
-        group relative min-h-[44px] py-2 rounded-[4px]
-        flex items-center text-left min-w-0
-        transition-all duration-200
+        group relative min-h-[44px] px-4 py-3 mb-1 rounded-[4px]
+        flex items-center text-left
+        transition-colors duration-150 ease-out
         outline-none select-none
-        focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2
+        focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900
         ${collapsed
-          ? 'w-10 h-10 justify-center mx-auto'
+          ? 'w-10 h-10 justify-center mx-auto px-0 mb-0'
           : 'w-full gap-3'
         }
         ${isActive
-          ? 'bg-black text-white'
+          ? 'bg-white text-slate-900 font-medium cursor-default'
           : isComingSoon
-            ? 'text-zinc-400 cursor-not-allowed opacity-60'
-            : 'text-zinc-600 hover:text-black hover:bg-zinc-200/50'
+            ? 'text-slate-500 cursor-not-allowed opacity-60'
+            : 'text-slate-300 hover:text-white hover:bg-slate-800 cursor-pointer'
         }
       `}
       aria-current={isActive ? 'page' : undefined}
@@ -135,8 +134,8 @@ function NavItem({ item, isActive, onClick, collapsed = false }) {
           <IconComponent
             size={18}
             strokeWidth={1.5}
-            className={`transition-colors duration-200 ${
-              isActive ? 'text-white' : 'text-zinc-900 group-hover:text-black'
+            className={`transition-colors duration-150 ${
+              isActive ? 'text-slate-900' : 'text-slate-400 group-hover:text-white'
             }`}
           />
         )}
@@ -197,7 +196,7 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
         className={`
           relative w-full h-full flex flex-col
           overflow-y-auto overflow-x-hidden
-          z-50 bg-transparent
+          z-50 bg-slate-900
           pt-6 pb-4
           ${collapsed ? 'px-2' : 'px-4'}
           ${isPending ? 'opacity-90' : ''}
@@ -213,15 +212,15 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
       >
         {/* Icon aligned with nav item icons */}
         <div className="flex-shrink-0 w-[18px] flex items-center justify-center">
-          <Terminal size={18} strokeWidth={1.5} className="text-zinc-900" />
+          <Terminal size={18} strokeWidth={1.5} className="text-slate-400" />
         </div>
         {!collapsed && (
-          <span className="font-mono text-sm font-bold tracking-tight text-zinc-900">
+          <span className="font-mono text-sm font-bold tracking-tight text-white">
             SGPropertyAnalytics
           </span>
         )}
         {collapsed && (
-          <div className="absolute left-full ml-2 z-50 hidden group-hover:block px-2 py-1 text-xs text-white bg-zinc-900 rounded shadow-lg whitespace-nowrap">
+          <div className="absolute left-full ml-2 z-50 hidden group-hover:block px-2 py-1 text-xs text-white bg-slate-800 rounded shadow-lg whitespace-nowrap">
             SGPropertyAnalytics
           </div>
         )}
@@ -235,13 +234,13 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
             {!collapsed && (
               <div className="mb-2 flex items-center gap-3">
                 <div className="w-[18px]" /> {/* Spacer to align with icons */}
-                <span className="text-[10px] uppercase tracking-wider font-mono text-zinc-400">
+                <span className="text-[10px] uppercase tracking-wider font-mono text-slate-500">
                   {group.label}
                 </span>
               </div>
             )}
             {collapsed && groupIndex > 0 && (
-              <div className="h-px bg-zinc-200 mb-2" />
+              <div className="h-px bg-slate-700 mb-2" />
             )}
             {/* Nav Items */}
             <div className="space-y-0.5">
@@ -262,18 +261,16 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
       {/* Spacer */}
       <div className="flex-1 min-h-4" />
 
-      {/* Bottom section */}
-      <div className="space-y-1 border-t border-zinc-200 pt-3">
-
-
-        {/* Methodology Link - aligned with nav items */}
+      {/* Bottom section - System Menu */}
+      <div className="border-t border-slate-700 pt-4 mt-2">
+        {/* Methodology Link */}
         <button
           onClick={() => startTransition(() => navigate('/methodology'))}
-          className={`group relative min-h-[44px] py-2 rounded-[4px] flex items-center text-left min-w-0 text-zinc-600 hover:text-black hover:bg-zinc-200/50 transition-all duration-200 select-none ${collapsed ? 'w-10 h-10 justify-center mx-auto' : 'w-full gap-3'}`}
+          className={`group relative min-h-[44px] px-4 py-3 mb-1 rounded-[4px] flex items-center text-left text-slate-300 hover:text-white hover:bg-slate-800 transition-colors duration-150 ease-out select-none cursor-pointer ${collapsed ? 'w-10 h-10 justify-center mx-auto px-0 mb-0' : 'w-full gap-3'}`}
           aria-label="Methodology"
         >
           <div className="flex-shrink-0 w-[18px] flex items-center justify-center">
-            <Info size={18} strokeWidth={1.5} className="text-zinc-900" />
+            <Info size={18} strokeWidth={1.5} className="text-slate-400 group-hover:text-white transition-colors duration-150" />
           </div>
           {!collapsed && (
             <span className="text-sm font-normal whitespace-nowrap">
@@ -281,31 +278,32 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
             </span>
           )}
           {collapsed && (
-            <div className="absolute left-full ml-2 z-50 hidden group-hover:block px-2 py-1.5 text-xs font-medium text-white bg-zinc-900 rounded shadow-lg whitespace-nowrap">
+            <div className="absolute left-full ml-2 z-50 hidden group-hover:block px-2 py-1.5 text-xs font-medium text-white bg-slate-800 rounded shadow-lg whitespace-nowrap">
               Methodology
             </div>
           )}
         </button>
 
-        {/* User Profile */}
-        <UserProfileMenu
-          expanded={!collapsed}
-          onOpenSettings={() => setShowAccountSettings(true)}
-        />
-
+        {/* User Profile - with breathing room */}
+        <div className="mt-3 pt-3 border-t border-slate-700">
+          <UserProfileMenu
+            expanded={!collapsed}
+            onOpenSettings={() => setShowAccountSettings(true)}
+          />
+        </div>
 
         {/* Collapse Toggle Button - Technical square button at bottom */}
         {onToggleCollapse && (
-          <div className={`px-3 pb-3 ${collapsed ? 'flex justify-center' : ''}`}>
+          <div className={`mt-4 ${collapsed ? 'flex justify-center' : ''}`}>
             <button
               onClick={onToggleCollapse}
-              className="w-8 h-8 flex items-center justify-center bg-transparent border border-[#E5E5E5] text-zinc-500 hover:text-black hover:border-zinc-400 hover:bg-zinc-200/50 transition-all duration-200"
+              className="w-8 h-8 flex items-center justify-center bg-transparent border border-slate-600 text-slate-400 hover:text-white hover:border-slate-500 hover:bg-slate-800 transition-colors duration-150 rounded-[4px]"
               aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
               <ChevronLeft
                 size={16}
                 strokeWidth={1.5}
-                className="transition-transform duration-200"
+                className="transition-transform duration-150"
                 style={{ transform: collapsed ? 'rotate(180deg)' : 'rotate(0deg)' }}
               />
             </button>
