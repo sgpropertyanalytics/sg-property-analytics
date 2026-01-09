@@ -92,12 +92,12 @@ export const NAV_GROUPS = [
 export const NAV_ITEMS = NAV_GROUPS.flatMap(g => g.items);
 
 /**
- * NavItem - Technical Index Style
+ * NavItem - Luxury Asset Management Style
  *
  * Design System:
- * - Active: Solid black box (bg-black), white text/icon, rounded-[4px]
- * - Inactive: Zinc-600 text, zinc-900 icon
- * - Hover: Black text, faint grey background (bg-zinc-200/50)
+ * - Active: Bronze left accent bar (3px) + subtle bg (white/10) + white text
+ * - Inactive: Slate-400 text, slate-500 icon
+ * - Hover: White text, subtle transparency (white/5)
  * - Typography: Sans-serif 14px for links
  */
 function NavItem({ item, isActive, onClick, collapsed = false }) {
@@ -109,20 +109,20 @@ function NavItem({ item, isActive, onClick, collapsed = false }) {
       onClick={() => !isComingSoon && onClick(item)}
       disabled={isComingSoon}
       className={`
-        group relative min-h-[44px] px-4 py-3 mb-1 rounded-[4px]
+        group relative min-h-[44px] py-3 mb-1 rounded-r-[4px]
         flex items-center text-left
-        transition-colors duration-150 ease-out
+        transition-all duration-150 ease-out
         outline-none select-none
-        focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900
+        focus-visible:ring-2 focus-visible:ring-[#C4A484]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900
         ${collapsed
-          ? 'w-10 h-10 justify-center mx-auto px-0 mb-0'
-          : 'w-full gap-3'
+          ? 'w-10 h-10 justify-center mx-auto px-0 mb-0 rounded-[4px]'
+          : 'w-full gap-3 pl-6 pr-4'
         }
         ${isActive
-          ? 'bg-white text-slate-900 font-medium cursor-default'
+          ? 'bg-white/10 text-white font-medium cursor-default border-l-[3px] border-l-[#C4A484]'
           : isComingSoon
-            ? 'text-slate-500 cursor-not-allowed opacity-60'
-            : 'text-slate-300 hover:text-white hover:bg-slate-800 cursor-pointer'
+            ? 'text-slate-500 cursor-not-allowed opacity-60 border-l-[3px] border-l-transparent'
+            : 'text-slate-400 hover:text-white hover:bg-white/5 cursor-pointer border-l-[3px] border-l-transparent'
         }
       `}
       aria-current={isActive ? 'page' : undefined}
@@ -135,7 +135,7 @@ function NavItem({ item, isActive, onClick, collapsed = false }) {
             size={18}
             strokeWidth={1.5}
             className={`transition-colors duration-150 ${
-              isActive ? 'text-slate-900' : 'text-slate-400 group-hover:text-white'
+              isActive ? 'text-[#C4A484]' : 'text-slate-500 group-hover:text-white'
             }`}
           />
         )}
@@ -198,7 +198,7 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
           overflow-y-auto overflow-x-hidden
           z-50 bg-slate-900
           pt-6 pb-4
-          ${collapsed ? 'px-2' : 'px-4'}
+          ${collapsed ? 'px-2' : 'pr-4'}
           ${isPending ? 'opacity-90' : ''}
         `}
         aria-label="Main navigation"
@@ -207,15 +207,15 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
       {/* Aligned with nav item icons on left edge */}
       <button
         onClick={() => startTransition(() => navigate('/market-overview'))}
-        className={`group flex items-center min-w-0 select-none ${collapsed ? 'justify-center' : 'gap-3'}`}
+        className={`group flex items-center min-w-0 select-none ${collapsed ? 'justify-center' : 'gap-3 pl-6'}`}
         aria-label="Go to Dashboard"
       >
         {/* Icon aligned with nav item icons */}
         <div className="flex-shrink-0 w-[18px] flex items-center justify-center">
-          <Terminal size={18} strokeWidth={1.5} className="text-slate-400" />
+          <Terminal size={18} strokeWidth={1.5} className="text-[#C4A484]" />
         </div>
         {!collapsed && (
-          <span className="font-mono text-sm font-bold tracking-tight text-white">
+          <span className="font-mono text-sm font-medium tracking-tight text-white">
             SGPropertyAnalytics
           </span>
         )}
@@ -230,10 +230,9 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
       <div className="mt-6 space-y-5">
         {NAV_GROUPS.map((group, groupIndex) => (
           <div key={group.id}>
-            {/* Section Header - aligned with icon column (18px + gap) */}
+            {/* Section Header - aligned with nav items */}
             {!collapsed && (
-              <div className="mb-2 flex items-center gap-3">
-                <div className="w-[18px]" /> {/* Spacer to align with icons */}
+              <div className="mb-2 pl-6">
                 <span className="text-[10px] uppercase tracking-wider font-mono text-slate-500">
                   {group.label}
                 </span>
@@ -262,15 +261,15 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
       <div className="flex-1 min-h-4" />
 
       {/* Bottom section - System Menu */}
-      <div className="border-t border-slate-700 pt-4 mt-2">
+      <div className="border-t border-slate-700/50 pt-4 mt-2">
         {/* Methodology Link */}
         <button
           onClick={() => startTransition(() => navigate('/methodology'))}
-          className={`group relative min-h-[44px] px-4 py-3 mb-1 rounded-[4px] flex items-center text-left text-slate-300 hover:text-white hover:bg-slate-800 transition-colors duration-150 ease-out select-none cursor-pointer ${collapsed ? 'w-10 h-10 justify-center mx-auto px-0 mb-0' : 'w-full gap-3'}`}
+          className={`group relative min-h-[44px] py-3 mb-1 rounded-r-[4px] flex items-center text-left text-slate-400 hover:text-white hover:bg-white/5 transition-all duration-150 ease-out select-none cursor-pointer border-l-[3px] border-l-transparent ${collapsed ? 'w-10 h-10 justify-center mx-auto px-0 mb-0 rounded-[4px]' : 'w-full gap-3 pl-6 pr-4'}`}
           aria-label="Methodology"
         >
           <div className="flex-shrink-0 w-[18px] flex items-center justify-center">
-            <Info size={18} strokeWidth={1.5} className="text-slate-400 group-hover:text-white transition-colors duration-150" />
+            <Info size={18} strokeWidth={1.5} className="text-slate-500 group-hover:text-white transition-colors duration-150" />
           </div>
           {!collapsed && (
             <span className="text-sm font-normal whitespace-nowrap">
@@ -285,19 +284,19 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
         </button>
 
         {/* User Profile - with breathing room */}
-        <div className="mt-3 pt-3 border-t border-slate-700">
+        <div className="mt-3 pt-3 border-t border-slate-700/50 pl-3">
           <UserProfileMenu
             expanded={!collapsed}
             onOpenSettings={() => setShowAccountSettings(true)}
           />
         </div>
 
-        {/* Collapse Toggle Button - Technical square button at bottom */}
+        {/* Collapse Toggle Button - Luxury style */}
         {onToggleCollapse && (
-          <div className={`mt-4 ${collapsed ? 'flex justify-center' : ''}`}>
+          <div className={`mt-4 ${collapsed ? 'flex justify-center' : 'pl-6'}`}>
             <button
               onClick={onToggleCollapse}
-              className="w-8 h-8 flex items-center justify-center bg-transparent border border-slate-600 text-slate-400 hover:text-white hover:border-slate-500 hover:bg-slate-800 transition-colors duration-150 rounded-[4px]"
+              className="w-8 h-8 flex items-center justify-center bg-transparent border border-slate-600/50 text-slate-500 hover:text-[#C4A484] hover:border-[#C4A484]/50 transition-all duration-150 rounded-[4px]"
               aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
               <ChevronLeft

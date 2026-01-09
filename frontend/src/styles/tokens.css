@@ -25,6 +25,12 @@
   --color-brand-tertiary: #64748B;
   --color-accent: #F97316;
   --color-accent-strong: #EA580C;
+
+  /* Luxury Asset Management - Champagne Bronze */
+  --color-bronze: #C4A484;
+  --color-bronze-light: #D4C4A8;
+  --color-bronze-dark: #A08060;
+  --color-bronze-rgb: 196 164 132;
   --color-focus: #2563EB;
   --color-success: #059669;
   --color-danger: #DC2626;
@@ -51,6 +57,12 @@
   --color-delta-positive: #059669;
   --color-delta-negative: #DC2626;
   --color-delta-neutral: #64748B;
+
+  /* Delta Pill Badges (Luxury desaturated style) */
+  --color-delta-positive-bg: #ECFDF5;
+  --color-delta-positive-text: #047857;
+  --color-delta-negative-bg: #FFF1F2;
+  --color-delta-negative-text: #BE123C;
   --color-supply-total: #94A3B8;
   --color-liquidity-low: #F59E0B;
   --color-liquidity-healthy: #059669;

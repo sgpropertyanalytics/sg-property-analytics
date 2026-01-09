@@ -87,44 +87,48 @@ export function KPIHeroContent({
   change,
   previous,
 }: KPIHeroContentProps) {
-  const changeColor = change?.direction === 'up' ? 'text-status-live'
-    : change?.direction === 'down' ? 'text-status-negative'
-    : 'text-mono-light';
-  const arrow = change?.direction === 'up' ? '▲'
-    : change?.direction === 'down' ? '▼'
-    : '—';
+  // Luxury delta pill styling
+  const isPositive = change?.direction === 'up';
+  const isNegative = change?.direction === 'down';
+  const pillClass = isPositive
+    ? 'delta-pill delta-pill-positive'
+    : isNegative
+    ? 'delta-pill delta-pill-negative'
+    : 'delta-pill delta-pill-neutral';
   const pctStr = change?.value != null
     ? (change.value >= 0 ? `+${change.value}%` : `${change.value}%`)
     : '';
 
   return (
     <>
-      {/* Main value row with badge */}
+      {/* Main value row with badge - Luxury font-medium styling */}
       <div
-        className="text-[22px] sm:text-[28px] font-data font-bold text-mono-ink tracking-tight truncate"
+        className="text-[22px] sm:text-[28px] font-mono font-medium text-slate-900 tracking-tight truncate"
         title={badge ? `${value} ${badge.text}` : String(value)}
       >
         {value}
         {unit && (
-          <span className="ml-1 text-[10px] sm:text-xs font-mono uppercase tracking-[0.18em] text-mono-mid">
+          <span className="ml-1 text-[10px] sm:text-xs font-mono uppercase tracking-[0.18em] text-slate-500">
             {unit}
           </span>
         )}
         {badge && (
-          <span className={`ml-1.5 text-xs font-bold uppercase tracking-wider whitespace-nowrap ${BADGE_COLORS[badge.color]}`}>
+          <span className={`ml-1.5 text-xs font-medium uppercase tracking-wider whitespace-nowrap ${BADGE_COLORS[badge.color]}`}>
             {badge.text.split(' ')[0]}
           </span>
         )}
       </div>
-      {/* QoQ change row */}
+      {/* QoQ change row - Luxury delta pill */}
       {change?.value != null && (
-        <div className={`text-xs sm:text-sm font-medium ${changeColor}`}>
-          {arrow} {pctStr} QoQ
+        <div className="mt-1">
+          <span className={pillClass}>
+            {pctStr} QoQ
+          </span>
         </div>
       )}
       {/* Previous value row */}
       {previous && (
-        <div className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.18em] text-mono-light">
+        <div className="text-[10px] sm:text-xs font-mono uppercase tracking-[0.18em] text-slate-400 mt-1">
           {previous.label || 'Prev:'} {previous.value}
         </div>
       )}
@@ -153,7 +157,7 @@ export function KPICardV2({
     return (
       <div
         className={`
-          weapon-card hud-corner weapon-shadow overflow-hidden
+          luxury-card overflow-hidden
           min-h-40
           ${className}
         `.trim()}
@@ -166,9 +170,8 @@ export function KPICardV2({
   return (
     <div
       className={`
-        weapon-card hud-corner weapon-shadow p-4 sm:p-5
+        luxury-card p-4 sm:p-5
         min-h-40 flex flex-col
-        transition-none
         ${className}
       `.trim()}
     >
@@ -176,7 +179,7 @@ export function KPICardV2({
       <div className="flex-shrink-0 mb-2">
         <div>
           <div className="flex items-center gap-1">
-            <span className="terminal-header text-mono-mid">
+            <span className="luxury-label">
               {title}
             </span>
             {combinedTooltip && (
@@ -184,7 +187,7 @@ export function KPICardV2({
             )}
           </div>
           {subtitle && (
-            <p className="text-[9px] text-mono-light mt-0.5 leading-tight">
+            <p className="text-[9px] text-slate-400 mt-0.5 leading-tight">
               {subtitle}
             </p>
           )}
@@ -195,12 +198,11 @@ export function KPICardV2({
       <div className="flex-1 flex items-end pb-2 min-w-0">
         {typeof value === 'string' ? (
           <div className="truncate" title={badge ? `${value} ${badge.text}` : value}>
-             <span className="text-[22px] sm:text-[32px] font-data font-semibold text-mono-ink leading-none">
-
+             <span className="text-[22px] sm:text-[32px] font-mono font-medium text-slate-900 leading-none tabular-nums">
               {value}
             </span>
             {badge && (
-              <span className={`ml-1.5 text-xs font-bold uppercase tracking-wider whitespace-nowrap ${BADGE_COLORS[badge.color]}`}>
+              <span className={`ml-1.5 text-xs font-medium uppercase tracking-wider whitespace-nowrap ${BADGE_COLORS[badge.color]}`}>
                 {badge.text.split(' ')[0]}
               </span>
             )}
