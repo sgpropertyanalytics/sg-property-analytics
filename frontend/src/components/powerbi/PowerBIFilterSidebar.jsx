@@ -121,7 +121,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
     return (
       <div className="py-3">
         {/* Bordered container - px-5 for horizontal breathing room, py-3 for vertical */}
-        <div className="bg-white border border-slate-300 px-5 py-3 overflow-x-auto scrollbar-hide">
+        <div className="bg-white border border-slate-300 px-5 py-3">
           {/* Flex container - simple left-aligned row */}
           <div className="flex flex-nowrap items-center gap-3 xl:gap-4">
             {/* Property Filters - Region + District + Bedroom */}
@@ -230,9 +230,6 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
               Reset
             </button>
           )}
-
-          {/* End spacer - overflow-x-auto clips right padding, this fixes it */}
-          <div className="w-5 flex-shrink-0" aria-hidden="true" />
           </div>
         </div>
       </div>
