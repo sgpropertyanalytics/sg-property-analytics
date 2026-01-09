@@ -120,13 +120,10 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
   if (layout === 'horizontal') {
     return (
       <div className="py-3">
-        {/* Bordered container - matches KEY METRICS card styling exactly */}
-        {/* overflow-x-auto allows horizontal scroll when content exceeds container width */}
-        {/* p-4 gives consistent 16px padding on all sides */}
-        <div className="bg-white border border-slate-300 p-4 overflow-x-auto scrollbar-hide">
-          {/* Flex container - nowrap keeps filters in one row, justify-start per design system */}
-          {/* w-max min-w-full: expands to content width for scroll, at least 100% for fill */}
-          <div className="flex flex-nowrap items-center justify-start gap-3 xl:gap-4 w-max min-w-full">
+        {/* Bordered container - px-5 for horizontal breathing room, py-3 for vertical */}
+        <div className="bg-white border border-slate-300 px-5 py-3 overflow-x-auto scrollbar-hide">
+          {/* Flex container - justify-start per design system, spacer pushes right cluster */}
+          <div className="flex flex-nowrap items-center gap-3 xl:gap-4 w-max min-w-full">
             {/* Property Filters - Region + District + Bedroom */}
             <div className="flex items-center gap-4 flex-shrink-0 min-w-0">
             {/* Region Segmented Control */}
@@ -218,17 +215,21 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
             ))}
           </div>
 
+          {/* Spacer - pushes right cluster to the edge (always present, unlike conditional Reset) */}
+          <div className="flex-grow" />
+
+          {/* === RIGHT CLUSTER === */}
           {/* Divider - structural line */}
           <div className="hidden xl:block w-px h-7 bg-stone-400 flex-shrink-0" />
 
           {/* Time Granularity Toggle */}
           <TimeGranularityToggle layout="horizontal" />
 
-          {/* Reset button - ml-auto pushes to right edge when visible */}
+          {/* Reset button */}
           {activeFilterCount > 0 && (
             <button
               onClick={handleResetFilters}
-              className="segmented-btn border border-stone-400 text-stone-600 hover:border-red-500 hover:text-red-500 flex-shrink-0 ml-auto"
+              className="segmented-btn border border-stone-400 text-stone-600 hover:border-red-500 hover:text-red-500 flex-shrink-0"
             >
               Reset
             </button>
