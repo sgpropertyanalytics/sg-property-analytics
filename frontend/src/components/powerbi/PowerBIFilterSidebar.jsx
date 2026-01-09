@@ -120,8 +120,11 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
   if (layout === 'horizontal') {
     return (
       <div className="py-3">
-        {/* Bordered container - overflow-hidden clips any overflow */}
-        <div className="bg-white border border-slate-300 py-3 px-5 overflow-hidden">
+        {/* Bordered container with inline padding to bypass any CSS issues */}
+        <div
+          className="bg-white border border-slate-300"
+          style={{ padding: '12px 20px' }}
+        >
           {/* Flex container */}
           <div className="flex flex-nowrap items-center gap-3 xl:gap-4">
             {/* Property Filters - Region + District + Bedroom */}
