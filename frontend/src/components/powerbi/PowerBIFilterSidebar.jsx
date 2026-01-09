@@ -121,9 +121,10 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
     return (
       <div className="py-3">
         {/* Bordered container - matches KEY METRICS card styling exactly */}
-        <div className="bg-white border border-slate-300 px-5 py-3">
-          {/* Responsive: wrap at lg (1024-1279px), no-wrap + scroll at xl+ (1280px+) */}
-          <div className="flex flex-wrap xl:flex-nowrap items-center justify-start gap-3 xl:gap-4 xl:overflow-x-auto xl:scrollbar-hide w-full">
+        {/* overflow-x-auto allows horizontal scroll when content exceeds container width */}
+        <div className="bg-white border border-slate-300 px-5 py-3 overflow-x-auto scrollbar-hide">
+          {/* Flex container - nowrap to keep all filters in one row, scrollable */}
+          <div className="flex flex-nowrap items-center justify-start gap-3 xl:gap-4 w-max min-w-full">
             {/* Property Filters - Region + District + Bedroom */}
             <div className="flex items-center gap-4 flex-shrink-0 min-w-0">
             {/* Region Segmented Control */}
