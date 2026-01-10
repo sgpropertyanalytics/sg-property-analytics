@@ -329,10 +329,17 @@ class URAAPIClient:
                 # URA returns {"Result": [...projects...]}
                 result = data.get("Result", [])
 
-                # Handle empty/null response
+                # P1 fix: Null result indicates API error, not empty data
+                # Treating null as empty hides API breakage and causes sync to succeed with 0 rows
                 if result is None:
-                    logger.warning(f"Batch {batch}: Result is null, treating as empty")
-                    result = []
+                    return URAAPIResponse(
+                        success=False,
+                        error=f"Batch {batch}: API returned null Result (possible auth/API error)",
+                        status_code=response.status_code,
+                        batch_num=batch,
+                        duration_seconds=time.time() - start_time,
+                        retry_count=retry_count
+                    )
 
                 duration = time.time() - start_time
                 logger.info(

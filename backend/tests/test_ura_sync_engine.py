@@ -230,16 +230,25 @@ class TestURASyncEnginePrepareRow:
         assert prepared['source'] == 'ura_api'
         assert 'ingested_at' in prepared
 
-    def test_prepare_row_defaults(self):
-        """Prepared row has defaults for optional fields."""
+    def test_prepare_row_no_defaults(self):
+        """Prepared row does NOT add defaults - mapper is responsible.
+
+        P1 fix: Removed defaults that masked missing required fields.
+        If property_type/num_units are missing, DB constraint should fail.
+        """
         engine = URASyncEngine()
         engine.run_id = 'test-run-123'
 
         row = {'project_name': 'TEST'}
         prepared = engine._prepare_row_for_insert(row)
 
-        assert prepared['property_type'] == 'Condominium'
-        assert prepared['num_units'] == 1
+        # Should NOT add defaults - let mapper/DB handle it
+        assert 'property_type' not in prepared
+        assert 'num_units' not in prepared
+
+        # Should still add run tracking fields
+        assert prepared['run_id'] == 'test-run-123'
+        assert prepared['source'] == 'ura_api'
 
 
 # =============================================================================

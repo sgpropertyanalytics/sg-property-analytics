@@ -518,9 +518,9 @@ class URASyncEngine:
         row_data['ingested_at'] = datetime.now(UTC)
         row_data['source'] = 'ura_api'
 
-        # Ensure all required fields have values
-        row_data.setdefault('property_type', 'Condominium')
-        row_data.setdefault('num_units', 1)
+        # P1 fix: Removed defaults for property_type and num_units
+        # These should be set by the mapper. If missing, let DB constraint fail fast
+        # to surface mapper bugs instead of silently accepting bad defaults.
 
         return row_data
 
