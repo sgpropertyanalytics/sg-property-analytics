@@ -70,6 +70,8 @@ interface DataCardHeaderProps {
   info?: string;
   /** Optional controls (toggles, buttons) on right side */
   controls?: React.ReactNode;
+  /** Metadata displayed on far right (e.g., transaction count) */
+  metadata?: React.ReactNode;
   /** Additional className */
   className?: string;
 }
@@ -79,6 +81,7 @@ export function DataCardHeader({
   subtitle,
   info,
   controls,
+  metadata,
   className = '',
 }: DataCardHeaderProps) {
   return (
@@ -111,12 +114,15 @@ export function DataCardHeader({
         )}
       </div>
 
-      {/* Right: Controls */}
-      {controls && (
-        <div className="flex items-center gap-2">
-          {controls}
-        </div>
-      )}
+      {/* Right: Controls + Metadata */}
+      <div className="flex items-center gap-4">
+        {controls}
+        {metadata && (
+          <div className="font-mono text-[10px] text-slate-500 tabular-nums">
+            {metadata}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
