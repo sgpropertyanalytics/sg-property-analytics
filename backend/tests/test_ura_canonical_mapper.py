@@ -272,6 +272,34 @@ class TestURACanonicalMapperInit:
         assert stats["transactions_skipped"] == 0
 
 
+class TestPSFCalculation:
+    """Tests for PSF calculation safety."""
+
+    def test_psf_no_nan_infinity(self, mapper):
+        """PSF should never be NaN or Infinity."""
+        project = {
+            "project": "TEST PROJECT",
+            "transaction": [
+                {
+                    "contractDate": "0125",
+                    "price": "1000000",
+                    "area": "500"
+                }
+            ]
+        }
+        rows = list(mapper.map_project(project))
+        import math
+        assert not math.isnan(rows[0]["psf"])
+        assert not math.isinf(rows[0]["psf"])
+
+    def test_psf_calculated_correctly(self, mapper, sample_ura_project):
+        """PSF should be price / area_sqft, rounded to 2 decimals."""
+        rows = list(mapper.map_project(sample_ura_project))
+        # First transaction: price=1580000, area=764
+        expected_psf = round(1580000 / 764, 2)
+        assert rows[0]["psf"] == expected_psf
+
+
 class TestURACanonicalMapperMapProject:
     """Tests for project mapping."""
 
@@ -606,12 +634,14 @@ class TestNaturalKeyFields:
     """Tests for natural key field configuration."""
 
     def test_natural_key_fields_defined(self):
-        """Natural key fields are properly defined."""
+        """Natural key fields include all uniqueness fields."""
         assert "project_name" in NATURAL_KEY_FIELDS
         assert "transaction_month" in NATURAL_KEY_FIELDS
         assert "price" in NATURAL_KEY_FIELDS
         assert "area_sqft" in NATURAL_KEY_FIELDS
         assert "floor_range" in NATURAL_KEY_FIELDS
+        assert "sale_type" in NATURAL_KEY_FIELDS
+        assert "district" in NATURAL_KEY_FIELDS
 
     def test_row_hash_uses_natural_keys(self, mapper, sample_ura_project):
         """Row hash is computed from natural key fields."""
@@ -623,3 +653,16 @@ class TestNaturalKeyFields:
         # But the hash should be deterministic
         rows2 = list(mapper.map_project(sample_ura_project))
         assert rows[0]["row_hash"] == rows2[0]["row_hash"]
+
+    def test_row_hash_idempotent(self, mapper, sample_ura_project):
+        """Same input produces same output (idempotency check)."""
+        rows1 = list(mapper.map_project(sample_ura_project))
+        mapper.reset_stats()
+        rows2 = list(mapper.map_project(sample_ura_project))
+
+        # Same data should produce identical rows (excluding any timestamps)
+        for r1, r2 in zip(rows1, rows2):
+            assert r1["row_hash"] == r2["row_hash"]
+            assert r1["project_name"] == r2["project_name"]
+            assert r1["price"] == r2["price"]
+            assert r1["psf"] == r2["psf"]

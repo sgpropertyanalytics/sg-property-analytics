@@ -169,6 +169,24 @@ class TestURAAPIResponse:
         assert response.data is None
         assert "timeout" in response.error.lower()
 
+    def test_response_with_metrics(self):
+        """Test response includes duration and retry count."""
+        response = URAAPIResponse(
+            success=True,
+            data=[],
+            batch_num=1,
+            duration_seconds=1.5,
+            retry_count=2
+        )
+        assert response.duration_seconds == 1.5
+        assert response.retry_count == 2
+
+    def test_response_default_metrics(self):
+        """Test default values for metrics."""
+        response = URAAPIResponse(success=True, batch_num=1)
+        assert response.duration_seconds is None
+        assert response.retry_count == 0
+
 
 # =============================================================================
 # URAAPIClient Tests

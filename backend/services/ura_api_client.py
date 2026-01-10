@@ -93,6 +93,8 @@ class URAAPIResponse:
     error: Optional[str] = None
     status_code: Optional[int] = None
     batch_num: Optional[int] = None
+    duration_seconds: Optional[float] = None
+    retry_count: int = 0
 
 
 class URAAPIError(Exception):
@@ -265,7 +267,8 @@ class URAAPIClient:
         if batch not in TRANSACTION_BATCHES:
             raise ValueError(f"Invalid batch {batch}, must be one of {TRANSACTION_BATCHES}")
 
-        logger.info(f"Fetching transactions batch {batch}")
+        start_time = time.time()
+        retry_count = 0
 
         for attempt in range(MAX_RETRIES):
             try:
@@ -292,55 +295,87 @@ class URAAPIClient:
                 if response.status_code == 401:
                     logger.warning("Got 401, refreshing token and retrying")
                     self._token = None  # Force refresh
+                    retry_count += 1
                     if attempt < MAX_RETRIES - 1:
                         continue
                     else:
+                        duration = time.time() - start_time
                         return URAAPIResponse(
                             success=False,
                             error="Authentication failed after token refresh",
                             status_code=401,
-                            batch_num=batch
+                            batch_num=batch,
+                            duration_seconds=duration,
+                            retry_count=retry_count
                         )
 
                 response.raise_for_status()
                 data = response.json()
 
+                # Check for URA error response format
+                if data.get("Status") == "Error" or "error" in str(data).lower():
+                    error_msg = data.get("Message", str(data))
+                    logger.error(f"URA API error for batch {batch}: {error_msg}")
+                    duration = time.time() - start_time
+                    return URAAPIResponse(
+                        success=False,
+                        error=f"URA API error: {error_msg}",
+                        status_code=response.status_code,
+                        batch_num=batch,
+                        duration_seconds=duration,
+                        retry_count=retry_count
+                    )
+
                 # URA returns {"Result": [...projects...]}
                 result = data.get("Result", [])
 
-                # Handle empty response
+                # Handle empty/null response
                 if result is None:
+                    logger.warning(f"Batch {batch}: Result is null, treating as empty")
                     result = []
 
-                logger.info(f"Batch {batch}: fetched {len(result)} projects")
+                duration = time.time() - start_time
+                logger.info(
+                    f"Batch {batch}: {len(result)} projects, "
+                    f"{duration:.2f}s, retries={retry_count}"
+                )
 
                 return URAAPIResponse(
                     success=True,
                     data=result,
                     status_code=response.status_code,
-                    batch_num=batch
+                    batch_num=batch,
+                    duration_seconds=duration,
+                    retry_count=retry_count
                 )
 
             except requests.exceptions.RequestException as e:
+                retry_count += 1
                 backoff = INITIAL_BACKOFF_SECONDS * (BACKOFF_MULTIPLIER ** attempt)
                 logger.warning(
                     f"Batch {batch} attempt {attempt + 1}/{MAX_RETRIES} failed: {e}. "
-                    f"Retrying in {backoff}s"
+                    f"Retrying in {backoff:.1f}s"
                 )
                 if attempt < MAX_RETRIES - 1:
                     time.sleep(backoff)
                 else:
+                    duration = time.time() - start_time
                     return URAAPIResponse(
                         success=False,
                         error=f"Failed after {MAX_RETRIES} attempts: {e}",
-                        batch_num=batch
+                        batch_num=batch,
+                        duration_seconds=duration,
+                        retry_count=retry_count
                     )
 
         # Should not reach here
+        duration = time.time() - start_time
         return URAAPIResponse(
             success=False,
             error="Unexpected error",
-            batch_num=batch
+            batch_num=batch,
+            duration_seconds=duration,
+            retry_count=retry_count
         )
 
     def fetch_all_transactions(self) -> Iterator[Tuple[int, List[Dict]]]:
@@ -489,3 +524,77 @@ def fetch_all_ura_transactions() -> List[Dict]:
         List of all projects with transaction data.
     """
     return get_ura_client().fetch_all_transactions_flat()
+
+
+# =============================================================================
+# Smoke Test (E2E validation)
+# =============================================================================
+
+if __name__ == "__main__":
+    """
+    Integration smoke test - validates end-to-end API flow.
+
+    Usage:
+        URA_ACCESS_KEY=xxx python -m services.ura_api_client
+
+    Expected output:
+        - Token fetch success
+        - 4 batches fetched with timing
+        - Total transaction count
+        - Exit 0 on success
+    """
+    import sys
+
+    # Configure logging for smoke test
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        datefmt="%H:%M:%S"
+    )
+
+    print("=" * 60)
+    print("URA API Client - Integration Smoke Test")
+    print("=" * 60)
+
+    try:
+        client = URAAPIClient()
+        print(f"[OK] Client initialized")
+
+        # Test 1: Token fetch
+        client.ensure_valid_token()
+        token_status = client.get_token_status()
+        print(f"[OK] Token obtained, expires in {token_status['time_until_expiry']}")
+
+        # Test 2: Fetch all batches
+        total_projects = 0
+        total_transactions = 0
+
+        for batch_num, projects in client.fetch_all_transactions():
+            batch_txn_count = sum(
+                len(p.get("transaction", [])) for p in projects
+            )
+            total_projects += len(projects)
+            total_transactions += batch_txn_count
+            print(
+                f"[OK] Batch {batch_num}: {len(projects)} projects, "
+                f"{batch_txn_count} transactions"
+            )
+
+        print("=" * 60)
+        print(f"SUMMARY:")
+        print(f"  Total projects:     {total_projects}")
+        print(f"  Total transactions: {total_transactions}")
+        print("=" * 60)
+
+        if total_transactions == 0:
+            print("[WARN] No transactions returned - check date range")
+            sys.exit(1)
+
+        print("[SUCCESS] Smoke test passed")
+        sys.exit(0)
+
+    except Exception as e:
+        print(f"[FAIL] Smoke test failed: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)

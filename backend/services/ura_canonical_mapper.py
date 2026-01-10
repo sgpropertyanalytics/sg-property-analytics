@@ -24,6 +24,7 @@ Usage:
 
 import json
 import logging
+import math
 from datetime import date
 from typing import Dict, List, Any, Optional, Iterator
 
@@ -50,13 +51,16 @@ TYPE_OF_SALE_MAP = {
     "3": SALE_TYPE_RESALE,
 }
 
-# Natural key fields for row hash (same as CSV pipeline)
+# Natural key fields for row hash
+# Includes all fields that identify a unique transaction
 NATURAL_KEY_FIELDS = [
     'project_name',
     'transaction_month',
     'price',
     'area_sqft',
-    'floor_range'
+    'floor_range',
+    'sale_type',
+    'district',
 ]
 
 # Known URA API fields at project level
@@ -368,7 +372,21 @@ class URACanonicalMapper:
 
         # === Derived fields ===
         sale_type = map_sale_type(type_of_sale)
-        psf = price / area_sqft if area_sqft > 0 else 0
+
+        # PSF calculation with sanity bounds
+        # area_sqft > 0 is guaranteed by validation above
+        psf = price / area_sqft
+        psf = round(psf, 2)
+
+        # Guard against NaN/Infinity (should never happen, but defensive)
+        if math.isnan(psf) or math.isinf(psf):
+            logger.warning(f"Invalid PSF for '{project_name}': price={price}, area={area_sqft}")
+            psf = 0
+
+        # PSF sanity bounds (Singapore market: $100 - $50,000 psf)
+        if psf < 100 or psf > 50000:
+            logger.debug(f"PSF outside typical range for '{project_name}': {psf}")
+
         contract_date = contract_date_raw  # Store original mmyy format
         transaction_month = transaction_date.replace(day=1)  # First of month
 
@@ -417,7 +435,7 @@ class URACanonicalMapper:
             'transaction_date': transaction_date,
             'price': price,
             'area_sqft': area_sqft,
-            'psf': round(psf, 2),
+            'psf': psf,  # Already rounded above
             'district': district,
             'bedroom_count': bedroom_count,
 
