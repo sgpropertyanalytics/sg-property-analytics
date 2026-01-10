@@ -10,9 +10,12 @@ Endpoints:
 Performance:
 - Date filter added to reduce row scans (300K → ~50K rows)
 - Max lookback is 40 months (covers market_momentum's 36-month volatility)
+- Response caching via shared _dashboard_cache (added Jan 2026)
 """
 
 import time
+import threading
+import logging
 from datetime import date, timedelta
 from flask import request, jsonify, g
 from sqlalchemy import text
@@ -21,6 +24,16 @@ from models.database import db
 from db.sql import OUTLIER_FILTER
 from utils.normalize import to_date
 from api.contracts import api_contract
+
+# Reuse existing cache infrastructure (CLAUDE.md Rule #4: Reuse-First)
+from services.dashboard_service import _dashboard_cache
+from utils.cache_key import build_json_cache_key
+
+logger = logging.getLogger('kpi_v2')
+
+# Lock for cache stampede prevention (endpoint-specific)
+_kpi_key_locks = {}
+_kpi_locks_lock = threading.Lock()
 
 
 def _months_back(from_date: date, months: int) -> date:
@@ -115,24 +128,61 @@ def kpi_summary_v2():
         if filters['max_date']:
             filters['date_from'] = _months_back(filters['max_date'], 40)
 
-        # Run all KPIs via registry
-        kpi_results = run_all_kpis(filters)
+        # Build cache key BEFORE adding date_from (it's derived, not user input)
+        # Uses shared cache with "kpi:" prefix to avoid collisions
+        cache_key = build_json_cache_key("kpi", filters, include_keys=['districts', 'bedrooms', 'segments', 'max_date'])
 
-        elapsed = time.time() - start
-        print(f"GET /api/kpi-summary-v2 completed in {elapsed:.4f}s")
+        # Check cache first (reuses shared _dashboard_cache)
+        cached = _dashboard_cache.get(cache_key)
+        if cached is not None:
+            elapsed = time.time() - start
+            logger.info(f"KPI cache hit for {cache_key} in {elapsed*1000:.1f}ms")
+            # Update elapsed time in cached response
+            cached_copy = cached.copy()
+            cached_copy['meta'] = cached_copy.get('meta', {}).copy()
+            cached_copy['meta']['elapsedMs'] = round(elapsed * 1000, 2)
+            cached_copy['meta']['cacheHit'] = True
+            return jsonify(cached_copy)
 
-        # Always use { data: {...}, meta: {...} } envelope
-        # This matches the @api_contract wrapper expectation
-        # Frontend apiClient unwraps the envelope, so callers just do result.kpis
-        return jsonify({
-            "data": {
-                "kpis": kpi_results
-            },
-            "meta": {
-                "elapsedMs": round(elapsed * 1000, 2),
-                "filtersApplied": filters
+        # Cache miss - prevent stampede with per-key locking
+        with _kpi_locks_lock:
+            if cache_key not in _kpi_key_locks:
+                _kpi_key_locks[cache_key] = threading.Lock()
+            key_lock = _kpi_key_locks[cache_key]
+
+        with key_lock:
+            # Double-check cache (another thread may have populated it)
+            cached = _dashboard_cache.get(cache_key)
+            if cached is not None:
+                elapsed = time.time() - start
+                cached_copy = cached.copy()
+                cached_copy['meta'] = cached_copy.get('meta', {}).copy()
+                cached_copy['meta']['elapsedMs'] = round(elapsed * 1000, 2)
+                cached_copy['meta']['cacheHit'] = True
+                return jsonify(cached_copy)
+
+            # Run all KPIs via registry
+            kpi_results = run_all_kpis(filters)
+
+            elapsed = time.time() - start
+            logger.info(f"KPI computed for {cache_key} in {elapsed*1000:.1f}ms")
+
+            # Build result
+            result = {
+                "data": {
+                    "kpis": kpi_results
+                },
+                "meta": {
+                    "elapsedMs": round(elapsed * 1000, 2),
+                    "filtersApplied": filters,
+                    "cacheHit": False
+                }
             }
-        })
+
+            # Cache the result (shared cache, 10 min TTL)
+            _dashboard_cache.set(cache_key, result)
+
+            return jsonify(result)
 
     except Exception as e:
         elapsed = time.time() - start
