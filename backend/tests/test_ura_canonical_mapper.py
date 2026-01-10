@@ -617,6 +617,70 @@ class TestURACanonicalMapperStats:
         assert stats["projects_processed"] == 0
         assert stats["transactions_processed"] == 0
 
+    def test_skip_invalid_date_counter(self, mapper):
+        """Skip counter tracks invalid dates (month 00, 13, etc)."""
+        project = {
+            "project": "TEST",
+            "transaction": [
+                {"contractDate": "0025", "price": "1000000", "area": "500"},  # month 00
+                {"contractDate": "1325", "price": "1000000", "area": "500"},  # month 13
+            ]
+        }
+        list(mapper.map_project(project))
+        stats = mapper.get_stats()
+        assert stats["skip_invalid_date"] == 2
+        assert stats["transactions_skipped"] == 2
+
+    def test_skip_invalid_price_counter(self, mapper):
+        """Skip counter tracks invalid prices."""
+        project = {
+            "project": "TEST",
+            "transaction": [
+                {"contractDate": "0125", "price": "0", "area": "500"},
+                {"contractDate": "0125", "price": "-100", "area": "500"},
+            ]
+        }
+        list(mapper.map_project(project))
+        stats = mapper.get_stats()
+        assert stats["skip_invalid_price"] == 2
+
+    def test_skip_invalid_area_counter(self, mapper):
+        """Skip counter tracks invalid areas."""
+        project = {
+            "project": "TEST",
+            "transaction": [
+                {"contractDate": "0125", "price": "1000000", "area": "0"},
+                {"contractDate": "0125", "price": "1000000"},  # missing area
+            ]
+        }
+        list(mapper.map_project(project))
+        stats = mapper.get_stats()
+        assert stats["skip_invalid_area"] == 2
+
+    def test_granular_counters_sum_to_total(self, mapper):
+        """Granular skip counters sum to total skipped."""
+        project = {
+            "project": "TEST",
+            "transaction": [
+                {"contractDate": "0025", "price": "1000000", "area": "500"},  # bad date
+                {"contractDate": "0125", "price": "0", "area": "500"},  # bad price
+                {"contractDate": "0125", "price": "1000000", "area": "0"},  # bad area
+                {"contractDate": "0125", "price": "1000000", "area": "50"},  # valid
+            ]
+        }
+        list(mapper.map_project(project))
+        stats = mapper.get_stats()
+        # Granular counters
+        granular_sum = (
+            stats["skip_invalid_date"] +
+            stats["skip_invalid_price"] +
+            stats["skip_invalid_area"] +
+            stats["skip_missing_project"] +
+            stats["skip_exception"]
+        )
+        assert granular_sum == stats["transactions_skipped"]
+        assert stats["transactions_processed"] == 1
+
 
 class TestMapAllProjects:
     """Tests for map_all_projects method."""

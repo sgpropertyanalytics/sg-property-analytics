@@ -9,6 +9,22 @@ Handles:
 - Row hash for deduplication
 - Unknown field preservation for schema drift safety
 
+PRICE FIELD POLICY:
+    We use `price` (gross transaction price) for all calculations, NOT `nettPrice`.
+    - `price`: What the buyer actually pays (transaction price)
+    - `nettPrice`: Price after deducting seller's stamp duty (optional, informational only)
+
+    Rationale: Analytics should reflect actual buyer cost. nettPrice is stored
+    separately for reference but never used for PSF or aggregations.
+
+BACKFILL / REVISION STRATEGY:
+    URA data can be revised retroactively. Our strategy:
+    - Each sync re-fetches the last REVISION_WINDOW_MONTHS of data (default: 3 months)
+    - Use row_hash-based upsert (ON CONFLICT DO NOTHING) for idempotency
+    - Historical data beyond the window is not re-synced unless explicit full refresh
+
+    This balances freshness vs. API load.
+
 Usage:
     from services.ura_canonical_mapper import URACanonicalMapper
 
@@ -54,6 +70,10 @@ TYPE_OF_SALE_MAP = {
 # Area conversion: URA API returns area in square meters (sqm)
 # Our DB stores area in square feet (sqft)
 SQM_TO_SQFT = 10.7639
+
+# Revision window: re-sync this many months on each run to catch URA corrections
+# URA may revise data retroactively; 3 months covers typical revision lag
+REVISION_WINDOW_MONTHS = 3
 
 # Natural key fields for row hash
 # Includes all fields that identify a unique transaction
@@ -249,6 +269,12 @@ class URACanonicalMapper:
             'transactions_processed': 0,
             'transactions_skipped': 0,
             'unknown_fields_preserved': 0,
+            # Granular skip reasons for debugging
+            'skip_missing_project': 0,
+            'skip_invalid_date': 0,
+            'skip_invalid_price': 0,
+            'skip_invalid_area': 0,
+            'skip_exception': 0,
         }
 
     def reset_stats(self) -> None:
@@ -314,6 +340,7 @@ class URACanonicalMapper:
             except Exception as e:
                 logger.error(f"Error mapping transaction in '{project_name}': {e}")
                 self._stats['transactions_skipped'] += 1
+                self._stats['skip_exception'] += 1
 
     def _map_transaction(
         self,
@@ -350,18 +377,22 @@ class URACanonicalMapper:
         price = parse_float_safe(price_raw, 'price')
         area_sqm = parse_float_safe(area_raw, 'area')
 
-        # Validate required fields
+        # Validate required fields (with granular skip counters)
         if not project_name:
             logger.debug("Skipping transaction: missing project_name")
+            self._stats['skip_missing_project'] += 1
             return None
         if not transaction_date:
             logger.debug(f"Skipping transaction in '{project_name}': invalid contract date '{contract_date_raw}'")
+            self._stats['skip_invalid_date'] += 1
             return None
         if not price or price <= 0:
             logger.debug(f"Skipping transaction in '{project_name}': invalid price '{price_raw}'")
+            self._stats['skip_invalid_price'] += 1
             return None
         if not area_sqm or area_sqm <= 0:
             logger.debug(f"Skipping transaction in '{project_name}': invalid area '{area_raw}'")
+            self._stats['skip_invalid_area'] += 1
             return None
 
         # Convert area from sqm (API) to sqft (DB)
@@ -499,10 +530,25 @@ class URACanonicalMapper:
                     continue
                 rows.append(row)
 
+        # Log summary with skip breakdown
+        skip_breakdown = []
+        if self._stats['skip_invalid_date'] > 0:
+            skip_breakdown.append(f"date={self._stats['skip_invalid_date']}")
+        if self._stats['skip_invalid_price'] > 0:
+            skip_breakdown.append(f"price={self._stats['skip_invalid_price']}")
+        if self._stats['skip_invalid_area'] > 0:
+            skip_breakdown.append(f"area={self._stats['skip_invalid_area']}")
+        if self._stats['skip_missing_project'] > 0:
+            skip_breakdown.append(f"project={self._stats['skip_missing_project']}")
+        if self._stats['skip_exception'] > 0:
+            skip_breakdown.append(f"error={self._stats['skip_exception']}")
+
+        skip_detail = f" ({', '.join(skip_breakdown)})" if skip_breakdown else ""
+
         logger.info(
             f"Mapped {self._stats['projects_processed']} projects, "
             f"{self._stats['transactions_processed']} transactions, "
-            f"{self._stats['transactions_skipped']} skipped"
+            f"{self._stats['transactions_skipped']} skipped{skip_detail}"
         )
 
         return rows
