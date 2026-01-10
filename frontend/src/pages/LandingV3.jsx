@@ -1772,9 +1772,9 @@ export default function LandingV3() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.6, delay: 0.1 }}
-                    className="mt-2 font-display text-4xl sm:text-5xl md:text-6xl xl:text-7xl font-normal uppercase tracking-[-0.04em] leading-[0.95]"
+                    className="mt-2 font-display text-3xl sm:text-4xl md:text-5xl xl:text-6xl font-normal uppercase tracking-[-0.04em] leading-[0.95]"
                   >
-                    <span className="block text-black">SGP:Terminal</span>
+                    <span className="block text-black">SG_PROPERTY_ANALYTICS</span>
                     <span className="block text-black/60 text-sm sm:text-base md:text-lg mt-3 font-mono uppercase tracking-[0.15em]">Market Intelligence Dashboard</span>
                   </motion.h1>
 
