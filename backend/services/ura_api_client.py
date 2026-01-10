@@ -41,6 +41,17 @@ from scrapers.rate_limiter import get_scraper_rate_limiter
 
 logger = logging.getLogger(__name__)
 
+# Public API
+__all__ = [
+    'URAAPIClient',
+    'URAAPIResponse',
+    'URAAPIError',
+    'URATokenError',
+    'URADataError',
+    'get_ura_client',
+    'fetch_all_ura_transactions',
+]
+
 
 # =============================================================================
 # Configuration

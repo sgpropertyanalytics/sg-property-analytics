@@ -60,6 +60,13 @@ from services.ura_shadow_comparator import URAShadowComparator, ComparisonReport
 
 logger = logging.getLogger(__name__)
 
+# Public API
+__all__ = [
+    'URASyncEngine',
+    'SyncResult',
+    'run_sync',
+]
+
 
 # =============================================================================
 # Result Types

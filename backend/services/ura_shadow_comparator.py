@@ -27,6 +27,14 @@ from dataclasses import dataclass, field, asdict
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
+# Public API
+__all__ = [
+    'URAShadowComparator',
+    'ComparisonReport',
+    'compare_api_vs_csv',
+    'compare_run_vs_csv',
+]
+
 
 class FilterType(Enum):
     """Type of filter for comparison queries."""
