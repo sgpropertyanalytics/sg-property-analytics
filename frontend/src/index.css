@@ -96,8 +96,7 @@
 }
 
 .weapon-card:hover {
-  border-color: var(--color-signal-accent); /* Safety Orange on hover */
-  cursor: crosshair;
+  border-color: var(--color-canvas-grid); /* Same as base - no change on hover */
 }
 
 /* Dashboard Grid Background - 80px crosshatch */
@@ -359,12 +358,6 @@
   opacity: 0;
 }
 
-/* Alternative: Safety Orange active (add .segmented-control--orange to parent) */
-.segmented-control--orange .segmented-btn.active {
-  background-color: transparent;
-  color: var(--color-signal-accent);
-  box-shadow: inset 0 0 0 var(--border-1) var(--color-signal-accent);
-}
 
 /* Wireframe dropdown/select styling */
 .wireframe-select {
@@ -390,7 +383,7 @@
 
 .wireframe-select:focus {
   outline: none;
-  border-color: var(--color-signal-accent);
+  border-color: var(--color-void-surface);
 }
 
 /* Weapon Border Variants */
@@ -841,10 +834,7 @@ input[type="range"].slider-thumb::-moz-range-progress {
   animation: scrollFadeIn 0.6s ease-out forwards;
 }
 
-/* Crosshair cursor for chart areas */
-.cursor-crosshair {
-  cursor: crosshair;
-}
+/* Removed crosshair cursor - using default pointer */
 
 /* ====== Phase 4.1: Enhanced Pulse Ring Animation ====== */
 

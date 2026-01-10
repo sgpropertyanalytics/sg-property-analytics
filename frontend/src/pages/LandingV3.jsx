@@ -944,7 +944,7 @@ function TerminalChartWrapper({ title, subtitle, children, showLive = false, loc
         </div>
       </div>
       {/* Content */}
-      <div className="relative p-4 cursor-crosshair">
+      <div className="relative p-4">
         {children}
         {locked && (
           <div className="absolute inset-0 backdrop-blur-sm bg-white/60 flex items-center justify-center">
@@ -1409,7 +1409,7 @@ function GhostMap({ highlightedDistrict, activePulses, onPulseFade }) {
             fill={getDistrictFill(f.properties.district)}
             stroke={getDistrictStroke(f.properties.district)}
             strokeWidth="0.5"
-            className="transition-all duration-200 ease-out cursor-crosshair"
+            className="transition-all duration-200 ease-out cursor-pointer"
             style={{
               // Paper-thin shadow - crisp separation without thickness
               filter: 'drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.08))',

@@ -1,11 +1,11 @@
 import React from 'react';
 // Phase 3.4: PowerBIFilterProvider removed - useZustandFilters is self-contained
-import { FilterBar } from '../components/powerbi/FilterBar';
+import { FilterBar } from '../components/patterns';
+import { PageCanvas, ControlRibbon } from '../components/layout';
 import { NewVsResaleChart } from '../components/powerbi/NewVsResaleChart';
 import { NewLaunchTimelineChart } from '../components/powerbi/NewLaunchTimelineChart';
 import { ErrorBoundary, ChartWatermark } from '../components/ui';
 import { useChartHeight, MOBILE_CAPS } from '../hooks';
-// PageHeader removed - title now in DashboardLayout console header
 
 /**
  * Primary Market Page - New Sale vs Resale Comparison
@@ -20,14 +20,14 @@ export function PrimaryMarketContent() {
   const chartHeight = useChartHeight(400, MOBILE_CAPS.tall);
 
   return (
-    <div className="min-h-full">
-      {/* Main Content Area - scrolling handled by parent DashboardLayout */}
-      <div className="p-3 md:p-4 lg:p-6">
-          {/* Filter Bar - Unified component (desktop: sticky horizontal, mobile: drawer) */}
-          <FilterBar />
+    <PageCanvas>
+      {/* Filter Bar - Contained in sticky ribbon (same as Market Overview) */}
+      <ControlRibbon>
+        <FilterBar />
+      </ControlRibbon>
 
-          {/* Chart Grid */}
-          <div className="animate-view-enter space-y-4 md:space-y-6">
+      {/* Chart Grid */}
+      <div className="animate-view-enter space-y-4 md:space-y-6">
             {/* New Sale vs Recently TOP Chart - Full width */}
             <ErrorBoundary name="New vs Resale Chart" compact>
               <ChartWatermark>
@@ -41,9 +41,8 @@ export function PrimaryMarketContent() {
                 <NewLaunchTimelineChart height={chartHeight} />
               </ChartWatermark>
             </ErrorBoundary>
-          </div>
-        </div>
       </div>
+    </PageCanvas>
   );
 }
 
