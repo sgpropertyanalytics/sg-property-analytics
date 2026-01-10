@@ -20,7 +20,7 @@ Usage:
 """
 
 import logging
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass, field, asdict
 from sqlalchemy import text
@@ -69,14 +69,21 @@ class ComparisonReport:
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dict for JSON serialization."""
+        import json
+
+        def serialize_value(v):
+            """Recursively serialize values for JSON."""
+            if isinstance(v, (date, datetime)):
+                return v.isoformat()
+            elif isinstance(v, dict):
+                return {k: serialize_value(val) for k, val in v.items()}
+            elif isinstance(v, list):
+                return [serialize_value(item) for item in v]
+            return v
+
         result = asdict(self)
-        # Convert dates to ISO strings
-        result['comparison_date'] = self.comparison_date.isoformat()
-        if self.date_range_start:
-            result['date_range_start'] = self.date_range_start.isoformat()
-        if self.date_range_end:
-            result['date_range_end'] = self.date_range_end.isoformat()
-        return result
+        # Recursively convert dates to ISO strings
+        return {k: serialize_value(v) for k, v in result.items()}
 
 
 class URAShadowComparator:
