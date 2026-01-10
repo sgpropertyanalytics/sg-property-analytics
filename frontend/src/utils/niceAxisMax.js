@@ -83,3 +83,46 @@ export function niceStep(max, tickCount = 5) {
   const rawStep = max / (tickCount - 1);
   return niceMax(rawStep);
 }
+
+/**
+ * Compute Y-axis max with buffer for FloatingLegend safe zone.
+ *
+ * Creates a 20% "air gap" at the top of the chart where no data can reach,
+ * allowing the FloatingLegend to overlay without obscuring data points.
+ *
+ * Usage with Chart.js:
+ *   scales: {
+ *     y: {
+ *       max: niceMaxBuffered(maxDataValue),
+ *     }
+ *   }
+ *
+ * Or inline callback:
+ *   max: dataMax => dataMax * 1.2
+ *
+ * @param {number} dataMax - The maximum data value
+ * @param {number} bufferPercent - Buffer as decimal (default 0.2 = 20%)
+ * @returns {number} A nice rounded max with buffer
+ */
+export function niceMaxBuffered(dataMax, bufferPercent = 0.2) {
+  if (!dataMax || dataMax <= 0) return 10;
+  const buffered = dataMax * (1 + bufferPercent);
+  return niceMax(buffered);
+}
+
+/**
+ * Y-AXIS SAFE ZONE BUFFER (CONSTANT)
+ *
+ * Use this multiplier when configuring Y-axis max for charts with FloatingLegend.
+ * Creates invisible "air gap" where legend floats without overlapping data.
+ *
+ * Usage:
+ *   import { Y_AXIS_LEGEND_BUFFER } from '@/utils/niceAxisMax';
+ *
+ *   scales: {
+ *     y: {
+ *       max: dataMax => dataMax * Y_AXIS_LEGEND_BUFFER,
+ *     }
+ *   }
+ */
+export const Y_AXIS_LEGEND_BUFFER = 1.2;

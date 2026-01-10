@@ -2,24 +2,68 @@ import React from 'react';
 import { HelpTooltip } from './HelpTooltip';
 
 /**
- * DataCard - Universal Template with Status Deck
+ * DataCard - Universal Template with Two Layout Modes
  *
  * Production-grade dashboard component template for ANY chart type.
- * IDE-style status bar pattern (like VS Code) at bottom.
  *
- * Slot Structure (fixed heights for pixel-perfect alignment):
+ * ═══════════════════════════════════════════════════════════════════
+ * LAYOUT MODE 1: FOOTERLESS STANDARD (Recommended)
+ * ═══════════════════════════════════════════════════════════════════
+ *
+ * 3-layer structure that maximizes chart area:
+ * - Layer 1: Header (High Density)  h-14 - Title + Metadata + Controls
+ * - Layer 2: KPI Strip              h-20 - Pure metrics
+ * - Layer 3: Canvas + FloatingLegend     - Chart with legend in safe zone
+ *
+ * Key Engineering: The FloatingLegend sits in a Y-axis buffer zone.
+ * Configure chart's Y-axis with 20% buffer to create the "safe zone":
+ *
+ *   scales: {
+ *     y: {
+ *       max: dataMax => dataMax * 1.2,  // Creates invisible air gap
+ *     }
+ *   }
+ *
+ * Usage (Footerless):
+ *   <DataCard>
+ *     <DataCardHeader
+ *       title="Price Distribution"
+ *       subtitle="District 10 • Freehold"
+ *       metadata={
+ *         <div className="flex items-center gap-4">
+ *           <HeaderMetaBadge count={15517} />
+ *           <span className="text-slate-400">2021 - 2024</span>
+ *         </div>
+ *       }
+ *     />
+ *     <DataCardToolbar>
+ *       <ToolbarStat label="Median" value="$1.66M" />
+ *     </DataCardToolbar>
+ *     <DataCardCanvas>
+ *       <FloatingLegend>
+ *         <LegendDot label="CCR" color="#213448" />
+ *         <LegendDot label="RCR" color="#547792" />
+ *       </FloatingLegend>
+ *       <Chart options={{ scales: { y: { max: d => d * 1.2 } } }} />
+ *     </DataCardCanvas>
+ *   </DataCard>
+ *
+ * ═══════════════════════════════════════════════════════════════════
+ * LAYOUT MODE 2: STATUS DECK (Legacy)
+ * ═══════════════════════════════════════════════════════════════════
+ *
+ * 5-layer structure with IDE-style status bar:
  * - Layer 1: Header     h-14 (56px)  - Title + controls + (i) icon
  * - Layer 2: KPI Strip  h-20 (80px)  - Pure metrics (no color dots)
  * - Layer 3: Canvas     flex-grow    - Chart content
  * - Layer 4: StatusDeck h-10 (40px)  - Left: context | Center: legend | Right: data
  * - Layer 5: AI Drawer  hidden       - On-demand agent analysis
  *
- * Usage:
+ * Usage (StatusDeck):
  *   <DataCard>
  *     <DataCardHeader title="Price Distribution" controls={<AgentButton />} />
  *     <DataCardToolbar>
  *       <ToolbarStat label="Median" value="$1.66M" />
- *       <ToolbarStat label="Q1-Q3" value="$1.2-2.3" />
  *     </DataCardToolbar>
  *     <DataCardCanvas>
  *       <Chart />
@@ -29,9 +73,7 @@ import { HelpTooltip } from './HelpTooltip';
  *       right={<><StatusCount count={15517} /><StatusBadge>Top 9% Hidden</StatusBadge></>}
  *     >
  *       <LegendLine label="CCR" color="#213448" />
- *       <LegendLine label="RCR" color="#547792" />
  *     </StatusDeck>
- *     <AgentFooter isOpen={isAgentOpen}>Analysis here</AgentFooter>
  *   </DataCard>
  */
 
@@ -123,6 +165,68 @@ export function DataCardHeader({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// ============================================
+// HeaderMetaBadge - Styled metadata badge for header
+// ============================================
+/**
+ * HeaderMetaBadge - Compact metadata badge for high-density header.
+ *
+ * Use in DataCardHeader's metadata prop for transaction counts, etc.
+ *
+ * Usage:
+ *   <DataCardHeader
+ *     title="Price Distribution"
+ *     metadata={
+ *       <div className="flex items-center gap-4">
+ *         <HeaderMetaBadge count={15517} />
+ *         <span className="text-slate-400">2021 - 2024</span>
+ *       </div>
+ *     }
+ *   />
+ */
+interface HeaderMetaBadgeProps {
+  /** Transaction/data count */
+  count: number;
+  /** Label after count (default: none, just "N = X") */
+  label?: string;
+  /** Show green indicator dot (default: true) */
+  showIndicator?: boolean;
+  /** Additional className */
+  className?: string;
+}
+
+export function HeaderMetaBadge({
+  count,
+  label,
+  showIndicator = true,
+  className = '',
+}: HeaderMetaBadgeProps) {
+  return (
+    <div
+      className={`
+        flex items-center gap-1.5
+        bg-slate-50 px-2 py-1 rounded
+        border border-slate-100
+        font-mono text-[10px] text-slate-500
+        ${className}
+      `.trim()}
+    >
+      {showIndicator && (
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+      )}
+      <span>
+        {label ? (
+          <>
+            <span className="font-bold text-slate-700">{count.toLocaleString()}</span> {label}
+          </>
+        ) : (
+          <>N = {count.toLocaleString()}</>
+        )}
+      </span>
     </div>
   );
 }
@@ -314,6 +418,67 @@ export function DataCardCanvas({
     <div
       className={`flex-grow p-6 relative ${className}`}
       style={{ minHeight }}
+    >
+      {children}
+    </div>
+  );
+}
+
+// ============================================
+// FloatingLegend - Legend in Chart's Safe Zone
+// ============================================
+/**
+ * FloatingLegend - Floating legend positioned in the chart's Y-axis buffer zone.
+ *
+ * IMPORTANT: To prevent legend overlapping data, you MUST configure the chart's
+ * Y-axis with a 20% buffer:
+ *
+ *   scales: {
+ *     y: {
+ *       max: dataMax => dataMax * 1.2,  // 20% buffer creates the "safe zone"
+ *     }
+ *   }
+ *
+ * This creates invisible "air gap" at top of chart where no data can reach.
+ *
+ * Usage:
+ *   <DataCardCanvas>
+ *     <FloatingLegend>
+ *       <LegendDot label="CCR" color="#213448" />
+ *       <LegendDot label="RCR" color="#547792" />
+ *     </FloatingLegend>
+ *     <Chart options={{ scales: { y: { max: dataMax => dataMax * 1.2 } } }} />
+ *   </DataCardCanvas>
+ */
+interface FloatingLegendProps {
+  children: React.ReactNode;
+  /** Position: 'top-center' (default), 'top-left', 'top-right' */
+  position?: 'top-center' | 'top-left' | 'top-right';
+  /** Additional className */
+  className?: string;
+}
+
+export function FloatingLegend({
+  children,
+  position = 'top-center',
+  className = '',
+}: FloatingLegendProps) {
+  const positionClasses = {
+    'top-center': 'top-2 left-1/2 -translate-x-1/2',
+    'top-left': 'top-2 left-4',
+    'top-right': 'top-2 right-4',
+  };
+
+  return (
+    <div
+      className={`
+        absolute ${positionClasses[position]} z-10
+        flex items-center gap-4
+        bg-white/80 backdrop-blur-sm
+        px-3 py-1.5 rounded-full
+        border border-slate-100 shadow-sm
+        ${className}
+      `.trim()}
     >
       {children}
     </div>

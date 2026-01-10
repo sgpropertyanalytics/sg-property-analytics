@@ -36,18 +36,23 @@ export { ChartPanel } from './ChartPanel';
 export { DataSection } from './DataSection';
 export { ChartSlot } from './ChartSlot';
 
-// Universal Template with Status Deck (Production-grade dashboard template)
+// Universal Template with Two Layout Modes (Production-grade dashboard template)
+// See DataCard.tsx header for full documentation of Footerless Standard vs StatusDeck modes
 export {
   DataCard,
   DataCardHeader,
   DataCardToolbar,
   DataCardCanvas,
-  // Layer 4: Status Deck (IDE-style status bar)
+  // Footerless Standard (Recommended - maximizes chart area)
+  FloatingLegend,      // Legend in chart's Y-axis safe zone (use with 1.2x Y-axis buffer)
+  HeaderMetaBadge,     // High-density header metadata badge (N = X, transaction counts)
+  LegendDot,           // Legend item with dot swatch (for FloatingLegend or StatusDeck)
+  LegendLine,          // Legend item with line swatch
+  // StatusDeck (Legacy - IDE-style status bar)
   StatusDeck,          // 3-zone layout: left | center legend | right
   StatusPeriod,        // Left zone: period/view indicator
   StatusCount,         // Right zone: transaction count
   StatusBadge,         // Right zone: warning/info badge
-  LegendLine,          // Center zone: legend item with line swatch
   // Other components
   DataCardFooter,
   ToolbarStat,
@@ -56,7 +61,6 @@ export {
   // Legacy (backward compatibility)
   DataCardLegendDock,  // @deprecated - use StatusDeck
   ToolbarLegend,       // @deprecated - use StatusDeck
-  LegendDot,           // @deprecated - use LegendLine
   DataRailItem,
   FloatingLegendItem,
   DataCardInsightStrip,
