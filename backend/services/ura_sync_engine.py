@@ -435,8 +435,12 @@ class URASyncEngine:
             inserted += chunk_inserted
             updated += chunk_updated
 
-            if (i + self.CHUNK_SIZE) % 5000 == 0:
-                logger.info(f"Progress: {i + len(chunk)}/{len(rows)} rows")
+            # P2 fix: Log at milestones OR at final chunk
+            rows_processed = i + len(chunk)
+            is_milestone = rows_processed % 5000 == 0
+            is_final = rows_processed == len(rows)
+            if is_milestone or (is_final and len(rows) > 5000):
+                logger.info(f"Progress: {rows_processed}/{len(rows)} rows")
 
         self.stats.inserted_rows = inserted
         self.stats.updated_rows = updated
@@ -454,8 +458,8 @@ class URASyncEngine:
         inserted = 0
         updated = 0
 
-        # Build the upsert SQL
-        upsert_sql = self._build_upsert_sql()
+        # Use upsert SQL from config (single source of truth)
+        upsert_sql = build_upsert_sql()
 
         for row in rows:
             # Prepare row data with run_id and ingested_at
@@ -477,39 +481,6 @@ class URASyncEngine:
 
         self.session.commit()
         return inserted, updated
-
-    def _build_upsert_sql(self) -> str:
-        """Build the upsert SQL with proper field handling."""
-
-        # Fields to insert
-        insert_fields = [
-            'project_name', 'transaction_date', 'transaction_month', 'contract_date',
-            'price', 'area_sqft', 'psf', 'district', 'bedroom_count',
-            'property_type', 'sale_type', 'tenure', 'lease_start_year', 'remaining_lease',
-            'street_name', 'floor_range', 'floor_level', 'num_units', 'nett_price',
-            'type_of_area', 'market_segment', 'source', 'run_id', 'ingested_at',
-            'row_hash', 'raw_extras'
-        ]
-
-        # Fields to update on conflict
-        update_fields = [
-            'price', 'area_sqft', 'psf', 'floor_range', 'sale_type', 'district',
-            'nett_price', 'floor_level', 'bedroom_count', 'tenure', 'lease_start_year',
-            'remaining_lease', 'num_units', 'type_of_area', 'market_segment',
-            'ingested_at', 'run_id'
-        ]
-
-        columns = ', '.join(insert_fields)
-        values = ', '.join(f':{f}' for f in insert_fields)
-        update_set = ', '.join(f'{f} = EXCLUDED.{f}' for f in update_fields)
-
-        return f"""
-            INSERT INTO transactions ({columns})
-            VALUES ({values})
-            ON CONFLICT (row_hash) WHERE row_hash IS NOT NULL
-            DO UPDATE SET {update_set}
-            RETURNING id, (xmax = 0) as was_inserted
-        """
 
     def _prepare_row_for_insert(self, row: Dict[str, Any]) -> Dict[str, Any]:
         """Prepare a row for insertion with run tracking fields."""
