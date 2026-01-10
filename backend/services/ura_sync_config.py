@@ -103,20 +103,34 @@ def get_cutoff_date() -> date:
 # =============================================================================
 
 # Only sync these property types (excludes Executive Condominium)
-ALLOWED_PROPERTY_TYPES = frozenset(['Condominium', 'Apartment'])
+# Stored in lowercase for case-insensitive matching
+ALLOWED_PROPERTY_TYPES = frozenset(['condominium', 'apartment'])
+
+# Display names for logging
+ALLOWED_PROPERTY_TYPES_DISPLAY = ['Condominium', 'Apartment']
 
 
 def is_allowed_property_type(property_type: str) -> bool:
     """
-    Check if a property type should be synced.
+    Check if a property type should be synced (case-insensitive).
 
     Args:
         property_type: The property type string
 
     Returns:
         True if allowed, False if should be skipped (e.g., EC)
+
+    Examples:
+        >>> is_allowed_property_type('Condominium')
+        True
+        >>> is_allowed_property_type('condominium')
+        True
+        >>> is_allowed_property_type('Executive Condominium')
+        False
     """
-    return property_type in ALLOWED_PROPERTY_TYPES
+    if not property_type:
+        return False
+    return property_type.lower() in ALLOWED_PROPERTY_TYPES
 
 
 def get_revision_window_date() -> date:
