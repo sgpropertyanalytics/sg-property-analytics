@@ -14,7 +14,9 @@ import {
   DataCardToolbar,
   ToolbarStat,
   DataCardCanvas,
-  DataCardFooter,
+  StatusDeck,
+  StatusCount,
+  StatusBadge,
 } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 import { CHART_COLORS } from '../../constants/colors';
@@ -129,10 +131,6 @@ function PriceDistributionChartBase({
   const maxCount = Math.max(...counts, 0);
   const modeIndex = counts.length > 0 ? counts.indexOf(maxCount) : -1;
   const modeBucket = modeIndex >= 0 ? bins[modeIndex] : null;
-
-  // Price range from histogram bins
-  const minPrice = bins.length > 0 ? bins[0].start : 0;
-  const maxPrice = bins.length > 0 ? bins[bins.length - 1].end : 0;
 
   // Calculate bin indices for median, Q1, Q3 using adapter helper
   const medianBinIndex = findBinIndex(bins, stats?.median);
@@ -327,13 +325,17 @@ Mode — The most common price range.`;
           </PreviewChartOverlay>
         </DataCardCanvas>
 
-        {/* Footer */}
-        <DataCardFooter
-          secondary={`${formatPrice(minPrice)} – ${formatPrice(maxPrice)}`}
-        >
-          {displayCount.toLocaleString()} transactions
-          {!showFullRange && tail?.pct > 0 && ` • Top ${tail.pct}% hidden`}
-        </DataCardFooter>
+        {/* Status Deck: h-10 fixed - no legend for histogram, just context */}
+        <StatusDeck
+          right={
+            <>
+              <StatusCount count={displayCount} />
+              {!showFullRange && tail?.pct > 0 && (
+                <StatusBadge>Top {tail.pct}% Hidden</StatusBadge>
+              )}
+            </>
+          }
+        />
       </DataCard>
     </ChartFrame>
   );

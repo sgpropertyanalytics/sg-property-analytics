@@ -17,7 +17,9 @@ import {
   DataCardToolbar,
   ToolbarStat,
   DataCardCanvas,
-  DataCardFooter,
+  StatusDeck,
+  StatusPeriod,
+  LegendLine,
 } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 import { CHART_COLORS } from '../../constants/colors';
@@ -258,18 +260,6 @@ function PriceCompressionChartBase({ height = 380, saleType = null, sharedData =
 Spreads widening = prime outperforming (fragmentation).
 Watch for lines dipping below $0 — that's a price inversion anomaly.`;
 
-  // Format spread value for display
-  const formatSpread = (spread, avgSpread) => {
-    if (spread == null) return '—';
-    const pctVsAvg = avgSpread && avgSpread !== 0
-      ? Math.round(((spread - avgSpread) / Math.abs(avgSpread)) * 100)
-      : null;
-    const pctText = pctVsAvg !== null
-      ? (pctVsAvg < 0 ? `${pctVsAvg}%` : `+${pctVsAvg}%`)
-      : '';
-    return `$${spread.toLocaleString()} ${pctText}`;
-  };
-
   // CRITICAL: containerRef must be OUTSIDE ChartFrame for IntersectionObserver to work
   return (
     <div ref={containerRef}>
@@ -323,17 +313,20 @@ Watch for lines dipping below $0 — that's a price inversion anomaly.`;
           />
         </DataCardToolbar>
 
-        {/* Canvas: flex-grow (Tier 2 Unified - legend in toolbar via labels) */}
+        {/* Canvas: flex-grow */}
         <DataCardCanvas minHeight={height}>
           <PreviewChartOverlay chartRef={chartRef}>
             <Line ref={chartRef} data={spreadChartData} options={spreadChartOptions} />
           </PreviewChartOverlay>
         </DataCardCanvas>
 
-        {/* Footer */}
-        <DataCardFooter secondary={`${TIME_LABELS[timeGrouping]} view`}>
-          {data.length} periods
-        </DataCardFooter>
+        {/* Status Deck: h-10 fixed - Left: periods | Center: legend | Right: empty */}
+        <StatusDeck
+          left={<StatusPeriod>{data.length} Periods ({TIME_LABELS[timeGrouping]})</StatusPeriod>}
+        >
+          <LegendLine label="CCR-RCR Spread" color={CHART_COLORS.navy} />
+          <LegendLine label="RCR-OCR Spread" color={CHART_COLORS.ocean} lineStyle="dashed" />
+        </StatusDeck>
       </DataCard>
     </ChartFrame>
     </div>

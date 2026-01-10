@@ -11,10 +11,10 @@ import { getDashboard } from '../../api/client';
 import {
   DataCard,
   DataCardHeader,
-  ToolbarLegend,
-  LegendDot,
   DataCardCanvas,
-  DataCardFooter,
+  StatusDeck,
+  StatusCount,
+  LegendDot,
 } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 import { CHART_COLORS, BEADS } from '../../constants/colors';
@@ -347,30 +347,21 @@ String Line — Price range for that region.`;
           info={methodologyText}
         />
 
-        {/* Toolbar: h-20 fixed - Legend for bedroom colors */}
-        <ToolbarLegend>
-          <LegendDot label="1BR" color={BEDROOM_COLORS[1]} />
-          <LegendDot label="2BR" color={BEDROOM_COLORS[2]} />
-          <LegendDot label="3BR" color={BEDROOM_COLORS[3]} />
-          <LegendDot label="4BR" color={BEDROOM_COLORS[4]} />
-          <LegendDot label="5BR" color={BEDROOM_COLORS[5]} />
-        </ToolbarLegend>
-
         {/* Canvas: flex-grow */}
         <DataCardCanvas minHeight={height}>
           <Bubble ref={chartRef} data={resolvedData} options={options} />
         </DataCardCanvas>
 
-        {/* Footer */}
-        <DataCardFooter
-          secondary={
-            stats?.priceRange?.min > 0 && stats?.priceRange?.max > 0
-              ? `${formatPrice(stats.priceRange.min)} – ${formatPrice(stats.priceRange.max)}`
-              : undefined
-          }
+        {/* Status Deck: h-10 fixed - Left: empty | Center: legend | Right: txns */}
+        <StatusDeck
+          right={<StatusCount count={stats?.totalTransactions || 0} />}
         >
-          {stats?.totalTransactions?.toLocaleString() || 0} transactions
-        </DataCardFooter>
+          <LegendDot label="1BR" color={BEDROOM_COLORS[1]} />
+          <LegendDot label="2BR" color={BEDROOM_COLORS[2]} />
+          <LegendDot label="3BR" color={BEDROOM_COLORS[3]} />
+          <LegendDot label="4BR" color={BEDROOM_COLORS[4]} />
+          <LegendDot label="5BR" color={BEDROOM_COLORS[5]} />
+        </StatusDeck>
       </DataCard>
     </ChartFrame>
   );

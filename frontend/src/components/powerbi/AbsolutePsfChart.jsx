@@ -17,7 +17,10 @@ import {
   DataCardToolbar,
   ToolbarStat,
   DataCardCanvas,
-  DataCardFooter,
+  StatusDeck,
+  StatusPeriod,
+  StatusCount,
+  LegendLine,
   AgentButton,
   AgentFooter,
 } from '../ui';
@@ -195,18 +198,7 @@ OCR = Outside Central (suburban).`;
     ...baseChartJsOptions,
     interaction: { mode: 'index', intersect: false },
     plugins: {
-      legend: {
-        display: true,
-        position: 'bottom',
-        labels: {
-          usePointStyle: true,
-          pointStyle: 'circle',
-          boxWidth: 6,
-          boxHeight: 6,
-          padding: 15,
-          font: { size: 11 },
-        },
-      },
+      legend: { display: false },  // Using DataCardLegendDock instead
       tooltip: {
         callbacks: {
           title: (items) => `${items[0].label}`,
@@ -278,50 +270,50 @@ OCR = Outside Central (suburban).`;
           }
         />
 
-        {/* Toolbar: h-20 fixed - 3 columns for CCR/RCR/OCR */}
+        {/* KPI Strip: h-20 fixed - Pure metrics only */}
         <DataCardToolbar columns={3} blur={isFreeResolved}>
           <ToolbarStat
             label="CCR"
-            color={REGION_COLORS.CCR}
             value={latestData.ccr != null ? `$${Math.round(latestData.ccr).toLocaleString()}` : '—'}
             subtext={ccrChange !== null ? `${ccrChange > 0 ? '+' : ''}${ccrChange}% vs prev` : undefined}
             trend={ccrChange > 0 ? 'up' : ccrChange < 0 ? 'down' : 'neutral'}
           />
           <ToolbarStat
             label="RCR"
-            color={REGION_COLORS.RCR}
             value={latestData.rcr != null ? `$${Math.round(latestData.rcr).toLocaleString()}` : '—'}
             subtext={rcrChange !== null ? `${rcrChange > 0 ? '+' : ''}${rcrChange}% vs prev` : undefined}
             trend={rcrChange > 0 ? 'up' : rcrChange < 0 ? 'down' : 'neutral'}
           />
           <ToolbarStat
             label="OCR"
-            color={REGION_COLORS.OCR}
             value={latestData.ocr != null ? `$${Math.round(latestData.ocr).toLocaleString()}` : '—'}
             subtext={ocrChange !== null ? `${ocrChange > 0 ? '+' : ''}${ocrChange}% vs prev` : undefined}
             trend={ocrChange > 0 ? 'up' : ocrChange < 0 ? 'down' : 'neutral'}
           />
         </DataCardToolbar>
 
-        {/* Canvas: flex-grow (Tier 2 Unified - legend in toolbar via color dots) */}
+        {/* Canvas: flex-grow */}
         <DataCardCanvas minHeight={height}>
           <PreviewChartOverlay chartRef={chartRef}>
             <Line ref={chartRef} data={chartData} options={chartOptions} />
           </PreviewChartOverlay>
         </DataCardCanvas>
 
-        {/* Footer */}
-        <DataCardFooter
-          secondary={
+        {/* Status Deck: h-10 fixed - Left: periods | Center: legend | Right: txns */}
+        <StatusDeck
+          left={<StatusPeriod>{data.length} Periods ({TIME_LABELS[timeGrouping]})</StatusPeriod>}
+          right={
             latestData.counts
-              ? `${(latestData.counts.CCR || 0) + (latestData.counts.RCR || 0) + (latestData.counts.OCR || 0)} total txns`
-              : undefined
+              ? <StatusCount count={(latestData.counts.CCR || 0) + (latestData.counts.RCR || 0) + (latestData.counts.OCR || 0)} />
+              : null
           }
         >
-          {data.length} periods
-        </DataCardFooter>
+          <LegendLine label="CCR" color={REGION_COLORS.CCR} />
+          <LegendLine label="RCR" color={REGION_COLORS.RCR} />
+          <LegendLine label="OCR" color={REGION_COLORS.OCR} />
+        </StatusDeck>
 
-        {/* Agent Analysis Footer - expandable on-demand */}
+        {/* Agent Analysis - expandable on-demand */}
         <AgentFooter isOpen={isAgentOpen}>
           {ccrChange > 0 && rcrChange > 0 && ocrChange > 0
             ? 'All regions showing positive momentum. Market-wide appreciation detected.'

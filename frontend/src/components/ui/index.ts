@@ -36,19 +36,27 @@ export { ChartPanel } from './ChartPanel';
 export { DataSection } from './DataSection';
 export { ChartSlot } from './ChartSlot';
 
-// Full-Bleed Data Toolbar System (Production-grade dashboard template)
+// Universal Template with Status Deck (Production-grade dashboard template)
 export {
   DataCard,
   DataCardHeader,
   DataCardToolbar,
   DataCardCanvas,
+  // Layer 4: Status Deck (IDE-style status bar)
+  StatusDeck,          // 3-zone layout: left | center legend | right
+  StatusPeriod,        // Left zone: period/view indicator
+  StatusCount,         // Right zone: transaction count
+  StatusBadge,         // Right zone: warning/info badge
+  LegendLine,          // Center zone: legend item with line swatch
+  // Other components
   DataCardFooter,
   ToolbarStat,
-  ToolbarLegend,
-  LegendDot,
   AgentButton,
   AgentFooter,
   // Legacy (backward compatibility)
+  DataCardLegendDock,  // @deprecated - use StatusDeck
+  ToolbarLegend,       // @deprecated - use StatusDeck
+  LegendDot,           // @deprecated - use LegendLine
   DataRailItem,
   FloatingLegendItem,
   DataCardInsightStrip,

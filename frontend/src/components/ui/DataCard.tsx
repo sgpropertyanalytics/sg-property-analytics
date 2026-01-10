@@ -2,20 +2,21 @@ import React from 'react';
 import { HelpTooltip } from './HelpTooltip';
 
 /**
- * DataCard - Full-Bleed Data Toolbar System
+ * DataCard - Universal Template with Status Deck
  *
  * Production-grade dashboard component template for ANY chart type.
- * Ensures strict vertical alignment across all cards in a grid.
+ * IDE-style status bar pattern (like VS Code) at bottom.
  *
  * Slot Structure (fixed heights for pixel-perfect alignment):
- * - Header:  h-14 (56px) - Title + controls + (i) icon
- * - Toolbar: h-20 (80px) - Full-bleed gray band for stats OR legend
- * - Canvas:  flex-grow   - Chart content
- * - Footer:  auto        - Transaction count, context
+ * - Layer 1: Header     h-14 (56px)  - Title + controls + (i) icon
+ * - Layer 2: KPI Strip  h-20 (80px)  - Pure metrics (no color dots)
+ * - Layer 3: Canvas     flex-grow    - Chart content
+ * - Layer 4: StatusDeck h-10 (40px)  - Left: context | Center: legend | Right: data
+ * - Layer 5: AI Drawer  hidden       - On-demand agent analysis
  *
  * Usage:
  *   <DataCard>
- *     <DataCardHeader title="Price Distribution" controls={<Button />} />
+ *     <DataCardHeader title="Price Distribution" controls={<AgentButton />} />
  *     <DataCardToolbar>
  *       <ToolbarStat label="Median" value="$1.66M" />
  *       <ToolbarStat label="Q1-Q3" value="$1.2-2.3" />
@@ -23,7 +24,14 @@ import { HelpTooltip } from './HelpTooltip';
  *     <DataCardCanvas>
  *       <Chart />
  *     </DataCardCanvas>
- *     <DataCardFooter>15,517 transactions</DataCardFooter>
+ *     <StatusDeck
+ *       left={<StatusPeriod>60 Periods (Month)</StatusPeriod>}
+ *       right={<><StatusCount count={15517} /><StatusBadge>Top 9% Hidden</StatusBadge></>}
+ *     >
+ *       <LegendLine label="CCR" color="#213448" />
+ *       <LegendLine label="RCR" color="#547792" />
+ *     </StatusDeck>
+ *     <AgentFooter isOpen={isAgentOpen}>Analysis here</AgentFooter>
  *   </DataCard>
  */
 
@@ -162,7 +170,7 @@ export function DataCardToolbar({
 }
 
 // ============================================
-// ToolbarStat - Individual Stat Cell
+// ToolbarStat - Individual Stat Cell (Pure Metrics)
 // ============================================
 interface ToolbarStatProps {
   /** Stat label (uppercase, small) */
@@ -171,8 +179,6 @@ interface ToolbarStatProps {
   value: string | React.ReactNode;
   /** Optional subtext below value */
   subtext?: string;
-  /** Color indicator dot (hex color) */
-  color?: string;
   /** Trend direction for subtext coloring */
   trend?: 'up' | 'down' | 'neutral';
   /** Highlight this cell (e.g., Mode) */
@@ -185,7 +191,6 @@ export function ToolbarStat({
   label,
   value,
   subtext,
-  color,
   trend,
   highlight = false,
   className = '',
@@ -205,23 +210,15 @@ export function ToolbarStat({
         ${className}
       `.trim()}
     >
-      {/* Label row with optional color dot */}
-      <div className="flex items-center gap-1.5 mb-1">
-        {color && (
-          <span
-            className="w-2 h-2 rounded-sm shrink-0"
-            style={{ backgroundColor: color }}
-          />
-        )}
-        <span
-          className={`
-            font-sans text-[10px] uppercase font-semibold tracking-wide
-            ${highlight ? 'text-slate-600' : 'text-slate-400'}
-          `.trim()}
-        >
-          {label}
-        </span>
-      </div>
+      {/* Label row - pure metrics, no color dots */}
+      <span
+        className={`
+          font-sans text-[10px] uppercase font-semibold tracking-wide mb-1
+          ${highlight ? 'text-slate-600' : 'text-slate-400'}
+        `.trim()}
+      >
+        {label}
+      </span>
       {/* Mono for machine data */}
       <span
         className={`
@@ -292,7 +289,7 @@ export function LegendDot({ label, color, className = '' }: LegendDotProps) {
 }
 
 // ============================================
-// DataCardCanvas - Flexible Chart Container (Tier 2 Unified)
+// DataCardCanvas - Flexible Chart Container
 // ============================================
 interface DataCardCanvasProps {
   children: React.ReactNode;
@@ -316,6 +313,139 @@ export function DataCardCanvas({
     </div>
   );
 }
+
+// ============================================
+// StatusDeck - Fixed 40px Status Bar (Layer 4)
+// IDE-style status bar with 3 zones: Left | Center Legend | Right
+// ============================================
+interface StatusDeckProps {
+  /** Left zone: Technical context (e.g., "60 Periods (Month)") */
+  left?: React.ReactNode;
+  /** Center zone: Legend items */
+  children?: React.ReactNode;
+  /** Right zone: Data context (e.g., transaction count, badges) */
+  right?: React.ReactNode;
+  /** Additional className */
+  className?: string;
+}
+
+export function StatusDeck({
+  left,
+  children,
+  right,
+  className = '',
+}: StatusDeckProps) {
+  return (
+    <div
+      className={`
+        h-10 shrink-0
+        border-t border-slate-200 bg-white
+        flex items-center justify-between px-4
+        z-10 relative
+        ${className}
+      `.trim()}
+    >
+      {/* Left Zone: Technical Context */}
+      <div className="flex items-center gap-2 w-1/3">
+        {left}
+      </div>
+
+      {/* Center Zone: Legend */}
+      <div className="flex items-center justify-center gap-4 w-1/3">
+        {children}
+      </div>
+
+      {/* Right Zone: Data Context */}
+      <div className="flex items-center justify-end gap-2 w-1/3 text-right">
+        {right}
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// StatusDeck Helper Components
+// ============================================
+
+/** Left zone: Period/view indicator with calendar icon */
+export function StatusPeriod({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-2">
+      <svg className="w-3 h-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      </svg>
+      <span className="font-mono text-[9px] text-slate-400 uppercase tracking-tight">
+        {children}
+      </span>
+    </div>
+  );
+}
+
+/** Right zone: Transaction count */
+export function StatusCount({ count, label = 'Txns' }: { count: number | string; label?: string }) {
+  return (
+    <span className="font-mono text-[9px] text-slate-500">
+      <span className="font-bold text-slate-700">{typeof count === 'number' ? count.toLocaleString() : count}</span> {label}
+    </span>
+  );
+}
+
+/** Right zone: Warning/info badge (e.g., "Top 9% Hidden") */
+export function StatusBadge({ children, variant = 'warning' }: { children: React.ReactNode; variant?: 'warning' | 'info' }) {
+  const colors = variant === 'warning'
+    ? 'text-orange-600 bg-orange-50 border-orange-100'
+    : 'text-slate-600 bg-slate-50 border-slate-200';
+  return (
+    <span className={`font-mono text-[8px] ${colors} border px-1 rounded`}>
+      {children}
+    </span>
+  );
+}
+
+// ============================================
+// LegendLine - Single Legend Item with Line Swatch
+// ============================================
+interface LegendLineProps {
+  /** Legend label */
+  label: string;
+  /** Line color (hex) */
+  color: string;
+  /** Line style */
+  lineStyle?: 'solid' | 'dashed';
+  /** Additional className */
+  className?: string;
+}
+
+export function LegendLine({
+  label,
+  color,
+  lineStyle = 'solid',
+  className = '',
+}: LegendLineProps) {
+  return (
+    <div
+      className={`
+        flex items-center gap-1.5
+        cursor-pointer hover:opacity-75 transition-opacity
+        ${className}
+      `.trim()}
+    >
+      <div
+        className="w-2.5 h-0.5"
+        style={{
+          backgroundColor: lineStyle === 'dashed' ? undefined : color,
+          borderBottom: lineStyle === 'dashed' ? `2px dashed ${color}` : undefined,
+        }}
+      />
+      <span className="font-mono text-[9px] font-bold text-slate-700 uppercase">
+        {label}
+      </span>
+    </div>
+  );
+}
+
+/** @deprecated Use StatusDeck instead */
+export const DataCardLegendDock = StatusDeck;
 
 // ============================================
 // AgentButton - Trigger for AI Analysis
