@@ -12,22 +12,16 @@ import {
   DataCard,
   DataCardHeader,
   DataCardCanvas,
+  StatusDeck,
+  StatusPeriod,
+  StatusCount,
+  LegendLine,
 } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
-import { CHART_COLORS, SIGNAL, alpha } from '../../constants/colors';
+import { CHART_COLORS } from '../../constants/colors';
 // SaleType imports removed - Market Core is Resale-only
 import { transformTimeSeries, logFetchDebug, assertKnownVersion, validateResponseGrain } from '../../adapters';
 import { niceMax } from '../../utils/niceAxisMax';
-
-// Technical Archival color palette
-const ARCHIVAL = {
-  barFill: '#64748B',           // Slate-500 - solid muted gray-blue
-  barBorder: '#475569',         // Slate-600 - darker border
-  lineStroke: '#C9A24D',        // Muted Amber - elegant line
-  axisText: '#7A5C26',          // Deep amber - authoritative axis text
-  axisSpine: '#B89A55',         // Warm spine - grounds the numbers
-  gridLine: '#E2E8F0',          // Slate-200 - faint horizontal grid
-};
 
 /**
  * Time Trend Chart - Line + Bar Combo
@@ -124,12 +118,12 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, o
         type: 'bar',
         label: 'Volume',
         data: transactionCounts,
-        // Technical Archival: solid slate fill with darker border
-        backgroundColor: ARCHIVAL.barFill,
-        borderColor: ARCHIVAL.barBorder,
+        // Ocean blue with alpha - consistent with design system
+        backgroundColor: CHART_COLORS.oceanAlpha(0.6),
+        borderColor: CHART_COLORS.ocean,
         borderWidth: 1,
-        borderRadius: 0,  // Sharp corners - brutalist aesthetic
-        // Dense bars - "skyline not fence" (70-80% of slot)
+        borderRadius: 0,
+        // Dense bars - "skyline not fence"
         barPercentage: 0.85,
         categoryPercentage: 0.9,
         yAxisID: 'y',
@@ -139,18 +133,17 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, o
         type: 'line',
         label: 'Quantum',
         data: totalValues,
-        // Technical Archival: Muted Amber - elegant against slate bars
-        borderColor: ARCHIVAL.lineStroke,
+        // Navy - bold signal line
+        borderColor: CHART_COLORS.navy,
         backgroundColor: 'transparent',
-        borderWidth: 2,
-        pointRadius: 0,  // No dots - clean data stream
-        pointHoverRadius: 4,
-        pointHoverBackgroundColor: ARCHIVAL.lineStroke,
-        pointHoverBorderColor: CHART_COLORS.white,
+        borderWidth: 2.5,
+        pointRadius: 0,
+        pointHoverRadius: 5,
+        pointHoverBackgroundColor: CHART_COLORS.white,
+        pointHoverBorderColor: CHART_COLORS.navy,
         pointHoverBorderWidth: 2,
-        // MonotoneX - tensioned wire, no overshoot
         cubicInterpolationMode: 'monotone',
-        tension: 0.4,  // Chart.js monotone needs ~0.4 for proper monotone behavior
+        tension: 0.4,
         fill: false,
         yAxisID: 'y1',
         order: 1,
@@ -160,42 +153,22 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, o
 
   const options = useMemo(() => ({
     ...baseChartJsOptions,
-    // Reserve ~20% space at top for legend (doesn't overlap chart elements)
-    layout: {
-      padding: {
-        top: 40,  // Space for legend
-        right: 8,
-        bottom: 8,
-        left: 8,
-      },
-    },
     interaction: {
       mode: 'index',
       intersect: false,
     },
     plugins: {
+      // Legend disabled - using StatusDeck footer instead
       legend: {
-        display: true,
-        position: 'top',
-        align: 'center',
-        labels: {
-          usePointStyle: true,
-          pointStyle: 'rect',
-          boxWidth: 12,
-          boxHeight: 12,
-          padding: 20,
-          font: { size: 10, family: "'JetBrains Mono', monospace", weight: '600' },
-          color: CHART_COLORS.slate700,
-        },
+        display: false,
       },
       tooltip: {
-        // Terminal readout style - dark bg, monospace, square corners
-        backgroundColor: CHART_COLORS.slate900,
+        backgroundColor: CHART_COLORS.navyAlpha95,
         titleColor: CHART_COLORS.slate100,
         bodyColor: CHART_COLORS.slate300,
-        borderColor: CHART_COLORS.slate700,
+        borderColor: CHART_COLORS.ocean,
         borderWidth: 1,
-        cornerRadius: 0,  // Square - terminal aesthetic
+        cornerRadius: 0,
         padding: 12,
         titleFont: { weight: '600', size: 11, family: "'JetBrains Mono', monospace" },
         bodyFont: { size: 10, family: "'JetBrains Mono', monospace" },
@@ -227,21 +200,21 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, o
     scales: {
       x: {
         grid: {
-          display: false,  // No vertical gridlines - cleaner archival look
+          display: true,
+          color: CHART_COLORS.skyAlpha15,
+          lineWidth: 1,
+          drawTicks: false,
         },
         border: {
           display: true,
-          color: CHART_COLORS.slate800,  // Darker border
+          color: CHART_COLORS.slate300,
           width: 1,
         },
         ticks: {
           ...CHART_AXIS_DEFAULTS.ticks,
           font: { size: 10, family: "'JetBrains Mono', monospace" },
-          maxRotation: 0,  // Horizontal labels
-          minRotation: 0,
-          // Reduce tick density - show every Nth label based on data length
-          autoSkip: true,
-          maxTicksLimit: 12,  // Max ~12 ticks (quarterly for 3 years)
+          maxRotation: 45,
+          minRotation: 45,
         },
       },
       y: {
@@ -252,7 +225,7 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, o
         max: yAxisMax,
         border: {
           display: true,
-          color: CHART_COLORS.slate800,
+          color: CHART_COLORS.slate300,
           width: 1,
         },
         title: {
@@ -262,17 +235,16 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, o
           color: CHART_COLORS.slate500,
         },
         grid: {
-          color: ARCHIVAL.gridLine,  // Faint slate-200 - engineering paper
+          color: CHART_COLORS.skyAlpha20,
           lineWidth: 1,
           drawTicks: false,
-          borderDash: [3, 3],  // Dotted horizontal gridlines
+          borderDash: [3, 3],
         },
         ticks: {
           ...CHART_AXIS_DEFAULTS.ticks,
-          font: { size: 10, family: "'JetBrains Mono', monospace", weight: '500' },
+          font: { size: 10, family: "'JetBrains Mono', monospace" },
           callback: (value) => Math.round(value).toLocaleString(),
           padding: 8,
-          count: 6,  // Sync with right axis for unified grid
         },
       },
       y1: {
@@ -282,20 +254,19 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, o
         min: 0,
         border: {
           display: true,
-          color: ARCHIVAL.axisSpine,  // Visible warm spine - grounds the numbers
-          width: 1.5,
+          color: CHART_COLORS.slate300,
+          width: 1,
         },
         title: {
           display: true,
           text: 'QUANTUM ($)',
-          font: { size: 9, family: "'JetBrains Mono', monospace", weight: '600', letterSpacing: '0.04em' },
-          color: ARCHIVAL.axisText,  // Deep amber - authoritative
+          font: { size: 9, family: "'JetBrains Mono', monospace", weight: '600' },
+          color: CHART_COLORS.slate500,
         },
         grid: { drawOnChartArea: false },
         ticks: {
           ...CHART_AXIS_DEFAULTS.ticks,
-          font: { size: 10, family: "'JetBrains Mono', monospace", weight: '500' },
-          color: ARCHIVAL.axisText,  // Decoupled from line - stronger readability
+          font: { size: 10, family: "'JetBrains Mono', monospace" },
           callback: (value) => {
             if (value >= 1000000000) {
               return `$${(value / 1000000000).toFixed(1)}B`;
@@ -303,7 +274,6 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, o
             return `$${(value / 1000000).toFixed(0)}M`;
           },
           padding: 8,
-          count: 6,  // Sync with left axis for unified grid
         },
       },
     },
@@ -328,8 +298,7 @@ Grouped by ${TIME_LABELS[timeGrouping]}.`;
       height={height + 40}
       staggerIndex={staggerIndex}
     >
-      {/* Technical Archival container: 1px solid black border */}
-      <DataCard className="border-slate-800">
+      <DataCard>
         {/* Debug overlay - shows API call info when Ctrl+Shift+D is pressed */}
         <DebugOverlay />
 
@@ -338,15 +307,23 @@ Grouped by ${TIME_LABELS[timeGrouping]}.`;
           title="Resale Volume & Quantum"
           subtitle={`Grouped by ${TIME_LABELS[timeGrouping]}`}
           info={methodologyText}
-          metadata={<><span className="font-bold text-slate-700">{totalTransactions.toLocaleString()}</span> Txns</>}
         />
 
-        {/* Layer 3: Canvas - flex-grow (legend inside chart at top center) */}
+        {/* Layer 2: Canvas - flex-grow */}
         <DataCardCanvas minHeight={height}>
           <PreviewChartOverlay chartRef={chartRef}>
             <Chart ref={chartRef} type="bar" data={chartData} options={options} />
           </PreviewChartOverlay>
         </DataCardCanvas>
+
+        {/* Layer 3: StatusDeck - h-10 fixed footer with legend */}
+        <StatusDeck
+          left={<StatusPeriod>{safeData.length} Periods ({TIME_LABELS[timeGrouping]})</StatusPeriod>}
+          right={<StatusCount count={totalTransactions} />}
+        >
+          <LegendLine label="Volume" color={CHART_COLORS.ocean} />
+          <LegendLine label="Quantum" color={CHART_COLORS.navy} />
+        </StatusDeck>
       </DataCard>
     </ChartFrame>
   );
