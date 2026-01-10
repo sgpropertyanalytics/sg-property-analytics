@@ -20,10 +20,12 @@ PRICE FIELD POLICY:
 BACKFILL / REVISION STRATEGY:
     URA data can be revised retroactively. Our strategy:
     - Each sync re-fetches the last REVISION_WINDOW_MONTHS of data (default: 3 months)
-    - Use row_hash-based upsert (ON CONFLICT DO NOTHING) for idempotency
+    - Use row_hash-based upsert with ON CONFLICT DO UPDATE to catch revisions
+    - Fields that can change: price, area_sqft, psf, floor_range, sale_type, district, nett_price
     - Historical data beyond the window is not re-synced unless explicit full refresh
+    - Track inserted_rows vs updated_rows for monitoring
 
-    This balances freshness vs. API load.
+    This balances freshness vs. API load while allowing corrections.
 
 Usage:
     from services.ura_canonical_mapper import URACanonicalMapper
