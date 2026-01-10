@@ -10,7 +10,15 @@ import { getAggregate } from '../../api/client';
 import { useZustandFilters } from '../../stores';
 import { TIME_GROUP_BY } from '../../context/PowerBIFilter';
 import { useSubscription } from '../../context/SubscriptionContext';
-import { KeyInsightBox, PreviewChartOverlay, ChartSlot, InlineCard, InlineCardRow } from '../ui';
+import {
+  PreviewChartOverlay,
+  DataCard,
+  DataCardHeader,
+  DataCardToolbar,
+  ToolbarStat,
+  DataCardCanvas,
+  DataCardFooter,
+} from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 import { CHART_COLORS } from '../../constants/colors';
 import {
@@ -18,7 +26,6 @@ import {
   calculateCompressionScore,
   calculateHistoricalBaseline,
   calculateAverageSpreads,
-  detectMarketSignals,
   logFetchDebug,
   assertKnownVersion,
   validateResponseGrain,
@@ -57,8 +64,8 @@ function PriceCompressionChartBase({ height = 380, saleType = null, sharedData =
   // Extract filter values directly (simple, explicit)
   const timeframe = filters.timeFilter?.type === 'preset' ? filters.timeFilter.value : 'Y1';
   const bedroom = filters.bedroomTypes?.join(',') || '';
-  const districts = filters.districts?.join(',') || '';
-  const { isPremium, isFreeResolved } = useSubscription();
+  // district excluded - shows all regions for comparison
+  const { isFreeResolved } = useSubscription();
 
   // UI state (not data state - that comes from useAbortableQuery)
   const chartRef = useRef(null);
@@ -150,7 +157,6 @@ function PriceCompressionChartBase({ height = 380, saleType = null, sharedData =
     () => calculateCompressionScore(data, safeBaselineData),
     [data, safeBaselineData]
   );
-  const marketSignals = useMemo(() => detectMarketSignals(data), [data]);
   const averageSpreads = useMemo(() => calculateAverageSpreads(data), [data]);
   const latestData = data[data.length - 1] || {};
 
@@ -247,11 +253,24 @@ function PriceCompressionChartBase({ height = 380, saleType = null, sharedData =
     },
   };
 
-  // Card layout: flex column with fixed height
-  const cardHeight = height + 200;
+  // Methodology text for (i) tooltip
+  const methodologyText = `Spreads narrowing = suburban catching up (compression).
+Spreads widening = prime outperforming (fragmentation).
+Watch for lines dipping below $0 — that's a price inversion anomaly.`;
+
+  // Format spread value for display
+  const formatSpread = (spread, avgSpread) => {
+    if (spread == null) return '—';
+    const pctVsAvg = avgSpread && avgSpread !== 0
+      ? Math.round(((spread - avgSpread) / Math.abs(avgSpread)) * 100)
+      : null;
+    const pctText = pctVsAvg !== null
+      ? (pctVsAvg < 0 ? `${pctVsAvg}%` : `+${pctVsAvg}%`)
+      : '';
+    return `$${spread.toLocaleString()} ${pctText}`;
+  };
 
   // CRITICAL: containerRef must be OUTSIDE ChartFrame for IntersectionObserver to work
-  // ChartFrame only renders children when not in loading state, so ref would be null during load
   return (
     <div ref={containerRef}>
     <ChartFrame
@@ -264,159 +283,63 @@ function PriceCompressionChartBase({ height = 380, saleType = null, sharedData =
       height={350}
       staggerIndex={staggerIndex}
     >
-      <div
-        className="weapon-card hud-corner weapon-shadow overflow-hidden flex flex-col"
-        style={{ height: cardHeight }}
-      >
-      {/* Header - shrink-0 */}
-      <div className="px-3 py-2.5 md:px-4 md:py-3 border-b border-mono-muted shrink-0">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <h3 className="font-semibold text-brand-navy text-sm md:text-base">
-              Market Compression Analysis
-            </h3>
-            <p className="text-xs text-brand-blue mt-0.5">
-              Spread widening = fragmentation; spread narrowing = compression ({TIME_LABELS[timeGrouping]})
-            </p>
-          </div>
-        </div>
+      <DataCard>
+        {/* Header: h-14 fixed */}
+        <DataCardHeader
+          title="Market Compression Analysis"
+          info={methodologyText}
+        />
 
-        {/* KPI Row - Using standardized InlineCard components */}
-        <InlineCardRow blur={isFreeResolved}>
-          {/* Compression Score */}
-          <InlineCard
+        {/* Toolbar: h-20 fixed - 3 columns for score + spreads */}
+        <DataCardToolbar columns={3} blur={isFreeResolved}>
+          <ToolbarStat
             label="Compression Score"
-            value={compressionScore.score}
-            subtext={compressionScore.label}
+            value={
+              <span className={
+                compressionScore.score >= 60 ? 'text-emerald-600' :
+                compressionScore.score >= 40 ? 'text-amber-600' :
+                'text-red-600'
+              }>
+                {compressionScore.score}
+              </span>
+            }
+            subtext={
+              compressionScore.score >= 60 ? 'tight' :
+              compressionScore.score >= 40 ? 'moderate' :
+              'wide'
+            }
           />
-
-          {/* Smart Market Signal Cards */}
-          <MarketSignalCard
-            type="ccr-rcr"
-            spread={latestData.ccrRcrSpread}
-            avgSpread={averageSpreads.ccrRcr}
-            isInverted={marketSignals.ccrDiscount}
+          <ToolbarStat
+            label="CCR > RCR Premium"
+            value={latestData.ccrRcrSpread != null ? `+$${latestData.ccrRcrSpread.toLocaleString()} PSF` : '—'}
+            subtext={averageSpreads.ccrRcr ? `${Math.round(((latestData.ccrRcrSpread - averageSpreads.ccrRcr) / Math.abs(averageSpreads.ccrRcr)) * 100)}% vs avg` : undefined}
+            trend={latestData.ccrRcrSpread > averageSpreads.ccrRcr ? 'up' : latestData.ccrRcrSpread < averageSpreads.ccrRcr ? 'down' : 'neutral'}
           />
-          <MarketSignalCard
-            type="rcr-ocr"
-            spread={latestData.rcrOcrSpread}
-            avgSpread={averageSpreads.rcrOcr}
-            isInverted={marketSignals.ocrOverheated}
+          <ToolbarStat
+            label="RCR > OCR Premium"
+            value={latestData.rcrOcrSpread != null ? `+$${latestData.rcrOcrSpread.toLocaleString()} PSF` : '—'}
+            subtext={averageSpreads.rcrOcr ? `${Math.round(((latestData.rcrOcrSpread - averageSpreads.rcrOcr) / Math.abs(averageSpreads.rcrOcr)) * 100)}% vs avg` : undefined}
+            trend={latestData.rcrOcrSpread > averageSpreads.rcrOcr ? 'up' : latestData.rcrOcrSpread < averageSpreads.rcrOcr ? 'down' : 'neutral'}
           />
-        </InlineCardRow>
-      </div>
+        </DataCardToolbar>
 
-      {/* How to Interpret - shrink-0 */}
-      <div className="shrink-0">
-        <KeyInsightBox title="Reading this Chart" variant="info" compact>
-          <p>
-            <strong>Spreads narrowing</strong> = suburban catching up (compression). <strong>Spreads widening</strong> = prime outperforming (fragmentation). Watch for lines dipping below $0 — that's a price inversion anomaly.
-          </p>
-        </KeyInsightBox>
-      </div>
+        {/* Canvas: flex-grow (Tier 2 Unified - legend in toolbar via labels) */}
+        <DataCardCanvas minHeight={height}>
+          <PreviewChartOverlay chartRef={chartRef}>
+            <Line ref={chartRef} data={spreadChartData} options={spreadChartOptions} />
+          </PreviewChartOverlay>
+        </DataCardCanvas>
 
-      {/* Main Spread Chart - Chart.js handles data updates efficiently without key remount */}
-      {/* ChartFrame handles empty state, so we always render the chart here */}
-      <ChartSlot>
-        <PreviewChartOverlay chartRef={chartRef}>
-          <Line ref={chartRef} data={spreadChartData} options={spreadChartOptions} />
-        </PreviewChartOverlay>
-      </ChartSlot>
-
-      {/* Custom SVG Legend */}
-      <div className="flex justify-center gap-6 py-2 shrink-0">
-        <div className="flex items-center gap-2">
-          <svg width="32" height="8">
-            <line x1="0" y1="4" x2="32" y2="4" stroke={CHART_COLORS.navy} strokeWidth={2} />
-          </svg>
-          <span className="text-xs" style={{ color: CHART_COLORS.textMuted }}>
-            CCR-RCR Spread
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <svg width="32" height="8">
-            <line x1="0" y1="4" x2="32" y2="4" stroke={CHART_COLORS.ocean} strokeWidth={2} strokeDasharray="8 4" />
-          </svg>
-          <span className="text-xs" style={{ color: CHART_COLORS.textMuted }}>
-            RCR-OCR Spread
-          </span>
-        </div>
-      </div>
-
-      {/* Footer - fixed height h-11 for consistent alignment */}
-      <div className="shrink-0 h-11 px-4 bg-brand-sand/30 border-t border-brand-sky/30 flex items-center justify-end gap-3 text-xs text-brand-blue">
-        <span className="truncate">{data.length} periods</span>
-      </div>
-      </div>
+        {/* Footer */}
+        <DataCardFooter secondary={`${TIME_LABELS[timeGrouping]} view`}>
+          {data.length} periods
+        </DataCardFooter>
+      </DataCard>
     </ChartFrame>
     </div>
   );
 }
 
 export const PriceCompressionChart = React.memo(PriceCompressionChartBase);
-
-// ============================================
-// SUB-COMPONENTS
-// ============================================
-
-/**
- * Smart Market Signal Card - Uses InlineCard with variant support
- * Shows + sign, value, and % vs average
- */
-function MarketSignalCard({ type, spread, avgSpread, isInverted }) {
-  if (spread == null) return null;
-
-  // Calculate % difference from average
-  const pctVsAvg = avgSpread && avgSpread !== 0
-    ? Math.round(((spread - avgSpread) / Math.abs(avgSpread)) * 100)
-    : null;
-
-  const labels = {
-    'ccr-rcr': 'CCR > RCR Premium',
-    'rcr-ocr': 'RCR > OCR Premium',
-  };
-
-  // Inverted states (anomalies)
-  if (isInverted) {
-    if (type === 'ccr-rcr') {
-      // CCR < RCR: Prime Discount (opportunity)
-      return (
-        <InlineCard
-          label="Market Opportunity"
-          value={`−$${Math.abs(spread).toLocaleString()} PSF`}
-          subtext="Prime Discount"
-          variant="success"
-        />
-      );
-    }
-    if (type === 'rcr-ocr') {
-      // OCR > RCR: Risk Alert
-      return (
-        <InlineCard
-          label="Risk Alert"
-          value={`−$${Math.abs(spread).toLocaleString()} PSF`}
-          subtext="OCR Overheated"
-          variant="danger"
-        />
-      );
-    }
-  }
-
-  // Normal state
-  const isAboveAvg = pctVsAvg !== null && pctVsAvg > 0;
-  const isBelowAvg = pctVsAvg !== null && pctVsAvg < 0;
-  const subtextValue = pctVsAvg !== null
-    ? (isBelowAvg ? `${pctVsAvg}% below avg` : isAboveAvg ? `+${pctVsAvg}% above avg` : 'At average')
-    : undefined;
-
-  return (
-    <InlineCard
-      label={labels[type]}
-      value={`+$${spread.toLocaleString()} PSF`}
-      subtext={subtextValue}
-      trend={isBelowAvg ? 'up' : isAboveAvg ? 'down' : 'neutral'}
-    />
-  );
-}
 
 export default PriceCompressionChart;

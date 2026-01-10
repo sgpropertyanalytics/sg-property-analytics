@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { useInView } from 'react-intersection-observer';
 // Phase 2: Using TanStack Query via useAppQuery wrapper
 import { useAppQuery } from '../../hooks/useAppQuery';
@@ -10,7 +10,17 @@ import { getAggregate } from '../../api/client';
 import { useZustandFilters } from '../../stores/filterStore';
 import { TIME_GROUP_BY } from '../../context/PowerBIFilter';
 import { useSubscription } from '../../context/SubscriptionContext';
-import { PreviewChartOverlay, ChartSlot, InlineCard, InlineCardRow } from '../ui';
+import {
+  PreviewChartOverlay,
+  DataCard,
+  DataCardHeader,
+  DataCardToolbar,
+  ToolbarStat,
+  DataCardCanvas,
+  DataCardFooter,
+  AgentButton,
+  AgentFooter,
+} from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 import { CHART_COLORS } from '../../constants/colors';
 import { REGION } from '../../constants/colors';
@@ -50,9 +60,10 @@ function AbsolutePsfChartBase({ height = 300, saleType = null, sharedData = null
   // Extract filter values directly (simple, explicit)
   const timeframe = filters.timeFilter?.type === 'preset' ? filters.timeFilter.value : 'Y1';
   const bedroom = filters.bedroomTypes?.join(',') || '';
-  const districts = filters.districts?.join(',') || '';
-  const { isPremium, isFreeResolved } = useSubscription();
+  // district excluded - shows all regions for comparison
+  const { isFreeResolved } = useSubscription();
   const chartRef = useRef(null);
+  const [isAgentOpen, setIsAgentOpen] = useState(false);
 
   // Skip internal fetch if parent provides sharedData (eliminates duplicate API call)
   // Use loose equality to catch both null AND undefined (common when data hasn't arrived)
@@ -173,8 +184,11 @@ function AbsolutePsfChartBase({ height = 300, saleType = null, sharedData = null
     ],
   };
 
-  // Card layout: flex column with fixed height (must match PriceCompressionChart for grid alignment)
-  const cardHeight = height + 200;
+  // Methodology text for (i) tooltip
+  const methodologyText = `Shows median PSF by region over time.
+CCR = Core Central (Districts 9, 10, 11, downtown).
+RCR = Rest of Central (city fringe).
+OCR = Outside Central (suburban).`;
 
   // Chart options
   const chartOptions = {
@@ -191,17 +205,6 @@ function AbsolutePsfChartBase({ height = 300, saleType = null, sharedData = null
           boxHeight: 6,
           padding: 15,
           font: { size: 11 },
-          generateLabels: (chart) => {
-            return chart.data.datasets.map((dataset, i) => ({
-              text: dataset.label,
-              fillStyle: dataset.backgroundColor,
-              strokeStyle: dataset.backgroundColor,
-              lineWidth: 0,
-              pointStyle: 'circle',
-              hidden: !chart.isDatasetVisible(i),
-              datasetIndex: i,
-            }));
-          },
         },
       },
       tooltip: {
@@ -261,73 +264,74 @@ function AbsolutePsfChartBase({ height = 300, saleType = null, sharedData = null
       height={height}
       staggerIndex={staggerIndex}
     >
-      <div
-        className="weapon-card hud-corner weapon-shadow overflow-hidden flex flex-col"
-        style={{ height: cardHeight }}
-      >
-        {/* Header */}
-        <div className="px-3 py-2.5 md:px-4 md:py-3 border-b border-mono-muted shrink-0">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <h3 className="font-semibold text-brand-navy text-sm md:text-base">
-                Absolute PSF by Region
-              </h3>
-              <p className="text-xs text-brand-blue mt-0.5">
-                Median PSF trend ({TIME_LABELS[timeGrouping]}) • Values show latest {TIME_LABELS[timeGrouping].toLowerCase()}
-              </p>
-            </div>
-          </div>
+      <DataCard>
+        {/* Header: h-14 fixed with Agent button */}
+        <DataCardHeader
+          title="Absolute PSF by Region"
+          subtitle={`Median PSF trend (${TIME_LABELS[timeGrouping]}) • Values show latest ${TIME_LABELS[timeGrouping].toLowerCase()}`}
+          info={methodologyText}
+          controls={
+            <AgentButton
+              onClick={() => setIsAgentOpen(!isAgentOpen)}
+              isActive={isAgentOpen}
+            />
+          }
+        />
 
-          {/* KPI Row - Using standardized InlineCard components */}
-          <InlineCardRow blur={isFreeResolved}>
-            {latestData.ccr != null && (
-              <InlineCard
-                label="CCR"
-                value={`$${Math.round(latestData.ccr).toLocaleString()}`}
-                subtext={ccrChange !== null ? `${ccrChange > 0 ? '+' : ''}${ccrChange}% vs prev` : undefined}
-                color={REGION_COLORS.CCR}
-                trend={ccrChange > 0 ? 'up' : ccrChange < 0 ? 'down' : 'neutral'}
-              />
-            )}
-            {latestData.rcr != null && (
-              <InlineCard
-                label="RCR"
-                value={`$${Math.round(latestData.rcr).toLocaleString()}`}
-                subtext={rcrChange !== null ? `${rcrChange > 0 ? '+' : ''}${rcrChange}% vs prev` : undefined}
-                color={REGION_COLORS.RCR}
-                trend={rcrChange > 0 ? 'up' : rcrChange < 0 ? 'down' : 'neutral'}
-              />
-            )}
-            {latestData.ocr != null && (
-              <InlineCard
-                label="OCR"
-                value={`$${Math.round(latestData.ocr).toLocaleString()}`}
-                subtext={ocrChange !== null ? `${ocrChange > 0 ? '+' : ''}${ocrChange}% vs prev` : undefined}
-                color={REGION_COLORS.OCR}
-                trend={ocrChange > 0 ? 'up' : ocrChange < 0 ? 'down' : 'neutral'}
-              />
-            )}
-          </InlineCardRow>
-        </div>
+        {/* Toolbar: h-20 fixed - 3 columns for CCR/RCR/OCR */}
+        <DataCardToolbar columns={3} blur={isFreeResolved}>
+          <ToolbarStat
+            label="CCR"
+            color={REGION_COLORS.CCR}
+            value={latestData.ccr != null ? `$${Math.round(latestData.ccr).toLocaleString()}` : '—'}
+            subtext={ccrChange !== null ? `${ccrChange > 0 ? '+' : ''}${ccrChange}% vs prev` : undefined}
+            trend={ccrChange > 0 ? 'up' : ccrChange < 0 ? 'down' : 'neutral'}
+          />
+          <ToolbarStat
+            label="RCR"
+            color={REGION_COLORS.RCR}
+            value={latestData.rcr != null ? `$${Math.round(latestData.rcr).toLocaleString()}` : '—'}
+            subtext={rcrChange !== null ? `${rcrChange > 0 ? '+' : ''}${rcrChange}% vs prev` : undefined}
+            trend={rcrChange > 0 ? 'up' : rcrChange < 0 ? 'down' : 'neutral'}
+          />
+          <ToolbarStat
+            label="OCR"
+            color={REGION_COLORS.OCR}
+            value={latestData.ocr != null ? `$${Math.round(latestData.ocr).toLocaleString()}` : '—'}
+            subtext={ocrChange !== null ? `${ocrChange > 0 ? '+' : ''}${ocrChange}% vs prev` : undefined}
+            trend={ocrChange > 0 ? 'up' : ocrChange < 0 ? 'down' : 'neutral'}
+          />
+        </DataCardToolbar>
 
-        {/* Chart Area */}
-        {/* ChartFrame handles empty state, so we always render the chart here */}
-        <ChartSlot>
+        {/* Canvas: flex-grow (Tier 2 Unified - legend in toolbar via color dots) */}
+        <DataCardCanvas minHeight={height}>
           <PreviewChartOverlay chartRef={chartRef}>
             <Line ref={chartRef} data={chartData} options={chartOptions} />
           </PreviewChartOverlay>
-        </ChartSlot>
+        </DataCardCanvas>
 
         {/* Footer */}
-        <div className="shrink-0 h-11 px-4 bg-brand-sand/30 border-t border-brand-sky/30 flex items-center justify-between gap-3 text-xs text-brand-blue">
-          <span className="truncate">{data.length} periods</span>
-          <span className="text-[10px]">
-            {latestData.counts
+        <DataCardFooter
+          secondary={
+            latestData.counts
               ? `${(latestData.counts.CCR || 0) + (latestData.counts.RCR || 0) + (latestData.counts.OCR || 0)} total txns`
-              : ''}
-          </span>
-        </div>
-      </div>
+              : undefined
+          }
+        >
+          {data.length} periods
+        </DataCardFooter>
+
+        {/* Agent Analysis Footer - expandable on-demand */}
+        <AgentFooter isOpen={isAgentOpen}>
+          {ccrChange > 0 && rcrChange > 0 && ocrChange > 0
+            ? 'All regions showing positive momentum. Market-wide appreciation detected.'
+            : ccrChange > rcrChange && rcrChange > ocrChange
+            ? 'Premium outperformance pattern. CCR leading gains suggests flight-to-quality.'
+            : ocrChange > rcrChange && rcrChange > ccrChange
+            ? 'Suburban catch-up detected. OCR outpacing core regions - compression signal.'
+            : 'Mixed signals across regions. Monitor for trend confirmation.'}
+        </AgentFooter>
+      </DataCard>
     </ChartFrame>
     </div>
   );

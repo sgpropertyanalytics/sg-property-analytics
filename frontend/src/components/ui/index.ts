@@ -36,5 +36,25 @@ export { ChartPanel } from './ChartPanel';
 export { DataSection } from './DataSection';
 export { ChartSlot } from './ChartSlot';
 
+// Full-Bleed Data Toolbar System (Production-grade dashboard template)
+export {
+  DataCard,
+  DataCardHeader,
+  DataCardToolbar,
+  DataCardCanvas,
+  DataCardFooter,
+  ToolbarStat,
+  ToolbarLegend,
+  LegendDot,
+  AgentButton,
+  AgentFooter,
+  // Legacy (backward compatibility)
+  DataRailItem,
+  FloatingLegendItem,
+  DataCardInsightStrip,
+  ChartLegendOverlay,
+  LegendItem,
+} from './DataCard';
+
 // Delta indicators (Luxury design system)
 export { DeltaPill, DeltaText } from './DeltaPill';

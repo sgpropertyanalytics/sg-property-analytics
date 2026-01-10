@@ -1,13 +1,21 @@
 import React, { useState, useRef, useMemo } from 'react';
 // Phase 2: Using TanStack Query via useAppQuery wrapper
-import { useAppQuery, QueryStatus } from '../../hooks';
+import { useAppQuery } from '../../hooks';
 import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
 import { Bar } from 'react-chartjs-2';
 // Phase 3.2: Migrated from usePowerBIFilters to useZustandFilters
 import { useZustandFilters } from '../../stores';
 import { getDashboard } from '../../api/client';
-import { KeyInsightBox, PreviewChartOverlay, ChartSlot, InlineCard, InlineCardRow } from '../ui';
+import {
+  PreviewChartOverlay,
+  DataCard,
+  DataCardHeader,
+  DataCardToolbar,
+  ToolbarStat,
+  DataCardCanvas,
+  DataCardFooter,
+} from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 import { CHART_COLORS } from '../../constants/colors';
 import {
@@ -56,7 +64,7 @@ function PriceDistributionChartBase({
   // Extract filter values directly (simple, explicit)
   const timeframe = filters.timeFilter?.type === 'preset' ? filters.timeFilter.value : 'Y1';
   const bedroom = filters.bedroomTypes?.join(',') || '';
-  const districts = filters.districts?.join(',') || '';
+  // district excluded - histogram shows overall distribution (not location-filtered)
 
   const [showFullRange, setShowFullRange] = useState(false);
   const chartRef = useRef(null);
@@ -256,9 +264,11 @@ function PriceDistributionChartBase({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [bins, displayCount, medianBinIndex, q1BinIndex, q3BinIndex]);
 
-  // Card layout contract: flex column with fixed total height
-  // Header/Note/Footer are shrink-0, chart slot is flex-1 min-h-0
-  const cardHeight = height + 190; // height prop for chart + ~190px for header(with stats)/note/footer
+  // Methodology text for (i) tooltip
+  const methodologyText = `Median — The typical transaction price.
+Q1–Q3 — Where the middle 50% of homes sell.
+IQR — How wide prices vary within the market.
+Mode — The most common price range.`;
 
   return (
     <ChartFrame
@@ -271,76 +281,60 @@ function PriceDistributionChartBase({
       height={350}
       staggerIndex={staggerIndex}
     >
-      <div
-        className="weapon-card hud-corner weapon-shadow overflow-hidden flex flex-col"
-        style={{ height: cardHeight }}
-      >
-      {/* Header - shrink-0 */}
-      <div className="px-4 py-3 border-b border-mono-muted shrink-0">
-        <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-brand-navy">Price Distribution</h3>
-          {/* Toggle for luxury tail */}
-          <button
-            onClick={() => setShowFullRange(!showFullRange)}
-            className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-              showFullRange
-                ? 'bg-brand-navy text-white border-brand-navy'
-                : 'bg-white text-brand-blue border-brand-sky hover:bg-brand-sand/50'
-            }`}
-          >
-            {showFullRange ? 'Hide luxury tail' : 'Show luxury tail'}
-          </button>
-        </div>
+      <DataCard>
+        {/* Header: h-14 fixed */}
+        <DataCardHeader
+          title="Price Distribution"
+          info={methodologyText}
+          controls={
+            <button
+              onClick={() => setShowFullRange(!showFullRange)}
+              className={`text-xs font-medium px-2 py-1 rounded border transition-colors ${
+                showFullRange
+                  ? 'bg-slate-800 text-white border-slate-800'
+                  : 'text-slate-500 border-slate-200 hover:text-blue-600 hover:border-blue-200'
+              }`}
+            >
+              {showFullRange ? 'Hide luxury tail' : 'Show luxury tail'}
+            </button>
+          }
+        />
 
-        {/* Stats row - Using standardized InlineCard components (compact size) */}
-        <InlineCardRow compact className="mt-2">
-          {stats?.median && (
-            <InlineCard label="Median" value={formatPrice(stats.median)} size="compact" />
-          )}
-          {stats?.p25 && stats?.p75 && (
-            <InlineCard label="Q1–Q3" value={formatPriceRange(stats.p25, stats.p75, { compact: true })} size="compact" />
-          )}
-          {stats?.iqr && (
-            <InlineCard label="IQR" value={formatPrice(stats.iqr)} size="compact" />
-          )}
-          {modeBucket && (
-            <InlineCard label="Mode" value={modeBucket.label} size="compact" />
-          )}
-        </InlineCardRow>
-      </div>
+        {/* Toolbar: h-20 fixed, full-bleed gray with divide-x */}
+        <DataCardToolbar columns={4}>
+          <ToolbarStat
+            label="Median"
+            value={stats?.median ? formatPrice(stats.median) : '—'}
+          />
+          <ToolbarStat
+            label="Q1-Q3"
+            value={stats?.p25 && stats?.p75 ? formatPriceRange(stats.p25, stats.p75, { compact: true }) : '—'}
+          />
+          <ToolbarStat
+            label="IQR"
+            value={stats?.iqr ? formatPrice(stats.iqr) : '—'}
+          />
+          <ToolbarStat
+            label="Mode"
+            value={modeBucket?.label || '—'}
+          />
+        </DataCardToolbar>
 
-      {/* How to Interpret - shrink-0 */}
-      <div className="shrink-0">
-        <KeyInsightBox title="How to Interpret this Chart" variant="info" compact>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-0.5">
-            <div><span className="font-semibold text-brand-navy">Median</span> — The typical transaction price.</div>
-            <div><span className="font-semibold text-brand-navy">Q1–Q3</span> — Where the middle 50% of homes sell.</div>
-            <div><span className="font-semibold text-brand-navy">IQR</span> — How wide prices vary within the market.</div>
-            <div><span className="font-semibold text-brand-navy">Mode</span> — The most common price range.</div>
-          </div>
-        </KeyInsightBox>
-      </div>
+        {/* Canvas: flex-grow */}
+        <DataCardCanvas minHeight={height}>
+          <PreviewChartOverlay chartRef={chartRef}>
+            <Bar ref={chartRef} data={chartData} options={options} />
+          </PreviewChartOverlay>
+        </DataCardCanvas>
 
-      {/* Chart slot - Chart.js handles data updates efficiently without key remount */}
-      <ChartSlot>
-        <PreviewChartOverlay chartRef={chartRef}>
-          <Bar ref={chartRef} data={chartData} options={options} />
-        </PreviewChartOverlay>
-      </ChartSlot>
-
-      {/* Footer - fixed height h-11 for consistent alignment */}
-      <div className="shrink-0 h-11 px-4 bg-brand-sand/30 border-t border-brand-sky/30 flex items-center justify-between gap-3 text-xs text-brand-blue">
-        <span className="truncate min-w-0 flex-1">
+        {/* Footer */}
+        <DataCardFooter
+          secondary={`${formatPrice(minPrice)} – ${formatPrice(maxPrice)}`}
+        >
           {displayCount.toLocaleString()} transactions
-          {!showFullRange && tail?.pct > 0 && (
-            <span className="ml-1 text-amber-600">• Top {tail.pct}% hidden</span>
-          )}
-        </span>
-        <span className="shrink-0 text-brand-sky hidden sm:block">
-          {formatPrice(minPrice)} – {formatPrice(maxPrice)} ({bins.length} bins)
-        </span>
-      </div>
-      </div>
+          {!showFullRange && tail?.pct > 0 && ` • Top ${tail.pct}% hidden`}
+        </DataCardFooter>
+      </DataCard>
     </ChartFrame>
   );
 }
