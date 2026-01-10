@@ -120,8 +120,8 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
   if (layout === 'horizontal') {
     return (
       <div className="py-3">
-        {/* Frame - visual boundary only */}
-        <div className="bg-white border border-slate-300 py-3">
+        {/* Frame - frosted glass with subtle border */}
+        <div className="bg-white/70 border border-slate-200/80 py-3 shadow-sm">
           {/* Rail - overflow safety, hidden scrollbar */}
           <div className="overflow-x-auto scrollbar-none">
             {/* Centering wrapper - centers when fits, left-anchors on overflow */}
