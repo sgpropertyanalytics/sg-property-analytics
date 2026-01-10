@@ -1,4 +1,4 @@
-import React, { useRef, useMemo, useEffect, useState } from 'react';
+import React, { useRef, useMemo } from 'react';
 // Phase 2: Using TanStack Query via useTimeSeriesQuery (auto grain aggregation)
 import { useTimeSeriesQuery, useDebugOverlay } from '../../hooks';
 import { ChartFrame } from '../common/ChartFrame';
@@ -14,10 +14,20 @@ import {
   DataCardCanvas,
 } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
-import { CHART_COLORS } from '../../constants/colors';
+import { CHART_COLORS, SIGNAL, alpha } from '../../constants/colors';
 // SaleType imports removed - Market Core is Resale-only
 import { transformTimeSeries, logFetchDebug, assertKnownVersion, validateResponseGrain } from '../../adapters';
 import { niceMax } from '../../utils/niceAxisMax';
+
+// Technical Archival color palette
+const ARCHIVAL = {
+  barFill: '#64748B',           // Slate-500 - solid muted gray-blue
+  barBorder: '#475569',         // Slate-600 - darker border
+  lineStroke: '#C9A24D',        // Muted Amber - elegant line
+  axisText: '#7A5C26',          // Deep amber - authoritative axis text
+  axisSpine: '#B89A55',         // Warm spine - grounds the numbers
+  gridLine: '#E2E8F0',          // Slate-200 - faint horizontal grid
+};
 
 /**
  * Time Trend Chart - Line + Bar Combo
@@ -32,32 +42,6 @@ import { niceMax } from '../../utils/niceAxisMax';
 const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
 
 /**
- * Create diagonal hatch pattern for Chart.js bars
- * Mimics architectural/blueprint drawing style
- */
-function createHatchPattern(strokeColor = '#547792', bgColor = 'rgba(84, 119, 146, 0.15)') {
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  const size = 8;
-  canvas.width = size;
-  canvas.height = size;
-
-  // Background fill (subtle)
-  ctx.fillStyle = bgColor;
-  ctx.fillRect(0, 0, size, size);
-
-  // Diagonal lines
-  ctx.strokeStyle = strokeColor;
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(0, size);
-  ctx.lineTo(size, 0);
-  ctx.stroke();
-
-  return ctx.createPattern(canvas, 'repeat');
-}
-
-/**
  * @param {{
  *  height?: number,
  *  saleType?: string | null,
@@ -68,14 +52,6 @@ function createHatchPattern(strokeColor = '#547792', bgColor = 'rgba(84, 119, 14
 function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, onDrillThrough: _onDrillThrough }) {
   // Phase 4: Simplified filter access - read values directly from Zustand
   const { filters, timeGrouping } = useZustandFilters();
-
-  // Create hatch pattern for blueprint-style bars
-  const [hatchPattern, setHatchPattern] = useState(null);
-  useEffect(() => {
-    // Create pattern on mount (requires DOM)
-    const pattern = createHatchPattern('#547792', 'rgba(84, 119, 146, 0.12)');
-    setHatchPattern(pattern);
-  }, []);
 
   // Extract filter values directly (simple, explicit)
   const timeframe = filters.timeFilter?.type === 'preset' ? filters.timeFilter.value : 'Y1';
@@ -146,30 +122,35 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, o
     datasets: [
       {
         type: 'bar',
-        label: 'Resale Transactions',
+        label: 'Volume',
         data: transactionCounts,
-        // Blueprint aesthetic: hatch pattern fill with solid stroke
-        backgroundColor: hatchPattern || CHART_COLORS.oceanAlpha(0.15),
-        borderColor: CHART_COLORS.ocean,  // Solid stroke defines the bar
-        borderWidth: 1.5,
-        borderRadius: 0,  // Sharp corners - architectural/technical look
-        barPercentage: 0.7,  // Thinner bars for precision feel
+        // Technical Archival: solid slate fill with darker border
+        backgroundColor: ARCHIVAL.barFill,
+        borderColor: ARCHIVAL.barBorder,
+        borderWidth: 1,
+        borderRadius: 0,  // Sharp corners - brutalist aesthetic
+        // Dense bars - "skyline not fence" (70-80% of slot)
+        barPercentage: 0.85,
+        categoryPercentage: 0.9,
         yAxisID: 'y',
         order: 2,
       },
       {
         type: 'line',
-        label: 'Total Transaction Value',
+        label: 'Quantum',
         data: totalValues,
-        borderColor: CHART_COLORS.navy,  // Dark navy - bold signal line
+        // Technical Archival: Muted Amber - elegant against slate bars
+        borderColor: ARCHIVAL.lineStroke,
         backgroundColor: 'transparent',
-        borderWidth: 2.5,  // Thicker for visual hierarchy
-        pointRadius: 0,
-        pointHoverRadius: 5,
-        pointHoverBackgroundColor: CHART_COLORS.white,
-        pointHoverBorderColor: CHART_COLORS.navy,
+        borderWidth: 2,
+        pointRadius: 0,  // No dots - clean data stream
+        pointHoverRadius: 4,
+        pointHoverBackgroundColor: ARCHIVAL.lineStroke,
+        pointHoverBorderColor: CHART_COLORS.white,
         pointHoverBorderWidth: 2,
-        stepped: 'middle',  // Technical stepped interpolation - emphasizes discrete data points
+        // MonotoneX - tensioned wire, no overshoot
+        cubicInterpolationMode: 'monotone',
+        tension: 0.4,  // Chart.js monotone needs ~0.4 for proper monotone behavior
         fill: false,
         yAxisID: 'y1',
         order: 1,
@@ -179,47 +160,58 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, o
 
   const options = useMemo(() => ({
     ...baseChartJsOptions,
+    // Reserve ~20% space at top for legend (doesn't overlap chart elements)
+    layout: {
+      padding: {
+        top: 40,  // Space for legend
+        right: 8,
+        bottom: 8,
+        left: 8,
+      },
+    },
     interaction: {
       mode: 'index',
       intersect: false,
     },
     plugins: {
       legend: {
-        position: 'bottom',
-        align: 'start',
+        display: true,
+        position: 'top',
+        align: 'center',
         labels: {
           usePointStyle: true,
-          pointStyle: 'rect',  // Sharp rectangle - matches angular aesthetic
+          pointStyle: 'rect',
+          boxWidth: 12,
+          boxHeight: 12,
           padding: 20,
-          font: { size: 11, family: "'JetBrains Mono', monospace", weight: '500' },
-          color: CHART_COLORS.slate600,
-          boxWidth: 10,
-          boxHeight: 10,
+          font: { size: 10, family: "'JetBrains Mono', monospace", weight: '600' },
+          color: CHART_COLORS.slate700,
         },
       },
       tooltip: {
-        backgroundColor: CHART_COLORS.navyAlpha95,
+        // Terminal readout style - dark bg, monospace, square corners
+        backgroundColor: CHART_COLORS.slate900,
         titleColor: CHART_COLORS.slate100,
         bodyColor: CHART_COLORS.slate300,
-        borderColor: CHART_COLORS.ocean,
+        borderColor: CHART_COLORS.slate700,
         borderWidth: 1,
-        cornerRadius: 0,  // Sharp corners - technical aesthetic
+        cornerRadius: 0,  // Square - terminal aesthetic
         padding: 12,
-        titleFont: { weight: '600', size: 12, family: "'JetBrains Mono', monospace" },
-        bodyFont: { size: 11, family: "'JetBrains Mono', monospace" },
+        titleFont: { weight: '600', size: 11, family: "'JetBrains Mono', monospace" },
+        bodyFont: { size: 10, family: "'JetBrains Mono', monospace" },
         displayColors: true,
-        boxPadding: 6,
+        boxPadding: 4,
         callbacks: {
           label: (context) => {
             const label = context.dataset.label || '';
             const value = context.parsed.y;
-            if (label === 'Total Transaction Value') {
+            if (label === 'Quantum') {
               if (value >= 1000000000) {
-                return `  ${label}: $${(value / 1000000000).toFixed(2)}B`;
+                return ` ${label}: $${(value / 1000000000).toFixed(2)}B`;
               }
-              return `  ${label}: $${(value / 1000000).toFixed(0)}M`;
+              return ` ${label}: $${(value / 1000000).toFixed(0)}M`;
             }
-            return `  ${label}: ${value.toLocaleString()}`;
+            return ` ${label}: ${value.toLocaleString()}`;
           },
         },
       },
@@ -235,51 +227,52 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, o
     scales: {
       x: {
         grid: {
-          display: true,
-          color: CHART_COLORS.skyAlpha15,
-          lineWidth: 1,
-          drawTicks: false,
+          display: false,  // No vertical gridlines - cleaner archival look
         },
         border: {
           display: true,
-          color: CHART_COLORS.slate300,
+          color: CHART_COLORS.slate800,  // Darker border
           width: 1,
         },
         ticks: {
           ...CHART_AXIS_DEFAULTS.ticks,
           font: { size: 10, family: "'JetBrains Mono', monospace" },
-          maxRotation: 45,
-          minRotation: 45,
+          maxRotation: 0,  // Horizontal labels
+          minRotation: 0,
+          // Reduce tick density - show every Nth label based on data length
+          autoSkip: true,
+          maxTicksLimit: 12,  // Max ~12 ticks (quarterly for 3 years)
         },
       },
       y: {
         type: 'linear',
         display: true,
         position: 'left',
+        min: 0,
         max: yAxisMax,
         border: {
           display: true,
-          color: CHART_COLORS.slate300,
+          color: CHART_COLORS.slate800,
           width: 1,
         },
         title: {
           display: true,
-          text: 'TRANSACTION COUNT',
+          text: 'VOLUME',
           font: { size: 9, family: "'JetBrains Mono', monospace", weight: '600' },
           color: CHART_COLORS.slate500,
         },
         grid: {
-          color: CHART_COLORS.skyAlpha20,
+          color: ARCHIVAL.gridLine,  // Faint slate-200 - engineering paper
           lineWidth: 1,
           drawTicks: false,
-          // Dashed grid lines for technical precision
-          borderDash: [3, 3],
+          borderDash: [3, 3],  // Dotted horizontal gridlines
         },
         ticks: {
           ...CHART_AXIS_DEFAULTS.ticks,
-          font: { size: 10, family: "'JetBrains Mono', monospace" },
+          font: { size: 10, family: "'JetBrains Mono', monospace", weight: '500' },
           callback: (value) => Math.round(value).toLocaleString(),
           padding: 8,
+          count: 6,  // Sync with right axis for unified grid
         },
       },
       y1: {
@@ -289,19 +282,20 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, o
         min: 0,
         border: {
           display: true,
-          color: CHART_COLORS.slate300,
-          width: 1,
+          color: ARCHIVAL.axisSpine,  // Visible warm spine - grounds the numbers
+          width: 1.5,
         },
         title: {
           display: true,
-          text: 'TOTAL VALUE ($)',
-          font: { size: 9, family: "'JetBrains Mono', monospace", weight: '600' },
-          color: CHART_COLORS.slate500,
+          text: 'QUANTUM ($)',
+          font: { size: 9, family: "'JetBrains Mono', monospace", weight: '600', letterSpacing: '0.04em' },
+          color: ARCHIVAL.axisText,  // Deep amber - authoritative
         },
         grid: { drawOnChartArea: false },
         ticks: {
           ...CHART_AXIS_DEFAULTS.ticks,
-          font: { size: 10, family: "'JetBrains Mono', monospace" },
+          font: { size: 10, family: "'JetBrains Mono', monospace", weight: '500' },
+          color: ARCHIVAL.axisText,  // Decoupled from line - stronger readability
           callback: (value) => {
             if (value >= 1000000000) {
               return `$${(value / 1000000000).toFixed(1)}B`;
@@ -309,14 +303,19 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, o
             return `$${(value / 1000000).toFixed(0)}M`;
           },
           padding: 8,
+          count: 6,  // Sync with left axis for unified grid
         },
       },
     },
   }), [yAxisMax]);
 
-  // Card layout: flex column with fixed height, header shrink-0, chart fills remaining
-  // Added extra height for bottom legend
-  const cardHeight = height + 120;
+  // Calculate total transactions for StatusDeck
+  const totalTransactions = transactionCounts.reduce((sum, c) => sum + c, 0);
+
+  // Methodology text for (i) tooltip
+  const methodologyText = `Volume — Monthly resale transaction count.
+Quantum — Total transaction value (linear).
+Grouped by ${TIME_LABELS[timeGrouping]}.`;
 
   return (
     <ChartFrame
@@ -326,21 +325,24 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, o
       onRetry={refetch}
       empty={!safeData || safeData.length === 0}
       skeleton="bar"
-      height={height + 80}
+      height={height + 40}
       staggerIndex={staggerIndex}
     >
-      <DataCard height={cardHeight}>
+      {/* Technical Archival container: 1px solid black border */}
+      <DataCard className="border-slate-800">
         {/* Debug overlay - shows API call info when Ctrl+Shift+D is pressed */}
         <DebugOverlay />
 
-        {/* Layer 1: Control Header */}
+        {/* Layer 1: Header - h-14 fixed */}
         <DataCardHeader
           title="Resale Volume & Quantum"
           subtitle={`Grouped by ${TIME_LABELS[timeGrouping]}`}
+          info={methodologyText}
+          metadata={<><span className="font-bold text-slate-700">{totalTransactions.toLocaleString()}</span> Txns</>}
         />
 
-        {/* Layer 3: Canvas - Chart takes remaining space */}
-        <DataCardCanvas>
+        {/* Layer 3: Canvas - flex-grow (legend inside chart at top center) */}
+        <DataCardCanvas minHeight={height}>
           <PreviewChartOverlay chartRef={chartRef}>
             <Chart ref={chartRef} type="bar" data={chartData} options={options} />
           </PreviewChartOverlay>
