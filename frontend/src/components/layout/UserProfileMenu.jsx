@@ -36,7 +36,7 @@ export const UserProfileMenu = React.memo(function UserProfileMenu({ expanded = 
         </div>
 
         {expanded && (
-          <span className="text-[13px] font-medium text-slate-400 group-hover:text-white transition-colors">
+          <span className="text-sm font-medium text-slate-400 group-hover:text-white transition-colors">
             Sign In
           </span>
         )}
@@ -83,7 +83,7 @@ export const UserProfileMenu = React.memo(function UserProfileMenu({ expanded = 
       {expanded && (
         <div className="flex-1 min-w-0 flex flex-col justify-center text-left">
           {/* Name */}
-          <div className="text-[13px] font-medium text-slate-200 group-hover:text-white truncate leading-tight transition-colors">
+          <div className="text-sm font-medium text-slate-200 group-hover:text-white truncate leading-tight transition-colors">
             {user.displayName || 'User'}
           </div>
 
