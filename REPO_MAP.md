@@ -663,6 +663,57 @@ Most incidents above share a pattern: **solving problems that don't exist yet.**
 
 **Lesson:** CLAUDE.md is a **mandatory pre-flight checklist**, not optional background reading. Every recommendation must be verified against it BEFORE presenting options.
 
+### Speed Agent Surface-Level Analysis Incident (Jan 10, 2026)
+
+**What happened:** Speed agent was asked to analyze chart loading bottlenecks. It returned two "high impact" recommendations:
+1. **P1:** Add composite index `(sale_type, transaction_date, district, bedroom_count)` - "Missing"
+2. **P2:** Eliminate N+1 in resale velocity by moving `get_total_units_for_scope()` into CTE
+
+**Both recommendations were wrong.**
+
+**P1 Error - Incomplete File Search:**
+- Speed agent found: `backend/migrations/add_performance_indexes.sql` (Dec 19, unnumbered)
+- Speed agent missed: `backend/migrations/016_add_percentile_covering_index.sql` (Jan 3, numbered)
+- The missed file contains the EXACT index the agent recommended adding
+- Agent cited "line 17-22" from the OLD file, proving it never found migration 016
+
+**P2 Error - Shallow Code Reading:**
+- Speed agent saw `registry.py:414` calling `get_total_units_for_scope(filters)`
+- Speed agent did NOT follow the import to read the actual function
+- The function's docstring (line 105) explicitly says: "Uses CSV data for unit counts"
+- Line 131 calls `_load_data()` which loads from CSV file
+- **Cannot be converted to SQL CTE** - the data isn't in the database
+
+**Why it was wrong:**
+1. **Incomplete glob pattern**: Searched for indexes but pattern missed numbered migrations
+2. **Hardcoded assumptions**: Assumed specific file paths instead of searching comprehensively
+3. **Surface-level code reading**: Read call sites but didn't follow imports to implementations
+4. **Pattern matching over verification**: Saw "extra query" pattern → assumed "add to CTE" without checking data source
+
+**CLAUDE.md violations:**
+- Rule #1: "Understand Before Implementing" - didn't read migration 016 or follow imports
+- Rule #4: "Reuse-First" - proposed new index without checking if it already exists
+- Rule #11: "Fix Root Cause" - proposed solution without understanding architecture
+
+**What correct investigation looks like:**
+```bash
+# 1. Find ALL migration files, not just pattern-matched ones
+ls backend/migrations/*.sql
+
+# 2. Check git history for recent changes
+git log -20 --oneline -- backend/migrations/
+
+# 3. Follow imports to full implementation
+# If you see: from services.kpi.resale_velocity import get_total_units_for_scope
+# You MUST read: services/kpi/resale_velocity.py
+```
+
+**Lesson:** Agents must:
+1. **Glob comprehensively** - `*.sql` not `*performance*index*`
+2. **Check git history** - recent commits may have solved the problem
+3. **Follow imports** - read the FULL implementation, not just call sites
+4. **Verify before recommending** - don't propose solutions without confirming the problem exists
+
 ---
 
 ## Quick Reference Links
