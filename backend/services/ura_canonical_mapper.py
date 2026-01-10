@@ -51,6 +51,10 @@ TYPE_OF_SALE_MAP = {
     "3": SALE_TYPE_RESALE,
 }
 
+# Area conversion: URA API returns area in square meters (sqm)
+# Our DB stores area in square feet (sqft)
+SQM_TO_SQFT = 10.7639
+
 # Natural key fields for row hash
 # Includes all fields that identify a unique transaction
 NATURAL_KEY_FIELDS = [
@@ -344,7 +348,7 @@ class URACanonicalMapper:
         # Parse required fields
         transaction_date = parse_contract_date(contract_date_raw)
         price = parse_float_safe(price_raw, 'price')
-        area_sqft = parse_float_safe(area_raw, 'area')
+        area_sqm = parse_float_safe(area_raw, 'area')
 
         # Validate required fields
         if not project_name:
@@ -356,9 +360,12 @@ class URACanonicalMapper:
         if not price or price <= 0:
             logger.debug(f"Skipping transaction in '{project_name}': invalid price '{price_raw}'")
             return None
-        if not area_sqft or area_sqft <= 0:
+        if not area_sqm or area_sqm <= 0:
             logger.debug(f"Skipping transaction in '{project_name}': invalid area '{area_raw}'")
             return None
+
+        # Convert area from sqm (API) to sqft (DB)
+        area_sqft = round(area_sqm * SQM_TO_SQFT, 2)
 
         # === Optional fields ===
         district = normalize_district(txn.get('district', ''))

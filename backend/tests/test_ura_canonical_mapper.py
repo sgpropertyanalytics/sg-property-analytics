@@ -28,7 +28,11 @@ from constants import SALE_TYPE_NEW, SALE_TYPE_SUB, SALE_TYPE_RESALE
 
 @pytest.fixture
 def sample_ura_project():
-    """Sample URA API project with transactions."""
+    """Sample URA API project with transactions.
+
+    Note: URA API returns area in square meters (sqm).
+    764 sqft = ~71 sqm
+    """
     return {
         "project": "THE SAIL @ MARINA BAY",
         "street": "MARINA BOULEVARD",
@@ -42,7 +46,7 @@ def sample_ura_project():
                 "district": "01",
                 "tenure": "99 yrs lease commencing from 2005",
                 "price": "1580000",
-                "area": "764",
+                "area": "71",  # sqm (≈764 sqft)
                 "floorRange": "21 to 25",
                 "typeOfSale": "3",
                 "noOfUnits": "1"
@@ -53,7 +57,7 @@ def sample_ura_project():
                 "district": "01",
                 "tenure": "99 yrs lease commencing from 2005",
                 "price": "1650000",
-                "area": "764",
+                "area": "71",  # sqm (≈764 sqft)
                 "floorRange": "16 to 20",
                 "typeOfSale": "3",
                 "noOfUnits": "1"
@@ -64,7 +68,11 @@ def sample_ura_project():
 
 @pytest.fixture
 def sample_new_sale_project():
-    """Sample URA project with new sale transaction."""
+    """Sample URA project with new sale transaction.
+
+    Note: URA API returns area in square meters (sqm).
+    850 sqft = ~79 sqm
+    """
     return {
         "project": "MARINA ONE RESIDENCES",
         "street": "MARINA WAY",
@@ -78,7 +86,7 @@ def sample_new_sale_project():
                 "district": "01",
                 "tenure": "99 yrs lease commencing from 2014",
                 "price": "2100000",
-                "area": "850",
+                "area": "79",  # sqm (≈850 sqft)
                 "floorRange": "31 to 35",
                 "typeOfSale": "1",
                 "noOfUnits": "1"
@@ -283,7 +291,7 @@ class TestPSFCalculation:
                 {
                     "contractDate": "0125",
                     "price": "1000000",
-                    "area": "500"
+                    "area": "50"  # 50 sqm ≈ 538 sqft
                 }
             ]
         }
@@ -295,9 +303,25 @@ class TestPSFCalculation:
     def test_psf_calculated_correctly(self, mapper, sample_ura_project):
         """PSF should be price / area_sqft, rounded to 2 decimals."""
         rows = list(mapper.map_project(sample_ura_project))
-        # First transaction: price=1580000, area=764
-        expected_psf = round(1580000 / 764, 2)
+        # First transaction: price=1580000, area=71 sqm → 764.24 sqft
+        expected_psf = round(1580000 / 764.24, 2)
         assert rows[0]["psf"] == expected_psf
+
+    def test_area_conversion_sqm_to_sqft(self, mapper):
+        """Area should be converted from sqm to sqft."""
+        project = {
+            "project": "TEST PROJECT",
+            "transaction": [
+                {
+                    "contractDate": "0125",
+                    "price": "1000000",
+                    "area": "100"  # 100 sqm
+                }
+            ]
+        }
+        rows = list(mapper.map_project(project))
+        # 100 sqm * 10.7639 = 1076.39 sqft
+        assert rows[0]["area_sqft"] == 1076.39
 
 
 class TestURACanonicalMapperMapProject:
@@ -341,14 +365,16 @@ class TestURACanonicalMapperMapProject:
         assert rows[1]["price"] == 1650000.0
 
     def test_map_project_area_sqft(self, mapper, sample_ura_project):
-        """Area is parsed correctly."""
+        """Area is converted from sqm to sqft correctly."""
         rows = list(mapper.map_project(sample_ura_project))
-        assert rows[0]["area_sqft"] == 764.0
+        # 71 sqm * 10.7639 = 764.24 sqft
+        assert rows[0]["area_sqft"] == 764.24
 
     def test_map_project_psf_calculated(self, mapper, sample_ura_project):
-        """PSF is calculated correctly."""
+        """PSF is calculated correctly (price / area_sqft)."""
         rows = list(mapper.map_project(sample_ura_project))
-        expected_psf = round(1580000 / 764, 2)
+        # price=1580000, area=71 sqm → 764.24 sqft
+        expected_psf = round(1580000 / 764.24, 2)
         assert rows[0]["psf"] == expected_psf
 
     def test_map_project_district_normalized(self, mapper, sample_ura_project):
