@@ -53,14 +53,14 @@ def extract_lease_start_year(tenure_str: Optional[str]) -> Optional[int]:
     text = str(tenure_str)
 
     # Look for 4-digit year after "commencing from" or "from"
-    match = re.search(r"(?:commencing\\s+from|from)\\s+(\\d{4})", text, re.IGNORECASE)
+    match = re.search(r"(?:commencing\s+from|from)\s+(\d{4})", text, re.IGNORECASE)
     if match:
         year = int(match.group(1))
         if 1900 <= year <= 2100:
             return year
 
     # Fallback: first 4-digit year anywhere in the string
-    match = re.search(r"(\\d{4})", text)
+    match = re.search(r"(\d{4})", text)
     if match:
         year = int(match.group(1))
         if 1900 <= year <= 2100:
