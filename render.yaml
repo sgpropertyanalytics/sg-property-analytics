@@ -1,0 +1,63 @@
+# Render Blueprint - Singapore Property Analytics
+# https://render.com/docs/blueprint-spec
+
+services:
+  # Main API server
+  - type: web
+    name: sgproperty-api
+    env: python
+    region: singapore
+    plan: starter
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && gunicorn app:app --bind 0.0.0.0:$PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
+      - key: FLASK_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sgproperty-db
+          property: connectionString
+      - key: URA_ACCESS_KEY
+        sync: false  # Set manually in Render dashboard
+
+# Cron Jobs
+# Note: Render cron jobs run as separate instances with their own env
+# See: https://render.com/docs/cronjobs
+
+  # URA API Sync - Daily property transaction sync
+  - type: cron
+    name: ura-sync
+    env: python
+    region: singapore
+    plan: starter
+    schedule: "0 17 * * *"  # 01:00 SGT daily (UTC+8)
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && python -m scripts.ura_sync --triggered-by cron
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sgproperty-db
+          property: connectionString
+      - key: URA_ACCESS_KEY
+        sync: false  # Set manually in Render dashboard
+      # URA Sync Configuration
+      - key: URA_SYNC_ENABLED
+        value: "true"
+      - key: URA_SYNC_MODE
+        value: "shadow"  # Start in shadow mode for 3-7 days
+      - key: URA_REVISION_WINDOW_MONTHS
+        value: "3"
+      - key: URA_CUTOFF_YEARS
+        value: "5"
+
+# Database
+databases:
+  - name: sgproperty-db
+    plan: starter
+    region: singapore
+    # Note: If using Supabase instead, remove this and set DATABASE_URL manually

@@ -323,8 +323,12 @@ class TestSyncEngineFlow:
         mock_validate.return_value = (True, None)
         mock_db_engine.return_value = MagicMock()
 
-        # Mock session
+        # Mock session - need to return proper value for baseline check
         session_mock = MagicMock()
+        # Mock execute to return baseline count >= 1000 for baseline check
+        baseline_result_mock = MagicMock()
+        baseline_result_mock.scalar.return_value = 5000  # Sufficient baseline
+        session_mock.execute.return_value = baseline_result_mock
         mock_session.return_value.return_value = session_mock
 
         # Mock API client - return one batch with one project
@@ -383,8 +387,11 @@ class TestSyncEngineFlow:
         mock_validate.return_value = (True, None)
         mock_db_engine.return_value = MagicMock()
 
-        # Mock session
+        # Mock session - need to return proper value for baseline check
         session_mock = MagicMock()
+        baseline_result_mock = MagicMock()
+        baseline_result_mock.scalar.return_value = 5000  # Sufficient baseline
+        session_mock.execute.return_value = baseline_result_mock
         mock_session.return_value.return_value = session_mock
 
         # Mock API client - return empty for speed
@@ -412,3 +419,77 @@ class TestSyncEngineFlow:
         assert not result.success
         assert result.error_stage == 'compare'
         assert 'Thresholds exceeded' in result.error_message
+
+    @patch('services.ura_sync_engine.validate_sync_config')
+    @patch('services.ura_sync_engine.get_database_engine')
+    @patch('services.ura_sync_engine.URAAPIClient')
+    @patch('services.ura_sync_engine.scoped_session')
+    def test_baseline_missing_marks_failed(
+        self,
+        mock_session,
+        mock_api_client,
+        mock_db_engine,
+        mock_validate
+    ):
+        """Test that missing baseline marks run as failed."""
+        # Setup mocks
+        mock_validate.return_value = (True, None)
+        mock_db_engine.return_value = MagicMock()
+
+        # Mock session - return 0 rows for baseline check
+        session_mock = MagicMock()
+        baseline_result_mock = MagicMock()
+        baseline_result_mock.scalar.return_value = 0  # No baseline data
+        session_mock.execute.return_value = baseline_result_mock
+        mock_session.return_value.return_value = session_mock
+
+        # Mock API client - return empty for speed
+        client_instance = MagicMock()
+        client_instance.fetch_all_transactions.return_value = iter([])
+        mock_api_client.return_value = client_instance
+
+        # Run sync
+        engine = URASyncEngine(mode='shadow')
+        result = engine.run()
+
+        # Verify failure due to missing baseline
+        assert not result.success
+        assert result.error_stage == 'sync'
+        assert 'Baseline unavailable' in result.error_message
+
+    @patch('services.ura_sync_engine.validate_sync_config')
+    @patch('services.ura_sync_engine.get_database_engine')
+    @patch('services.ura_sync_engine.URAAPIClient')
+    @patch('services.ura_sync_engine.scoped_session')
+    def test_baseline_too_small_marks_failed(
+        self,
+        mock_session,
+        mock_api_client,
+        mock_db_engine,
+        mock_validate
+    ):
+        """Test that insufficient baseline marks run as failed."""
+        # Setup mocks
+        mock_validate.return_value = (True, None)
+        mock_db_engine.return_value = MagicMock()
+
+        # Mock session - return < 1000 rows for baseline check
+        session_mock = MagicMock()
+        baseline_result_mock = MagicMock()
+        baseline_result_mock.scalar.return_value = 500  # Insufficient baseline
+        session_mock.execute.return_value = baseline_result_mock
+        mock_session.return_value.return_value = session_mock
+
+        # Mock API client - return empty for speed
+        client_instance = MagicMock()
+        client_instance.fetch_all_transactions.return_value = iter([])
+        mock_api_client.return_value = client_instance
+
+        # Run sync
+        engine = URASyncEngine(mode='shadow')
+        result = engine.run()
+
+        # Verify failure due to insufficient baseline
+        assert not result.success
+        assert result.error_stage == 'sync'
+        assert 'minimum' in result.error_message.lower()

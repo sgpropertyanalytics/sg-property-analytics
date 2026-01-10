@@ -181,6 +181,16 @@ class URASyncEngine:
         """
         start_time = datetime.utcnow()
 
+        # Enhanced start logging
+        logger.info("=" * 70)
+        logger.info("URA SYNC ENGINE - STARTING")
+        logger.info("=" * 70)
+        logger.info(f"  Mode:        {self.mode}")
+        logger.info(f"  Triggered:   {self.triggered_by}")
+        logger.info(f"  Start time:  {start_time.isoformat()}")
+        logger.info(f"  Git SHA:     {get_git_sha() or 'unknown'}")
+        logger.info("=" * 70)
+
         # 1. Validate configuration
         is_valid, error = validate_sync_config()
         if not is_valid:
@@ -233,7 +243,28 @@ class URASyncEngine:
                 self._mark_succeeded(comparison_report)
 
                 duration = (datetime.utcnow() - start_time).total_seconds()
-                logger.info(f"Sync completed successfully in {duration:.1f}s")
+
+                # Enhanced end logging
+                logger.info("=" * 70)
+                logger.info("URA SYNC ENGINE - COMPLETED SUCCESSFULLY")
+                logger.info("=" * 70)
+                logger.info(f"  Run ID:      {self.run_id}")
+                logger.info(f"  Mode:        {self.mode}")
+                logger.info(f"  Duration:    {duration:.1f}s")
+                logger.info("  Totals:")
+                logger.info(f"    Projects:    {self.stats.raw_projects}")
+                logger.info(f"    Transactions:{self.stats.raw_transactions}")
+                logger.info(f"    Mapped:      {self.stats.mapped_rows}")
+                logger.info(f"    Inserted:    {self.stats.inserted_rows}")
+                logger.info(f"    Updated:     {self.stats.updated_rows}")
+                logger.info(f"    Unchanged:   {self.stats.unchanged_rows}")
+                logger.info(f"    Failed:      {self.stats.failed_rows}")
+                if comparison_report:
+                    logger.info("  Comparison:")
+                    logger.info(f"    Acceptable:  {comparison_report.is_acceptable}")
+                    logger.info(f"    Count diff:  {comparison_report.row_count_diff_pct:.1f}%")
+                    logger.info(f"    Coverage:    {comparison_report.coverage_pct:.1f}%")
+                logger.info("=" * 70)
 
                 return SyncResult(
                     success=True,
@@ -248,6 +279,22 @@ class URASyncEngine:
                 logger.exception(f"Sync failed: {e}")
                 self._mark_failed(str(e), error_stage='sync')
                 duration = (datetime.utcnow() - start_time).total_seconds()
+
+                # Enhanced failure logging
+                logger.error("=" * 70)
+                logger.error("URA SYNC ENGINE - FAILED")
+                logger.error("=" * 70)
+                logger.error(f"  Run ID:      {self.run_id}")
+                logger.error(f"  Mode:        {self.mode}")
+                logger.error(f"  Duration:    {duration:.1f}s")
+                logger.error(f"  Error:       {e}")
+                logger.error(f"  Stage:       sync")
+                logger.error("  Totals (partial):")
+                logger.error(f"    Projects:    {self.stats.raw_projects}")
+                logger.error(f"    Transactions:{self.stats.raw_transactions}")
+                logger.error(f"    Mapped:      {self.stats.mapped_rows}")
+                logger.error("=" * 70)
+
                 return SyncResult(
                     success=False,
                     run_id=self.run_id,
@@ -474,6 +521,44 @@ class URASyncEngine:
         })
         self.session.commit()
 
+    def _check_baseline_available(self) -> Tuple[bool, int, str]:
+        """
+        Check if CSV baseline data exists for comparison.
+
+        Returns:
+            Tuple of (is_available, row_count, message)
+        """
+        cutoff_date = get_cutoff_date()
+
+        query = text("""
+            SELECT COUNT(*) as cnt
+            FROM transactions
+            WHERE source = 'csv'
+              AND COALESCE(is_outlier, false) = false
+              AND transaction_month >= :cutoff_date
+              AND property_type IN ('Condominium', 'Apartment')
+        """)
+
+        try:
+            result = self.session.execute(query, {'cutoff_date': cutoff_date})
+            count = result.scalar() or 0
+
+            if count == 0:
+                return False, 0, f"No CSV baseline data found for transactions >= {cutoff_date}"
+
+            # Require minimum baseline (at least 1000 rows for meaningful comparison)
+            MIN_BASELINE_ROWS = 1000
+            if count < MIN_BASELINE_ROWS:
+                return False, count, (
+                    f"CSV baseline has only {count} rows (minimum {MIN_BASELINE_ROWS} required). "
+                    f"Comparison would not be meaningful."
+                )
+
+            return True, count, f"CSV baseline available: {count} rows"
+
+        except Exception as e:
+            return False, 0, f"Failed to check baseline: {e}"
+
     def _run_comparison(self) -> Optional[ComparisonReport]:
         """Run comparison against baseline."""
 
@@ -481,6 +566,13 @@ class URASyncEngine:
             logger.info("DRY RUN: Skipping comparison")
             return None
 
+        # Check baseline availability first
+        baseline_ok, baseline_count, baseline_msg = self._check_baseline_available()
+        if not baseline_ok:
+            logger.error(f"BASELINE CHECK FAILED: {baseline_msg}")
+            raise RuntimeError(f"Baseline unavailable: {baseline_msg}")
+
+        logger.info(f"Baseline check passed: {baseline_count} CSV rows available")
         logger.info("Running comparison against CSV baseline")
 
         try:
