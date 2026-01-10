@@ -8,7 +8,7 @@ import React from 'react';
  * - HUD corner brackets (top-left, bottom-right)
  * - Terminal-style header option
  * - Scan-line hover effect
- * - Crosshair cursor on interactive areas
+ * - Default cursor on interactive areas
  *
  * Usage:
  *   <WeaponCard title="PRICE TREND">
@@ -33,7 +33,7 @@ export function WeaponCard({
       className={`
         weapon-card hud-corner scan-line-hover
         overflow-hidden flex flex-col
-        ${interactive ? 'cursor-crosshair' : ''}
+        ${interactive ? 'cursor-pointer' : ''}
         ${className}
       `.trim().replace(/\s+/g, ' ')}
     >

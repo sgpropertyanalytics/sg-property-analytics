@@ -94,6 +94,20 @@ export default {
         toast: 'var(--z-toast)',
         debug: 'var(--z-debug)',
       },
+      keyframes: {
+        slideUp: {
+          '0%': { opacity: '0', transform: 'translateY(8px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        slideDown: {
+          '0%': { opacity: '0', transform: 'translateY(-8px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+      },
+      animation: {
+        slideUp: 'slideUp 150ms ease-out',
+        slideDown: 'slideDown 150ms ease-out',
+      },
     },
   },
   plugins: [],

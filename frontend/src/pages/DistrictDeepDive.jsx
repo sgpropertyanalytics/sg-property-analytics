@@ -2,7 +2,8 @@ import { useState, lazy, Suspense } from 'react';
 import { ChartWatermark } from '../components/ui';
 import { MarketMomentumGrid, GrowthDumbbellChart } from '../components/powerbi';
 // Phase 3.4: Unified filter bar (same as Market Overview)
-import { FilterBar } from '../components/powerbi/FilterBar';
+import { FilterBar } from '../components/patterns';
+import { PageCanvas, ControlRibbon } from '../components/layout';
 import { SaleType } from '../schemas/apiContract';
 import { ChartSkeleton } from '../components/common/ChartSkeleton';
 
@@ -35,24 +36,14 @@ export function DistrictDeepDiveContent() {
   // Filters persist across mode switches via page-namespaced sessionStorage
 
   return (
-    <div className="h-full overflow-auto">
-      <div className="p-3 md:p-4 lg:p-6">
-        {/* Header */}
-        <div className="mb-4 md:mb-6">
-          <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-brand-navy">
-            District Overview
-          </h1>
-          <p className="text-brand-blue text-sm mt-1">
-            District-level market analysis
-          </p>
-        </div>
-
-        {/* Filter Bar - Unified component (desktop: sticky horizontal, mobile: drawer) */}
-        {/* Same component as Market Overview - identical styling, behavior, theme */}
+    <PageCanvas>
+      {/* Filter Bar - Contained in sticky ribbon (same as Market Overview) */}
+      <ControlRibbon>
         <FilterBar />
+      </ControlRibbon>
 
-        {/* Main Content */}
-        <div className="space-y-6 animate-fade-in">
+      {/* Main Content */}
+      <div className="space-y-6 animate-fade-in">
           {/* Map - render active mode only to avoid background data fetches */}
           <ChartWatermark>
             <Suspense fallback={<ChartSkeleton type="map" height={600} />}>
@@ -92,8 +83,7 @@ export function DistrictDeepDiveContent() {
             </>
           )}
         </div>
-      </div>
-    </div>
+    </PageCanvas>
   );
 }
 

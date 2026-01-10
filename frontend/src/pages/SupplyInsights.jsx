@@ -6,6 +6,7 @@ import { SupplyKpiCards } from '../components/powerbi/SupplyKpiCards';
 import { SupplyBreakdownTable } from '../components/powerbi/SupplyBreakdownTable';
 import { SupplyDataProvider } from '../context/SupplyDataContext';
 import { ErrorBoundary } from '../components/ui';
+import { PageCanvas } from '../components/layout';
 import { useChartHeight, MOBILE_CAPS } from '../hooks';
 
 // Page-level filter configuration (shared via SupplyDataProvider)
@@ -33,20 +34,9 @@ export function SupplyInsightsContent() {
 
   return (
     <SupplyDataProvider includeGls={INCLUDE_GLS} launchYear={LAUNCH_YEAR}>
-      <div className="h-full overflow-auto">
-        <div className="p-3 md:p-4 lg:p-6">
-          {/* Header */}
-          <div className="mb-4 md:mb-6">
-            <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-brand-navy">
-              Supply & Inventory Insights
-            </h1>
-            <p className="text-brand-blue text-sm mt-1">
-              Track supply pipeline, government land sales, and upcoming launches
-            </p>
-          </div>
-
-          {/* Content */}
-          <div className="animate-view-enter space-y-4 md:space-y-6">
+      <PageCanvas>
+        {/* Content */}
+        <div className="animate-view-enter space-y-4 md:space-y-6">
 
             {/* ===== KPI Cards (3 equal columns) ===== */}
             <ErrorBoundary name="Supply KPI Cards" compact>
@@ -95,9 +85,8 @@ export function SupplyInsightsContent() {
             <ErrorBoundary name="Upcoming Launches" compact>
               <UpcomingLaunchesTable height={tableHeight} />
             </ErrorBoundary>
-          </div>
         </div>
-      </div>
+      </PageCanvas>
     </SupplyDataProvider>
   );
 }

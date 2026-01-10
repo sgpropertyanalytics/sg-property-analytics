@@ -276,15 +276,15 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
         </header>
 
         {/* Main Content - Wrapped with Suspense + ErrorBoundary */}
-        {/* DASHBOARD LAYOUT - Tight 24px gutter, no floating gaps */}
-        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden flex flex-col pt-6 pr-6 pb-6 pl-6 relative z-10">
-          {/* Content Card - Technical dot grid background */}
-          <div className="flex-1 min-w-0 flex flex-col border border-gray-200 bg-white">
+        {/* DASHBOARD LAYOUT - No top padding, sticky header covers full viewport */}
+        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden flex flex-col pr-6 pb-6 pl-6 relative z-10">
+          {/* Frosted Bezel - Sticky at true top-0, covers all scrolling content */}
+          {/* pt-6 creates the visual gap, backdrop-blur creates disintegration effect */}
+          <div className="sticky top-0 z-50 w-full pt-6 pb-2 backdrop-blur-xl bg-[#F5F3EE]/90">
             {/* Console Header - Terminal Block (auto-applied to all pages) */}
             {/* Height: 48px (h-12), dense military precision */}
             {/* Border-bottom: Bronze accent line for visual anchoring ("the ledge") */}
-            {/* Sticky at top-0 so it stays visible during scroll */}
-            <div className="sticky top-0 z-40 flex items-center justify-between px-6 h-12 bg-[#0F172A] border-b-2 border-[#C4A484]">
+            <div className="flex items-center justify-between px-6 h-12 bg-[#0F172A] border-b-2 border-[#C4A484] shadow-lg rounded-t-sm border border-gray-200 border-b-0">
               {/* Left: Logo Box + Page Title - Industrial branding */}
               <div className="flex items-center gap-3">
                 <div className="bg-white text-black px-1.5 py-0.5 font-mono text-[10px] font-bold tracking-tighter">
@@ -329,8 +329,11 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Page Content - No top padding, attached to header like clipboard */}
+          {/* Content Card - Technical dot grid background */}
+          <div className="flex-1 min-w-0 flex flex-col border border-gray-200 border-t-0 bg-white -mt-2">
+            {/* Page Content */}
             <div className="flex-1 min-w-0 technical-grid-bg px-6 pt-4 pb-6">
               <ErrorBoundary name="Page Content">
                 <Suspense fallback={<ContentLoadingFallback />}>
