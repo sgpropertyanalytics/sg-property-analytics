@@ -53,7 +53,7 @@ from services.ura_sync_config import (
     UPDATABLE_FIELDS,
     INSERT_FIELDS,
     is_allowed_property_type,
-    ALLOWED_PROPERTY_TYPES,
+    ALLOWED_PROPERTY_TYPES_DISPLAY,
 )
 from services.ura_shadow_comparator import URAShadowComparator, ComparisonReport
 
@@ -360,7 +360,7 @@ class URASyncEngine:
         # Get cutoff date
         cutoff_date = get_cutoff_date()
         logger.info(f"Syncing transactions >= {cutoff_date}")
-        logger.info(f"Property types: {', '.join(ALLOWED_PROPERTY_TYPES)}")
+        logger.info(f"Property types: {', '.join(ALLOWED_PROPERTY_TYPES_DISPLAY)}")
 
         # Fetch all batches
         all_rows = []
