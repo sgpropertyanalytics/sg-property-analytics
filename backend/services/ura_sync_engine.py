@@ -31,7 +31,7 @@ import os
 import sys
 import logging
 import uuid
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, UTC
 from typing import Optional, Dict, Any, List, Tuple
 from dataclasses import dataclass, field, asdict
 
@@ -170,7 +170,7 @@ class URASyncEngine:
         Returns:
             SyncResult with success/failure status and details
         """
-        start_time = datetime.utcnow()
+        start_time = datetime.now(UTC)
 
         # Enhanced start logging
         logger.info("=" * 70)
@@ -218,7 +218,7 @@ class URASyncEngine:
                         error_message=f"Comparison thresholds exceeded: {comparison_report.issues}",
                         error_stage='compare'
                     )
-                    duration = (datetime.utcnow() - start_time).total_seconds()
+                    duration = (datetime.now(UTC) - start_time).total_seconds()
                     return SyncResult(
                         success=False,
                         run_id=self.run_id,
@@ -233,7 +233,7 @@ class URASyncEngine:
                 # 7. Mark success
                 self._mark_succeeded(comparison_report)
 
-                duration = (datetime.utcnow() - start_time).total_seconds()
+                duration = (datetime.now(UTC) - start_time).total_seconds()
 
                 # Enhanced end logging
                 logger.info("=" * 70)
@@ -269,7 +269,7 @@ class URASyncEngine:
             except Exception as e:
                 logger.exception(f"Sync failed: {e}")
                 self._mark_failed(str(e), error_stage='sync')
-                duration = (datetime.utcnow() - start_time).total_seconds()
+                duration = (datetime.now(UTC) - start_time).total_seconds()
 
                 # Enhanced failure logging
                 logger.error("=" * 70)
@@ -298,7 +298,7 @@ class URASyncEngine:
 
         except Exception as e:
             logger.exception(f"Sync engine initialization failed: {e}")
-            duration = (datetime.utcnow() - start_time).total_seconds()
+            duration = (datetime.now(UTC) - start_time).total_seconds()
             return SyncResult(
                 success=False,
                 mode=self.mode,
@@ -326,7 +326,7 @@ class URASyncEngine:
             )
         """), {
             'id': self.run_id,
-            'started_at': datetime.utcnow(),
+            'started_at': datetime.now(UTC),
             'mode': self.mode,
             'revision_window': get_revision_window_months(),
             'cutoff_date': get_cutoff_date(),
@@ -501,7 +501,7 @@ class URASyncEngine:
         """Prepare a row for insertion with run tracking fields."""
         row_data = dict(row)
         row_data['run_id'] = self.run_id
-        row_data['ingested_at'] = datetime.utcnow()
+        row_data['ingested_at'] = datetime.now(UTC)
         row_data['source'] = 'ura_api'
 
         # Ensure all required fields have values
@@ -691,7 +691,7 @@ class URASyncEngine:
             bindparam('api_retries', type_=JSONB),
         )
         self.session.execute(stmt, {
-            'finished_at': datetime.utcnow(),
+            'finished_at': datetime.now(UTC),
             'counters': self.stats.skip_counters,
             'totals': self.stats.to_dict(),
             'api_times': self.api_response_times or None,
@@ -724,7 +724,7 @@ class URASyncEngine:
             bindparam('totals', type_=JSONB),
         )
         self.session.execute(stmt, {
-            'finished_at': datetime.utcnow(),
+            'finished_at': datetime.now(UTC),
             'error_message': error_message,
             'error_stage': error_stage,
             'counters': self.stats.skip_counters,
