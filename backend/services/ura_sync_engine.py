@@ -31,7 +31,7 @@ import os
 import sys
 import logging
 import uuid
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from typing import Optional, Dict, Any, List, Tuple
 from dataclasses import dataclass, field, asdict
 
@@ -525,13 +525,20 @@ class URASyncEngine:
         """
         Check if CSV baseline data exists for comparison.
 
+        Validates:
+        1. Minimum row count (1000+)
+        2. Freshness: CSV data includes transactions from last 6 months
+
         Returns:
             Tuple of (is_available, row_count, message)
         """
         cutoff_date = get_cutoff_date()
 
+        # Check count and freshness in one query
         query = text("""
-            SELECT COUNT(*) as cnt
+            SELECT
+                COUNT(*) as cnt,
+                MAX(transaction_month) as latest_month
             FROM transactions
             WHERE source = 'csv'
               AND COALESCE(is_outlier, false) = false
@@ -541,7 +548,9 @@ class URASyncEngine:
 
         try:
             result = self.session.execute(query, {'cutoff_date': cutoff_date})
-            count = result.scalar() or 0
+            row = result.fetchone()
+            count = row.cnt or 0
+            latest_month = row.latest_month
 
             if count == 0:
                 return False, 0, f"No CSV baseline data found for transactions >= {cutoff_date}"
@@ -554,7 +563,17 @@ class URASyncEngine:
                     f"Comparison would not be meaningful."
                 )
 
-            return True, count, f"CSV baseline available: {count} rows"
+            # Check freshness: latest CSV transaction should be within 6 months
+            # This catches stale baselines from paused CSV ingestion
+            FRESHNESS_MONTHS = 6
+            freshness_threshold = date.today().replace(day=1) - timedelta(days=FRESHNESS_MONTHS * 30)
+            if latest_month and latest_month < freshness_threshold:
+                return False, count, (
+                    f"CSV baseline is stale: latest transaction is {latest_month}, "
+                    f"threshold is {freshness_threshold}. CSV ingestion may have paused."
+                )
+
+            return True, count, f"CSV baseline available: {count} rows, latest: {latest_month}"
 
         except Exception as e:
             return False, 0, f"Failed to check baseline: {e}"
@@ -620,8 +639,31 @@ class URASyncEngine:
         self.session.commit()
 
     def _mark_succeeded(self, comparison_report: Optional[ComparisonReport] = None):
-        """Mark run as succeeded."""
+        """Mark run as succeeded with comparison summary."""
         logger.info("Marking sync run as succeeded")
+
+        # Extract comparison summary for queryable columns
+        count_diff_pct = None
+        psf_median_diff_pct = None
+        coverage_pct = None
+        is_acceptable = None
+        baseline_row_count = None
+        current_row_count = None
+
+        if comparison_report:
+            count_diff_pct = comparison_report.row_count_diff_pct
+            coverage_pct = comparison_report.coverage_pct
+            is_acceptable = comparison_report.is_acceptable
+            baseline_row_count = comparison_report.baseline_row_count
+            current_row_count = comparison_report.current_row_count
+
+            # Find max PSF median diff across months
+            max_psf_diff = 0.0
+            for month_data in comparison_report.psf_median_by_month.values():
+                diff_pct = month_data.get('diff_pct')
+                if diff_pct is not None and abs(diff_pct) > abs(max_psf_diff):
+                    max_psf_diff = diff_pct
+            psf_median_diff_pct = max_psf_diff if max_psf_diff != 0.0 else None
 
         self.session.execute(text("""
             UPDATE ura_sync_runs
@@ -630,7 +672,13 @@ class URASyncEngine:
                 counters = :counters,
                 totals = :totals,
                 api_response_times = :api_times,
-                api_retry_counts = :api_retries
+                api_retry_counts = :api_retries,
+                count_diff_pct = :count_diff_pct,
+                psf_median_diff_pct = :psf_median_diff_pct,
+                coverage_pct = :coverage_pct,
+                is_acceptable = :is_acceptable,
+                baseline_row_count = :baseline_row_count,
+                current_row_count = :current_row_count
             WHERE id = :run_id
         """), {
             'finished_at': datetime.utcnow(),
@@ -638,6 +686,12 @@ class URASyncEngine:
             'totals': self.stats.to_dict(),
             'api_times': self.api_response_times or None,
             'api_retries': self.api_retry_counts or None,
+            'count_diff_pct': count_diff_pct,
+            'psf_median_diff_pct': psf_median_diff_pct,
+            'coverage_pct': coverage_pct,
+            'is_acceptable': is_acceptable,
+            'baseline_row_count': baseline_row_count,
+            'current_row_count': current_row_count,
             'run_id': self.run_id
         })
         self.session.commit()

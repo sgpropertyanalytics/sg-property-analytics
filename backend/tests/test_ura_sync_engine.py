@@ -324,10 +324,14 @@ class TestSyncEngineFlow:
         mock_db_engine.return_value = MagicMock()
 
         # Mock session - need to return proper value for baseline check
+        from datetime import date, timedelta
         session_mock = MagicMock()
-        # Mock execute to return baseline count >= 1000 for baseline check
+        # Mock execute to return baseline count >= 1000 and fresh data
         baseline_result_mock = MagicMock()
-        baseline_result_mock.scalar.return_value = 5000  # Sufficient baseline
+        baseline_result_mock.fetchone.return_value = MagicMock(
+            cnt=5000,  # Sufficient baseline
+            latest_month=date.today() - timedelta(days=30)  # Fresh data
+        )
         session_mock.execute.return_value = baseline_result_mock
         mock_session.return_value.return_value = session_mock
 
@@ -388,9 +392,13 @@ class TestSyncEngineFlow:
         mock_db_engine.return_value = MagicMock()
 
         # Mock session - need to return proper value for baseline check
+        from datetime import date, timedelta
         session_mock = MagicMock()
         baseline_result_mock = MagicMock()
-        baseline_result_mock.scalar.return_value = 5000  # Sufficient baseline
+        baseline_result_mock.fetchone.return_value = MagicMock(
+            cnt=5000,  # Sufficient baseline
+            latest_month=date.today() - timedelta(days=30)  # Fresh data
+        )
         session_mock.execute.return_value = baseline_result_mock
         mock_session.return_value.return_value = session_mock
 
@@ -439,7 +447,10 @@ class TestSyncEngineFlow:
         # Mock session - return 0 rows for baseline check
         session_mock = MagicMock()
         baseline_result_mock = MagicMock()
-        baseline_result_mock.scalar.return_value = 0  # No baseline data
+        baseline_result_mock.fetchone.return_value = MagicMock(
+            cnt=0,  # No baseline data
+            latest_month=None
+        )
         session_mock.execute.return_value = baseline_result_mock
         mock_session.return_value.return_value = session_mock
 
@@ -474,9 +485,13 @@ class TestSyncEngineFlow:
         mock_db_engine.return_value = MagicMock()
 
         # Mock session - return < 1000 rows for baseline check
+        from datetime import date, timedelta
         session_mock = MagicMock()
         baseline_result_mock = MagicMock()
-        baseline_result_mock.scalar.return_value = 500  # Insufficient baseline
+        baseline_result_mock.fetchone.return_value = MagicMock(
+            cnt=500,  # Insufficient baseline
+            latest_month=date.today() - timedelta(days=30)
+        )
         session_mock.execute.return_value = baseline_result_mock
         mock_session.return_value.return_value = session_mock
 
@@ -493,3 +508,46 @@ class TestSyncEngineFlow:
         assert not result.success
         assert result.error_stage == 'sync'
         assert 'minimum' in result.error_message.lower()
+
+    @patch('services.ura_sync_engine.validate_sync_config')
+    @patch('services.ura_sync_engine.get_database_engine')
+    @patch('services.ura_sync_engine.URAAPIClient')
+    @patch('services.ura_sync_engine.scoped_session')
+    def test_baseline_stale_marks_failed(
+        self,
+        mock_session,
+        mock_api_client,
+        mock_db_engine,
+        mock_validate
+    ):
+        """Test that stale baseline marks run as failed."""
+        from datetime import date, timedelta
+
+        # Setup mocks
+        mock_validate.return_value = (True, None)
+        mock_db_engine.return_value = MagicMock()
+
+        # Mock session - return stale data (>6 months old)
+        session_mock = MagicMock()
+        baseline_result_mock = MagicMock()
+        stale_date = date.today() - timedelta(days=200)  # ~7 months ago
+        baseline_result_mock.fetchone.return_value = MagicMock(
+            cnt=5000,
+            latest_month=stale_date
+        )
+        session_mock.execute.return_value = baseline_result_mock
+        mock_session.return_value.return_value = session_mock
+
+        # Mock API client - return empty for speed
+        client_instance = MagicMock()
+        client_instance.fetch_all_transactions.return_value = iter([])
+        mock_api_client.return_value = client_instance
+
+        # Run sync
+        engine = URASyncEngine(mode='shadow')
+        result = engine.run()
+
+        # Verify failure due to stale baseline
+        assert not result.success
+        assert result.error_stage == 'sync'
+        assert 'stale' in result.error_message.lower()
