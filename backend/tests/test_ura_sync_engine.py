@@ -551,3 +551,66 @@ class TestSyncEngineFlow:
         assert not result.success
         assert result.error_stage == 'sync'
         assert 'stale' in result.error_message.lower()
+
+
+# =============================================================================
+# JSONB Type Binding Regression Tests
+# =============================================================================
+
+class TestJSONBTypeBinding:
+    """
+    Tests to prevent regression of JSONB serialization issues.
+
+    Background: psycopg2 cannot adapt Python dicts to PostgreSQL JSONB
+    without explicit type binding. SQLAlchemy's bindparam(type_=JSONB)
+    handles this properly.
+
+    If these tests fail, you likely have a text() query passing a dict
+    without proper JSONB type binding.
+    """
+
+    def test_mark_succeeded_uses_jsonb_bindparams(self):
+        """Verify _mark_succeeded uses JSONB bindparams for dict columns."""
+        import inspect
+        from services.ura_sync_engine import URASyncEngine
+
+        source = inspect.getsource(URASyncEngine._mark_succeeded)
+
+        # Must use bindparam with JSONB type for these columns
+        assert 'bindparam' in source, "_mark_succeeded should use bindparam"
+        assert 'JSONB' in source, "_mark_succeeded should bind JSONB type"
+        assert "bindparam('counters', type_=JSONB)" in source
+        assert "bindparam('totals', type_=JSONB)" in source
+        assert "bindparam('api_times', type_=JSONB)" in source
+        assert "bindparam('api_retries', type_=JSONB)" in source
+
+        # Must NOT use json.dumps for these columns (band-aid fix)
+        assert 'json.dumps(self.stats' not in source, \
+            "_mark_succeeded should NOT use json.dumps - use JSONB bindparam instead"
+
+    def test_mark_failed_uses_jsonb_bindparams(self):
+        """Verify _mark_failed uses JSONB bindparams for dict columns."""
+        import inspect
+        from services.ura_sync_engine import URASyncEngine
+
+        source = inspect.getsource(URASyncEngine._mark_failed)
+
+        assert 'bindparam' in source, "_mark_failed should use bindparam"
+        assert 'JSONB' in source, "_mark_failed should bind JSONB type"
+        assert "bindparam('counters', type_=JSONB)" in source
+        assert "bindparam('totals', type_=JSONB)" in source
+
+        # Must NOT use json.dumps
+        assert 'json.dumps' not in source, \
+            "_mark_failed should NOT use json.dumps - use JSONB bindparam instead"
+
+    def test_persist_comparison_uses_jsonb_bindparams(self):
+        """Verify _persist_comparison uses JSONB bindparams."""
+        import inspect
+        from services.ura_sync_engine import URASyncEngine
+
+        source = inspect.getsource(URASyncEngine._persist_comparison)
+
+        assert 'bindparam' in source, "_persist_comparison should use bindparam"
+        assert 'JSONB' in source, "_persist_comparison should bind JSONB type"
+        assert "bindparam('results', type_=JSONB)" in source

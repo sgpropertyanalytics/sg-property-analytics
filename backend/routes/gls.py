@@ -217,19 +217,17 @@ def reset_and_rescrape():
 
         # Create a FRESH database connection to avoid SSL stale connection issues
         # This is critical on Render where connections can go stale
-        database_url = os.environ.get('DATABASE_URL', '')
+        from config import get_database_url
+        try:
+            database_url = get_database_url()  # Handles postgres://, adds SSL to URL
+        except RuntimeError:
+            database_url = None
 
         if database_url:
-            # Fix Render's postgres:// to postgresql://
-            if database_url.startswith('postgres://'):
-                database_url = database_url.replace('postgres://', 'postgresql://', 1)
-
-            # Create fresh engine with SSL settings
             engine = create_engine(
                 database_url,
                 pool_pre_ping=True,
-                pool_recycle=300,
-                connect_args={"sslmode": "require"} if 'render.com' in database_url or 'neon' in database_url else {}
+                pool_recycle=300
             )
 
             # Create a new session for this operation

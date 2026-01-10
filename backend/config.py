@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-def _get_database_url():
+def get_database_url():
     """
     Get and validate DATABASE_URL for PostgreSQL.
 
@@ -88,7 +88,7 @@ class Config:
 
     # SQLAlchemy configuration - PostgreSQL ONLY
     # SQLite is NOT supported in any environment
-    SQLALCHEMY_DATABASE_URI = _get_database_url()
+    SQLALCHEMY_DATABASE_URI = get_database_url()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # Connection pool settings for resilience against timeouts
