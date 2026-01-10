@@ -1,24 +1,14 @@
 import { useState } from 'react';
+import { X, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSubscription } from '../context/SubscriptionContext';
 import { deleteAccount, createPortalSession } from '../api/client';
 import { getInitials } from '../utils/formatters';
 
 /**
- * AccountSettingsModal - Single-view modal for user account management
+ * AccountSettingsModal - Dark "Command Center" style modal
  *
- * Sections:
- * - Profile section (avatar + name + email)
- * - Email (read-only)
- * - Member since date
- * - Billing & Plan (current plan, subscription management)
- * - Delete Account (danger zone)
- *
- * Color Palette (Institutional Print / Slate):
- * - Primary: #0F172A (slate-900)
- * - Secondary: #334155 (slate-700)
- * - Tertiary: #64748B (slate-500)
- * - Background: #E5E7EB (slate-200)
+ * Calm, professional layout with grid for Plan/Session
  */
 export function AccountSettingsModal({ isOpen, onClose, onShowPricing }) {
   const { user, logout } = useAuth();
@@ -40,6 +30,19 @@ export function AccountSettingsModal({ isOpen, onClose, onShowPricing }) {
     } catch (error) {
       console.error('Failed to create portal session:', error);
       alert('Unable to open billing portal. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    setLoading(true);
+    try {
+      await logout();
+      onClose();
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Sign out failed:', error);
     } finally {
       setLoading(false);
     }
@@ -70,232 +73,221 @@ export function AccountSettingsModal({ isOpen, onClose, onShowPricing }) {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-SG', {
       year: 'numeric',
-      month: 'long',
+      month: 'short',
       day: 'numeric'
     });
   };
 
+  const accountId = user.uid ? `USR-${user.uid.substring(0, 4).toUpperCase()}-${user.uid.substring(4, 8).toUpperCase()}` : 'N/A';
+
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
+    <div className="fixed inset-0 z-50 overflow-hidden">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 bg-black/80 backdrop-blur-sm"
         onClick={onClose}
       />
 
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg">
-          {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-brand-sky/30">
-            <h2 className="text-xl font-bold text-brand-navy">Account Settings</h2>
+        <div className="relative w-full max-w-2xl bg-[#0F172A] border border-slate-700 rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-slideUp">
+
+          {/* Fixed Header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/50 shrink-0">
+            <h2 className="text-lg font-semibold text-white tracking-wide">Account Settings</h2>
             <button
               onClick={onClose}
-              className="p-2 text-brand-blue hover:text-brand-navy hover:bg-brand-sand/50 rounded-lg transition-colors"
+              className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <X size={20} strokeWidth={1.5} />
             </button>
           </div>
 
-          {/* Content */}
-          <div className="p-6 max-h-[70vh] overflow-y-auto">
-            <div className="space-y-6">
-              {/* Profile Section */}
-              <div>
-                <h3 className="text-sm font-medium text-brand-blue mb-3">Profile</h3>
-                <div className="flex items-center gap-4 p-4 bg-brand-sand/30 rounded-lg">
-                  {/* Avatar */}
-                  <div className="w-16 h-16 rounded-full overflow-hidden ring-2 ring-brand-sky/30 flex-shrink-0">
-                    {user.photoURL ? (
-                      <img
-                        src={user.photoURL}
-                        alt={user.displayName || 'User'}
-                        className="w-full h-full object-cover"
-                        referrerPolicy="no-referrer"
-                      />
+          {/* Scrollable Content */}
+          <div className="p-6 space-y-6 overflow-y-auto flex-1">
+
+            {/* Section: Profile Identity */}
+            <div className="flex flex-col sm:flex-row gap-6">
+              {/* Avatar */}
+              <div className="flex flex-col items-center sm:items-start">
+                <div className="w-20 h-20 rounded-full bg-slate-800 ring-4 ring-slate-800 overflow-hidden shadow-lg">
+                  {user.photoURL ? (
+                    <img
+                      src={user.photoURL}
+                      alt={user.displayName || 'User'}
+                      className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-white text-2xl font-medium">
+                      {getInitials(user)}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Info Grid */}
+              <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Display Name</label>
+                  <div className="px-3 py-2 bg-slate-800/50 border border-slate-700 rounded-md text-sm text-white font-medium">
+                    {user.displayName || 'User'}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Email</label>
+                  <div className="px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-md text-sm text-slate-400 font-mono cursor-not-allowed truncate">
+                    {user.email}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Member Since</label>
+                  <div className="text-sm text-slate-400">
+                    {formatDate(user.metadata?.creationTime)}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Account ID</label>
+                  <div className="font-mono text-xs text-slate-500 select-all">
+                    {accountId}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Separator */}
+            <div className="h-px bg-slate-800 w-full" />
+
+            {/* Section: Subscription & Session Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+              {/* Plan Card */}
+              <div className="bg-slate-800/30 border border-slate-700/50 rounded-lg p-4 flex flex-col justify-between min-h-[140px]">
+                <div>
+                  <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Plan</h3>
+                  <div className="flex items-center gap-2 mb-1">
+                    {!isTierKnown ? (
+                      <span className="inline-block h-5 w-20 bg-slate-700 rounded animate-pulse" />
                     ) : (
-                      <div className="w-full h-full bg-brand-blue flex items-center justify-center text-brand-sand text-xl font-medium">
-                        {getInitials(user)}
-                      </div>
+                      <>
+                        <span className="text-base font-bold text-white">
+                          {isPremium ? 'Premium' : 'Free'}
+                        </span>
+                        {isPremium && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 uppercase">
+                            Active
+                          </span>
+                        )}
+                      </>
                     )}
                   </div>
-                  <div className="min-w-0">
-                    <div className="font-medium text-brand-navy truncate">
-                      {user.displayName || 'User'}
-                    </div>
-                    <div className="text-sm text-brand-blue truncate">{user.email}</div>
-                    {isPremium && (
-                      <div className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 bg-brand-navy text-brand-sand text-xs rounded-full">
-                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                        Premium
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Email Field (read-only) */}
-              <div>
-                <label className="block text-sm font-medium text-brand-blue mb-2">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  value={user.email}
-                  disabled
-                  className="w-full px-4 py-2.5 bg-brand-sand/20 border border-brand-sky/30 rounded-lg text-brand-navy cursor-not-allowed"
-                />
-                <p className="mt-1 text-xs text-brand-sky">
-                  Email cannot be changed for Google OAuth accounts
-                </p>
-              </div>
-
-              {/* Member Since */}
-              <div>
-                <label className="block text-sm font-medium text-brand-blue mb-2">
-                  Member Since
-                </label>
-                <div className="text-brand-navy">
-                  {formatDate(user.metadata?.creationTime)}
-                </div>
-              </div>
-
-              {/* Billing & Plan Section */}
-              <div className="pt-4 border-t border-brand-sky/30">
-                <h3 className="text-sm font-medium text-brand-blue mb-3">Billing & Plan</h3>
-
-                {/* Current Plan */}
-                <div className={`p-4 rounded-lg border ${isPremium ? 'bg-brand-navy/5 border-brand-navy/20' : 'bg-brand-sand/30 border-brand-sky/30'}`}>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className={`text-lg font-bold ${isPremium ? 'text-brand-navy' : 'text-brand-blue'}`}>
-                        {!isTierKnown ? (
-                          <span className="inline-block h-6 w-20 bg-brand-sky/30 rounded animate-pulse" />
-                        ) : isPremium ? 'Premium' : 'Free'}
-                      </div>
-                      {isPremium && subscription?.ends_at && (
-                        <div className="text-sm text-brand-blue">
-                          {daysUntilExpiry > 0
-                            ? `Renews on ${formatDate(subscription.ends_at)}`
-                            : 'Expires soon'
-                          }
-                        </div>
-                      )}
-                      {isTierKnown && !isPremium && (
-                        <div className="text-sm text-brand-sky">
-                          Limited access to transaction data
-                        </div>
-                      )}
-                    </div>
-                    {isPremium && (
-                      <div className="flex items-center justify-center w-10 h-10 bg-brand-sand rounded-full">
-                        <svg className="w-5 h-5 text-brand-navy" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                      </div>
-                    )}
-                  </div>
+                  {isPremium && subscription?.ends_at ? (
+                    <p className="text-[11px] text-slate-500">
+                      Renews {formatDate(subscription.ends_at)}
+                    </p>
+                  ) : isTierKnown && !isPremium ? (
+                    <p className="text-[11px] text-slate-500">
+                      Limited access
+                    </p>
+                  ) : null}
                 </div>
 
-                {/* Subscription Status - only for premium */}
-                {isPremium && (
-                  <div className="mt-4">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-brand-blue">Status:</span>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        Active
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Manage Subscription Button - for premium users */}
-                {isPremium && (
+                {isPremium ? (
                   <button
                     onClick={handleManageBilling}
                     disabled={loading}
-                    className="w-full mt-4 px-4 py-3 bg-brand-navy text-white rounded-lg font-medium hover:bg-brand-blue disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+                    className="mt-4 text-xs text-blue-400 hover:text-blue-300 font-medium text-left disabled:opacity-50"
                   >
-                    {loading ? (
-                      'Loading...'
-                    ) : (
-                      <>
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                        </svg>
-                        Manage Subscription & Billing
-                      </>
-                    )}
+                    Manage Billing →
                   </button>
-                )}
-
-                {/* Upgrade CTA for free users */}
-                {isFreeResolved && (
+                ) : isFreeResolved && (
                   <button
                     onClick={handleUpgrade}
-                    className="w-full mt-4 px-4 py-3 bg-brand-navy text-white rounded-lg font-medium hover:bg-brand-blue transition-colors flex items-center justify-center gap-2"
+                    className="mt-4 text-xs text-amber-400 hover:text-amber-300 font-medium text-left"
                   >
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                    Upgrade to Premium
+                    Upgrade to Premium →
                   </button>
                 )}
+              </div>
 
-                {/* Payment info note */}
-                <div className="flex items-start gap-2 p-3 mt-4 bg-brand-sand/30 rounded-lg">
-                  <svg className="w-5 h-5 text-brand-blue flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                  <p className="text-xs text-brand-blue">
-                    Payment processing and subscription management is handled securely by Stripe.
-                    We never store your payment details.
+              {/* Session Card (Neutral, Calm) */}
+              <div className="bg-slate-800/30 border border-slate-700/50 rounded-lg p-4 flex flex-col justify-between min-h-[140px]">
+                <div>
+                  <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Current Session</h3>
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-sm font-medium text-slate-200">Active</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    Logged in via Google
                   </p>
                 </div>
-              </div>
 
-              {/* Danger Zone */}
-              <div className="pt-4 border-t border-brand-sky/30">
-                <h3 className="text-sm font-medium text-red-600 mb-3">Danger Zone</h3>
-                {!showDeleteConfirm ? (
-                  <button
-                    onClick={() => setShowDeleteConfirm(true)}
-                    className="px-4 py-2 text-sm text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
-                  >
-                    Delete Account
-                  </button>
-                ) : (
-                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-sm text-red-700 mb-3">
-                      Are you sure? This action cannot be undone. All your data will be permanently deleted.
-                    </p>
-                    {deleteError && (
-                      <p className="text-sm text-red-600 mb-3">{deleteError}</p>
-                    )}
-                    <div className="flex gap-2">
-                      <button
-                        onClick={handleDeleteAccount}
-                        disabled={loading}
-                        className="px-4 py-2 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
-                      >
-                        {loading ? 'Deleting...' : 'Yes, Delete My Account'}
-                      </button>
-                      <button
-                        onClick={() => setShowDeleteConfirm(false)}
-                        disabled={loading}
-                        className="px-4 py-2 text-sm text-brand-blue border border-brand-sky rounded-lg hover:bg-brand-sand/50 transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                )}
+                <button
+                  onClick={handleSignOut}
+                  disabled={loading}
+                  className="mt-4 flex items-center gap-2 text-xs text-slate-400 hover:text-white font-medium transition-colors w-fit disabled:opacity-50"
+                >
+                  <LogOut size={14} />
+                  Log Out
+                </button>
               </div>
             </div>
+
+            {/* Danger Zone (Minimized) */}
+            {!showDeleteConfirm ? (
+              <div className="pt-4 border-t border-slate-800 flex justify-between items-center">
+                <p className="text-[11px] text-slate-600">
+                  {accountId}
+                </p>
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="text-[11px] text-rose-900/60 hover:text-rose-500 font-medium transition-colors"
+                >
+                  Delete Account
+                </button>
+              </div>
+            ) : (
+              <div className="pt-4 border-t border-slate-800">
+                <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+                  <p className="text-xs text-red-300 mb-3">
+                    This action cannot be undone. All your data will be permanently deleted.
+                  </p>
+                  {deleteError && (
+                    <p className="text-xs text-red-400 mb-3">{deleteError}</p>
+                  )}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleDeleteAccount}
+                      disabled={loading}
+                      className="px-4 py-2 text-xs text-white bg-red-600 rounded hover:bg-red-500 disabled:opacity-50 transition-colors"
+                    >
+                      {loading ? 'Deleting...' : 'Yes, Delete Forever'}
+                    </button>
+                    <button
+                      onClick={() => setShowDeleteConfirm(false)}
+                      disabled={loading}
+                      className="px-4 py-2 text-xs text-slate-400 border border-slate-600 rounded hover:bg-slate-800 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Fixed Footer */}
+          <div className="px-6 py-4 bg-slate-900 border-t border-slate-800 flex justify-end shrink-0">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors"
+            >
+              Close
+            </button>
           </div>
         </div>
       </div>

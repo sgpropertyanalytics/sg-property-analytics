@@ -132,7 +132,7 @@ function NavItem({ item, isActive, onClick, collapsed = false }) {
         {IconComponent && (
           <IconComponent
             size={18}
-            strokeWidth={1.5}
+            strokeWidth={isActive ? 2 : 1.75}
             className={`transition-colors duration-150 ${
               isActive ? 'text-[#C4A484]' : 'text-slate-500 group-hover:text-white'
             }`}
@@ -229,16 +229,20 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
       <div className="mt-6 space-y-5">
         {NAV_GROUPS.map((group, groupIndex) => (
           <div key={group.id}>
-            {/* Section Header - aligned with nav items */}
+            {/* Divider above second group */}
+            {!collapsed && groupIndex > 0 && (
+              <div className="h-px bg-white/[0.08] mb-4 mx-6" />
+            )}
+            {/* Section Header - micro-label style */}
             {!collapsed && (
               <div className="mb-2 pl-6">
-                <span className="text-[10px] uppercase tracking-wider font-mono text-slate-500">
+                <span className="text-[10px] uppercase tracking-[0.15em] font-medium text-slate-400/80">
                   {group.label}
                 </span>
               </div>
             )}
             {collapsed && groupIndex > 0 && (
-              <div className="h-px bg-slate-700 mb-2" />
+              <div className="h-px bg-white/[0.08] mb-2" />
             )}
             {/* Nav Items */}
             <div className="space-y-0.5">
@@ -256,24 +260,29 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
         ))}
       </div>
 
-      {/* Spacer */}
-      <div className="flex-1 min-h-4" />
+      {/* Spacer - pushes footer to bottom */}
+      <div className="mt-auto" />
 
-      {/* Bottom section - System Menu */}
-      <div className="border-t border-slate-700/50 pt-4 mt-2">
-        {/* Methodology Link */}
+      {/* THE SEAMLESS FOOTER - matches NavItem padding exactly */}
+      <div className="w-full border-t border-slate-800/60 pt-4 pb-4">
+        {/* Methodology - uses same pl-6 pr-4 gap-3 as NavItem */}
         <button
           onClick={() => startTransition(() => navigate('/methodology'))}
-          className={`group relative min-h-[44px] py-3 mb-1 rounded-r-[4px] flex items-center text-left text-slate-400 hover:text-white hover:bg-white/5 transition-all duration-150 ease-out select-none cursor-pointer border-l-[3px] border-l-transparent ${collapsed ? 'w-10 h-10 justify-center mx-auto px-0 mb-0 rounded-[4px]' : 'w-full gap-3 pl-6 pr-4'}`}
+          className={`
+            group relative flex items-center w-full py-2 mb-1
+            text-slate-500 hover:text-slate-300 hover:bg-white/5
+            transition-all duration-150 ease-out
+            border-l-[3px] border-l-transparent
+            ${collapsed ? 'justify-center px-0' : 'pl-6 pr-4 gap-3'}
+          `}
           aria-label="Methodology"
         >
+          {/* Icon - w-[18px] matches NavItem icons */}
           <div className="flex-shrink-0 w-[18px] flex items-center justify-center">
-            <Info size={18} strokeWidth={1.5} className="text-slate-500 group-hover:text-white transition-colors duration-150" />
+            <Info size={18} strokeWidth={1.75} className="opacity-70 group-hover:opacity-100 transition-opacity" />
           </div>
           {!collapsed && (
-            <span className="text-sm font-normal whitespace-nowrap">
-              Methodology
-            </span>
+            <span className="text-sm font-normal">Methodology</span>
           )}
           {collapsed && (
             <div className="absolute left-full ml-2 z-50 hidden group-hover:block px-2 py-1.5 text-xs font-medium text-white bg-slate-800 rounded shadow-lg whitespace-nowrap">
@@ -282,15 +291,11 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
           )}
         </button>
 
-        {/* User Profile - with breathing room */}
-        <div className="mt-3 pt-3 border-t border-slate-700/50 pl-3">
-          <UserProfileMenu
-            expanded={!collapsed}
-            onOpenSettings={() => setShowAccountSettings(true)}
-          />
-        </div>
-
-        {/* Collapse Toggle moved to edge (IDE-style) in DashboardLayout */}
+        {/* Profile Row - same padding structure */}
+        <UserProfileMenu
+          expanded={!collapsed}
+          onOpenSettings={() => setShowAccountSettings(true)}
+        />
       </div>
 
       {/* Account Settings Modal */}
