@@ -138,6 +138,10 @@ class URASyncEngine:
     # Chunk size for batch inserts
     CHUNK_SIZE = 500
 
+    # Maximum allowed failure rate for upserts (5%)
+    # If more than this percentage of rows fail, the sync fails
+    MAX_UPSERT_FAILURE_RATE = 0.05
+
     def __init__(
         self,
         mode: Optional[str] = None,
@@ -399,6 +403,16 @@ class URASyncEngine:
         else:
             self._upsert_rows(all_rows)
 
+            # Check failure rate - fail sync if too many rows failed
+            if all_rows and self.stats.failed_rows > 0:
+                failure_rate = self.stats.failed_rows / len(all_rows)
+                if failure_rate > self.MAX_UPSERT_FAILURE_RATE:
+                    raise RuntimeError(
+                        f"Upsert failure rate {failure_rate:.1%} exceeds "
+                        f"threshold {self.MAX_UPSERT_FAILURE_RATE:.0%} "
+                        f"({self.stats.failed_rows}/{len(all_rows)} rows failed)"
+                    )
+
     def _upsert_rows(self, rows: List[Dict[str, Any]]):
         """
         Upsert rows to transactions table.
@@ -623,8 +637,9 @@ class URASyncEngine:
 
         except Exception as e:
             logger.exception(f"Comparison failed: {e}")
-            # Don't fail the whole sync if comparison fails
-            return None
+            # Fail the sync - comparison is required to validate data quality
+            # Without comparison, we can't verify the sync didn't corrupt data
+            raise RuntimeError(f"Comparison failed: {e}") from e
 
     def _persist_comparison(self, report: ComparisonReport):
         """Persist comparison results to ura_sync_runs."""
