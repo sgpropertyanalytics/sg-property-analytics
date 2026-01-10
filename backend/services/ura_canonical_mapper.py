@@ -276,7 +276,9 @@ class URACanonicalMapper:
             'skip_invalid_date': 0,
             'skip_invalid_price': 0,
             'skip_invalid_area': 0,
+            'skip_invalid_psf': 0,
             'skip_exception': 0,
+            'outliers_flagged': 0,
         }
 
     def reset_stats(self) -> None:
@@ -418,14 +420,19 @@ class URACanonicalMapper:
         psf = price / area_sqft
         psf = round(psf, 2)
 
-        # Guard against NaN/Infinity (should never happen, but defensive)
+        # Guard against NaN/Infinity - reject row (P1 fix: don't set to 0)
         if math.isnan(psf) or math.isinf(psf):
             logger.warning(f"Invalid PSF for '{project_name}': price={price}, area={area_sqft}")
-            psf = 0
+            self._stats['skip_invalid_psf'] += 1
+            return None
 
         # PSF sanity bounds (Singapore market: $100 - $50,000 psf)
+        # Flag as outlier if outside bounds (per CLAUDE.md Rule 7)
+        is_outlier = False
         if psf < 100 or psf > 50000:
-            logger.debug(f"PSF outside typical range for '{project_name}': {psf}")
+            logger.info(f"Flagging outlier PSF for '{project_name}': ${psf:.2f}/sqft")
+            is_outlier = True
+            self._stats['outliers_flagged'] += 1
 
         contract_date = contract_date_raw  # Store original mmyy format
         transaction_month = transaction_date.replace(day=1)  # First of month
@@ -498,6 +505,9 @@ class URACanonicalMapper:
             'transaction_month': transaction_month,
             'source': self.source,
 
+            # Outlier flag (for COALESCE(is_outlier, false) = false filtering)
+            'is_outlier': is_outlier,
+
             # Schema drift safety
             'raw_extras': json.dumps(raw_extras) if raw_extras else None,
         }
@@ -540,17 +550,20 @@ class URACanonicalMapper:
             skip_breakdown.append(f"price={self._stats['skip_invalid_price']}")
         if self._stats['skip_invalid_area'] > 0:
             skip_breakdown.append(f"area={self._stats['skip_invalid_area']}")
+        if self._stats['skip_invalid_psf'] > 0:
+            skip_breakdown.append(f"psf={self._stats['skip_invalid_psf']}")
         if self._stats['skip_missing_project'] > 0:
             skip_breakdown.append(f"project={self._stats['skip_missing_project']}")
         if self._stats['skip_exception'] > 0:
             skip_breakdown.append(f"error={self._stats['skip_exception']}")
 
         skip_detail = f" ({', '.join(skip_breakdown)})" if skip_breakdown else ""
+        outlier_detail = f", {self._stats['outliers_flagged']} outliers" if self._stats['outliers_flagged'] > 0 else ""
 
         logger.info(
             f"Mapped {self._stats['projects_processed']} projects, "
             f"{self._stats['transactions_processed']} transactions, "
-            f"{self._stats['transactions_skipped']} skipped{skip_detail}"
+            f"{self._stats['transactions_skipped']} skipped{skip_detail}{outlier_detail}"
         )
 
         return rows
