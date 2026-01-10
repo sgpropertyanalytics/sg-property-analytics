@@ -614,3 +614,205 @@ class TestJSONBTypeBinding:
         assert 'bindparam' in source, "_persist_comparison should use bindparam"
         assert 'JSONB' in source, "_persist_comparison should bind JSONB type"
         assert "bindparam('results', type_=JSONB)" in source
+
+
+# =============================================================================
+# Silent Failure Prevention Tests
+# =============================================================================
+
+class TestUpsertFailureThreshold:
+    """Tests for upsert failure rate threshold."""
+
+    def test_max_failure_rate_constant_exists(self):
+        """Verify MAX_UPSERT_FAILURE_RATE constant is defined."""
+        from services.ura_sync_engine import URASyncEngine
+
+        assert hasattr(URASyncEngine, 'MAX_UPSERT_FAILURE_RATE')
+        assert URASyncEngine.MAX_UPSERT_FAILURE_RATE == 0.05
+
+    def test_failure_rate_check_in_execute_sync(self):
+        """Verify failure rate check exists in _execute_sync."""
+        import inspect
+        from services.ura_sync_engine import URASyncEngine
+
+        source = inspect.getsource(URASyncEngine._execute_sync)
+
+        # Must check failure rate after upsert
+        assert 'failed_rows' in source, "_execute_sync should check failed_rows"
+        assert 'MAX_UPSERT_FAILURE_RATE' in source, "_execute_sync should use threshold"
+        assert 'Upsert failure rate' in source, "_execute_sync should have descriptive error"
+
+
+class TestComparisonFailureHandling:
+    """Tests for comparison failure handling."""
+
+    def test_comparison_failure_raises_exception(self):
+        """Verify comparison failure raises instead of returning None."""
+        import inspect
+        from services.ura_sync_engine import URASyncEngine
+
+        source = inspect.getsource(URASyncEngine._run_comparison)
+
+        # Must raise RuntimeError on exception (not swallow and return None)
+        assert 'raise RuntimeError' in source, \
+            "_run_comparison should raise RuntimeError on failure"
+
+        # Exception handler should NOT return None
+        # Find the except block and verify it raises
+        assert 'except Exception as e:' in source
+        except_block_start = source.find('except Exception as e:')
+        except_block = source[except_block_start:except_block_start + 300]
+        assert 'raise RuntimeError' in except_block, \
+            "Exception handler should raise, not return None"
+
+    @patch('services.ura_sync_engine.validate_sync_config')
+    @patch('services.ura_sync_engine.get_database_engine')
+    @patch('services.ura_sync_engine.URAAPIClient')
+    @patch('services.ura_sync_engine.URAShadowComparator')
+    @patch('services.ura_sync_engine.scoped_session')
+    def test_comparison_exception_fails_sync(
+        self,
+        mock_session,
+        mock_comparator,
+        mock_api_client,
+        mock_db_engine,
+        mock_validate
+    ):
+        """Test that comparison exception causes sync failure."""
+        from datetime import date, timedelta
+
+        # Setup mocks
+        mock_validate.return_value = (True, None)
+        mock_db_engine.return_value = MagicMock()
+
+        # Mock session with valid baseline
+        session_mock = MagicMock()
+        baseline_result_mock = MagicMock()
+        baseline_result_mock.fetchone.return_value = MagicMock(
+            cnt=5000,
+            latest_month=date.today() - timedelta(days=30)
+        )
+        session_mock.execute.return_value = baseline_result_mock
+        mock_session.return_value.return_value = session_mock
+
+        # Mock API client - return empty for speed
+        client_instance = MagicMock()
+        client_instance.fetch_all_transactions.return_value = iter([])
+        mock_api_client.return_value = client_instance
+
+        # Mock comparator to raise exception
+        comparator_instance = MagicMock()
+        comparator_instance.compare_run_vs_csv.side_effect = Exception("DB connection lost")
+        mock_comparator.return_value = comparator_instance
+
+        # Run sync
+        engine = URASyncEngine(mode='shadow')
+        result = engine.run()
+
+        # Verify failure due to comparison exception
+        assert not result.success
+        assert result.error_stage == 'sync'
+        assert 'Comparison failed' in result.error_message
+
+
+# =============================================================================
+# SQL Injection Prevention Tests (Comparator)
+# =============================================================================
+
+class TestComparatorSQLInjectionPrevention:
+    """
+    Regression tests to prevent SQL injection in shadow comparator.
+
+    These tests verify the architectural fix: SourceFilter + parameterized queries.
+    """
+
+    def test_source_filter_dataclass_exists(self):
+        """Verify SourceFilter dataclass is used instead of raw strings."""
+        from services.ura_shadow_comparator import SourceFilter, FilterType
+
+        # Create filters - should not raise
+        run_filter = SourceFilter.for_run('abc-123')
+        source_filter = SourceFilter.for_source('csv')
+
+        assert run_filter.filter_type == FilterType.RUN_ID
+        assert run_filter.value == 'abc-123'
+        assert source_filter.filter_type == FilterType.SOURCE
+        assert source_filter.value == 'csv'
+
+    def test_compare_methods_use_source_filter(self):
+        """Verify compare methods use SourceFilter, not string interpolation."""
+        import inspect
+        from services.ura_shadow_comparator import URAShadowComparator
+
+        # Check compare_run_vs_csv
+        source = inspect.getsource(URAShadowComparator.compare_run_vs_csv)
+        assert "SourceFilter.for_run" in source, \
+            "compare_run_vs_csv should use SourceFilter.for_run"
+        assert "f\"run_id = " not in source, \
+            "compare_run_vs_csv should NOT use f-string SQL"
+
+        # Check compare_runs
+        source = inspect.getsource(URAShadowComparator.compare_runs)
+        assert "SourceFilter.for_run" in source, \
+            "compare_runs should use SourceFilter.for_run"
+        assert "f\"run_id = " not in source, \
+            "compare_runs should NOT use f-string SQL"
+
+    def test_helper_methods_use_parameterized_queries(self):
+        """Verify helper methods build parameterized queries."""
+        import inspect
+        from services.ura_shadow_comparator import URAShadowComparator
+
+        # Check _get_count uses parameters
+        source = inspect.getsource(URAShadowComparator._get_count)
+        assert "conn.execute(query, params)" in source, \
+            "_get_count should pass params to execute"
+        assert "_build_source_condition" in source, \
+            "_get_count should use _build_source_condition helper"
+
+        # Check _get_count_by_dimension
+        source = inspect.getsource(URAShadowComparator._get_count_by_dimension)
+        assert "allowed_dimensions" in source, \
+            "_get_count_by_dimension should validate dimension against allowlist"
+        assert "_build_source_condition" in source, \
+            "_get_count_by_dimension should use parameterized conditions"
+
+    def test_property_types_validated_against_allowlist(self):
+        """Verify property_types are validated, not directly interpolated."""
+        import inspect
+        from services.ura_shadow_comparator import URAShadowComparator
+
+        source = inspect.getsource(URAShadowComparator._compare)
+
+        # Must validate against allowlist
+        assert "allowed_types" in source, \
+            "_compare should validate property_types against allowlist"
+        assert "Condominium" in source and "Apartment" in source, \
+            "_compare should have property type allowlist"
+
+        # Must NOT use f-string interpolation for property_types
+        assert "f\"'{t}'\"" not in source, \
+            "_compare should NOT use f-string to build property_type IN clause"
+
+    def test_build_source_condition_returns_parameterized_query(self):
+        """Verify _build_source_condition returns SQL with :param placeholders."""
+        from services.ura_shadow_comparator import URAShadowComparator, SourceFilter
+        from unittest.mock import MagicMock
+
+        comparator = URAShadowComparator(MagicMock())
+
+        # Test run_id filter
+        run_filter = SourceFilter.for_run('test-uuid-123')
+        sql, params = comparator._build_source_condition(run_filter, 'current')
+
+        assert ':current_value' in sql, "SQL should use :param placeholder"
+        assert params['current_value'] == 'test-uuid-123', "Params should contain the value"
+        assert 'test-uuid-123' not in sql, "Value should NOT be in SQL string"
+
+        # Test source filter
+        source_filter = SourceFilter.for_source('csv')
+        sql, params = comparator._build_source_condition(source_filter, 'baseline')
+
+        assert ':baseline_value' in sql, "SQL should use :param placeholder"
+        assert params['baseline_value'] == 'csv', "Params should contain the value"
+        assert "'csv'" not in sql, "Value should NOT be quoted in SQL string"

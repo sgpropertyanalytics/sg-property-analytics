@@ -21,10 +21,40 @@ Usage:
 
 import logging
 from datetime import date, datetime, timedelta
+from enum import Enum
 from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass, field, asdict
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
+
+
+class FilterType(Enum):
+    """Type of filter for comparison queries."""
+    RUN_ID = 'run_id'
+    SOURCE = 'source'
+
+
+@dataclass
+class SourceFilter:
+    """
+    Structured filter for comparison queries.
+
+    Avoids SQL injection by separating filter type from value.
+    Values are passed as parameters, not interpolated.
+    """
+    filter_type: FilterType
+    value: str
+    label: str  # For logging/reporting
+
+    @classmethod
+    def for_run(cls, run_id: str) -> 'SourceFilter':
+        """Create filter for a specific sync run."""
+        return cls(FilterType.RUN_ID, run_id, run_id)
+
+    @classmethod
+    def for_source(cls, source: str) -> 'SourceFilter':
+        """Create filter for a source type (csv, ura_api)."""
+        return cls(FilterType.SOURCE, source, source)
 
 logger = logging.getLogger(__name__)
 
@@ -128,10 +158,8 @@ class URAShadowComparator:
             ComparisonReport with detailed comparison results
         """
         return self._compare(
-            current_filter=f"run_id = '{run_id}'",
-            baseline_filter="source = 'csv'",
-            current_source=run_id,
-            baseline_source='csv',
+            current_filter=SourceFilter.for_run(run_id),
+            baseline_filter=SourceFilter.for_source('csv'),
             date_range=date_range,
             property_types=property_types
         )
@@ -152,10 +180,8 @@ class URAShadowComparator:
             ComparisonReport with detailed comparison results
         """
         return self._compare(
-            current_filter="source = 'ura_api'",
-            baseline_filter="source = 'csv'",
-            current_source='ura_api',
-            baseline_source='csv',
+            current_filter=SourceFilter.for_source('ura_api'),
+            baseline_filter=SourceFilter.for_source('csv'),
             date_range=date_range,
             property_types=property_types
         )
@@ -178,19 +204,15 @@ class URAShadowComparator:
             ComparisonReport with detailed comparison results
         """
         return self._compare(
-            current_filter=f"run_id = '{current_run_id}'",
-            baseline_filter=f"run_id = '{baseline_run_id}'",
-            current_source=current_run_id,
-            baseline_source=baseline_run_id,
+            current_filter=SourceFilter.for_run(current_run_id),
+            baseline_filter=SourceFilter.for_run(baseline_run_id),
             date_range=date_range
         )
 
     def _compare(
         self,
-        current_filter: str,
-        baseline_filter: str,
-        current_source: str,
-        baseline_source: str,
+        current_filter: SourceFilter,
+        baseline_filter: SourceFilter,
         date_range: Optional[Tuple[date, date]] = None,
         property_types: Optional[List[str]] = None
     ) -> ComparisonReport:
@@ -198,40 +220,39 @@ class URAShadowComparator:
         Core comparison logic.
 
         Args:
-            current_filter: SQL WHERE clause for current data
-            baseline_filter: SQL WHERE clause for baseline data
-            current_source: Label for current source
-            baseline_source: Label for baseline source
+            current_filter: SourceFilter for current data
+            baseline_filter: SourceFilter for baseline data
             date_range: Optional date range filter
             property_types: Optional property type filter
         """
         report = ComparisonReport(
-            current_source=current_source,
-            baseline_source=baseline_source
+            current_source=current_filter.label,
+            baseline_source=baseline_filter.label
         )
 
-        # Build common filters
-        common_filters = ["COALESCE(is_outlier, false) = false"]
+        # Build common parameters - all values are parameterized, no interpolation
+        common_params: Dict[str, Any] = {}
+
         if date_range:
             report.date_range_start = date_range[0]
             report.date_range_end = date_range[1]
-            common_filters.append(
-                f"transaction_month >= '{date_range[0].isoformat()}' "
-                f"AND transaction_month < '{date_range[1].isoformat()}'"
-            )
-        if property_types:
-            types_str = ", ".join(f"'{t}'" for t in property_types)
-            common_filters.append(f"property_type IN ({types_str})")
+            common_params['date_start'] = date_range[0]
+            common_params['date_end'] = date_range[1]
 
-        common_where = " AND ".join(common_filters)
+        if property_types:
+            # Validate property types against allowlist to prevent injection
+            allowed_types = {'Condominium', 'Apartment', 'Executive Condominium'}
+            validated_types = [t for t in property_types if t in allowed_types]
+            if validated_types:
+                common_params['property_types'] = tuple(validated_types)
 
         with self.engine.connect() as conn:
             # 1. Get total counts
             report.current_row_count = self._get_count(
-                conn, current_filter, common_where
+                conn, current_filter, common_params
             )
             report.baseline_row_count = self._get_count(
-                conn, baseline_filter, common_where
+                conn, baseline_filter, common_params
             )
 
             report.row_count_diff = report.current_row_count - report.baseline_row_count
@@ -242,32 +263,32 @@ class URAShadowComparator:
 
             # 2. Count by dimensions
             report.count_by_month = self._get_count_by_dimension(
-                conn, 'transaction_month', current_filter, baseline_filter, common_where
+                conn, 'transaction_month', current_filter, baseline_filter, common_params
             )
             report.count_by_district = self._get_count_by_dimension(
-                conn, 'district', current_filter, baseline_filter, common_where
+                conn, 'district', current_filter, baseline_filter, common_params
             )
             report.count_by_sale_type = self._get_count_by_dimension(
-                conn, 'sale_type', current_filter, baseline_filter, common_where
+                conn, 'sale_type', current_filter, baseline_filter, common_params
             )
             report.count_by_property_type = self._get_count_by_dimension(
-                conn, 'property_type', current_filter, baseline_filter, common_where
+                conn, 'property_type', current_filter, baseline_filter, common_params
             )
 
             # 3. PSF comparisons
             report.psf_median_by_month = self._get_psf_by_dimension(
-                conn, 'transaction_month', current_filter, baseline_filter, common_where, 0.5
+                conn, 'transaction_month', current_filter, baseline_filter, common_params, 0.5
             )
             report.psf_p95_by_month = self._get_psf_by_dimension(
-                conn, 'transaction_month', current_filter, baseline_filter, common_where, 0.95
+                conn, 'transaction_month', current_filter, baseline_filter, common_params, 0.95
             )
             report.psf_median_by_district = self._get_psf_by_dimension(
-                conn, 'district', current_filter, baseline_filter, common_where, 0.5
+                conn, 'district', current_filter, baseline_filter, common_params, 0.5
             )
 
             # 4. Row-level coverage (by row_hash)
             coverage = self._get_row_coverage(
-                conn, current_filter, baseline_filter, common_where
+                conn, current_filter, baseline_filter, common_params
             )
             report.coverage_pct = coverage['coverage_pct']
             report.missing_in_current = coverage['missing_in_current']
@@ -275,7 +296,7 @@ class URAShadowComparator:
 
             # 5. Top mismatches
             report.top_mismatches = self._get_top_mismatches(
-                conn, current_filter, baseline_filter, common_where, limit=10
+                conn, current_filter, baseline_filter, common_params, limit=10
             )
 
         # 6. Assess overall acceptability
@@ -283,37 +304,98 @@ class URAShadowComparator:
 
         return report
 
-    def _get_count(self, conn, source_filter: str, common_where: str) -> int:
-        """Get row count for a source."""
+    def _build_source_condition(self, filter: SourceFilter, param_prefix: str) -> Tuple[str, Dict[str, Any]]:
+        """
+        Build SQL condition and params for a source filter.
+
+        Args:
+            filter: The source filter
+            param_prefix: Prefix for parameter names (e.g., 'current', 'baseline')
+
+        Returns:
+            Tuple of (SQL condition string, params dict)
+        """
+        param_name = f"{param_prefix}_value"
+        if filter.filter_type == FilterType.RUN_ID:
+            return f"run_id = :{param_name}", {param_name: filter.value}
+        else:  # SOURCE
+            return f"source = :{param_name}", {param_name: filter.value}
+
+    def _build_common_conditions(self, common_params: Dict[str, Any]) -> Tuple[str, Dict[str, Any]]:
+        """
+        Build common WHERE conditions from params.
+
+        Returns:
+            Tuple of (SQL conditions string, params dict)
+        """
+        conditions = ["COALESCE(is_outlier, false) = false"]
+        params = {}
+
+        if 'date_start' in common_params:
+            conditions.append("transaction_month >= :date_start AND transaction_month < :date_end")
+            params['date_start'] = common_params['date_start']
+            params['date_end'] = common_params['date_end']
+
+        if 'property_types' in common_params:
+            conditions.append("property_type IN :property_types")
+            params['property_types'] = common_params['property_types']
+
+        return " AND ".join(conditions), params
+
+    def _get_count(
+        self,
+        conn,
+        source_filter: SourceFilter,
+        common_params: Dict[str, Any]
+    ) -> int:
+        """Get row count for a source using parameterized query."""
+        # Build source condition
+        source_cond, source_params = self._build_source_condition(source_filter, 'src')
+
+        # Build common conditions
+        common_cond, common_params_sql = self._build_common_conditions(common_params)
+
         query = text(f"""
             SELECT COUNT(*)
             FROM transactions
-            WHERE {source_filter}
-              AND {common_where}
+            WHERE {source_cond}
+              AND {common_cond}
         """)
-        result = conn.execute(query)
+
+        params = {**source_params, **common_params_sql}
+        result = conn.execute(query, params)
         return result.scalar() or 0
 
     def _get_count_by_dimension(
         self,
         conn,
         dimension: str,
-        current_filter: str,
-        baseline_filter: str,
-        common_where: str
+        current_filter: SourceFilter,
+        baseline_filter: SourceFilter,
+        common_params: Dict[str, Any]
     ) -> Dict[str, Dict[str, int]]:
-        """Get count comparison by dimension."""
+        """Get count comparison by dimension using parameterized query."""
+        # Validate dimension against allowlist (prevent SQL injection via dimension)
+        allowed_dimensions = {'transaction_month', 'district', 'sale_type', 'property_type'}
+        if dimension not in allowed_dimensions:
+            raise ValueError(f"Invalid dimension: {dimension}")
+
+        # Build conditions
+        current_cond, current_params = self._build_source_condition(current_filter, 'current')
+        baseline_cond, baseline_params = self._build_source_condition(baseline_filter, 'baseline')
+        common_cond, common_params_sql = self._build_common_conditions(common_params)
+
         query = text(f"""
             WITH current_counts AS (
                 SELECT {dimension}::text as dim_value, COUNT(*) as cnt
                 FROM transactions
-                WHERE {current_filter} AND {common_where}
+                WHERE {current_cond} AND {common_cond}
                 GROUP BY {dimension}
             ),
             baseline_counts AS (
                 SELECT {dimension}::text as dim_value, COUNT(*) as cnt
                 FROM transactions
-                WHERE {baseline_filter} AND {common_where}
+                WHERE {baseline_cond} AND {common_cond}
                 GROUP BY {dimension}
             )
             SELECT
@@ -325,8 +407,9 @@ class URAShadowComparator:
             ORDER BY dim_value
         """)
 
+        params = {**current_params, **baseline_params, **common_params_sql}
         result = {}
-        for row in conn.execute(query):
+        for row in conn.execute(query, params):
             dim_value = row.dim_value or 'NULL'
             result[dim_value] = {
                 'current': row.current_count,
@@ -339,25 +422,35 @@ class URAShadowComparator:
         self,
         conn,
         dimension: str,
-        current_filter: str,
-        baseline_filter: str,
-        common_where: str,
+        current_filter: SourceFilter,
+        baseline_filter: SourceFilter,
+        common_params: Dict[str, Any],
         percentile: float
     ) -> Dict[str, Dict[str, float]]:
-        """Get PSF percentile comparison by dimension."""
+        """Get PSF percentile comparison by dimension using parameterized query."""
+        # Validate dimension against allowlist
+        allowed_dimensions = {'transaction_month', 'district', 'sale_type', 'property_type'}
+        if dimension not in allowed_dimensions:
+            raise ValueError(f"Invalid dimension: {dimension}")
+
+        # Build conditions
+        current_cond, current_params = self._build_source_condition(current_filter, 'current')
+        baseline_cond, baseline_params = self._build_source_condition(baseline_filter, 'baseline')
+        common_cond, common_params_sql = self._build_common_conditions(common_params)
+
         query = text(f"""
             WITH current_psf AS (
                 SELECT {dimension}::text as dim_value,
                        PERCENTILE_CONT(:percentile) WITHIN GROUP (ORDER BY psf) as psf_val
                 FROM transactions
-                WHERE {current_filter} AND {common_where}
+                WHERE {current_cond} AND {common_cond}
                 GROUP BY {dimension}
             ),
             baseline_psf AS (
                 SELECT {dimension}::text as dim_value,
                        PERCENTILE_CONT(:percentile) WITHIN GROUP (ORDER BY psf) as psf_val
                 FROM transactions
-                WHERE {baseline_filter} AND {common_where}
+                WHERE {baseline_cond} AND {common_cond}
                 GROUP BY {dimension}
             )
             SELECT
@@ -369,8 +462,9 @@ class URAShadowComparator:
             ORDER BY dim_value
         """)
 
+        params = {**current_params, **baseline_params, **common_params_sql, 'percentile': percentile}
         result = {}
-        for row in conn.execute(query, {'percentile': percentile}):
+        for row in conn.execute(query, params):
             dim_value = row.dim_value or 'NULL'
             current_psf = float(row.current_psf) if row.current_psf else None
             baseline_psf = float(row.baseline_psf) if row.baseline_psf else None
@@ -392,22 +486,27 @@ class URAShadowComparator:
     def _get_row_coverage(
         self,
         conn,
-        current_filter: str,
-        baseline_filter: str,
-        common_where: str
+        current_filter: SourceFilter,
+        baseline_filter: SourceFilter,
+        common_params: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Calculate row coverage by row_hash."""
+        """Calculate row coverage by row_hash using parameterized query."""
+        # Build conditions
+        current_cond, current_params = self._build_source_condition(current_filter, 'current')
+        baseline_cond, baseline_params = self._build_source_condition(baseline_filter, 'baseline')
+        common_cond, common_params_sql = self._build_common_conditions(common_params)
+
         query = text(f"""
             WITH current_hashes AS (
                 SELECT DISTINCT row_hash
                 FROM transactions
-                WHERE {current_filter} AND {common_where}
+                WHERE {current_cond} AND {common_cond}
                   AND row_hash IS NOT NULL
             ),
             baseline_hashes AS (
                 SELECT DISTINCT row_hash
                 FROM transactions
-                WHERE {baseline_filter} AND {common_where}
+                WHERE {baseline_cond} AND {common_cond}
                   AND row_hash IS NOT NULL
             ),
             stats AS (
@@ -421,15 +520,12 @@ class URAShadowComparator:
             SELECT * FROM stats
         """)
 
-        row = conn.execute(query).fetchone()
+        params = {**current_params, **baseline_params, **common_params_sql}
+        row = conn.execute(query, params).fetchone()
 
-        total = (row.current_count or 0) + (row.baseline_count or 0) - (row.matched or 0)
-        coverage_pct = 0.0
-        if total > 0:
-            coverage_pct = (row.matched or 0) / total * 100 * 2  # Jaccard-ish
-
-        # Actually use union coverage: matched / max(current, baseline)
+        # Use union coverage: matched / max(current, baseline)
         max_count = max(row.current_count or 0, row.baseline_count or 0)
+        coverage_pct = 0.0
         if max_count > 0:
             coverage_pct = (row.matched or 0) / max_count * 100
 
@@ -443,19 +539,30 @@ class URAShadowComparator:
     def _get_top_mismatches(
         self,
         conn,
-        current_filter: str,
-        baseline_filter: str,
-        common_where: str,
+        current_filter: SourceFilter,
+        baseline_filter: SourceFilter,
+        common_params: Dict[str, Any],
         limit: int = 10
     ) -> List[Dict[str, Any]]:
         """
-        Get top N rows where the same natural key exists in both but fields differ.
+        Get top N rows that exist in baseline but not in current.
 
-        Note: This compares rows with matching row_hash - if row_hash matches,
-        the rows are identical by definition. So this actually finds rows that
-        exist in one source but not the other.
+        Uses parameterized queries to prevent SQL injection.
         """
-        # Find rows in baseline missing from current (potential deletions/revisions)
+        # Build conditions with table-prefixed params
+        current_cond, current_params = self._build_source_condition(current_filter, 'current')
+        baseline_cond, baseline_params = self._build_source_condition(baseline_filter, 'baseline')
+        common_cond, common_params_sql = self._build_common_conditions(common_params)
+
+        # Modify conditions for table aliases
+        # Replace column references to use table aliases
+        current_cond_c = current_cond.replace('run_id', 'c.run_id').replace('source', 'c.source')
+        baseline_cond_b = baseline_cond.replace('run_id', 'b.run_id').replace('source', 'b.source')
+        common_cond_b = (common_cond
+                         .replace('is_outlier', 'b.is_outlier')
+                         .replace('transaction_month', 'b.transaction_month')
+                         .replace('property_type', 'b.property_type'))
+
         query = text(f"""
             SELECT
                 b.project_name,
@@ -468,16 +575,17 @@ class URAShadowComparator:
                 'missing_in_current' as mismatch_type
             FROM transactions b
             LEFT JOIN transactions c ON b.row_hash = c.row_hash
-                AND {current_filter.replace('run_id', 'c.run_id').replace('source', 'c.source')}
-            WHERE {baseline_filter.replace('run_id', 'b.run_id').replace('source', 'b.source')}
-              AND {common_where.replace('is_outlier', 'b.is_outlier').replace('transaction_month', 'b.transaction_month').replace('property_type', 'b.property_type')}
+                AND {current_cond_c}
+            WHERE {baseline_cond_b}
+              AND {common_cond_b}
               AND c.row_hash IS NULL
             LIMIT :limit
         """)
 
+        params = {**current_params, **baseline_params, **common_params_sql, 'limit': limit}
         mismatches = []
         try:
-            for row in conn.execute(query, {'limit': limit}):
+            for row in conn.execute(query, params):
                 mismatches.append({
                     'project_name': row.project_name,
                     'transaction_month': str(row.transaction_month),
