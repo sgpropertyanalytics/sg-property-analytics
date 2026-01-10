@@ -183,31 +183,23 @@ class TestURASyncEngineModes:
 
 
 class TestURASyncEngineUpsertSQL:
-    """Tests for upsert SQL generation."""
+    """
+    Tests for upsert SQL usage.
 
-    def test_upsert_sql_generation(self):
-        """Upsert SQL is valid."""
-        engine = URASyncEngine()
-        sql = engine._build_upsert_sql()
+    Note: The actual SQL generation is tested in test_ura_sync_config.py.
+    The engine now uses build_upsert_sql() from config (single source of truth).
+    """
 
-        # Check it has key components
-        assert 'INSERT INTO transactions' in sql
-        assert 'ON CONFLICT (row_hash)' in sql
-        assert 'DO UPDATE SET' in sql
-        assert 'RETURNING' in sql
-        assert 'was_inserted' in sql
+    def test_engine_uses_config_upsert_sql(self):
+        """Verify engine uses upsert SQL from config module."""
+        import inspect
+        source = inspect.getsource(URASyncEngine._upsert_chunk)
 
-    def test_upsert_sql_updates_price(self):
-        """Upsert SQL updates price field."""
-        engine = URASyncEngine()
-        sql = engine._build_upsert_sql()
-        assert 'price = EXCLUDED.price' in sql
-
-    def test_upsert_sql_updates_run_id(self):
-        """Upsert SQL updates run_id field."""
-        engine = URASyncEngine()
-        sql = engine._build_upsert_sql()
-        assert 'run_id = EXCLUDED.run_id' in sql
+        # Should call build_upsert_sql() not self._build_upsert_sql()
+        assert 'build_upsert_sql()' in source, \
+            "Engine should use build_upsert_sql() from config"
+        assert 'self._build_upsert_sql' not in source, \
+            "Engine should NOT have its own _build_upsert_sql method"
 
 
 class TestURASyncEnginePrepareRow:
