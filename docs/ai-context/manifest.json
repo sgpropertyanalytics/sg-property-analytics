@@ -1,0 +1,88 @@
+{
+  "version": "1.0.0",
+  "last_modified": "2026-01-10",
+  "files": {
+    "static/definitions.md": {
+      "updated_at": "2026-01-10",
+      "last_verified_at": "2026-01-10",
+      "description": "Core property market definitions (PSF, tenure, sale types)",
+      "injection": "always"
+    },
+    "static/district-mapping.md": {
+      "updated_at": "2026-01-10",
+      "last_verified_at": "2026-01-10",
+      "description": "District to region mapping (D01-D28 → CCR/RCR/OCR)",
+      "injection": "always_trimmed",
+      "notes": "Inject summary table only, not full descriptions"
+    },
+    "static/market-cycles.md": {
+      "updated_at": "2026-01-10",
+      "last_verified_at": "2026-01-10",
+      "description": "Historical market context (no specific prices)",
+      "injection": "on_demand",
+      "notes": "Include when user asks about historical context or trends"
+    },
+    "static/reasoning-guide.md": {
+      "updated_at": "2026-01-10",
+      "last_verified_at": "2026-01-10",
+      "description": "Chart interpretation framework by chart type",
+      "injection": "relevant_section",
+      "notes": "Inject only the section matching the chart type"
+    },
+    "snapshot/market-snapshot.md": {
+      "updated_at": "2026-01-10",
+      "last_verified_at": "2026-01-10",
+      "refresh_frequency": "weekly",
+      "source_urls": [
+        "https://www.ura.gov.sg/reis/dataSalesMarket"
+      ],
+      "description": "Current market state and recent developments",
+      "injection": "always_header",
+      "notes": "Always include header with freshness date; full content on demand"
+    },
+    "snapshot/policy-measures.md": {
+      "updated_at": "2026-01-10",
+      "last_verified_at": "2026-01-10",
+      "effective_from": {
+        "ABSD": "2023-04-27",
+        "LTV": "2021-12-16",
+        "SSD": "2017-03-11",
+        "BSD": "2023-02-15",
+        "TDSR": "2021-12-16"
+      },
+      "source_urls": [
+        "https://www.iras.gov.sg/taxes/stamp-duty/for-property",
+        "https://www.mas.gov.sg/regulation/explainers/new-cooling-measures"
+      ],
+      "description": "Current policy rates (ABSD, LTV, SSD, BSD, TDSR)",
+      "injection": "conditional",
+      "injection_triggers": [
+        "policy",
+        "ABSD",
+        "LTV",
+        "SSD",
+        "stamp duty",
+        "cooling measures",
+        "affordability",
+        "mortgage",
+        "financing",
+        "foreigner",
+        "buyer profile"
+      ],
+      "notes": "Token-heavy. Only inject when query involves policy impact or buyer costs."
+    },
+    "sources.md": {
+      "updated_at": "2026-01-10",
+      "description": "Allowed sources and citation rules",
+      "injection": "never",
+      "notes": "Reference doc for maintainers, not injected into prompts"
+    }
+  },
+  "injection_rules": {
+    "always": ["static/definitions.md"],
+    "always_trimmed": ["static/district-mapping.md"],
+    "always_header": ["snapshot/market-snapshot.md"],
+    "conditional": ["snapshot/policy-measures.md", "static/market-cycles.md"],
+    "relevant_section": ["static/reasoning-guide.md"]
+  }
+}
