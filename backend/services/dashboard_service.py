@@ -1151,18 +1151,82 @@ def warm_cache_for_common_queries():
     Pre-populate cache with common query patterns.
 
     Call this at application startup or periodically.
+
+    Covers Market Overview page patterns:
+    - Dashboard panels: time_series, volume_by_location, summary, price_histogram, beads_chart
+    - Common filter combinations: segments, bedrooms, timeframes
+    - KPI summary (via separate warming function)
     """
+    from datetime import date, timedelta
+    from constants import SALE_TYPE_RESALE
+
+    # Calculate common date ranges
+    today = date.today()
+    y1_start = date(today.year - 1, today.month, 1)
+    y3_start = date(today.year - 3, today.month, 1)
+
+    # Panel sets used by different pages
+    MARKET_OVERVIEW_PANELS = ['time_series', 'volume_by_location', 'summary', 'price_histogram', 'beads_chart']
+    CORE_PANELS = ['time_series', 'volume_by_location', 'summary']
+
     common_queries = [
-        # All data, no filters
-        {'filters': {}, 'panels': ['time_series', 'volume_by_location', 'summary']},
-        # By region
-        {'filters': {'segment': 'CCR'}, 'panels': ['time_series', 'volume_by_location', 'summary']},
-        {'filters': {'segment': 'RCR'}, 'panels': ['time_series', 'volume_by_location', 'summary']},
-        {'filters': {'segment': 'OCR'}, 'panels': ['time_series', 'volume_by_location', 'summary']},
-        # By bedroom type
-        {'filters': {'bedrooms': [2, 3, 4]}, 'panels': ['time_series', 'volume_by_location', 'summary']},
+        # =================================================================
+        # MARKET OVERVIEW PAGE - Most common landing page
+        # =================================================================
+
+        # Default view (no filters, Y1, Resale) - highest priority
+        {
+            'filters': {'sale_type': SALE_TYPE_RESALE, 'date_from': y1_start, 'date_to': today},
+            'panels': MARKET_OVERVIEW_PANELS
+        },
+
+        # By segment (CCR, RCR, OCR) - common drill-downs
+        {
+            'filters': {'segment': 'CCR', 'sale_type': SALE_TYPE_RESALE, 'date_from': y1_start, 'date_to': today},
+            'panels': MARKET_OVERVIEW_PANELS
+        },
+        {
+            'filters': {'segment': 'RCR', 'sale_type': SALE_TYPE_RESALE, 'date_from': y1_start, 'date_to': today},
+            'panels': MARKET_OVERVIEW_PANELS
+        },
+        {
+            'filters': {'segment': 'OCR', 'sale_type': SALE_TYPE_RESALE, 'date_from': y1_start, 'date_to': today},
+            'panels': MARKET_OVERVIEW_PANELS
+        },
+
+        # By bedroom (common filters)
+        {
+            'filters': {'bedrooms': [2], 'sale_type': SALE_TYPE_RESALE, 'date_from': y1_start, 'date_to': today},
+            'panels': CORE_PANELS
+        },
+        {
+            'filters': {'bedrooms': [3], 'sale_type': SALE_TYPE_RESALE, 'date_from': y1_start, 'date_to': today},
+            'panels': CORE_PANELS
+        },
+        {
+            'filters': {'bedrooms': [2, 3], 'sale_type': SALE_TYPE_RESALE, 'date_from': y1_start, 'date_to': today},
+            'panels': CORE_PANELS
+        },
+
+        # =================================================================
+        # EXTENDED TIMEFRAMES (Y3) - For trend analysis
+        # =================================================================
+        {
+            'filters': {'sale_type': SALE_TYPE_RESALE, 'date_from': y3_start, 'date_to': today},
+            'panels': CORE_PANELS
+        },
+
+        # =================================================================
+        # LEGACY: Unfiltered queries (backwards compatibility)
+        # =================================================================
+        {'filters': {}, 'panels': CORE_PANELS},
+        {'filters': {'segment': 'CCR'}, 'panels': CORE_PANELS},
+        {'filters': {'segment': 'RCR'}, 'panels': CORE_PANELS},
+        {'filters': {'segment': 'OCR'}, 'panels': CORE_PANELS},
+        {'filters': {'bedrooms': [2, 3, 4]}, 'panels': CORE_PANELS},
     ]
 
+    warmed_count = 0
     for query in common_queries:
         try:
             get_dashboard_data(
@@ -1171,5 +1235,75 @@ def warm_cache_for_common_queries():
                 skip_cache=True  # Force computation
             )
             logger.info(f"Warmed cache for {query['filters']}")
+            warmed_count += 1
         except Exception as e:
             logger.error(f"Failed to warm cache for {query['filters']}: {e}")
+
+    logger.info(f"Dashboard cache warming complete: {warmed_count}/{len(common_queries)} queries warmed")
+
+
+def warm_kpi_cache():
+    """
+    Pre-populate KPI cache with common query patterns.
+
+    Warms the /api/kpi-summary-v2 endpoint for common filter combinations.
+    Uses the same max_date logic as the endpoint (latest transaction date from DB).
+    """
+    from services.kpi import run_all_kpis
+    from utils.cache_key import build_json_cache_key
+    from sqlalchemy import text
+    from db.sql import OUTLIER_FILTER
+
+    # Get max_date from database (same logic as kpi_v2 endpoint)
+    result = db.session.execute(text(f"""
+        SELECT MAX(transaction_date) as max_date
+        FROM transactions
+        WHERE {OUTLIER_FILTER}
+    """)).fetchone()
+    max_date = result.max_date if result else None
+
+    if not max_date:
+        logger.warning("KPI cache warming skipped: no max_date available")
+        return
+
+    # Common KPI filter combinations
+    kpi_queries = [
+        # Default (no filters)
+        {'max_date': max_date},
+        # By segment
+        {'segments': ['CCR'], 'max_date': max_date},
+        {'segments': ['RCR'], 'max_date': max_date},
+        {'segments': ['OCR'], 'max_date': max_date},
+        # Common bedroom filters
+        {'bedrooms': [2], 'max_date': max_date},
+        {'bedrooms': [3], 'max_date': max_date},
+        {'bedrooms': [2, 3], 'max_date': max_date},
+    ]
+
+    warmed_count = 0
+    for filters in kpi_queries:
+        try:
+            # Build cache key
+            cache_key = build_json_cache_key("kpi", filters, include_keys=['districts', 'bedrooms', 'segments', 'max_date'])
+
+            # Run KPIs and cache result
+            kpi_results = run_all_kpis(filters)
+
+            # Build result structure matching endpoint response
+            result = {
+                "data": {"kpis": kpi_results},
+                "meta": {
+                    "elapsedMs": 0,  # Will be updated on cache hit
+                    "filtersApplied": filters,
+                    "cacheHit": False
+                }
+            }
+
+            # Store in shared cache
+            _dashboard_cache.set(cache_key, result)
+            logger.info(f"Warmed KPI cache for {filters}")
+            warmed_count += 1
+        except Exception as e:
+            logger.error(f"Failed to warm KPI cache for {filters}: {e}")
+
+    logger.info(f"KPI cache warming complete: {warmed_count}/{len(kpi_queries)} queries warmed")
