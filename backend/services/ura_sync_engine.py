@@ -35,7 +35,8 @@ from datetime import datetime, date, timedelta
 from typing import Optional, Dict, Any, List, Tuple
 from dataclasses import dataclass, field, asdict
 
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, text, bindparam
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 from services.ura_api_client import URAAPIClient, URADataError
@@ -88,29 +89,17 @@ def get_database_engine():
     """
     Create a database engine from DATABASE_URL.
 
-    Handles:
+    Uses config.get_database_url() which handles:
     - postgres:// → postgresql:// fix for SQLAlchemy 2.0
-    - SSL settings for Render/Supabase
+    - SSL settings added to URL for non-localhost
     """
-    database_url = os.environ.get('DATABASE_URL', '')
-
-    if not database_url:
-        raise RuntimeError("DATABASE_URL environment variable not set")
-
-    # Fix postgres:// to postgresql://
-    if database_url.startswith('postgres://'):
-        database_url = database_url.replace('postgres://', 'postgresql://', 1)
-
-    # Determine SSL settings
-    connect_args = {}
-    if any(host in database_url for host in ['render.com', 'supabase', 'neon', 'pooler']):
-        connect_args = {"sslmode": "require"}
+    from config import get_database_url
+    database_url = get_database_url()
 
     return create_engine(
         database_url,
         pool_pre_ping=True,
-        pool_recycle=300,
-        connect_args=connect_args
+        pool_recycle=300
     )
 
 
@@ -639,12 +628,15 @@ class URASyncEngine:
 
     def _persist_comparison(self, report: ComparisonReport):
         """Persist comparison results to ura_sync_runs."""
-        self.session.execute(text("""
+        stmt = text("""
             UPDATE ura_sync_runs
             SET comparison_results = :results,
                 comparison_baseline_run_id = NULL
             WHERE id = :run_id
-        """), {
+        """).bindparams(
+            bindparam('results', type_=JSONB)
+        )
+        self.session.execute(stmt, {
             'results': report.to_dict(),
             'run_id': self.run_id
         })
@@ -677,7 +669,7 @@ class URASyncEngine:
                     max_psf_diff = diff_pct
             psf_median_diff_pct = max_psf_diff if max_psf_diff != 0.0 else None
 
-        self.session.execute(text("""
+        stmt = text("""
             UPDATE ura_sync_runs
             SET status = 'succeeded',
                 finished_at = :finished_at,
@@ -692,7 +684,13 @@ class URASyncEngine:
                 baseline_row_count = :baseline_row_count,
                 current_row_count = :current_row_count
             WHERE id = :run_id
-        """), {
+        """).bindparams(
+            bindparam('counters', type_=JSONB),
+            bindparam('totals', type_=JSONB),
+            bindparam('api_times', type_=JSONB),
+            bindparam('api_retries', type_=JSONB),
+        )
+        self.session.execute(stmt, {
             'finished_at': datetime.utcnow(),
             'counters': self.stats.skip_counters,
             'totals': self.stats.to_dict(),
@@ -712,7 +710,7 @@ class URASyncEngine:
         """Mark run as failed."""
         logger.error(f"Marking sync run as failed: {error_message}")
 
-        self.session.execute(text("""
+        stmt = text("""
             UPDATE ura_sync_runs
             SET status = 'failed',
                 finished_at = :finished_at,
@@ -721,7 +719,11 @@ class URASyncEngine:
                 counters = :counters,
                 totals = :totals
             WHERE id = :run_id
-        """), {
+        """).bindparams(
+            bindparam('counters', type_=JSONB),
+            bindparam('totals', type_=JSONB),
+        )
+        self.session.execute(stmt, {
             'finished_at': datetime.utcnow(),
             'error_message': error_message,
             'error_stage': error_stage,

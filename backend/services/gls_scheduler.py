@@ -157,19 +157,17 @@ def run_background_scrape(year: int = 2025, force_reset: bool = False, app=None)
             with flask_app.app_context():
                 # Create a NEW database engine for this thread to avoid SSL issues
                 # Background threads can't share SSL connections with main thread
-                database_url = os.environ.get('DATABASE_URL', '')
+                from config import get_database_url
+                try:
+                    database_url = get_database_url()  # Handles postgres://, adds SSL to URL
+                except RuntimeError:
+                    database_url = None
 
                 if database_url:
-                    # Fix Render's postgres:// to postgresql://
-                    if database_url.startswith('postgres://'):
-                        database_url = database_url.replace('postgres://', 'postgresql://', 1)
-
-                    # Create fresh engine with SSL settings
                     engine = create_engine(
                         database_url,
                         pool_pre_ping=True,
-                        pool_recycle=300,
-                        connect_args={"sslmode": "require"} if 'render.com' in database_url or 'neon' in database_url else {}
+                        pool_recycle=300
                     )
 
                     # Create a new session for this thread
@@ -276,23 +274,23 @@ def cron_refresh(year: int = 2025) -> Dict[str, Any]:
     from sqlalchemy import text, create_engine
     from sqlalchemy.orm import scoped_session, sessionmaker
 
+    global _last_scrape_time, _last_scrape_result
+
     try:
         print(f"Cron GLS refresh starting for {year}...")
 
         # Create a FRESH database connection to avoid SSL stale connection issues
-        database_url = os.environ.get('DATABASE_URL', '')
+        from config import get_database_url
+        try:
+            database_url = get_database_url()  # Handles postgres://, adds SSL to URL
+        except RuntimeError:
+            database_url = None
 
         if database_url:
-            # Fix Render's postgres:// to postgresql://
-            if database_url.startswith('postgres://'):
-                database_url = database_url.replace('postgres://', 'postgresql://', 1)
-
-            # Create fresh engine with SSL settings
             engine = create_engine(
                 database_url,
                 pool_pre_ping=True,
-                pool_recycle=300,
-                connect_args={"sslmode": "require"} if 'render.com' in database_url or 'neon' in database_url else {}
+                pool_recycle=300
             )
 
             # Create a new session for this operation
@@ -311,7 +309,6 @@ def cron_refresh(year: int = 2025) -> Dict[str, Any]:
                 # Run scrape synchronously (cron has longer timeout)
                 result = scrape_gls_tenders(year=year, db_session=db_session, dry_run=False)
 
-                global _last_scrape_time, _last_scrape_result
                 _last_scrape_time = datetime.utcnow()
                 _last_scrape_result = result
 
@@ -339,7 +336,6 @@ def cron_refresh(year: int = 2025) -> Dict[str, Any]:
 
             result = scrape_gls_tenders(year=year, dry_run=False)
 
-            global _last_scrape_time, _last_scrape_result
             _last_scrape_time = datetime.utcnow()
             _last_scrape_result = result
 
