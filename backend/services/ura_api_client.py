@@ -1,0 +1,491 @@
+"""
+URA Data Service API Client - Transaction data fetching
+
+URA API Documentation: https://eservice.ura.gov.sg/maps/api/
+
+Authentication:
+- AccessKey provided via email upon account activation
+- Token obtained via GET /insertNewToken (daily validity)
+- Both AccessKey and Token required for data endpoints
+
+Endpoints:
+- Token: GET /uraDataService/insertNewToken/v1
+- Transactions: GET /uraDataService/invokeUraDS/v1?service=PMI_Resi_Transaction&batch={1-4}
+
+Rate Limits:
+- Conservative: 6 requests/minute (no official limit documented)
+- Token refresh: Once per day
+
+Usage:
+    from services.ura_api_client import URAAPIClient
+
+    client = URAAPIClient()
+
+    # Fetch all transaction batches
+    for batch_num, projects in client.fetch_all_transactions():
+        for project in projects:
+            for txn in project.get('transaction', []):
+                print(f"{project['project']}: ${txn['price']}")
+"""
+
+import os
+import time
+import logging
+from datetime import datetime, timedelta, timezone
+from typing import Dict, List, Optional, Iterator, Tuple, Any
+from dataclasses import dataclass, field
+
+import requests
+
+from scrapers.rate_limiter import get_scraper_rate_limiter
+
+logger = logging.getLogger(__name__)
+
+
+# =============================================================================
+# Configuration
+# =============================================================================
+
+URA_TOKEN_URL = "https://eservice.ura.gov.sg/uraDataService/insertNewToken/v1"
+URA_DATA_URL = "https://eservice.ura.gov.sg/uraDataService/invokeUraDS/v1"
+URA_DOMAIN = "eservice.ura.gov.sg"
+
+# Transaction batches cover different postal districts
+# Batch 1: D01-D07, Batch 2: D08-D14, Batch 3: D15-D21, Batch 4: D22-D28
+TRANSACTION_BATCHES = [1, 2, 3, 4]
+
+# Retry configuration
+MAX_RETRIES = 3
+INITIAL_BACKOFF_SECONDS = 1.0
+BACKOFF_MULTIPLIER = 2.0
+
+# Token cache TTL (23 hours - 1 hour safety margin from 24h validity)
+TOKEN_CACHE_TTL_HOURS = 23
+
+
+def _utcnow() -> datetime:
+    """Get current UTC time (timezone-aware)."""
+    return datetime.now(timezone.utc)
+
+
+@dataclass
+class URAToken:
+    """Cached URA API token with expiry tracking."""
+    value: str
+    obtained_at: datetime = field(default_factory=_utcnow)
+
+    def is_expired(self) -> bool:
+        """Check if token has expired (23h TTL)."""
+        expiry = self.obtained_at + timedelta(hours=TOKEN_CACHE_TTL_HOURS)
+        return _utcnow() >= expiry
+
+    def time_until_expiry(self) -> timedelta:
+        """Get time remaining until expiry."""
+        expiry = self.obtained_at + timedelta(hours=TOKEN_CACHE_TTL_HOURS)
+        return expiry - _utcnow()
+
+
+@dataclass
+class URAAPIResponse:
+    """Wrapper for URA API response."""
+    success: bool
+    data: Optional[List[Dict]] = None
+    error: Optional[str] = None
+    status_code: Optional[int] = None
+    batch_num: Optional[int] = None
+
+
+class URAAPIError(Exception):
+    """Base exception for URA API errors."""
+    pass
+
+
+class URATokenError(URAAPIError):
+    """Token-related errors."""
+    pass
+
+
+class URADataError(URAAPIError):
+    """Data fetching errors."""
+    pass
+
+
+class URAAPIClient:
+    """
+    URA Data Service API client for fetching property transaction data.
+
+    Features:
+    - Token caching with 23h TTL
+    - Automatic token refresh before expiry
+    - Retry with exponential backoff
+    - Rate limiting integration
+    - Batch fetching for all districts
+
+    Example:
+        client = URAAPIClient()
+
+        # Fetch single batch
+        response = client.fetch_transactions(batch=1)
+        if response.success:
+            for project in response.data:
+                print(project['project'])
+
+        # Fetch all batches
+        for batch_num, projects in client.fetch_all_transactions():
+            print(f"Batch {batch_num}: {len(projects)} projects")
+    """
+
+    def __init__(self, access_key: Optional[str] = None):
+        """
+        Initialize URA API client.
+
+        Args:
+            access_key: URA API access key. Defaults to URA_ACCESS_KEY env var.
+        """
+        self.access_key = access_key or os.environ.get("URA_ACCESS_KEY")
+        if not self.access_key:
+            raise URAAPIError(
+                "URA_ACCESS_KEY not found. Set URA_ACCESS_KEY environment variable "
+                "or pass access_key to constructor."
+            )
+
+        self._token: Optional[URAToken] = None
+        self._session = requests.Session()
+        self._session.headers.update({
+            "User-Agent": "SGPropertyAnalytics/1.0 (property research platform)"
+        })
+        self._rate_limiter = get_scraper_rate_limiter()
+
+        logger.info("URA API client initialized")
+
+    # =========================================================================
+    # Token Management
+    # =========================================================================
+
+    def _get_token(self) -> str:
+        """
+        Get valid token, refreshing if expired or not yet obtained.
+
+        Returns:
+            Valid API token string.
+
+        Raises:
+            URATokenError: If token refresh fails.
+        """
+        if self._token is None or self._token.is_expired():
+            self._refresh_token()
+
+        return self._token.value
+
+    def _refresh_token(self) -> None:
+        """
+        Refresh the API token from URA.
+
+        Raises:
+            URATokenError: If token refresh fails after retries.
+        """
+        logger.info("Refreshing URA API token")
+
+        for attempt in range(MAX_RETRIES):
+            try:
+                # Rate limit token requests
+                self._rate_limiter.wait(URA_DOMAIN, "token")
+
+                response = self._session.get(
+                    URA_TOKEN_URL,
+                    headers={"AccessKey": self.access_key},
+                    timeout=30
+                )
+
+                if response.status_code == 401:
+                    raise URATokenError("Invalid AccessKey - check URA_ACCESS_KEY")
+
+                response.raise_for_status()
+                data = response.json()
+
+                # URA returns {"Status": "Success", "Result": "token_value"}
+                if data.get("Status") == "Success" and data.get("Result"):
+                    self._token = URAToken(value=data["Result"])
+                    logger.info(
+                        f"Token refreshed successfully, expires in "
+                        f"{self._token.time_until_expiry()}"
+                    )
+                    return
+                else:
+                    raise URATokenError(f"Unexpected token response: {data}")
+
+            except requests.exceptions.RequestException as e:
+                backoff = INITIAL_BACKOFF_SECONDS * (BACKOFF_MULTIPLIER ** attempt)
+                logger.warning(
+                    f"Token refresh attempt {attempt + 1}/{MAX_RETRIES} failed: {e}. "
+                    f"Retrying in {backoff}s"
+                )
+                if attempt < MAX_RETRIES - 1:
+                    time.sleep(backoff)
+                else:
+                    raise URATokenError(f"Token refresh failed after {MAX_RETRIES} attempts: {e}")
+
+    def ensure_valid_token(self) -> None:
+        """
+        Ensure we have a valid token, refreshing if needed.
+
+        Call this before starting a batch of requests to avoid
+        token expiry mid-sync.
+        """
+        if self._token is None:
+            self._refresh_token()
+        elif self._token.is_expired():
+            self._refresh_token()
+        elif self._token.time_until_expiry() < timedelta(hours=1):
+            # Proactively refresh if less than 1 hour remaining
+            logger.info("Token expiring soon, proactively refreshing")
+            self._refresh_token()
+
+    # =========================================================================
+    # Data Fetching
+    # =========================================================================
+
+    def fetch_transactions(self, batch: int) -> URAAPIResponse:
+        """
+        Fetch transaction data for a single batch.
+
+        Args:
+            batch: Batch number (1-4), covering different postal districts.
+                   Batch 1: D01-D07
+                   Batch 2: D08-D14
+                   Batch 3: D15-D21
+                   Batch 4: D22-D28
+
+        Returns:
+            URAAPIResponse with list of projects containing transactions.
+
+        Raises:
+            URADataError: If fetching fails after retries.
+        """
+        if batch not in TRANSACTION_BATCHES:
+            raise ValueError(f"Invalid batch {batch}, must be one of {TRANSACTION_BATCHES}")
+
+        logger.info(f"Fetching transactions batch {batch}")
+
+        for attempt in range(MAX_RETRIES):
+            try:
+                # Ensure valid token
+                token = self._get_token()
+
+                # Rate limit
+                self._rate_limiter.wait(URA_DOMAIN, "transactions")
+
+                response = self._session.get(
+                    URA_DATA_URL,
+                    params={
+                        "service": "PMI_Resi_Transaction",
+                        "batch": batch
+                    },
+                    headers={
+                        "AccessKey": self.access_key,
+                        "Token": token
+                    },
+                    timeout=60  # Larger timeout for data requests
+                )
+
+                # Handle 401 - token may have expired server-side
+                if response.status_code == 401:
+                    logger.warning("Got 401, refreshing token and retrying")
+                    self._token = None  # Force refresh
+                    if attempt < MAX_RETRIES - 1:
+                        continue
+                    else:
+                        return URAAPIResponse(
+                            success=False,
+                            error="Authentication failed after token refresh",
+                            status_code=401,
+                            batch_num=batch
+                        )
+
+                response.raise_for_status()
+                data = response.json()
+
+                # URA returns {"Result": [...projects...]}
+                result = data.get("Result", [])
+
+                # Handle empty response
+                if result is None:
+                    result = []
+
+                logger.info(f"Batch {batch}: fetched {len(result)} projects")
+
+                return URAAPIResponse(
+                    success=True,
+                    data=result,
+                    status_code=response.status_code,
+                    batch_num=batch
+                )
+
+            except requests.exceptions.RequestException as e:
+                backoff = INITIAL_BACKOFF_SECONDS * (BACKOFF_MULTIPLIER ** attempt)
+                logger.warning(
+                    f"Batch {batch} attempt {attempt + 1}/{MAX_RETRIES} failed: {e}. "
+                    f"Retrying in {backoff}s"
+                )
+                if attempt < MAX_RETRIES - 1:
+                    time.sleep(backoff)
+                else:
+                    return URAAPIResponse(
+                        success=False,
+                        error=f"Failed after {MAX_RETRIES} attempts: {e}",
+                        batch_num=batch
+                    )
+
+        # Should not reach here
+        return URAAPIResponse(
+            success=False,
+            error="Unexpected error",
+            batch_num=batch
+        )
+
+    def fetch_all_transactions(self) -> Iterator[Tuple[int, List[Dict]]]:
+        """
+        Fetch transactions from all batches.
+
+        Yields:
+            Tuple of (batch_number, list of projects with transactions).
+
+        Raises:
+            URADataError: If any batch fails.
+
+        Example:
+            client = URAAPIClient()
+            all_projects = []
+            for batch_num, projects in client.fetch_all_transactions():
+                all_projects.extend(projects)
+        """
+        # Ensure token is valid before starting
+        self.ensure_valid_token()
+
+        for batch in TRANSACTION_BATCHES:
+            response = self.fetch_transactions(batch)
+
+            if not response.success:
+                raise URADataError(
+                    f"Failed to fetch batch {batch}: {response.error}"
+                )
+
+            yield batch, response.data
+
+    def fetch_all_transactions_flat(self) -> List[Dict]:
+        """
+        Fetch all transactions and return flattened list of projects.
+
+        Returns:
+            Combined list of all projects from all batches.
+
+        Raises:
+            URADataError: If any batch fails.
+        """
+        all_projects = []
+        for batch_num, projects in self.fetch_all_transactions():
+            all_projects.extend(projects)
+
+        logger.info(f"Fetched {len(all_projects)} total projects from all batches")
+        return all_projects
+
+    # =========================================================================
+    # Utility Methods
+    # =========================================================================
+
+    def get_token_status(self) -> Dict[str, Any]:
+        """
+        Get current token status for monitoring.
+
+        Returns:
+            Dict with token status information.
+        """
+        if self._token is None:
+            return {
+                "has_token": False,
+                "is_expired": True,
+                "time_until_expiry": None
+            }
+
+        return {
+            "has_token": True,
+            "is_expired": self._token.is_expired(),
+            "time_until_expiry": str(self._token.time_until_expiry()),
+            "obtained_at": self._token.obtained_at.isoformat()
+        }
+
+    def health_check(self) -> Dict[str, Any]:
+        """
+        Perform health check by fetching a token and small data sample.
+
+        Returns:
+            Dict with health check results.
+        """
+        result = {
+            "status": "unknown",
+            "token_ok": False,
+            "data_ok": False,
+            "error": None
+        }
+
+        try:
+            # Test token refresh
+            self._refresh_token()
+            result["token_ok"] = True
+
+            # Test data fetch (batch 1 only for speed)
+            response = self.fetch_transactions(batch=1)
+            result["data_ok"] = response.success
+            result["sample_projects"] = len(response.data) if response.data else 0
+
+            if result["token_ok"] and result["data_ok"]:
+                result["status"] = "healthy"
+            else:
+                result["status"] = "degraded"
+                result["error"] = response.error
+
+        except Exception as e:
+            result["status"] = "unhealthy"
+            result["error"] = str(e)
+
+        return result
+
+    def close(self) -> None:
+        """Close the HTTP session."""
+        self._session.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+
+# =============================================================================
+# Module-level convenience functions
+# =============================================================================
+
+_client: Optional[URAAPIClient] = None
+
+
+def get_ura_client() -> URAAPIClient:
+    """
+    Get global URA API client instance (lazy initialization).
+
+    Returns:
+        Shared URAAPIClient instance.
+    """
+    global _client
+    if _client is None:
+        _client = URAAPIClient()
+    return _client
+
+
+def fetch_all_ura_transactions() -> List[Dict]:
+    """
+    Convenience function to fetch all URA transactions.
+
+    Returns:
+        List of all projects with transaction data.
+    """
+    return get_ura_client().fetch_all_transactions_flat()

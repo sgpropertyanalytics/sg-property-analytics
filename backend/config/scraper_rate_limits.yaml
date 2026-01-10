@@ -26,6 +26,19 @@ domains:
         requests_per_minute: 30
         notes: "Individual release pages"
 
+  eservice.ura.gov.sg:
+    requests_per_minute: 6
+    requests_per_hour: 100
+    burst_limit: 2
+    notes: "URA Data Service API - conservative for official API"
+    routes:
+      token:
+        requests_per_minute: 1
+        notes: "Token refresh - once per day normally"
+      transactions:
+        requests_per_minute: 6
+        notes: "PMI_Resi_Transaction data fetch"
+
   onemap.gov.sg:
     requests_per_minute: 60
     requests_per_hour: 1000
