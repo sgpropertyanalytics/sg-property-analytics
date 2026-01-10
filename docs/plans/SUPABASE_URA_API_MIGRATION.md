@@ -1,7 +1,7 @@
 # Supabase + URA API Streaming Migration Plan
 
 **Created:** 2026-01-10
-**Status:** Phase 0 Complete, Phases 1-7 Pending
+**Status:** Phases 0-2 Complete, Phases 3-7 Pending
 **Author:** Planning session with Claude
 
 ---
@@ -17,8 +17,8 @@ This document captures the complete migration plan from a 1-hour planning sessio
 | Phase | Description | Status |
 |-------|-------------|--------|
 | **Phase 0** | Supabase Migration | ✅ COMPLETED (2026-01-10) |
-| Phase 1 | URA API Client | Pending |
-| Phase 2 | Canonical Mapper | Pending |
+| **Phase 1** | URA API Client | ✅ COMPLETED (2026-01-10) |
+| **Phase 2** | Canonical Mapper | ✅ COMPLETED (2026-01-10) |
 | Phase 3 | Shadow Mode Infrastructure | Pending |
 | Phase 4 | Sync Engine Core | Pending |
 | Phase 5 | Cron Job Setup | Pending |
