@@ -107,9 +107,9 @@ export function KPIHeroContent({
 
   return (
     <>
-      {/* Main value row with badge - Luxury font-medium styling */}
+      {/* Main value row with badge - Bold for visual hierarchy */}
       <div
-        className="text-[22px] sm:text-[28px] font-mono font-medium text-slate-900 tracking-tight truncate"
+        className="text-[22px] sm:text-[28px] font-mono font-semibold text-slate-900 tracking-tight truncate"
         title={badge ? `${value} ${badge.text}` : String(value)}
       >
         {value}
@@ -188,7 +188,7 @@ export function KPICardV2({
         {/* Layer 1: Header - pinned to top */}
         <div className="flex-shrink-0 mb-2">
           <div className="flex items-center gap-1">
-            <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-slate-500">
+            <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-slate-600">
               {title}
             </span>
             {combinedTooltip && (
@@ -206,7 +206,7 @@ export function KPICardV2({
         <div className="flex-1 flex items-end min-w-0">
           {typeof value === 'string' ? (
             <div className="truncate" title={badge ? `${value} ${badge.text}` : value}>
-              <span className="text-xl sm:text-2xl font-mono font-medium text-slate-900 leading-none tabular-nums">
+              <span className="text-xl sm:text-2xl font-mono font-semibold text-slate-900 leading-none tabular-nums">
                 {value}
               </span>
               {badge && (
@@ -255,7 +255,7 @@ export function KPICardV2({
       <div className="flex-1 flex items-end pb-2 min-w-0">
         {typeof value === 'string' ? (
           <div className="truncate" title={badge ? `${value} ${badge.text}` : value}>
-             <span className="text-[22px] sm:text-[32px] font-mono font-medium text-slate-900 leading-none tabular-nums">
+             <span className="text-[22px] sm:text-[32px] font-mono font-semibold text-slate-900 leading-none tabular-nums">
               {value}
             </span>
             {badge && (

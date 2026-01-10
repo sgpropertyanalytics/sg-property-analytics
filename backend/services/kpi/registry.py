@@ -348,7 +348,12 @@ def _map_median_psf_result(row, filters: Dict[str, Any]) -> KPIResult:
             "prev_psf": round(prev) if prev else None,
             "pct_change": round(pct_change, 1) if pct_change is not None else None,
             "low_confidence": low_confidence,
-            "sale_type": "resale"
+            "sale_type": "resale",
+            "description": (
+                "Compares the resale median PSF from the latest 3 full months "
+                "against the previous 3 months (QoQ), using resale transactions only. "
+                "Outliers excluded. Results with <20 transactions flagged as low confidence."
+            )
         }
     )
 
@@ -401,7 +406,11 @@ def _map_total_transactions_result(row, filters: Dict[str, Any]) -> KPIResult:
             "current_count": current_count,
             "previous_count": previous_count,
             "pct_change": round(pct_change, 1),
-            "direction": direction
+            "direction": direction,
+            "description": (
+                "Total resale transactions in the last 3 full months compared to the "
+                "previous 3 months. Measures market activity volume and momentum."
+            )
         }
     )
 
@@ -464,7 +473,12 @@ def _map_resale_velocity_result(row, filters: Dict[str, Any]) -> KPIResult:
             "total_units": total_units,
             "projects_counted": projects_counted,
             "current_annualized": round(current_annualized, 2),
-            "prior_annualized": round(prior_annualized, 2)
+            "prior_annualized": round(prior_annualized, 2),
+            "pct_change": round(pct_change, 1),
+            "description": (
+                "Annualized turnover rate: (quarterly resale txns / total units) × 4. "
+                "Measures liquidity. >6% = High Turnover, 2-4% = Healthy, <1% = Illiquid."
+            )
         }
     )
 
@@ -553,11 +567,18 @@ def _map_market_momentum_result(row, filters: Dict[str, Any]) -> KPIResult:
             "current_score": round(score),
             "prev_score": round(prev_score) if prev_score else None,
             "score_change_pct": round(score_change, 1) if score_change is not None else None,
+            "change_direction": "up" if (score_change or 0) > 0 else "down" if (score_change or 0) < 0 else "neutral",
+            "condition_direction": direction,
+            "label": label,
             "volatility": round(volatility, 2) if volatility else None,
             "volatility_quarters": volatility_quarters,
             "current_count": current_count,
             "prev_count": prev_count,
-            "confidence": "high" if min(current_count, prev_count) >= 20 else "medium" if min(current_count, prev_count) >= 10 else "low"
+            "confidence": "high" if min(current_count, prev_count) >= 20 else "medium" if min(current_count, prev_count) >= 10 else "low",
+            "description": (
+                "Volatility-adjusted momentum score (30-70). Score = 50 - (z × 10) where "
+                "z = QoQ PSF change / historical StdDev. <45 = Seller advantage, >55 = Buyer advantage."
+            )
         }
     )
 

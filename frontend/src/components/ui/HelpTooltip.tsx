@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   useFloating,
   offset,
@@ -65,9 +65,14 @@ export function HelpTooltip({ content }: HelpTooltipProps) {
         <FloatingPortal>
           <div
             ref={refs.setFloating}
-            style={floatingStyles}
             {...getFloatingProps()}
-            className="z-toast w-64 max-w-[calc(100vw-2rem)] p-3 bg-brand-navy text-white text-xs leading-relaxed rounded shadow-lg whitespace-pre-line"
+            className="w-64 max-w-[calc(100vw-2rem)] p-3 text-xs leading-relaxed rounded shadow-lg whitespace-pre-line"
+            style={{
+              ...floatingStyles,
+              zIndex: 9999,
+              backgroundColor: '#213448',
+              color: '#ffffff'
+            }}
           >
             {content}
           </div>
