@@ -103,6 +103,11 @@ condo_data.db
 *.log
 logs/
 
+# Database backups
+render_backup.sql
+*_backup.sql
+*.dump
+
 # Temporary files
 *.tmp
 *.temp
