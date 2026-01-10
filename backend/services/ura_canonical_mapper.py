@@ -57,6 +57,16 @@ from constants import SALE_TYPE_NEW, SALE_TYPE_SUB, SALE_TYPE_RESALE
 
 logger = logging.getLogger(__name__)
 
+# Public API
+__all__ = [
+    'URACanonicalMapper',
+    'NATURAL_KEY_FIELDS',
+    'parse_contract_date',
+    'format_contract_date',
+    'map_ura_projects_to_rows',
+    'get_canonical_mapper',
+]
+
 
 # =============================================================================
 # Constants
