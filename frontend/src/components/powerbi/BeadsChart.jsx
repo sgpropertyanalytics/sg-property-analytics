@@ -1,6 +1,6 @@
 import React, { useRef, useMemo } from 'react';
 // Phase 2: Using TanStack Query via useAppQuery wrapper
-import { useAppQuery, QueryStatus } from '../../hooks/useAppQuery';
+import { useAppQuery } from '../../hooks/useAppQuery';
 import { useDebugOverlay } from '../../hooks/useDebugOverlay';
 import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
@@ -8,9 +8,16 @@ import { Bubble } from 'react-chartjs-2';
 // Phase 3.2: Migrated from usePowerBIFilters to useZustandFilters
 import { useZustandFilters } from '../../stores/filterStore';
 import { getDashboard } from '../../api/client';
-import { KeyInsightBox, ChartSlot } from '../ui';
+import {
+  DataCard,
+  DataCardHeader,
+  DataCardCanvas,
+  StatusDeck,
+  StatusCount,
+  LegendDot,
+} from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
-import { CHART_COLORS } from '../../constants/colors';
+import { CHART_COLORS, BEADS } from '../../constants/colors';
 import { REGIONS } from '../../constants';
 import { REGION } from '../../constants/colors';
 import {
@@ -19,7 +26,11 @@ import {
   logFetchDebug,
   assertKnownVersion,
 } from '../../adapters';
+
 import { niceMaxMillion } from '../../utils/niceAxisMax';
+
+// Bedroom colors for legend
+const BEDROOM_COLORS = BEADS;
 
 // Region colors from centralized colors.js
 const REGION_COLORS = REGION;
@@ -57,8 +68,7 @@ function BeadsChartBase({
 
   // Extract filter values directly (simple, explicit)
   const timeframe = filters.timeFilter?.type === 'preset' ? filters.timeFilter.value : 'Y1';
-  const bedroom = filters.bedroomTypes?.join(',') || '';
-  const districts = filters.districts?.join(',') || '';
+  // bedroom/district excluded - this chart shows ALL bedroom types as separate bubbles
 
   const chartRef = useRef(null);
   const { wrapApiCall, DebugOverlay, debugInfo } = useDebugOverlay('BeadsChart');
@@ -221,14 +231,7 @@ function BeadsChartBase({
       },
       plugins: {
         legend: {
-          position: 'bottom',
-          labels: {
-            usePointStyle: true,
-            pointStyle: 'circle',
-            padding: 16,
-            font: { size: 11 },
-            color: CHART_COLORS.navy,  // slate-900
-          },
+          display: false, // Using ToolbarLegend instead
         },
         tooltip: {
           backgroundColor: CHART_COLORS.navyAlpha95,  // slate-900
@@ -317,8 +320,11 @@ function BeadsChartBase({
     [stats?.priceRange?.max, stringAnnotations]
   );
 
-  // Match PriceDistributionChart card height: height + 190 for header/stats/note/footer
-  const cardHeight = height + 190;
+  // Methodology text for (i) tooltip
+  const methodologyText = `X-Position — Volume-weighted median price.
+Bubble Size — Number of transactions.
+Color — Bedroom type (1BR to 5BR).
+String Line — Price range for that region.`;
 
   return (
     <ChartFrame
@@ -332,51 +338,31 @@ function BeadsChartBase({
       staggerIndex={staggerIndex}
       debugInfo={debugInfo}
     >
-      <div
-        className="weapon-card hud-corner weapon-shadow overflow-hidden flex flex-col relative"
-        style={{ height: cardHeight }}
-      >
+      <DataCard>
         <DebugOverlay />
-        {/* Header - shrink-0 */}
-        <div className="px-4 py-3 border-b border-mono-muted shrink-0">
-          <h3 className="font-semibold text-brand-navy">
-            Volume-Weighted Median Price by Region & Bedroom
-          </h3>
-          <p className="text-xs text-brand-blue mt-0.5">
-            Bubble size = transaction count • Position = median price
-          </p>
-        </div>
 
-        {/* How to Interpret - shrink-0 (matches PriceDistributionChart) */}
-        <div className="shrink-0">
-          <KeyInsightBox title="How to Interpret this Chart" variant="info" compact>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-0.5">
-              <div><span className="font-semibold text-brand-navy">X-Position</span> — Volume-weighted median price.</div>
-              <div><span className="font-semibold text-brand-navy">Bubble Size</span> — Number of transactions.</div>
-              <div><span className="font-semibold text-brand-navy">Color</span> — Bedroom type (1BR to 5BR).</div>
-              <div><span className="font-semibold text-brand-navy">String Line</span> — Price range for that region.</div>
-            </div>
-          </KeyInsightBox>
-        </div>
+        {/* Header: h-14 fixed */}
+        <DataCardHeader
+          title="Volume-Weighted Median Price by Region & Bedroom"
+          info={methodologyText}
+        />
 
-        {/* Chart */}
-        <ChartSlot>
+        {/* Canvas: flex-grow */}
+        <DataCardCanvas minHeight={height}>
           <Bubble ref={chartRef} data={resolvedData} options={options} />
-        </ChartSlot>
+        </DataCardCanvas>
 
-        {/* Footer - h-11 matches PriceDistributionChart */}
-        <div className="shrink-0 h-11 px-4 bg-brand-sand/30 border-t border-brand-sky/30 flex items-center justify-between text-xs text-brand-blue">
-          <span>
-            {stats?.totalTransactions?.toLocaleString() || 0} transactions
-          </span>
-          {stats?.priceRange?.min > 0 && stats?.priceRange?.max > 0 && (
-            <span>
-              Range: {formatPrice(stats.priceRange.min)} -{' '}
-              {formatPrice(stats.priceRange.max)}
-            </span>
-          )}
-        </div>
-      </div>
+        {/* Status Deck: h-10 fixed - Left: empty | Center: legend | Right: txns */}
+        <StatusDeck
+          right={<StatusCount count={stats?.totalTransactions || 0} />}
+        >
+          <LegendDot label="1BR" color={BEDROOM_COLORS[1]} />
+          <LegendDot label="2BR" color={BEDROOM_COLORS[2]} />
+          <LegendDot label="3BR" color={BEDROOM_COLORS[3]} />
+          <LegendDot label="4BR" color={BEDROOM_COLORS[4]} />
+          <LegendDot label="5BR" color={BEDROOM_COLORS[5]} />
+        </StatusDeck>
+      </DataCard>
     </ChartFrame>
   );
 }

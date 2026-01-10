@@ -75,6 +75,34 @@
   color: var(--color-mono-mid);
 }
 
+/* Panel Header - Distinct header bar for cards (Financial Terminal aesthetic)
+ * Creates a "Window" feel rather than a floating box
+ * Light slate background with solid bottom border
+ */
+.panel-header {
+  background-color: #F8F9FA; /* Very light slate - distinguishes from card body */
+  border-bottom: 1px solid var(--color-canvas-grid); /* Stone-400 separator */
+  padding: 0.75rem 1rem; /* Consistent padding */
+}
+
+/* Panel Header Title - Terminal styling for panel titles */
+.panel-header-title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--color-mono-dark);
+}
+
+/* Panel Header Subtitle - Muted helper text */
+.panel-header-subtitle {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--color-mono-mid);
+  margin-top: 2px;
+}
+
 /* Data typography scale - standardized small text sizes */
 .text-data-xs {
   font-size: 10px;
@@ -158,6 +186,7 @@
   position: relative;
   background: white;
   border: 1px solid #374151; /* gray-700 - darker structural border */
+  border-top: 3px solid var(--color-brand-navy); /* Accent top - signals importance */
   border-radius: 0; /* SHARP - industrial mandatory */
   box-shadow: none; /* No shadows - wireframe aesthetic */
   transition: border-color 0.15s ease;
@@ -254,7 +283,7 @@
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--color-slate-500);
+  color: var(--color-ink-mid); /* Darkened from slate-500 for better contrast */
 }
 
 /* Bronze Accent Utilities */

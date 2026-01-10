@@ -1,4 +1,4 @@
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useEffect, useState } from 'react';
 // Phase 2: Using TanStack Query via useTimeSeriesQuery (auto grain aggregation)
 import { useTimeSeriesQuery, useDebugOverlay } from '../../hooks';
 import { ChartFrame } from '../common/ChartFrame';
@@ -7,7 +7,12 @@ import { Chart } from 'react-chartjs-2';
 // Phase 3.2: Migrated from usePowerBIFilters to useZustandFilters
 import { useZustandFilters } from '../../stores';
 import { getAggregate } from '../../api/client';
-import { PreviewChartOverlay, ChartSlot } from '../ui';
+import {
+  PreviewChartOverlay,
+  DataCard,
+  DataCardHeader,
+  DataCardCanvas,
+} from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 import { CHART_COLORS } from '../../constants/colors';
 // SaleType imports removed - Market Core is Resale-only
@@ -27,6 +32,32 @@ import { niceMax } from '../../utils/niceAxisMax';
 const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
 
 /**
+ * Create diagonal hatch pattern for Chart.js bars
+ * Mimics architectural/blueprint drawing style
+ */
+function createHatchPattern(strokeColor = '#547792', bgColor = 'rgba(84, 119, 146, 0.15)') {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  const size = 8;
+  canvas.width = size;
+  canvas.height = size;
+
+  // Background fill (subtle)
+  ctx.fillStyle = bgColor;
+  ctx.fillRect(0, 0, size, size);
+
+  // Diagonal lines
+  ctx.strokeStyle = strokeColor;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, size);
+  ctx.lineTo(size, 0);
+  ctx.stroke();
+
+  return ctx.createPattern(canvas, 'repeat');
+}
+
+/**
  * @param {{
  *  height?: number,
  *  saleType?: string | null,
@@ -37,6 +68,14 @@ const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
 function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, onDrillThrough: _onDrillThrough }) {
   // Phase 4: Simplified filter access - read values directly from Zustand
   const { filters, timeGrouping } = useZustandFilters();
+
+  // Create hatch pattern for blueprint-style bars
+  const [hatchPattern, setHatchPattern] = useState(null);
+  useEffect(() => {
+    // Create pattern on mount (requires DOM)
+    const pattern = createHatchPattern('#547792', 'rgba(84, 119, 146, 0.12)');
+    setHatchPattern(pattern);
+  }, []);
 
   // Extract filter values directly (simple, explicit)
   const timeframe = filters.timeFilter?.type === 'preset' ? filters.timeFilter.value : 'Y1';
@@ -109,10 +148,12 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, o
         type: 'bar',
         label: 'Resale Transactions',
         data: transactionCounts,
-        backgroundColor: CHART_COLORS.oceanAlpha(0.7),  // Ocean blue - brand palette
-        borderColor: CHART_COLORS.ocean,  // Ocean border for definition
-        borderWidth: 1,
-        borderRadius: 3,
+        // Blueprint aesthetic: hatch pattern fill with solid stroke
+        backgroundColor: hatchPattern || CHART_COLORS.oceanAlpha(0.15),
+        borderColor: CHART_COLORS.ocean,  // Solid stroke defines the bar
+        borderWidth: 1.5,
+        borderRadius: 0,  // Sharp corners - architectural/technical look
+        barPercentage: 0.7,  // Thinner bars for precision feel
         yAxisID: 'y',
         order: 2,
       },
@@ -120,15 +161,15 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, o
         type: 'line',
         label: 'Total Transaction Value',
         data: totalValues,
-        borderColor: CHART_COLORS.navy,  // Slate 900 - bold, pops forward
-        backgroundColor: CHART_COLORS.navyAlpha05,
-        borderWidth: 3,
+        borderColor: CHART_COLORS.navy,  // Dark navy - bold signal line
+        backgroundColor: 'transparent',
+        borderWidth: 2.5,  // Thicker for visual hierarchy
         pointRadius: 0,
-        pointHoverRadius: 6,
-        pointHoverBackgroundColor: CHART_COLORS.slate200,  // Slate 200 fill on hover
+        pointHoverRadius: 5,
+        pointHoverBackgroundColor: CHART_COLORS.white,
         pointHoverBorderColor: CHART_COLORS.navy,
         pointHoverBorderWidth: 2,
-        tension: 0.3,
+        stepped: 'middle',  // Technical stepped interpolation - emphasizes discrete data points
         fill: false,
         yAxisID: 'y1',
         order: 1,
@@ -148,24 +189,24 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, o
         align: 'start',
         labels: {
           usePointStyle: true,
-          pointStyle: 'rectRounded',
+          pointStyle: 'rect',  // Sharp rectangle - matches angular aesthetic
           padding: 20,
-          font: { size: 12, weight: '500' },
-          color: CHART_COLORS.slate500,
-          boxWidth: 12,
-          boxHeight: 12,
+          font: { size: 11, family: "'JetBrains Mono', monospace", weight: '500' },
+          color: CHART_COLORS.slate600,
+          boxWidth: 10,
+          boxHeight: 10,
         },
       },
       tooltip: {
-        backgroundColor: CHART_COLORS.navyAlpha95,  // Slate 900
-        titleColor: CHART_COLORS.slate100,  // Slate 100
-        bodyColor: CHART_COLORS.slate400,   // Slate 400
-        borderColor: CHART_COLORS.slate500Alpha30,
+        backgroundColor: CHART_COLORS.navyAlpha95,
+        titleColor: CHART_COLORS.slate100,
+        bodyColor: CHART_COLORS.slate300,
+        borderColor: CHART_COLORS.ocean,
         borderWidth: 1,
-        cornerRadius: 8,
+        cornerRadius: 0,  // Sharp corners - technical aesthetic
         padding: 12,
-        titleFont: { weight: '600', size: 13 },
-        bodyFont: { size: 12 },
+        titleFont: { weight: '600', size: 12, family: "'JetBrains Mono', monospace" },
+        bodyFont: { size: 11, family: "'JetBrains Mono', monospace" },
         displayColors: true,
         boxPadding: 6,
         callbacks: {
@@ -182,13 +223,31 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, o
           },
         },
       },
+      // Crosshair plugin - vertical line on hover
+      crosshair: {
+        line: {
+          color: CHART_COLORS.slate400,
+          width: 1,
+          dashPattern: [4, 4],
+        },
+      },
     },
     scales: {
       x: {
-        grid: { display: false },
-        border: { display: false },
+        grid: {
+          display: true,
+          color: CHART_COLORS.skyAlpha15,
+          lineWidth: 1,
+          drawTicks: false,
+        },
+        border: {
+          display: true,
+          color: CHART_COLORS.slate300,
+          width: 1,
+        },
         ticks: {
           ...CHART_AXIS_DEFAULTS.ticks,
+          font: { size: 10, family: "'JetBrains Mono', monospace" },
           maxRotation: 45,
           minRotation: 45,
         },
@@ -198,18 +257,27 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, o
         display: true,
         position: 'left',
         max: yAxisMax,
-        border: { display: false },
+        border: {
+          display: true,
+          color: CHART_COLORS.slate300,
+          width: 1,
+        },
         title: {
           display: true,
-          text: 'Transaction Count',
-          ...CHART_AXIS_DEFAULTS.title,
+          text: 'TRANSACTION COUNT',
+          font: { size: 9, family: "'JetBrains Mono', monospace", weight: '600' },
+          color: CHART_COLORS.slate500,
         },
         grid: {
-          color: CHART_COLORS.skyAlpha15,  // Sky at 15%
+          color: CHART_COLORS.skyAlpha20,
+          lineWidth: 1,
           drawTicks: false,
+          // Dashed grid lines for technical precision
+          borderDash: [3, 3],
         },
         ticks: {
           ...CHART_AXIS_DEFAULTS.ticks,
+          font: { size: 10, family: "'JetBrains Mono', monospace" },
           callback: (value) => Math.round(value).toLocaleString(),
           padding: 8,
         },
@@ -219,15 +287,21 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, o
         display: true,
         position: 'right',
         min: 0,
-        border: { display: false },
+        border: {
+          display: true,
+          color: CHART_COLORS.slate300,
+          width: 1,
+        },
         title: {
           display: true,
-          text: 'Total Value ($)',
-          ...CHART_AXIS_DEFAULTS.title,
+          text: 'TOTAL VALUE ($)',
+          font: { size: 9, family: "'JetBrains Mono', monospace", weight: '600' },
+          color: CHART_COLORS.slate500,
         },
         grid: { drawOnChartArea: false },
         ticks: {
           ...CHART_AXIS_DEFAULTS.ticks,
+          font: { size: 10, family: "'JetBrains Mono', monospace" },
           callback: (value) => {
             if (value >= 1000000000) {
               return `$${(value / 1000000000).toFixed(1)}B`;
@@ -255,31 +329,23 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, o
       height={height + 80}
       staggerIndex={staggerIndex}
     >
-      <div
-        className="weapon-card hud-corner weapon-shadow overflow-hidden flex flex-col relative"
-        style={{ height: cardHeight }}
-      >
+      <DataCard height={cardHeight}>
         {/* Debug overlay - shows API call info when Ctrl+Shift+D is pressed */}
         <DebugOverlay />
-        {/* Header - refined typography */}
-        <div className="px-5 py-4 border-b border-mono-muted shrink-0">
-          <div className="flex items-baseline justify-between">
-            <h3 className="text-base font-semibold text-brand-navy tracking-tight">
-              Resale Volume & Quantum
-            </h3>
-            <span className="text-[10px] font-medium text-brand-sky uppercase tracking-wider">
-              {TIME_LABELS[timeGrouping]}
-            </span>
-          </div>
-        </div>
-        {/* Chart slot - flex-1 min-h-0 with h-full w-full inner wrapper */}
-        {/* Chart slot - Chart.js handles data updates efficiently without key remount */}
-        <ChartSlot>
+
+        {/* Layer 1: Control Header */}
+        <DataCardHeader
+          title="Resale Volume & Quantum"
+          subtitle={`Grouped by ${TIME_LABELS[timeGrouping]}`}
+        />
+
+        {/* Layer 3: Canvas - Chart takes remaining space */}
+        <DataCardCanvas>
           <PreviewChartOverlay chartRef={chartRef}>
             <Chart ref={chartRef} type="bar" data={chartData} options={options} />
           </PreviewChartOverlay>
-        </ChartSlot>
-      </div>
+        </DataCardCanvas>
+      </DataCard>
     </ChartFrame>
   );
 }

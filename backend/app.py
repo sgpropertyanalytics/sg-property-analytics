@@ -337,9 +337,11 @@ def create_app():
         # Cache warming: Pre-populate dashboard cache for common queries
         # Prevents cold-start lag on Render (after 15 min idle, cache is empty)
         try:
-            from services.dashboard_service import warm_cache_for_common_queries
+            from services.dashboard_service import warm_cache_for_common_queries, warm_kpi_cache
             warm_cache_for_common_queries()
             print("   ✓ Dashboard cache warmed for common queries")
+            warm_kpi_cache()
+            print("   ✓ KPI cache warmed for common queries")
         except Exception as e:
             print(f"   ⚠️  Cache warming skipped: {e}")
 
