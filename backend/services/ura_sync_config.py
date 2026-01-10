@@ -98,6 +98,27 @@ def get_cutoff_date() -> date:
     return date.today() - relativedelta(years=years)
 
 
+# =============================================================================
+# Property Type Filter
+# =============================================================================
+
+# Only sync these property types (excludes Executive Condominium)
+ALLOWED_PROPERTY_TYPES = frozenset(['Condominium', 'Apartment'])
+
+
+def is_allowed_property_type(property_type: str) -> bool:
+    """
+    Check if a property type should be synced.
+
+    Args:
+        property_type: The property type string
+
+    Returns:
+        True if allowed, False if should be skipped (e.g., EC)
+    """
+    return property_type in ALLOWED_PROPERTY_TYPES
+
+
 def get_revision_window_date() -> date:
     """
     Calculate the date from which to start the revision window.

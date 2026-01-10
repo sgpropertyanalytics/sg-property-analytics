@@ -52,6 +52,8 @@ from services.ura_sync_config import (
     SyncStats,
     UPDATABLE_FIELDS,
     INSERT_FIELDS,
+    is_allowed_property_type,
+    ALLOWED_PROPERTY_TYPES,
 )
 from services.ura_shadow_comparator import URAShadowComparator, ComparisonReport
 
@@ -358,9 +360,11 @@ class URASyncEngine:
         # Get cutoff date
         cutoff_date = get_cutoff_date()
         logger.info(f"Syncing transactions >= {cutoff_date}")
+        logger.info(f"Property types: {', '.join(ALLOWED_PROPERTY_TYPES)}")
 
         # Fetch all batches
         all_rows = []
+        skipped_property_type = 0
         for batch_num, projects in api_client.fetch_all_transactions():
             logger.info(f"Processing batch {batch_num}: {len(projects)} projects")
 
@@ -373,12 +377,20 @@ class URASyncEngine:
             for project in projects:
                 for row in mapper.map_project(project):
                     # Apply cutoff filter
-                    if row['transaction_date'] >= cutoff_date:
-                        all_rows.append(row)
+                    if row['transaction_date'] < cutoff_date:
+                        continue
+                    # Apply property type filter (exclude EC, etc.)
+                    if not is_allowed_property_type(row.get('property_type', '')):
+                        skipped_property_type += 1
+                        continue
+                    all_rows.append(row)
 
             # Track API metrics
             # Note: Would need to modify API client to expose these
             self._update_batch_progress(batch_num)
+
+        if skipped_property_type > 0:
+            logger.info(f"Skipped {skipped_property_type} rows due to property type filter")
 
         # Get mapper stats
         mapper_stats = mapper.get_stats()
