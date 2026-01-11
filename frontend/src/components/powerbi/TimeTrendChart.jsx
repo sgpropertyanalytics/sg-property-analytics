@@ -49,7 +49,6 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, v
   const isDashboard = variant === 'dashboard';
   const embedded = isDashboard;
   const cinema = isDashboard;
-  const anchored = isDashboard;
   // Phase 4: Simplified filter access - read values directly from Zustand
   const { filters, timeGrouping } = useZustandFilters();
 
@@ -288,11 +287,6 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, v
   // Calculate total transactions for StatusDeck
   const totalTransactions = transactionCounts.reduce((sum, c) => sum + c, 0);
 
-  // Methodology text for (i) tooltip
-  const methodologyText = `Volume — Monthly resale transaction count.
-Quantum — Total transaction value (linear).
-Grouped by ${TIME_LABELS[timeGrouping]}.`;
-
   return (
     <ChartFrame
       status={status}
@@ -311,8 +305,10 @@ Grouped by ${TIME_LABELS[timeGrouping]}.`;
         {/* Layer 1: Header - h-14 fixed */}
         <DataCardHeader
           title="Resale Volume & Quantum"
-          info={methodologyText}
-          anchored={anchored}
+          logic="Volume = transaction count. Quantum = total transaction value."
+          info={`Volume — Monthly resale transaction count.
+Quantum — Total transaction value (linear).
+Grouped by ${TIME_LABELS[timeGrouping]}.`}
         />
 
         {/* Layer 2: Canvas - flex-grow */}

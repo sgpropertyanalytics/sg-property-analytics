@@ -62,7 +62,6 @@ function AbsolutePsfChartBase({ height = 300, saleType = null, sharedData = null
   const isDashboard = variant === 'dashboard';
   const embedded = isDashboard;
   const cinema = isDashboard;
-  const anchored = isDashboard;
   // Phase 4: Simplified filter access - read values directly from Zustand
   const { filters, timeGrouping } = useZustandFilters();
 
@@ -193,12 +192,6 @@ function AbsolutePsfChartBase({ height = 300, saleType = null, sharedData = null
     ],
   };
 
-  // Methodology text for (i) tooltip
-  const methodologyText = `Shows median PSF by region over time.
-CCR = Core Central (Districts 9, 10, 11, downtown).
-RCR = Rest of Central (city fringe).
-OCR = Outside Central (suburban).`;
-
   // Chart options
   const chartOptions = {
     ...baseChartJsOptions,
@@ -266,8 +259,11 @@ OCR = Outside Central (suburban).`;
         {/* Header: h-14 fixed with Agent button */}
         <DataCardHeader
           title="Absolute PSF by Region"
-          info={methodologyText}
-          anchored={anchored}
+          logic="Median PSF over time. CCR = Core Central. RCR = Rest of Central. OCR = Outside Central."
+          info={`Shows median PSF by region over time.
+CCR = Core Central (Districts 9, 10, 11, downtown).
+RCR = Rest of Central (city fringe).
+OCR = Outside Central (suburban).`}
           controls={
             <AgentButton
               onClick={() => setIsAgentOpen(!isAgentOpen)}

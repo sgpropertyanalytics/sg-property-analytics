@@ -65,7 +65,6 @@ function PriceCompressionChartBase({ height = 380, saleType = null, sharedData =
   const isDashboard = variant === 'dashboard';
   const embedded = isDashboard;
   const cinema = isDashboard;
-  const anchored = isDashboard;
   // Phase 4: Simplified filter access - read values directly from Zustand
   const { filters, timeGrouping } = useZustandFilters();
 
@@ -261,11 +260,6 @@ function PriceCompressionChartBase({ height = 380, saleType = null, sharedData =
     },
   };
 
-  // Methodology text for (i) tooltip
-  const methodologyText = `Spreads narrowing = suburban catching up (compression).
-Spreads widening = prime outperforming (fragmentation).
-Watch for lines dipping below $0 — that's a price inversion anomaly.`;
-
   // CRITICAL: containerRef must be OUTSIDE ChartFrame for IntersectionObserver to work
   return (
     <div ref={containerRef}>
@@ -283,8 +277,10 @@ Watch for lines dipping below $0 — that's a price inversion anomaly.`;
         {/* Header: h-14 fixed */}
         <DataCardHeader
           title="Market Compression Analysis"
-          info={methodologyText}
-          anchored={anchored}
+          logic="Spreads narrowing = suburban catching up. Widening = prime outperforming."
+          info={`Spreads narrowing = suburban catching up (compression).
+Spreads widening = prime outperforming (fragmentation).
+Watch for lines dipping below $0 — that's a price inversion anomaly.`}
         />
 
         {/* Toolbar: h-20 fixed - 3 columns for score + spreads */}

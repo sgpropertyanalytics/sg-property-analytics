@@ -69,7 +69,6 @@ function BeadsChartBase({
   const isDashboard = variant === 'dashboard';
   const embedded = isDashboard;
   const cinema = isDashboard;
-  const anchored = isDashboard;
   // Phase 4: Simplified filter access - read values directly from Zustand
   const { filters } = useZustandFilters();
 
@@ -327,12 +326,6 @@ function BeadsChartBase({
     [stats?.priceRange?.max, stringAnnotations]
   );
 
-  // Methodology text for (i) tooltip
-  const methodologyText = `X-Position — Volume-weighted median price.
-Bubble Size — Number of transactions.
-Color — Bedroom type (1BR to 5BR).
-String Line — Price range for that region.`;
-
   return (
     <ChartFrame
       status={resolvedStatus}
@@ -351,8 +344,11 @@ String Line — Price range for that region.`;
         {/* Header: h-14 fixed */}
         <DataCardHeader
           title="Volume-Weighted Median Price by Region & Bedroom"
-          info={methodologyText}
-          anchored={anchored}
+          logic="Bubble position = median price. Size = transaction count. Color = bedroom type."
+          info={`X-Position — Volume-weighted median price.
+Bubble Size — Number of transactions.
+Color — Bedroom type (1BR to 5BR).
+String Line — Price range for that region.`}
         />
 
         {/* Canvas: flex-grow */}

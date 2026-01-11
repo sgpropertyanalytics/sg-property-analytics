@@ -11,7 +11,6 @@ import { useZustandFilters } from '../../stores';
 import { TIME_GROUP_BY } from '../../context/PowerBIFilter';
 import { useSubscription } from '../../context/SubscriptionContext';
 import {
-  KeyInsightBox,
   PreviewChartOverlay,
   DataCard,
   DataCardHeader,
@@ -68,15 +67,13 @@ function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawDat
   const isDashboard = variant === 'dashboard';
   const embedded = isDashboard;
   const cinema = isDashboard;
-  const anchored = isDashboard;
   // Phase 4: Simplified filter access - read values directly from Zustand
   const { filters, timeGrouping } = useZustandFilters();
 
   // Extract filter values directly (simple, explicit)
   const timeframe = filters.timeFilter?.type === 'preset' ? filters.timeFilter.value : 'Y1';
   const bedroom = filters.bedroomTypes?.join(',') || '';
-  const districts = filters.districts?.join(',') || '';
-  const { isPremium, isFreeResolved } = useSubscription();
+  const { isFreeResolved } = useSubscription();
 
   const chartRef = useRef(null);
 
@@ -352,11 +349,6 @@ function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawDat
     },
   };
 
-  // Methodology text for (i) tooltip
-  const methodologyText = `Z-score measures how far current spreads deviate from historical norms.
-Based on resale transactions only, with outliers excluded.
-±0σ to ±1.0σ = Normal range | +1.0σ to +2.0σ = Elevated | > +2.0σ = Extreme`;
-
   // CRITICAL: containerRef must be OUTSIDE ChartFrame for IntersectionObserver to work
   return (
     <div ref={containerRef}>
@@ -374,8 +366,10 @@ Based on resale transactions only, with outliers excluded.
           {/* Header: h-14 fixed */}
           <DataCardHeader
             title="Market Value Oscillator"
-            info={methodologyText}
-            anchored={anchored}
+            logic="Z-score measures how far current spreads deviate from historical norms."
+            info={`Z-score measures how far current spreads deviate from historical norms.
+Based on resale transactions only, with outliers excluded.
+±0σ to ±1.0σ = Normal range | +1.0σ to +2.0σ = Elevated | > +2.0σ = Extreme`}
           />
 
           {/* KPI Row - using standard DataCardToolbar */}
