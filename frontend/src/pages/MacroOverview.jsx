@@ -20,7 +20,9 @@ import { FilterBar } from '../components/patterns';
 import { PageCanvas, ControlRibbon } from '../components/layout';
 // Desktop-first chart height with mobile guardrail
 // Phase 2: Using TanStack Query via useAppQuery wrapper
-import { useChartHeight, MOBILE_CAPS } from '../hooks/useChartHeight';
+import { useChartHeight } from '../hooks/useChartHeight';
+// Single source of truth for chart layout (height, padding)
+import { CHART_HEIGHT, CHART_MOBILE_CAP } from '../constants/chartLayout';
 import { useAppQuery } from '../hooks/useAppQuery';
 // Unified filter bar component (handles desktop + mobile)
 
@@ -78,10 +80,8 @@ export function MacroOverviewContent() {
 
   // Desktop-first chart heights with mobile guardrails
   // Desktop: exact pixels | Mobile (<768px): capped to prevent viewport domination
-  // Cinema mode: shorter height + full width = panoramic aspect ratio
-  const trendChartHeight = useChartHeight(340, MOBILE_CAPS.standard);     // 340px desktop - 50/50 top row
-  const standardChartHeight = useChartHeight(350, MOBILE_CAPS.standard);  // 350px desktop, max 300px mobile (2-up grid)
-  const compressionHeight = useChartHeight(380, MOBILE_CAPS.tall);        // 380px desktop, max 320px mobile (2-up grid)
+  // Heights from single source of truth (chartLayout.js)
+  const chartHeight = useChartHeight(CHART_HEIGHT.standard, CHART_MOBILE_CAP.standard);
 
   // Memoize KPI params to prevent object recreation on every render
   // This avoids unnecessary re-fetches when unrelated state changes
@@ -312,7 +312,7 @@ export function MacroOverviewContent() {
                   <ErrorBoundary name="Time Trend Chart" compact>
                     <TimeTrendChart
                       onDrillThrough={(value) => handleDrillThrough(`Transactions in ${value}`)}
-                      height={trendChartHeight}
+                      height={chartHeight}
                       saleType={SALE_TYPE}
                       staggerIndex={0}
                       variant="dashboard"
@@ -324,9 +324,9 @@ export function MacroOverviewContent() {
                 <ChartPanel ref={compressionRef} className="lg:col-span-2">
                   <ErrorBoundary name="Absolute PSF" compact>
                     <ChartWatermark>
-                      <Suspense fallback={<ChartLoadingFallback height={trendChartHeight} />}>
+                      <Suspense fallback={<ChartLoadingFallback height={chartHeight} />}>
                         <AbsolutePsfChart
-                          height={trendChartHeight}
+                          height={chartHeight}
                           saleType={SALE_TYPE}
                           sharedData={compressionData}
                           sharedStatus={compressionInView ? compressionStatus : 'pending'}
@@ -345,9 +345,9 @@ export function MacroOverviewContent() {
                 <ChartPanel className="lg:col-span-2">
                   <ErrorBoundary name="Price Compression" compact>
                     <ChartWatermark>
-                      <Suspense fallback={<ChartLoadingFallback height={compressionHeight} />}>
+                      <Suspense fallback={<ChartLoadingFallback height={chartHeight} />}>
                         <PriceCompressionChart
-                          height={compressionHeight}
+                          height={chartHeight}
                           saleType={SALE_TYPE}
                           sharedData={compressionData}
                           sharedStatus={compressionInView ? compressionStatus : 'pending'}
@@ -363,9 +363,9 @@ export function MacroOverviewContent() {
                 <ChartPanel className="lg:col-span-2">
                   <ErrorBoundary name="Market Value Oscillator" compact>
                     <ChartWatermark>
-                      <Suspense fallback={<ChartLoadingFallback height={compressionHeight} />}>
+                      <Suspense fallback={<ChartLoadingFallback height={chartHeight} />}>
                         <MarketValueOscillator
-                          height={compressionHeight}
+                          height={chartHeight}
                           saleType={SALE_TYPE}
                           sharedRawData={compressionRaw}
                           sharedStatus={compressionInView ? compressionStatus : 'pending'}
@@ -386,7 +386,7 @@ export function MacroOverviewContent() {
                     <ChartWatermark>
                       <PriceDistributionChart
                         onDrillThrough={(value) => handleDrillThrough(`Transactions at ${value}`)}
-                        height={standardChartHeight}
+                        height={chartHeight}
                         saleType={SALE_TYPE}
                         sharedData={dashboardPanels?.price_histogram}
                         sharedStatus={panelsInView ? dashboardStatus : 'pending'}
@@ -402,7 +402,7 @@ export function MacroOverviewContent() {
                   <ErrorBoundary name="Price by Region & Bedroom" compact>
                     <ChartWatermark>
                       <BeadsChart
-                        height={standardChartHeight}
+                        height={chartHeight}
                         saleType={SALE_TYPE}
                         sharedData={dashboardPanels?.beads_chart}
                         sharedStatus={panelsInView ? dashboardStatus : 'pending'}

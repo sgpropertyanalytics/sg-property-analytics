@@ -20,7 +20,7 @@ import {
   StatusDeck,
   LegendLine,
 } from '../ui';
-import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
+import { baseChartJsOptions, CHART_AXIS_DEFAULTS, CHART_TOOLTIP } from '../../constants/chartOptions';
 import { CHART_COLORS } from '../../constants/colors';
 import {
   transformOscillatorSeries,
@@ -62,7 +62,7 @@ const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
  *  variant?: 'standalone' | 'dashboard',
  * }} props
  */
-function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawData = null, sharedStatus = 'idle', staggerIndex = 0, variant = 'standalone' }) {
+function MarketValueOscillatorBase({ height = 380, saleType = null, sharedRawData = null, sharedStatus = 'idle', staggerIndex = 0, variant = 'standalone' }) {
   // Derive layout flags from variant
   const isDashboard = variant === 'dashboard';
   const embedded = isDashboard;
@@ -252,6 +252,7 @@ function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawDat
     plugins: {
       legend: { display: false },
       tooltip: {
+        ...CHART_TOOLTIP,
         callbacks: {
           title: (items) => `${items[0].label}`,
           label: (context) => {

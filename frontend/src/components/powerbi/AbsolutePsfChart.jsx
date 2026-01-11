@@ -25,7 +25,7 @@ import {
   AgentButton,
   AgentFooter,
 } from '../ui';
-import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
+import { baseChartJsOptions, CHART_AXIS_DEFAULTS, CHART_TOOLTIP } from '../../constants/chartOptions';
 import { CHART_COLORS } from '../../constants/colors';
 import { REGION } from '../../constants/colors';
 import {
@@ -58,7 +58,7 @@ const REGION_COLORS = REGION;
  *  variant?: 'standalone' | 'dashboard',
  * }} props
  */
-function AbsolutePsfChartBase({ height = 300, saleType = null, sharedData = null, sharedStatus = 'idle', staggerIndex = 0, variant = 'standalone' }) {
+function AbsolutePsfChartBase({ height = 380, saleType = null, sharedData = null, sharedStatus = 'idle', staggerIndex = 0, variant = 'standalone' }) {
   // Derive layout flags from variant
   const isDashboard = variant === 'dashboard';
   const embedded = isDashboard;
@@ -205,6 +205,7 @@ function AbsolutePsfChartBase({ height = 300, saleType = null, sharedData = null
     plugins: {
       legend: { display: false },  // Using DataCardLegendDock instead
       tooltip: {
+        ...CHART_TOOLTIP,
         callbacks: {
           title: (items) => `${items[0].label}`,
           label: (context) => {

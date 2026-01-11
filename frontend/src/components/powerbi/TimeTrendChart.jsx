@@ -20,7 +20,7 @@ import {
   LegendLine,
 } from '../ui';
 import { useSubscription } from '../../context/SubscriptionContext';
-import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
+import { baseChartJsOptions, CHART_AXIS_DEFAULTS, CHART_TOOLTIP } from '../../constants/chartOptions';
 import { CHART_COLORS } from '../../constants/colors';
 // SaleType imports removed - Market Core is Resale-only
 import { logFetchDebug, assertKnownVersion } from '../../adapters';
@@ -47,7 +47,7 @@ const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
  *  onDrillThrough?: (value: string) => void,
  * }} props
  */
-function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, variant = 'standalone', onDrillThrough: _onDrillThrough }) {
+function TimeTrendChartBase({ height = 380, saleType = null, staggerIndex = 0, variant = 'standalone', onDrillThrough: _onDrillThrough }) {
   // Derive layout flags from variant
   const isDashboard = variant === 'dashboard';
   const embedded = isDashboard;
@@ -174,15 +174,7 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, v
         display: false,
       },
       tooltip: {
-        backgroundColor: CHART_COLORS.navyAlpha95,
-        titleColor: CHART_COLORS.slate100,
-        bodyColor: CHART_COLORS.slate300,
-        borderColor: CHART_COLORS.ocean,
-        borderWidth: 1,
-        cornerRadius: 0,
-        padding: 12,
-        titleFont: { weight: '600', size: 11, family: "'JetBrains Mono', monospace" },
-        bodyFont: { size: 10, family: "'JetBrains Mono', monospace" },
+        ...CHART_TOOLTIP,
         displayColors: true,
         boxPadding: 4,
         callbacks: {
@@ -271,7 +263,7 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, v
       onRetry={refetch}
       empty={!safeData || safeData.length === 0}
       skeleton="bar"
-      height={height + 40}
+      height={height}
       staggerIndex={staggerIndex}
     >
       <DataCard variant={embedded ? 'embedded' : 'standalone'}>

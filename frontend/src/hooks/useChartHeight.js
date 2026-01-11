@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { CHART_MOBILE_CAP } from '../constants/chartLayout';
 
 /**
  * Desktop-first chart height hook with mobile guardrail
@@ -6,13 +7,17 @@ import { useState, useEffect } from 'react';
  * Desktop (md+): Returns exact height as specified
  * Mobile (<768px): Caps height at maxMobile to prevent viewport domination
  *
+ * SINGLE SOURCE OF TRUTH: Use constants from ../constants/chartLayout.js
+ * - CHART_HEIGHT.standard for desktop heights
+ * - CHART_MOBILE_CAP.standard for mobile caps
+ *
  * @param {number} desktopHeight - The intended desktop height in pixels
  * @param {number} maxMobile - Maximum height on mobile (default: 300px)
  * @returns {number} - Final height in pixels
  *
  * @example
- * const height = useChartHeight(350); // 350px on desktop, max 300px on mobile
- * const height = useChartHeight(420, 320); // 420px desktop, max 320px mobile
+ * import { CHART_HEIGHT, CHART_MOBILE_CAP } from '../constants/chartLayout';
+ * const height = useChartHeight(CHART_HEIGHT.standard, CHART_MOBILE_CAP.standard);
  */
 export function useChartHeight(desktopHeight, maxMobile = 300) {
   const [height, setHeight] = useState(() =>
@@ -50,11 +55,13 @@ function computeHeight(desktopHeight, maxMobile) {
 
 /**
  * Mobile cap presets for common chart types
+ * @deprecated Use CHART_MOBILE_CAP from '../constants/chartLayout' instead
  */
 export const MOBILE_CAPS = {
   compact: 260,   // Trend lines, simple bars
-  standard: 300,  // Most charts (default)
-  tall: 320,      // Scatter plots, complex visualizations
+  standard: CHART_MOBILE_CAP.standard,  // Re-exported from chartLayout.js
+  tall: CHART_MOBILE_CAP.standard,      // Re-exported from chartLayout.js (unified)
+  medium: CHART_MOBILE_CAP.standard,    // Alias for backward compat
 };
 
 export default useChartHeight;

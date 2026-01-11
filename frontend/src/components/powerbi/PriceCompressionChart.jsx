@@ -22,7 +22,7 @@ import {
   StatusPeriod,
   LegendLine,
 } from '../ui';
-import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
+import { baseChartJsOptions, CHART_AXIS_DEFAULTS, CHART_TOOLTIP } from '../../constants/chartOptions';
 import { CHART_COLORS } from '../../constants/colors';
 import {
   transformCompressionSeries,
@@ -217,6 +217,7 @@ function PriceCompressionChartBase({ height = 380, saleType = null, sharedData =
     plugins: {
       legend: { display: false },
       tooltip: {
+        ...CHART_TOOLTIP,
         callbacks: {
           title: (items) => `${items[0].label}`,
           label: (context) => {
@@ -275,7 +276,7 @@ function PriceCompressionChartBase({ height = 380, saleType = null, sharedData =
       onRetry={refetch}
       empty={!data || data.length === 0}
       skeleton="line"
-      height={350}
+      height={height}
       staggerIndex={staggerIndex}
     >
       <DataCard variant={embedded ? 'embedded' : 'standalone'}>
