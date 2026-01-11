@@ -27,20 +27,19 @@ from api.contracts.contract_schema import PropertyAgeBucket
 # =============================================================================
 # MULTI-DIMENSIONAL GROUP BY CONFIGURATION
 # =============================================================================
-# Whitelist of allowed multi-dimensional group_by combos.
-# These are explicitly permitted for client-side filtering optimization.
-# Arbitrary combos are rejected to prevent DB explosion.
-ALLOWED_MULTI_DIM_GROUP_BY = frozenset([
+# Whitelist of allowed 3+ dimensional group_by combos for client-side filtering.
+# 2-dimensional queries (e.g., quarter,region) are always allowed - they've
+# always worked and don't cause DB explosion.
+# Only 3+ dim queries require explicit whitelisting to prevent explosion.
+ALLOWED_THREE_PLUS_DIM_GROUP_BY = frozenset([
     'month,region,bedroom',     # Volume charts - client-side filtering
     'quarter,region,bedroom',   # Volume charts - quarterly view
-    'month,bedroom',            # Volume charts - bedroom only
-    'month,region',             # Volume charts - region only
 ])
 
-# Max months for multi-dim queries (prevents all-time × dimensions explosion)
+# Max months for 3+ dim queries (prevents all-time × dimensions explosion)
 MAX_MULTI_DIM_MONTHS = 24
 
-# Metrics NOT allowed in multi-dim responses (require raw data, can't aggregate client-side)
+# Metrics NOT allowed in 3+ dim responses (require raw data, can't aggregate client-side)
 MULTI_DIM_FORBIDDEN_METRICS = frozenset([
     'median_psf', 'median_price', 'avg_psf', 'avg_price',
     'psf_25th', 'psf_75th', 'price_25th', 'price_75th',
@@ -60,22 +59,32 @@ def _validate_multi_dim_group_by(
     Returns None if valid, or error message if invalid.
 
     Enforces:
-    - Whitelist of allowed combos
-    - Max 24 months for multi-dim queries
-    - No percentile/median metrics in multi-dim responses
+    - 2-dimensional queries (e.g., quarter,region) are always allowed
+    - 3+ dimensional queries must be in whitelist
+    - Max 24 months for 3+ dim queries
+    - No percentile/median metrics in 3+ dim responses
     """
     # Single-dimension queries always allowed
     if ',' not in group_by_str:
         return None
 
-    # Check whitelist
-    if group_by_str not in ALLOWED_MULTI_DIM_GROUP_BY:
-        return f"Invalid multi-dimensional group_by: {group_by_str}. Allowed: {', '.join(sorted(ALLOWED_MULTI_DIM_GROUP_BY))}"
+    # Count dimensions
+    dimensions = group_by_str.split(',')
+    num_dims = len(dimensions)
 
-    # Check for forbidden metrics
+    # 2-dimensional queries are always allowed (e.g., quarter,region)
+    # They don't cause DB explosion and have always worked
+    if num_dims == 2:
+        return None
+
+    # 3+ dimensional queries require whitelist (client-side filtering optimization)
+    if group_by_str not in ALLOWED_THREE_PLUS_DIM_GROUP_BY:
+        return f"Invalid multi-dimensional group_by: {group_by_str}. Allowed 3+ dim: {', '.join(sorted(ALLOWED_THREE_PLUS_DIM_GROUP_BY))}"
+
+    # Check for forbidden metrics (only for 3+ dim queries)
     forbidden_requested = set(metrics) & MULTI_DIM_FORBIDDEN_METRICS
     if forbidden_requested:
-        return f"Metrics not allowed in multi-dim queries: {', '.join(sorted(forbidden_requested))}. Use count, total_value, total_sqft."
+        return f"Metrics not allowed in 3+ dim queries: {', '.join(sorted(forbidden_requested))}. Use count, total_value, total_sqft."
 
     # Check date range (max 24 months)
     if date_from and date_to:
