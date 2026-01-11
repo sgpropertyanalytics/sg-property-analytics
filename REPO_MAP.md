@@ -757,6 +757,37 @@ grep -r "React.memo" frontend/src/components/
 3. **Check WHY something is missing** - it might be intentionally disabled (like edge caching for security)
 4. **Run verification SQL** - check existing indexes before proposing new ones
 
+### STRICT Mode Bricking Production Incident (Jan 11, 2026)
+
+**What happened:** Production dashboard endpoint returned 500 errors with `RESPONSE_SCHEMA_MISMATCH`. All `/api/dashboard` calls failed.
+
+**Root cause chain:**
+1. Jan 10: `render.yaml` added with `FLASK_ENV=production`
+2. Dec 30: Commit `54a0ca4a` added `DEFAULT_STRICT_ENDPOINTS` logic that forces STRICT mode when `_is_production_env()` returns True
+3. `dashboard.py` schema had `data_fields={}` (empty) - no panels declared
+4. STRICT mode rejects undeclared fields → `price_histogram`, `time_series`, etc. all rejected → 500
+
+**Compounding issue:** CSRF cookie set with `SameSite=Strict` (should be `Lax` to match auth cookie) caused intermittent auth failures through Vercel→Render proxy.
+
+**Why wasn't it detected?**
+- Local dev runs WARN mode (logs violations, doesn't fail)
+- No production-like environment with STRICT mode enabled
+- CSRF cookie worked locally (same-origin) but failed when proxied
+
+**Fix (PR #376):**
+1. Added `CONTRACT_STRICT_MODE` kill switch (defaults to OFF)
+2. STRICT mode now requires explicit opt-in: `CONTRACT_STRICT_MODE=1`
+3. Added all panel fields to dashboard schema: `time_series`, `price_histogram`, `volume_by_location`, `bedroom_mix`, `summary`, `sale_type_breakdown`, `beads_chart`
+4. Added missing meta fields: `dataMasked`, `filterNotes`, `options`, `panelsReturned`
+5. Changed CSRF cookie from `SameSite=Strict` to `SameSite=Lax`
+
+**Policy established:**
+- Production stays `FLASK_ENV=production` (don't lie about environment)
+- STRICT mode is gated by explicit `CONTRACT_STRICT_MODE=1`, not environment detection
+- Schema changes must be deployed BEFORE enabling STRICT mode
+
+**Lesson:** Environment-based feature flags for breaking behaviors are dangerous. Use explicit opt-in flags instead. A missing schema field shouldn't brick production.
+
 ---
 
 ## Quick Reference Links
