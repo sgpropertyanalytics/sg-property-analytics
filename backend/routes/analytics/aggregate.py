@@ -28,18 +28,16 @@ from api.contracts.contract_schema import PropertyAgeBucket
 # MULTI-DIMENSIONAL GROUP BY CONFIGURATION
 # =============================================================================
 # Whitelist of allowed 3+ dimensional group_by combos for client-side filtering.
-# 2-dimensional queries (e.g., quarter,region) are always allowed - they've
-# always worked and don't cause DB explosion.
-# Only 3+ dim queries require explicit whitelisting to prevent explosion.
+# 2-dimensional queries (e.g., quarter,region) are always allowed.
 ALLOWED_THREE_PLUS_DIM_GROUP_BY = frozenset([
-    'month,region,bedroom',     # Volume charts - client-side filtering
-    'quarter,region,bedroom',   # Volume charts - quarterly view
+    'month,region,bedroom',
+    'quarter,region,bedroom',
+    'year,region,bedroom',
 ])
 
-# Max months for 3+ dim queries (prevents all-time × dimensions explosion)
-# 120 months = 10 years, covers Y10 timeframe
-# Max cardinality: 120 months × 3 regions × 5 bedrooms = 1,800 rows (acceptable)
-MAX_MULTI_DIM_MONTHS = 120
+# Max time buckets for 3+ dim queries (auto-downsample if exceeded)
+# 120 buckets × 3 regions × 5 bedrooms = 1,800 rows max (acceptable)
+MAX_MULTI_DIM_TIME_BUCKETS = 120
 
 # Metrics NOT allowed in 3+ dim responses (require raw data, can't aggregate client-side)
 MULTI_DIM_FORBIDDEN_METRICS = frozenset([
@@ -48,56 +46,140 @@ MULTI_DIM_FORBIDDEN_METRICS = frozenset([
     'median_psf_actual', 'min_psf', 'max_psf', 'min_price', 'max_price',
 ])
 
+# Time grain hierarchy for auto-downsampling
+TIME_GRAINS = ['month', 'quarter', 'year']
+
+
+def _calculate_time_buckets(date_from: date, date_to: date, grain: str) -> int:
+    """Calculate number of time buckets for a date range and grain."""
+    if not date_from or not date_to:
+        return 999  # Unknown, assume large
+
+    months = (date_to.year - date_from.year) * 12 + (date_to.month - date_from.month) + 1
+
+    if grain == 'month':
+        return months
+    elif grain == 'quarter':
+        return (months + 2) // 3  # Round up
+    elif grain == 'year':
+        return (months + 11) // 12  # Round up
+    return months
+
+
+def _auto_downsample_time_grain(
+    group_by_str: str,
+    date_from: Optional[date],
+    date_to: Optional[date]
+) -> Tuple[str, Optional[str], bool]:
+    """
+    Auto-downsample time grain for 3+ dim queries if needed.
+
+    Returns:
+        (effective_group_by, effective_time_grain, was_downsampled)
+
+    Example:
+        Input: 'month,region,bedroom' with 10-year range
+        Output: ('quarter,region,bedroom', 'quarter', True)
+    """
+    dimensions = group_by_str.split(',')
+
+    # Find time dimension (first one that's month/quarter/year)
+    time_dim_idx = None
+    original_grain = None
+    for i, dim in enumerate(dimensions):
+        if dim in TIME_GRAINS:
+            time_dim_idx = i
+            original_grain = dim
+            break
+
+    # No time dimension found, return as-is
+    if time_dim_idx is None:
+        return group_by_str, None, False
+
+    # Calculate buckets for current grain
+    buckets = _calculate_time_buckets(date_from, date_to, original_grain)
+
+    # If under limit, no downsampling needed
+    if buckets <= MAX_MULTI_DIM_TIME_BUCKETS:
+        return group_by_str, original_grain, False
+
+    # Try coarser grains
+    grain_idx = TIME_GRAINS.index(original_grain)
+    effective_grain = original_grain
+
+    for coarser_grain in TIME_GRAINS[grain_idx + 1:]:
+        buckets = _calculate_time_buckets(date_from, date_to, coarser_grain)
+        effective_grain = coarser_grain
+        if buckets <= MAX_MULTI_DIM_TIME_BUCKETS:
+            break
+
+    # Build new group_by with coarsened grain
+    new_dimensions = dimensions.copy()
+    new_dimensions[time_dim_idx] = effective_grain
+    effective_group_by = ','.join(new_dimensions)
+
+    was_downsampled = effective_grain != original_grain
+    return effective_group_by, effective_grain, was_downsampled
+
 
 def _validate_multi_dim_group_by(
     group_by_str: str,
     metrics: list,
     date_from: Optional[date],
     date_to: Optional[date]
-) -> Optional[str]:
+) -> Tuple[Optional[str], str, Optional[str], bool]:
     """
-    Validate multi-dimensional GROUP BY requests.
+    Validate and possibly auto-downsample multi-dimensional GROUP BY requests.
 
-    Returns None if valid, or error message if invalid.
+    Returns:
+        (error_message, effective_group_by, effective_time_grain, was_downsampled)
 
-    Enforces:
-    - 2-dimensional queries (e.g., quarter,region) are always allowed
-    - 3+ dimensional queries must be in whitelist
-    - Max 24 months for 3+ dim queries
-    - No percentile/median metrics in 3+ dim responses
+    If error_message is not None, the request should be rejected.
+    Otherwise, use effective_group_by for the query.
     """
-    # Single-dimension queries always allowed
+    # Single-dimension queries always allowed, no downsampling
     if ',' not in group_by_str:
-        return None
+        return None, group_by_str, None, False
 
-    # Count dimensions
     dimensions = group_by_str.split(',')
     num_dims = len(dimensions)
 
-    # 2-dimensional queries are always allowed (e.g., quarter,region)
-    # They don't cause DB explosion and have always worked
+    # 2-dimensional queries are always allowed (no explosion risk)
     if num_dims == 2:
-        return None
+        return None, group_by_str, None, False
 
-    # 3+ dimensional queries require whitelist (client-side filtering optimization)
-    if group_by_str not in ALLOWED_THREE_PLUS_DIM_GROUP_BY:
-        return f"Invalid multi-dimensional group_by: {group_by_str}. Allowed 3+ dim: {', '.join(sorted(ALLOWED_THREE_PLUS_DIM_GROUP_BY))}"
+    # 3+ dimensional queries require whitelist check
+    # First, check if the base pattern is whitelisted (with any time grain)
+    base_pattern = None
+    for allowed in ALLOWED_THREE_PLUS_DIM_GROUP_BY:
+        allowed_dims = set(allowed.split(',')) - set(TIME_GRAINS)
+        request_dims = set(dimensions) - set(TIME_GRAINS)
+        if allowed_dims == request_dims:
+            base_pattern = allowed
+            break
 
-    # Check for forbidden metrics (only for 3+ dim queries)
+    if base_pattern is None:
+        return (
+            f"Invalid multi-dimensional group_by: {group_by_str}. "
+            f"Allowed patterns: region,bedroom with month/quarter/year",
+            group_by_str, None, False
+        )
+
+    # Check for forbidden metrics
     forbidden_requested = set(metrics) & MULTI_DIM_FORBIDDEN_METRICS
     if forbidden_requested:
-        return f"Metrics not allowed in 3+ dim queries: {', '.join(sorted(forbidden_requested))}. Use count, total_value, total_sqft."
+        return (
+            f"Metrics not allowed in 3+ dim queries: {', '.join(sorted(forbidden_requested))}. "
+            f"Use count, total_value, total_sqft.",
+            group_by_str, None, False
+        )
 
-    # Check date range (max 24 months)
-    if date_from and date_to:
-        months = (date_to.year - date_from.year) * 12 + (date_to.month - date_from.month)
-        if months > MAX_MULTI_DIM_MONTHS:
-            return f"Multi-dim queries limited to {MAX_MULTI_DIM_MONTHS} months. Requested: {months} months."
-    elif not date_from or not date_to:
-        # If no date range specified, reject (too risky for multi-dim)
-        return "Multi-dim queries require explicit date_from and date_to (max 24 months)."
+    # Auto-downsample if needed (never errors, just coarsens grain)
+    effective_group_by, effective_grain, was_downsampled = _auto_downsample_time_grain(
+        group_by_str, date_from, date_to
+    )
 
-    return None
+    return None, effective_group_by, effective_grain, was_downsampled
 
 
 def _get_project_lease_info(project_name: str) -> Tuple[Optional[int], Optional[str]]:
@@ -344,9 +426,9 @@ def aggregate():
         to_dt = to_dt_exclusive - timedelta(days=1)
         filters_applied["date_to"] = to_dt.isoformat()
 
-    # MULTI-DIMENSIONAL GROUP BY VALIDATION
-    # Validates whitelist, max date range, and forbidden metrics
-    multi_dim_error = _validate_multi_dim_group_by(
+    # MULTI-DIMENSIONAL GROUP BY VALIDATION + AUTO-DOWNSAMPLING
+    # For 3+ dim queries, auto-coarsens time grain if range exceeds limit
+    multi_dim_error, effective_group_by, effective_time_grain, was_downsampled = _validate_multi_dim_group_by(
         group_by_str=group_by_param,
         metrics=metrics,
         date_from=from_dt,
@@ -356,8 +438,13 @@ def aggregate():
         return jsonify({
             "error": multi_dim_error,
             "code": "INVALID_MULTI_DIM_QUERY",
-            "hint": "Use single-dimension group_by or provide valid date range (max 24 months)"
+            "hint": "Use single-dimension group_by or an allowed multi-dim pattern"
         }), 400
+
+    # If downsampled, update group_by list to use coarser time grain
+    if was_downsampled:
+        group_by = [g.strip() for g in effective_group_by.split(",") if g.strip()]
+        group_by_param = effective_group_by
 
     # PSF range filter
     if params.get("psf_min") is not None:
@@ -675,6 +762,8 @@ def aggregate():
     warnings = []
     if date_was_normalized:
         warnings.append("Date range was auto-aligned to month boundaries (URA data is month-level).")
+    if was_downsampled:
+        warnings.append(f"Time grain auto-coarsened to '{effective_time_grain}' due to date range size.")
 
     meta = {
         "totalRecords": total_records,
@@ -683,6 +772,12 @@ def aggregate():
         "cacheHit": False,
         "schemaVersion": schema_version,
     }
+
+    # Add downsampling metadata so frontend can label correctly
+    if was_downsampled:
+        meta["effectiveTimeGrain"] = effective_time_grain
+        meta["wasDownsampled"] = True
+
     # Only add warnings key if there are warnings
     if warnings:
         meta["warnings"] = warnings
