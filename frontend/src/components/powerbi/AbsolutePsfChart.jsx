@@ -54,9 +54,12 @@ const REGION_COLORS = REGION;
  *  saleType?: string | null,
  *  sharedData?: Array<Record<string, any>> | null,
  *  sharedStatus?: string,
+ *  embedded?: boolean,
+ *  cinema?: boolean,
+ *  anchored?: boolean,
  * }} props
  */
-function AbsolutePsfChartBase({ height = 300, saleType = null, sharedData = null, sharedStatus = 'idle', staggerIndex = 0 }) {
+function AbsolutePsfChartBase({ height = 300, saleType = null, sharedData = null, sharedStatus = 'idle', staggerIndex = 0, embedded = false, cinema = false, anchored = false }) {
   // Phase 4: Simplified filter access - read values directly from Zustand
   const { filters, timeGrouping } = useZustandFilters();
 
@@ -256,12 +259,13 @@ OCR = Outside Central (suburban).`;
       height={height}
       staggerIndex={staggerIndex}
     >
-      <DataCard>
+      <DataCard variant={embedded ? 'embedded' : 'standalone'}>
         {/* Header: h-14 fixed with Agent button */}
         <DataCardHeader
           title="Absolute PSF by Region"
           subtitle={`Median PSF trend (${TIME_LABELS[timeGrouping]}) • Values show latest ${TIME_LABELS[timeGrouping].toLowerCase()}`}
           info={methodologyText}
+          anchored={anchored}
           controls={
             <AgentButton
               onClick={() => setIsAgentOpen(!isAgentOpen)}
@@ -293,7 +297,7 @@ OCR = Outside Central (suburban).`;
         </DataCardToolbar>
 
         {/* Canvas: flex-grow */}
-        <DataCardCanvas minHeight={height}>
+        <DataCardCanvas minHeight={height} cinema={cinema}>
           <PreviewChartOverlay chartRef={chartRef}>
             <Line ref={chartRef} data={chartData} options={chartOptions} />
           </PreviewChartOverlay>

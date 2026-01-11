@@ -83,10 +83,11 @@ export function MacroOverviewContent() {
 
   // Desktop-first chart heights with mobile guardrails
   // Desktop: exact pixels | Mobile (<768px): capped to prevent viewport domination
-  const trendChartHeight = useChartHeight(280, MOBILE_CAPS.compact);      // 280px desktop, max 260px mobile
-  const standardChartHeight = useChartHeight(350, MOBILE_CAPS.standard);  // 350px desktop, max 300px mobile
-  const compressionHeight = useChartHeight(380, MOBILE_CAPS.tall);        // 380px desktop, max 320px mobile
-  const oscillatorHeight = useChartHeight(420, MOBILE_CAPS.tall);         // 420px desktop, max 320px mobile (full-width chart)
+  // Cinema mode: shorter height + full width = panoramic aspect ratio
+  const trendChartHeight = useChartHeight(340, MOBILE_CAPS.standard);     // 340px desktop - full-width hero chart
+  const standardChartHeight = useChartHeight(350, MOBILE_CAPS.standard);  // 350px desktop, max 300px mobile (2-up grid)
+  const compressionHeight = useChartHeight(380, MOBILE_CAPS.tall);        // 380px desktop, max 320px mobile (2-up grid)
+  const oscillatorHeight = useChartHeight(320, MOBILE_CAPS.standard);     // 320px desktop - cinema/panoramic (full-width)
 
   // Memoize KPI params to prevent object recreation on every render
   // This avoids unnecessary re-fetches when unrelated state changes
@@ -316,16 +317,21 @@ export function MacroOverviewContent() {
           {/* Each chart wrapped with ErrorBoundary to prevent cascade failures */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
                 {/* Time Trend Chart - Full width on all screens */}
-                <ChartPanel className="lg:col-span-2">
+                <ChartPanel className="lg:col-span-2 pb-6">
                   <ErrorBoundary name="Time Trend Chart" compact>
                     <TimeTrendChart
                       onDrillThrough={(value) => handleDrillThrough(`Transactions in ${value}`)}
                       height={trendChartHeight}
                       saleType={SALE_TYPE}
                       staggerIndex={0}
+                      embedded
+                      cinema
                     />
                   </ErrorBoundary>
                 </ChartPanel>
+
+                {/* HORIZON LINE - Technical divider between top and bottom sections */}
+                <div className="lg:col-span-2 border-t border-dashed border-slate-400 my-2" />
 
                 {/* Market Compression + Absolute PSF - Side by side (Watermarked for free users) */}
                 {/* Desktop/Tablet: 50/50 grid | Mobile: Stacked */}
@@ -333,9 +339,10 @@ export function MacroOverviewContent() {
                 {/* SHARED DATA: Both charts receive pre-fetched compressionData (W4 fix) */}
                 <div
                   ref={compressionRef}
-                  className="lg:col-span-2 grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 items-stretch"
+                  className="lg:col-span-2 grid grid-cols-1 lg:grid-cols-2 gap-0 items-stretch"
                 >
-                  <ChartPanel>
+                  {/* LEFT: Compression - with SPINE (right border) */}
+                  <ChartPanel className="lg:border-r lg:border-slate-300 lg:pr-6">
                     <ErrorBoundary name="Price Compression" compact>
                       <ChartWatermark>
                         <Suspense fallback={<ChartLoadingFallback height={compressionHeight} />}>
@@ -345,12 +352,16 @@ export function MacroOverviewContent() {
                             sharedData={compressionData}
                             sharedStatus={compressionInView ? compressionStatus : 'pending'}
                             staggerIndex={1}
+                            embedded
+                            cinema
+                            anchored
                           />
                         </Suspense>
                       </ChartWatermark>
                     </ErrorBoundary>
                   </ChartPanel>
-                  <ChartPanel>
+                  {/* RIGHT: Absolute PSF */}
+                  <ChartPanel className="lg:pl-6">
                     <ErrorBoundary name="Absolute PSF" compact>
                       <ChartWatermark>
                         <Suspense fallback={<ChartLoadingFallback height={compressionHeight} />}>
@@ -360,6 +371,9 @@ export function MacroOverviewContent() {
                             sharedData={compressionData}
                             sharedStatus={compressionInView ? compressionStatus : 'pending'}
                             staggerIndex={2}
+                            embedded
+                            cinema
+                            anchored
                           />
                         </Suspense>
                       </ChartWatermark>
@@ -367,10 +381,13 @@ export function MacroOverviewContent() {
                   </ChartPanel>
                 </div>
 
+                {/* HORIZON LINE - Divider before oscillator */}
+                <div className="lg:col-span-2 border-t border-dashed border-slate-400 my-2" />
+
                 {/* Market Value Oscillator - Full width, Z-score normalized spread analysis */}
                 {/* Lazy-loaded with Suspense for faster initial page load */}
                 {/* SHARED DATA: Receives compressionRaw to eliminate duplicate aggregate request (P0 fix) */}
-                <ChartPanel className="lg:col-span-2">
+                <ChartPanel className="lg:col-span-2 pb-6">
                   <ErrorBoundary name="Market Value Oscillator" compact>
                     <ChartWatermark>
                       <Suspense fallback={<ChartLoadingFallback height={oscillatorHeight} />}>
@@ -380,18 +397,25 @@ export function MacroOverviewContent() {
                           sharedRawData={compressionRaw}
                           sharedStatus={compressionInView ? compressionStatus : 'pending'}
                           staggerIndex={3}
+                          embedded
+                          cinema
+                          anchored
                         />
                       </Suspense>
                     </ChartWatermark>
                   </ErrorBoundary>
                 </ChartPanel>
 
+                {/* HORIZON LINE - Divider before bottom row */}
+                <div className="lg:col-span-2 border-t border-dashed border-slate-400 my-2" />
+
                 {/* Price Distribution + Beads Chart - Side by side */}
                 <div
                   ref={panelsRef}
-                  className="lg:col-span-2 grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6"
+                  className="lg:col-span-2 grid grid-cols-1 lg:grid-cols-2 gap-0 items-stretch"
                 >
-                  <ChartPanel>
+                  {/* LEFT: Price Distribution - with SPINE (right border) */}
+                  <ChartPanel className="lg:border-r lg:border-slate-300 lg:pr-6">
                     <ErrorBoundary name="Price Distribution" compact>
                       <ChartWatermark>
                         <PriceDistributionChart
@@ -401,12 +425,16 @@ export function MacroOverviewContent() {
                           sharedData={dashboardPanels?.price_histogram}
                           sharedStatus={panelsInView ? dashboardStatus : 'pending'}
                           staggerIndex={4}
+                          embedded
+                          cinema
+                          anchored
                         />
                       </ChartWatermark>
                     </ErrorBoundary>
                   </ChartPanel>
 
-                  <ChartPanel>
+                  {/* RIGHT: Beads Chart */}
+                  <ChartPanel className="lg:pl-6">
                     <ErrorBoundary name="Price by Region & Bedroom" compact>
                       <ChartWatermark>
                         <BeadsChart
@@ -415,6 +443,9 @@ export function MacroOverviewContent() {
                           sharedData={dashboardPanels?.beads_chart}
                           sharedStatus={panelsInView ? dashboardStatus : 'pending'}
                           staggerIndex={5}
+                          embedded
+                          cinema
+                          anchored
                         />
                       </ChartWatermark>
                     </ErrorBoundary>

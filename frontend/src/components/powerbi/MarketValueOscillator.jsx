@@ -10,7 +10,18 @@ import { getAggregate } from '../../api/client';
 import { useZustandFilters } from '../../stores';
 import { TIME_GROUP_BY } from '../../context/PowerBIFilter';
 import { useSubscription } from '../../context/SubscriptionContext';
-import { KeyInsightBox, PreviewChartOverlay, ChartSlot, InlineCard, InlineCardRow } from '../ui';
+import {
+  KeyInsightBox,
+  PreviewChartOverlay,
+  InlineCard,
+  InlineCardRow,
+  DataCard,
+  DataCardHeader,
+  DataCardToolbar,
+  DataCardCanvas,
+  StatusDeck,
+  LegendLine,
+} from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 import { CHART_COLORS } from '../../constants/colors';
 import {
@@ -50,9 +61,12 @@ const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
  *  saleType?: string | null,
  *  sharedRawData?: Array<Record<string, any>> | null,
  *  sharedStatus?: string,
+ *  embedded?: boolean,
+ *  cinema?: boolean,
+ *  anchored?: boolean,
  * }} props
  */
-function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawData = null, sharedStatus = 'idle', staggerIndex = 0 }) {
+function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawData = null, sharedStatus = 'idle', staggerIndex = 0, embedded = false, cinema = false, anchored = false }) {
   // Phase 4: Simplified filter access - read values directly from Zustand
   const { filters, timeGrouping } = useZustandFilters();
 
@@ -336,8 +350,10 @@ function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawDat
     },
   };
 
-  // Card owns its height explicitly (header ~100px + insight ~60px + footer ~44px = 204px overhead)
-  const cardHeight = height + 204;
+  // Methodology text for (i) tooltip
+  const methodologyText = `Z-score measures how far current spreads deviate from historical norms.
+Based on resale transactions only, with outliers excluded.
+±0σ to ±1.0σ = Normal range | +1.0σ to +2.0σ = Elevated | > +2.0σ = Extreme`;
 
   // CRITICAL: containerRef must be OUTSIDE ChartFrame for IntersectionObserver to work
   return (
@@ -352,22 +368,17 @@ function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawDat
         height={height}
         staggerIndex={staggerIndex}
       >
-        <div
-          className="weapon-card hud-corner weapon-shadow overflow-hidden flex flex-col"
-          style={{ height: cardHeight }}
-        >
-          {/* Header */}
-          <div className="px-3 py-2.5 md:px-4 md:py-3 border-b border-mono-muted shrink-0">
-            <div className="min-w-0">
-              <h3 className="font-semibold text-brand-navy text-sm md:text-base">
-                Market Value Oscillator
-              </h3>
-              <p className="text-xs text-brand-blue mt-0.5">
-                Z-Score normalized spread analysis ({TIME_LABELS[timeGrouping]})
-              </p>
-            </div>
+        <DataCard variant={embedded ? 'embedded' : 'standalone'}>
+          {/* Header: h-14 fixed */}
+          <DataCardHeader
+            title="Market Value Oscillator"
+            subtitle={`Z-Score normalized spread analysis (${TIME_LABELS[timeGrouping]})`}
+            info={methodologyText}
+            anchored={anchored}
+          />
 
-            {/* KPI Row */}
+          {/* KPI Row */}
+          <div className="px-6 py-3 border-b border-slate-200 shrink-0">
             <InlineCardRow blur={isFreeResolved}>
               <ZScoreSignalCard
                 label="CCR-RCR"
@@ -391,60 +402,21 @@ function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawDat
             </InlineCardRow>
           </div>
 
-          {/* Insight Box - Full interpretation guide */}
-          <div className="shrink-0">
-            <KeyInsightBox
-              title="How to Interpret this Chart"
-              variant="info"
-              compact
-              tooltip="Z-score measures how far current spreads deviate from historical norms. Based on resale transactions only, with outliers excluded."
-            >
-              <p className="mb-2">
-                Shows relative price premium between regions (CCR–RCR and RCR–OCR) using <strong>resale transactions only</strong>, expressed as Z-score against historical spreads. A Z-score near 0 = fair value.
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-0.5 text-xs">
-                <div><span className="font-semibold text-slate-500">±0σ to ±1.0σ</span> — Normal range, fair value.</div>
-                <div><span className="font-semibold text-amber-600">+1.0σ to +2.0σ</span> — Elevated premium, watch closely.</div>
-                <div><span className="font-semibold text-red-600">&gt; +2.0σ</span> — Extreme disparity, overvaluation.</div>
-                <div><span className="font-semibold text-sky-600">–1.0σ to –2.0σ</span> — Compressed premium, improving value.</div>
-                <div><span className="font-semibold text-emerald-600">&lt; –2.0σ</span> — Extreme compression, potential opportunity.</div>
-              </div>
-            </KeyInsightBox>
-          </div>
-
-          {/* Chart */}
-          {/* ChartFrame handles empty state, so we always render the chart here */}
-          <ChartSlot>
+          {/* Canvas: flex-grow */}
+          <DataCardCanvas minHeight={height} cinema={cinema}>
             <PreviewChartOverlay chartRef={chartRef}>
               <Line ref={chartRef} data={chartData} options={chartOptions} />
             </PreviewChartOverlay>
-          </ChartSlot>
+          </DataCardCanvas>
 
-          {/* Custom SVG Legend */}
-          <div className="flex justify-center gap-6 py-2 shrink-0">
-            <div className="flex items-center gap-2">
-              <svg width="32" height="8">
-                <line x1="0" y1="4" x2="32" y2="4" stroke={CHART_COLORS.navy} strokeWidth={2} />
-              </svg>
-              <span className="text-xs" style={{ color: CHART_COLORS.textMuted }}>
-                CCR-RCR Z-Score
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <svg width="32" height="8">
-                <line x1="0" y1="4" x2="32" y2="4" stroke={CHART_COLORS.ocean} strokeWidth={2} strokeDasharray="8 4" />
-              </svg>
-              <span className="text-xs" style={{ color: CHART_COLORS.textMuted }}>
-                RCR-OCR Z-Score
-              </span>
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="shrink-0 h-11 px-4 bg-brand-sand/30 border-t border-brand-sky/30 flex items-center justify-end gap-3 text-xs text-brand-blue">
-            <span className="truncate">{data.length} periods</span>
-          </div>
-        </div>
+          {/* StatusDeck: h-10 fixed - legend + periods */}
+          <StatusDeck
+            left={<span className="font-mono text-[9px] text-slate-400">{data.length} Periods ({TIME_LABELS[timeGrouping]})</span>}
+          >
+            <LegendLine label="CCR-RCR" color={CHART_COLORS.navy} />
+            <LegendLine label="RCR-OCR" color={CHART_COLORS.ocean} lineStyle="dashed" />
+          </StatusDeck>
+        </DataCard>
       </ChartFrame>
     </div>
   );

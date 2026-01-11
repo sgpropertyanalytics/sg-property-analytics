@@ -48,6 +48,9 @@ import {
  *  saleType?: string | null,
  *  sharedData?: Record<string, any> | null,
  *  sharedStatus?: string,
+ *  embedded?: boolean,
+ *  cinema?: boolean,
+ *  anchored?: boolean,
  *  onDrillThrough?: (value: string) => void,
  * }} props
  */
@@ -58,6 +61,9 @@ function PriceDistributionChartBase({
   sharedData = null,
   sharedStatus = 'idle',
   staggerIndex = 0,
+  embedded = false,
+  cinema = false,
+  anchored = false,
   onDrillThrough: _onDrillThrough,
 }) {
   // Phase 4: Simplified filter access - read values directly from Zustand
@@ -279,11 +285,12 @@ Mode — The most common price range.`;
       height={350}
       staggerIndex={staggerIndex}
     >
-      <DataCard>
+      <DataCard variant={embedded ? 'embedded' : 'standalone'}>
         {/* Header: h-14 fixed */}
         <DataCardHeader
           title="Price Distribution"
           info={methodologyText}
+          anchored={anchored}
           controls={
             <button
               onClick={() => setShowFullRange(!showFullRange)}
@@ -319,7 +326,7 @@ Mode — The most common price range.`;
         </DataCardToolbar>
 
         {/* Canvas: flex-grow */}
-        <DataCardCanvas minHeight={height}>
+        <DataCardCanvas minHeight={height} cinema={cinema}>
           <PreviewChartOverlay chartRef={chartRef}>
             <Bar ref={chartRef} data={chartData} options={options} />
           </PreviewChartOverlay>
