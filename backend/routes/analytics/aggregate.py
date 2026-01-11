@@ -37,7 +37,9 @@ ALLOWED_THREE_PLUS_DIM_GROUP_BY = frozenset([
 ])
 
 # Max months for 3+ dim queries (prevents all-time × dimensions explosion)
-MAX_MULTI_DIM_MONTHS = 24
+# 120 months = 10 years, covers Y10 timeframe
+# Max cardinality: 120 months × 3 regions × 5 bedrooms = 1,800 rows (acceptable)
+MAX_MULTI_DIM_MONTHS = 120
 
 # Metrics NOT allowed in 3+ dim responses (require raw data, can't aggregate client-side)
 MULTI_DIM_FORBIDDEN_METRICS = frozenset([
