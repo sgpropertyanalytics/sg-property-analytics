@@ -714,6 +714,80 @@ git log -20 --oneline -- backend/migrations/
 3. **Follow imports** - read the FULL implementation, not just call sites
 4. **Verify before recommending** - don't propose solutions without confirming the problem exists
 
+### Unverified Edits & False Gap Reports Incident (Jan 11, 2026)
+
+**What happened:** During performance optimization work, Claude made multiple errors:
+
+1. **Edits disappeared without verification**: Added `@lru_cache` to `constants.py`, tested it worked, marked task complete. Later discovered the file had NO changes - edits weren't persisted. Didn't verify with `git status` or re-read file.
+
+2. **False gap analysis from speed-agent**: Agent reported "missing" features that already existed:
+   - "No cache hit rate monitoring" → Actually exists at `dashboard_service.py:120-122` and `/api/admin/cache-stats`
+   - "React.memo not used comprehensively" → Actually used on 14 chart components
+   - "Add edge caching via Vercel CDN" → Intentionally disabled at `app.py:204-231` for tier-sensitive data security
+
+3. **Proposed redundant indexes**: Recommended creating indexes without first running `SELECT indexname FROM pg_indexes` to see what already existed.
+
+**Why it was wrong:**
+1. **No verification loop**: Made edit → tested in Python REPL → assumed file was saved. Never ran `git diff` or re-read the file
+2. **Agent trusted own search**: Speed-agent searched for patterns but didn't verify findings by reading actual implementations
+3. **Skipped "does it exist?" check**: CLAUDE.md Rule 4 (Reuse-First) requires searching before proposing solutions
+
+**CLAUDE.md violations:**
+- Rule #1: "Understand Before Implementing" - didn't verify existing cache stats endpoint
+- Rule #4: "Reuse-First" - proposed features that already existed
+- Rule #11: "Fix Root Cause" - edge caching was disabled FOR A REASON (security)
+
+**What correct workflow looks like:**
+```bash
+# 1. After ANY file edit, verify it persisted
+git status                    # Shows modified files
+git diff backend/constants.py # Shows actual changes
+
+# 2. Before proposing "add feature X", verify it doesn't exist
+grep -r "cache_stats\|get_cache" backend/
+grep -r "React.memo" frontend/src/components/
+
+# 3. Before proposing "add index X", check existing indexes
+# In Supabase: SELECT indexname FROM pg_indexes WHERE tablename = 'transactions';
+```
+
+**Lesson:**
+1. **Verify edits persisted** - `git status` after EVERY edit, not just at commit time
+2. **Don't trust agent gap analysis** - manually verify "missing" features don't already exist
+3. **Check WHY something is missing** - it might be intentionally disabled (like edge caching for security)
+4. **Run verification SQL** - check existing indexes before proposing new ones
+
+### STRICT Mode Bricking Production Incident (Jan 11, 2026)
+
+**What happened:** Production dashboard endpoint returned 500 errors with `RESPONSE_SCHEMA_MISMATCH`. All `/api/dashboard` calls failed.
+
+**Root cause chain:**
+1. Jan 10: `render.yaml` added with `FLASK_ENV=production`
+2. Dec 30: Commit `54a0ca4a` added `DEFAULT_STRICT_ENDPOINTS` logic that forces STRICT mode when `_is_production_env()` returns True
+3. `dashboard.py` schema had `data_fields={}` (empty) - no panels declared
+4. STRICT mode rejects undeclared fields → `price_histogram`, `time_series`, etc. all rejected → 500
+
+**Compounding issue:** CSRF cookie set with `SameSite=Strict` (should be `Lax` to match auth cookie) caused intermittent auth failures through Vercel→Render proxy.
+
+**Why wasn't it detected?**
+- Local dev runs WARN mode (logs violations, doesn't fail)
+- No production-like environment with STRICT mode enabled
+- CSRF cookie worked locally (same-origin) but failed when proxied
+
+**Fix (PR #376):**
+1. Added `CONTRACT_STRICT_MODE` kill switch (defaults to OFF)
+2. STRICT mode now requires explicit opt-in: `CONTRACT_STRICT_MODE=1`
+3. Added all panel fields to dashboard schema: `time_series`, `price_histogram`, `volume_by_location`, `bedroom_mix`, `summary`, `sale_type_breakdown`, `beads_chart`
+4. Added missing meta fields: `dataMasked`, `filterNotes`, `options`, `panelsReturned`
+5. Changed CSRF cookie from `SameSite=Strict` to `SameSite=Lax`
+
+**Policy established:**
+- Production stays `FLASK_ENV=production` (don't lie about environment)
+- STRICT mode is gated by explicit `CONTRACT_STRICT_MODE=1`, not environment detection
+- Schema changes must be deployed BEFORE enabling STRICT mode
+
+**Lesson:** Environment-based feature flags for breaking behaviors are dangerous. Use explicit opt-in flags instead. A missing schema field shouldn't brick production.
+
 ---
 
 ## Quick Reference Links
