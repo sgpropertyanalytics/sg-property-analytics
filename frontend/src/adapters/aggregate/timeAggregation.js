@@ -22,6 +22,7 @@
  */
 
 import { sortByPeriod } from './sorting';
+import { getPeriod } from '../../schemas/apiContract';
 
 /**
  * Convert a month period to quarter period.
@@ -88,9 +89,13 @@ export function aggregateTimeSeriesByGrain(monthlyData, targetGrain) {
     return [];
   }
 
-  // If target is month (most granular), just sort and return
-  // (data may need sorting after client-side filtering)
-  if (targetGrain === 'month') {
+  // Bulletproof heuristic: if more rows than unique periods, we need to aggregate
+  // This handles multi-dim data (region/bedroom) without hardcoding field names
+  const uniquePeriods = new Set(monthlyData.map(row => getPeriod(row))).size;
+  const needsRollup = monthlyData.length > uniquePeriods;
+
+  // If target is month and no rollup needed, just sort and return
+  if (targetGrain === 'month' && !needsRollup) {
     return sortByPeriod([...monthlyData]);
   }
 
@@ -98,13 +103,18 @@ export function aggregateTimeSeriesByGrain(monthlyData, targetGrain) {
   const shape = detectDataShape(monthlyData[0]);
 
   // Determine period conversion function
-  const convertPeriod = targetGrain === 'quarter' ? monthToQuarter : monthToYear;
+  // For 'month' with needsRollup, use identity (aggregate by original period)
+  const convertPeriod = targetGrain === 'quarter'
+    ? monthToQuarter
+    : targetGrain === 'year'
+      ? monthToYear
+      : (p) => p; // month: identity
 
   // Group and aggregate
   const grouped = {};
 
   for (const row of monthlyData) {
-    const sourcePeriod = row.period ?? row.month;
+    const sourcePeriod = getPeriod(row);
     if (!sourcePeriod) continue;
 
     const targetPeriod = convertPeriod(sourcePeriod);
