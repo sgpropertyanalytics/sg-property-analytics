@@ -76,6 +76,12 @@ class Config:
     AUTH_COOKIE_NAME = os.getenv('AUTH_COOKIE_NAME', 'auth_token')
     CSRF_COOKIE_NAME = os.getenv('CSRF_COOKIE_NAME', 'csrf_token')
 
+    # AI Agent Configuration (Anthropic Claude)
+    ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY')
+    AI_MODEL = os.getenv('AI_MODEL', 'claude-sonnet-4-20250514')
+    AI_MAX_TOKENS = int(os.getenv('AI_MAX_TOKENS', '1024'))
+    AI_CACHE_TTL_SECONDS = int(os.getenv('AI_CACHE_TTL_SECONDS', '3600'))  # 1 hour
+
     # Premium bypass for preview/testing environments
     # Comma-separated list of emails that always get premium access
     # Example: "admin@example.com,test@example.com"

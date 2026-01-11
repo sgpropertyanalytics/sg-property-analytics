@@ -1,8 +1,10 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { useDebounce } from 'use-debounce';
 // Phase 2: Using TanStack Query via useAppQuery wrapper
 import { useAppQuery } from '../../hooks/useAppQuery';
+// AI chart interpretation hook
+import { useChartInterpret } from '../../hooks/useChartInterpret';
 import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
 import { Line } from 'react-chartjs-2';
@@ -75,9 +77,20 @@ function AbsolutePsfChartBase({ height = 380, saleType = null, sharedData = null
   const [debouncedBedroom] = useDebounce(bedroom, 300);
 
   // district excluded - shows all regions for comparison
-  const { isFreeResolved } = useSubscription();
+  const { isFreeResolved, isPremium } = useSubscription();
   const chartRef = useRef(null);
   const [isAgentOpen, setIsAgentOpen] = useState(false);
+
+  // AI interpretation hook
+  const {
+    interpret,
+    response: aiResponse,
+    isStreaming,
+    error: aiError,
+    versions,
+    isCached,
+    reset: resetAi,
+  } = useChartInterpret();
 
   // Skip internal fetch if parent provides sharedData (eliminates duplicate API call)
   // Use loose equality to catch both null AND undefined (common when data hasn't arrived)
@@ -145,6 +158,42 @@ function AbsolutePsfChartBase({ height = 380, saleType = null, sharedData = null
   const ocrChange = latestData.ocr && prevData.ocr
     ? Math.round(((latestData.ocr - prevData.ocr) / prevData.ocr) * 100 * 10) / 10
     : null;
+
+  // Handle agent button toggle - triggers AI interpretation when opened
+  const handleAgentToggle = useCallback(() => {
+    const newIsOpen = !isAgentOpen;
+    setIsAgentOpen(newIsOpen);
+
+    // Trigger AI interpretation when opening (only if premium and has data)
+    if (newIsOpen && isPremium && data.length > 0) {
+      interpret({
+        chartType: 'absolute_psf',
+        chartTitle: 'Absolute PSF by Region',
+        data: {
+          series: data,
+          latest: latestData,
+          previous: prevData,
+        },
+        filters: {
+          timeframe,
+          bedroom: debouncedBedroom,
+          timeGrouping,
+          saleType,
+        },
+        kpis: {
+          ccr: latestData.ccr,
+          rcr: latestData.rcr,
+          ocr: latestData.ocr,
+          ccrChange,
+          rcrChange,
+          ocrChange,
+        },
+      });
+    } else if (!newIsOpen) {
+      // Reset AI state when closing
+      resetAi();
+    }
+  }, [isAgentOpen, isPremium, data, latestData, prevData, timeframe, debouncedBedroom, timeGrouping, saleType, ccrChange, rcrChange, ocrChange, interpret, resetAi]);
 
   // Chart data
   const chartData = {
@@ -273,8 +322,8 @@ RCR = Rest of Central (city fringe).
 OCR = Outside Central (suburban).`}
           controls={
             <AgentButton
-              onClick={() => setIsAgentOpen(!isAgentOpen)}
-              isActive={isAgentOpen}
+              onClick={handleAgentToggle}
+              isActive={isAgentOpen || isStreaming}
             />
           }
         />
@@ -323,14 +372,24 @@ OCR = Outside Central (suburban).`}
         </StatusDeck>
 
         {/* Agent Analysis - expandable on-demand */}
-        <AgentFooter isOpen={isAgentOpen}>
-          {ccrChange > 0 && rcrChange > 0 && ocrChange > 0
-            ? 'All regions showing positive momentum. Market-wide appreciation detected.'
-            : ccrChange > rcrChange && rcrChange > ocrChange
-            ? 'Premium outperformance pattern. CCR leading gains suggests flight-to-quality.'
-            : ocrChange > rcrChange && rcrChange > ccrChange
-            ? 'Suburban catch-up detected. OCR outpacing core regions - compression signal.'
-            : 'Mixed signals across regions. Monitor for trend confirmation.'}
+        <AgentFooter
+          isOpen={isAgentOpen}
+          isStreaming={isStreaming}
+          error={aiError}
+          versions={versions}
+          isCached={isCached}
+        >
+          {/* Show AI response if available, otherwise show static fallback */}
+          {aiResponse || (isPremium ? null : (
+            // Static fallback for non-premium users or when AI is not available
+            ccrChange > 0 && rcrChange > 0 && ocrChange > 0
+              ? 'All regions showing positive momentum. Market-wide appreciation detected.'
+              : ccrChange > rcrChange && rcrChange > ocrChange
+              ? 'Premium outperformance pattern. CCR leading gains suggests flight-to-quality.'
+              : ocrChange > rcrChange && rcrChange > ccrChange
+              ? 'Suburban catch-up detected. OCR outpacing core regions - compression signal.'
+              : 'Mixed signals across regions. Monitor for trend confirmation.'
+          ))}
         </AgentFooter>
       </DataCard>
     </ChartFrame>

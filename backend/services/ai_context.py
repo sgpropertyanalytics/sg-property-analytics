@@ -1,0 +1,283 @@
+"""
+AI Context Assembly Service
+
+Assembles structured context for the AI agent based on chart type.
+Implements chunked retrieval to avoid token bloat.
+
+Design principles:
+1. Conceptual knowledge (static) != Volatile data (snapshot)
+2. Select relevant sections per chart type
+3. Include version metadata for caching and freshness display
+"""
+
+import json
+import hashlib
+import logging
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Optional
+
+logger = logging.getLogger(__name__)
+
+# Base path for AI context documents
+AI_CONTEXT_DIR = Path(__file__).parent.parent.parent / "docs" / "ai-context"
+
+
+@dataclass
+class ContextBundle:
+    """Structured inputs for the agent - not a giant concatenated string."""
+    chart_type: str
+    chart_title: str
+    chart_payload: dict
+    filters: dict
+    static_snippets: list = field(default_factory=list)
+    snapshot_snippets: list = field(default_factory=list)
+    versions: dict = field(default_factory=dict)
+
+    def cache_key(self) -> str:
+        """Generate cache key for this context bundle."""
+        payload_hash = hashlib.md5(
+            json.dumps(self.chart_payload, sort_keys=True, default=str).encode()
+        ).hexdigest()[:8]
+        filter_hash = hashlib.md5(
+            json.dumps(self.filters, sort_keys=True, default=str).encode()
+        ).hexdigest()[:8]
+        snapshot_version = self.versions.get("snapshot_version", "unknown")
+        return f"ai:interpret:{self.chart_type}:{snapshot_version}:{payload_hash}:{filter_hash}"
+
+
+class PropertyContext:
+    """
+    Context assembly for Singapore property market AI agent.
+
+    Loads and assembles relevant context documents based on chart type.
+    """
+
+    # Chart type to static document mapping
+    STATIC_MAPPINGS = {
+        "absolute_psf": ["definitions.md", "district-mapping.md"],
+        "price_distribution": ["definitions.md", "reasoning-guide.md"],
+        "beads": ["definitions.md", "reasoning-guide.md"],
+        "time_trend": ["definitions.md", "reasoning-guide.md"],
+        "price_compression": ["definitions.md", "district-mapping.md"],
+        "market_oscillator": ["definitions.md", "market-cycles.md"],
+        "supply_waterfall": ["definitions.md"],
+    }
+
+    # Chart types that need policy context (involve pricing/affordability)
+    NEEDS_POLICY = {
+        "absolute_psf", "price_distribution", "beads",
+        "time_trend", "price_compression", "market_oscillator"
+    }
+
+    def __init__(self, context_dir: Optional[Path] = None):
+        self.context_dir = context_dir or AI_CONTEXT_DIR
+        self._manifest = None
+
+    @property
+    def manifest(self) -> dict:
+        """Load and cache manifest.json."""
+        if self._manifest is None:
+            manifest_path = self.context_dir / "manifest.json"
+            if manifest_path.exists():
+                with open(manifest_path, "r") as f:
+                    self._manifest = json.load(f)
+            else:
+                logger.warning(f"Manifest not found at {manifest_path}")
+                self._manifest = {}
+        return self._manifest
+
+    def _load_file(self, relative_path: str) -> Optional[str]:
+        """Load a context file by relative path."""
+        file_path = self.context_dir / relative_path
+        if not file_path.exists():
+            logger.warning(f"Context file not found: {file_path}")
+            return None
+        try:
+            with open(file_path, "r") as f:
+                return f.read()
+        except Exception as e:
+            logger.error(f"Error loading {file_path}: {e}")
+            return None
+
+    def _load_section(self, file_path: str, section: Optional[str] = None) -> Optional[str]:
+        """
+        Load a file or specific section from a file.
+
+        Args:
+            file_path: Relative path to the file
+            section: Optional heading to extract (e.g., "## Time Series Charts")
+
+        Returns:
+            File content or section content
+        """
+        content = self._load_file(file_path)
+        if content is None or section is None:
+            return content
+
+        # Extract section by heading
+        lines = content.split("\n")
+        in_section = False
+        section_lines = []
+        section_level = section.count("#")
+
+        for line in lines:
+            if line.strip().startswith("#"):
+                current_level = len(line) - len(line.lstrip("#"))
+                if section.lower() in line.lower():
+                    in_section = True
+                    section_lines.append(line)
+                elif in_section and current_level <= section_level:
+                    break
+            elif in_section:
+                section_lines.append(line)
+
+        return "\n".join(section_lines) if section_lines else None
+
+    def get_relevant_static(self, chart_type: str) -> list:
+        """
+        Get relevant static context snippets for a chart type.
+
+        Returns only the sections relevant to the specific chart,
+        not the entire document corpus.
+        """
+        snippets = []
+
+        # Get mapped files for this chart type
+        static_files = self.STATIC_MAPPINGS.get(chart_type, ["definitions.md"])
+
+        for file_name in static_files:
+            file_path = f"static/{file_name}"
+            file_meta = self.manifest.get("files", {}).get(file_path, {})
+            injection_rule = file_meta.get("injection", "always")
+
+            if injection_rule == "always":
+                content = self._load_file(file_path)
+                if content:
+                    snippets.append(f"# {file_name}\n{content}")
+
+            elif injection_rule == "always_trimmed":
+                # Load summary only (first section or table)
+                content = self._load_file(file_path)
+                if content:
+                    # Take first ~50 lines as summary
+                    lines = content.split("\n")[:50]
+                    snippets.append(f"# {file_name} (summary)\n" + "\n".join(lines))
+
+            elif injection_rule == "relevant_section":
+                # Load section matching chart type
+                section_map = {
+                    "time_trend": "## Time Series Charts",
+                    "price_distribution": "## Distribution Charts",
+                    "beads": "## Beads Charts",
+                    "absolute_psf": "## Comparison Charts",
+                    "price_compression": "## Comparison Charts",
+                }
+                section = section_map.get(chart_type)
+                content = self._load_section(file_path, section)
+                if content:
+                    snippets.append(content)
+
+        return snippets
+
+    def get_relevant_snapshot(self, chart_type: str) -> list:
+        """
+        Get relevant snapshot (volatile) context with freshness metadata.
+
+        Always includes market snapshot header.
+        Includes policy only when chart involves pricing.
+        """
+        snippets = []
+
+        # Always include market snapshot header
+        market_snapshot = self._load_file("snapshot/market-snapshot.md")
+        if market_snapshot:
+            # Extract header section (first 30 lines typically)
+            lines = market_snapshot.split("\n")[:30]
+            snippets.append("# Market Context\n" + "\n".join(lines))
+
+        # Include policy measures only for pricing-related charts
+        if chart_type in self.NEEDS_POLICY:
+            policy = self._load_file("snapshot/policy-measures.md")
+            if policy:
+                snippets.append("# Policy Measures\n" + policy)
+
+        return snippets
+
+    def get_versions(self) -> dict:
+        """
+        Get version metadata for caching and freshness display.
+
+        Returns:
+            dict with snapshot_version, policy_version, data_watermark
+        """
+        files = self.manifest.get("files", {})
+
+        # Get snapshot version from market-snapshot
+        snapshot_meta = files.get("snapshot/market-snapshot.md", {})
+        snapshot_version = snapshot_meta.get("updated_at", "unknown")
+
+        # Get policy version from policy-measures
+        policy_meta = files.get("snapshot/policy-measures.md", {})
+        policy_version = policy_meta.get("updated_at", "unknown")
+
+        # Data watermark would come from database - placeholder for now
+        # TODO: Query latest transaction date from DB
+        data_watermark = snapshot_version
+
+        return {
+            "snapshot_version": snapshot_version,
+            "policy_version": policy_version,
+            "data_watermark": data_watermark,
+        }
+
+    def assemble(
+        self,
+        chart_type: str,
+        chart_title: str,
+        chart_data: dict,
+        filters: dict,
+        kpis: Optional[dict] = None
+    ) -> ContextBundle:
+        """
+        Assemble complete context bundle for AI interpretation.
+
+        Args:
+            chart_type: Type of chart (e.g., 'absolute_psf', 'beads')
+            chart_title: Display title of the chart
+            chart_data: The data payload from the chart
+            filters: Active filters applied to the chart
+            kpis: Optional KPI values displayed with the chart
+
+        Returns:
+            ContextBundle ready for AI consumption
+        """
+        # Build chart payload with optional KPIs
+        payload = {
+            "data": chart_data,
+            "filters": filters,
+        }
+        if kpis:
+            payload["kpis"] = kpis
+
+        return ContextBundle(
+            chart_type=chart_type,
+            chart_title=chart_title,
+            chart_payload=payload,
+            filters=filters,
+            static_snippets=self.get_relevant_static(chart_type),
+            snapshot_snippets=self.get_relevant_snapshot(chart_type),
+            versions=self.get_versions(),
+        )
+
+
+# Module-level singleton for convenience
+_context_service: Optional[PropertyContext] = None
+
+
+def get_context_service() -> PropertyContext:
+    """Get the singleton PropertyContext instance."""
+    global _context_service
+    if _context_service is None:
+        _context_service = PropertyContext()
+    return _context_service
