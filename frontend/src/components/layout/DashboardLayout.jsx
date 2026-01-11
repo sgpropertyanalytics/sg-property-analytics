@@ -153,7 +153,7 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
   const handleMobileNavClose = () => setMobileNavOpen(false);
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: 'var(--color-bg)' }}>
+    <div className="flex h-screen" style={{ backgroundColor: 'var(--color-bg)' }}>
       {/* Industrial Grid Background - Technical layer behind everything */}
       <div
         className="fixed inset-0 pointer-events-none z-0"
@@ -229,7 +229,7 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
 
       {/* ===== MAIN CONTENT AREA ===== */}
       {/* min-w-0 prevents flex children from overflowing - critical for nested grids */}
-      <div className="flex-1 min-w-0 flex flex-col overflow-hidden relative">
+      <div className="flex-1 min-w-0 flex flex-col relative">
         {/* Background Grid Pattern */}
         <div
           className="absolute inset-0 pointer-events-none opacity-[0.4]"
@@ -277,7 +277,7 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
 
         {/* Main Content - Wrapped with Suspense + ErrorBoundary */}
         {/* DASHBOARD LAYOUT - No top padding, sticky header covers full viewport */}
-        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden flex flex-col pr-6 pb-6 pl-6 relative z-10">
+        <main className="flex-1 min-w-0 overflow-y-auto flex flex-col pb-6 relative z-10">
           {/* Frosted Bezel - Sticky at true top-0, covers all scrolling content */}
           {/* pt-6 creates the visual gap, backdrop-blur creates disintegration effect */}
           <div className="sticky top-0 z-50 w-full pt-6 pb-2 backdrop-blur-xl bg-[#F5F3EE]/90">
