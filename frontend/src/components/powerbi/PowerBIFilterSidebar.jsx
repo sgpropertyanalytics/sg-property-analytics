@@ -120,44 +120,41 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
   if (layout === 'horizontal') {
     return (
       <div className="py-3">
-        {/* Frame - frosted glass with subtle border */}
-        <div className="bg-white/70 border border-slate-200/80 py-3 shadow-sm">
-          {/* Rail - overflow safety, hidden scrollbar */}
-          <div className="overflow-x-auto scrollbar-none">
-            {/* Centering wrapper - centers when fits, left-anchors on overflow */}
-            <div className="flex justify-center">
-              {/* Content - intrinsic width + padding */}
-              <div className="flex flex-nowrap items-center gap-3 xl:gap-4 w-max px-5">
-                {/* Property Filters - Region + District + Bedroom */}
-                <div className="flex items-center gap-4">
-                {/* Region Segmented Control */}
-                <div className="segmented-control">
-                  {/* "All" button */}
+        {/* Frame - full width, frosted glass */}
+        <div className="w-full bg-white/70 border border-slate-200/80 py-3 shadow-sm">
+          {/* Centered content container */}
+          <div className="mx-auto max-w-[1400px] px-6">
+            {/* One row, no scroll, always fit */}
+            <div className="flex items-center justify-center flex-nowrap gap-3 whitespace-nowrap">
+
+              {/* Region Segmented Control */}
+              <div className="segmented-control shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setSegments([])}
+                  className={`segmented-btn ${filters.segments.length === 0 ? 'active' : ''}`}
+                >
+                  All
+                </button>
+                {REGIONS.map(seg => (
                   <button
                     type="button"
-                    onClick={() => setSegments([])}
-                    className={`segmented-btn ${filters.segments.length === 0 ? 'active' : ''}`}
+                    key={seg}
+                    onClick={(e) => handleFilterClick(e, seg, filters.segments, setSegments, toggleSegment)}
+                    className={`segmented-btn ${filters.segments.includes(seg) ? 'active' : ''}`}
+                    title="Shift+click to multi-select"
                   >
-                    All
+                    {seg}
                   </button>
-                  {REGIONS.map(seg => (
-                    <button
-                      type="button"
-                      key={seg}
-                      onClick={(e) => handleFilterClick(e, seg, filters.segments, setSegments, toggleSegment)}
-                      className={`segmented-btn ${filters.segments.includes(seg) ? 'active' : ''}`}
-                      title="Shift+click to multi-select"
-                    >
-                      {seg}
-                    </button>
-                  ))}
-                </div>
+                ))}
+              </div>
 
-                {/* District Dropdown */}
+              {/* District Dropdown - fixed width */}
+              <div className="shrink-0 w-[160px]">
                 <MultiSelectDropdown
                   options={(filterOptions.districtsRaw || []).map(d => {
                     const areaName = DISTRICT_NAMES[d];
-                    const shortName = areaName ? areaName.split(',')[0].substring(0, 18) : d;
+                    const shortName = areaName ? areaName.split(',')[0].substring(0, 12) : d;
                     return {
                       value: d,
                       label: areaName ? `${d} (${shortName})` : d
@@ -165,44 +162,43 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                   })}
                   selected={filters.districts}
                   onChange={setDistricts}
-                  placeholder="All Districts"
+                  placeholder="Districts"
                   searchable
                   compact
                   segmentedStyle
                 />
-
-                {/* Divider */}
-                <div className="hidden xl:block w-px h-7 bg-stone-400 flex-shrink-0" />
-
-                {/* Bedroom Segmented Control */}
-                <div className="segmented-control">
-                  {/* "All" button */}
-                  <button
-                    type="button"
-                    onClick={() => setBedroomTypes([])}
-                    className={`segmented-btn ${filters.bedroomTypes.length === 0 ? 'active' : ''}`}
-                  >
-                    All
-                  </button>
-                  {[1, 2, 3, 4, 5].map(br => (
-                    <button
-                      type="button"
-                      key={br}
-                      onClick={(e) => handleFilterClick(e, br, filters.bedroomTypes, setBedroomTypes, toggleBedroomType)}
-                      className={`segmented-btn ${filters.bedroomTypes.includes(br) ? 'active' : ''}`}
-                      title="Shift+click to multi-select"
-                    >
-                      {br}BR
-                    </button>
-                  ))}
-                </div>
               </div>
 
-              {/* Divider - structural line */}
-              <div className="hidden xl:block w-px h-7 bg-stone-400 flex-shrink-0" />
+              {/* Divider */}
+              <div className="w-px h-6 bg-stone-300 shrink-0" />
+
+              {/* Bedroom Segmented Control */}
+              <div className="segmented-control shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setBedroomTypes([])}
+                  className={`segmented-btn ${filters.bedroomTypes.length === 0 ? 'active' : ''}`}
+                >
+                  All
+                </button>
+                {[1, 2, 3, 4, 5].map(br => (
+                  <button
+                    type="button"
+                    key={br}
+                    onClick={(e) => handleFilterClick(e, br, filters.bedroomTypes, setBedroomTypes, toggleBedroomType)}
+                    className={`segmented-btn ${filters.bedroomTypes.includes(br) ? 'active' : ''}`}
+                    title="Shift+click to multi-select"
+                  >
+                    {br}BR
+                  </button>
+                ))}
+              </div>
+
+              {/* Divider */}
+              <div className="w-px h-6 bg-stone-300 shrink-0" />
 
               {/* Time Controls - Period Presets */}
-              <div className="segmented-control flex-shrink-0">
+              <div className="segmented-control shrink-0">
                 {TIMEFRAME_OPTIONS.map(opt => (
                   <button
                     type="button"
@@ -222,12 +218,14 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                 ))}
               </div>
 
-              {/* Divider - structural line */}
-              <div className="hidden xl:block w-px h-7 bg-stone-400 flex-shrink-0" />
+              {/* Divider */}
+              <div className="w-px h-6 bg-stone-300 shrink-0" />
 
               {/* Time Granularity Toggle */}
-              <TimeGranularityToggle layout="horizontal" />
+              <div className="shrink-0">
+                <TimeGranularityToggle layout="horizontal" />
               </div>
+
             </div>
           </div>
         </div>
