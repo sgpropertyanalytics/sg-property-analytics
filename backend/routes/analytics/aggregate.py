@@ -24,6 +24,71 @@ from api.contracts import api_contract
 from api.contracts.contract_schema import PropertyAgeBucket
 
 
+# =============================================================================
+# MULTI-DIMENSIONAL GROUP BY CONFIGURATION
+# =============================================================================
+# Whitelist of allowed multi-dimensional group_by combos.
+# These are explicitly permitted for client-side filtering optimization.
+# Arbitrary combos are rejected to prevent DB explosion.
+ALLOWED_MULTI_DIM_GROUP_BY = frozenset([
+    'month,region,bedroom',     # Volume charts - client-side filtering
+    'quarter,region,bedroom',   # Volume charts - quarterly view
+    'month,bedroom',            # Volume charts - bedroom only
+    'month,region',             # Volume charts - region only
+])
+
+# Max months for multi-dim queries (prevents all-time × dimensions explosion)
+MAX_MULTI_DIM_MONTHS = 24
+
+# Metrics NOT allowed in multi-dim responses (require raw data, can't aggregate client-side)
+MULTI_DIM_FORBIDDEN_METRICS = frozenset([
+    'median_psf', 'median_price', 'avg_psf', 'avg_price',
+    'psf_25th', 'psf_75th', 'price_25th', 'price_75th',
+    'median_psf_actual', 'min_psf', 'max_psf', 'min_price', 'max_price',
+])
+
+
+def _validate_multi_dim_group_by(
+    group_by_str: str,
+    metrics: list,
+    date_from: Optional[date],
+    date_to: Optional[date]
+) -> Optional[str]:
+    """
+    Validate multi-dimensional GROUP BY requests.
+
+    Returns None if valid, or error message if invalid.
+
+    Enforces:
+    - Whitelist of allowed combos
+    - Max 24 months for multi-dim queries
+    - No percentile/median metrics in multi-dim responses
+    """
+    # Single-dimension queries always allowed
+    if ',' not in group_by_str:
+        return None
+
+    # Check whitelist
+    if group_by_str not in ALLOWED_MULTI_DIM_GROUP_BY:
+        return f"Invalid multi-dimensional group_by: {group_by_str}. Allowed: {', '.join(sorted(ALLOWED_MULTI_DIM_GROUP_BY))}"
+
+    # Check for forbidden metrics
+    forbidden_requested = set(metrics) & MULTI_DIM_FORBIDDEN_METRICS
+    if forbidden_requested:
+        return f"Metrics not allowed in multi-dim queries: {', '.join(sorted(forbidden_requested))}. Use count, total_value, total_sqft."
+
+    # Check date range (max 24 months)
+    if date_from and date_to:
+        months = (date_to.year - date_from.year) * 12 + (date_to.month - date_from.month)
+        if months > MAX_MULTI_DIM_MONTHS:
+            return f"Multi-dim queries limited to {MAX_MULTI_DIM_MONTHS} months. Requested: {months} months."
+    elif not date_from or not date_to:
+        # If no date range specified, reject (too risky for multi-dim)
+        return "Multi-dim queries require explicit date_from and date_to (max 24 months)."
+
+    return None
+
+
 def _get_project_lease_info(project_name: str) -> Tuple[Optional[int], Optional[str]]:
     """
     Get representative lease_start_year and dominant tenure for a project.
@@ -267,6 +332,21 @@ def aggregate():
         filter_conditions.append(Transaction.transaction_date < to_dt_exclusive)
         to_dt = to_dt_exclusive - timedelta(days=1)
         filters_applied["date_to"] = to_dt.isoformat()
+
+    # MULTI-DIMENSIONAL GROUP BY VALIDATION
+    # Validates whitelist, max date range, and forbidden metrics
+    multi_dim_error = _validate_multi_dim_group_by(
+        group_by_str=group_by_param,
+        metrics=metrics,
+        date_from=from_dt,
+        date_to=to_dt
+    )
+    if multi_dim_error:
+        return jsonify({
+            "error": multi_dim_error,
+            "code": "INVALID_MULTI_DIM_QUERY",
+            "hint": "Use single-dimension group_by or provide valid date range (max 24 months)"
+        }), 400
 
     # PSF range filter
     if params.get("psf_min") is not None:

@@ -23,7 +23,7 @@ import { useSubscription } from '../../context/SubscriptionContext';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 import { CHART_COLORS } from '../../constants/colors';
 // SaleType imports removed - Market Core is Resale-only
-import { transformTimeSeries, logFetchDebug, assertKnownVersion, validateResponseGrain } from '../../adapters';
+import { logFetchDebug, assertKnownVersion } from '../../adapters';
 import { niceMax } from '../../utils/niceAxisMax';
 
 /**
@@ -57,8 +57,7 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, v
 
   // Extract filter values directly (simple, explicit)
   const timeframe = filters.timeFilter?.type === 'preset' ? filters.timeFilter.value : 'Y1';
-  const bedroom = filters.bedroomTypes?.join(',') || '';
-  const districts = filters.districts?.join(',') || '';
+  // bedroom and districts now filtered client-side (not passed to API)
   const { isFreeResolved } = useSubscription();
 
   const chartRef = useRef(null);
@@ -66,16 +65,17 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, v
   // Debug overlay for API diagnostics (toggle with Ctrl+Shift+D)
   const { captureRequest, captureResponse, captureError, DebugOverlay } = useDebugOverlay('TimeTrendChart');
 
-  // Phase 4: Simplified data fetching - inline params, explicit query key
+  // Phase 4: Client-side filtering for instant bedroom/region toggle
+  // Multi-dim group_by returns all combinations; filtering happens client-side
   const { data: safeData, status, error, refetch } = useTimeSeriesQuery({
     queryFn: async (signal) => {
-      // Inline params - no buildApiParams abstraction
+      // Multi-dim params - fetch all bedroom/region combinations
+      // No bedroom/district filter - we filter client-side for instant toggle
       const params = {
-        group_by: 'month',
-        metrics: 'count,total_value',
+        group_by: 'month,region,bedroom',
+        metrics: 'count,total_value,total_sqft',
         timeframe,
-        bedroom,
-        district: districts,
+        // bedroom/district excluded - filtered client-side
         ...(saleType && { sale_type: saleType }),
       };
 
@@ -95,22 +95,24 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, v
           rowCount: rawData.length,
         });
 
-        validateResponseGrain(rawData, 'month', 'TimeTrendChart');
-        return transformTimeSeries(rawData);
+        // Return raw multi-dim data - filtering/aggregation handled by useTimeSeriesQuery
+        return rawData;
       } catch (err) {
         captureError(err);
         throw err;
       }
     },
-    // Explicit query key - TanStack handles cache deduplication
-    deps: ['time-trend', timeframe, bedroom, districts, saleType],
+    // Query key excludes bedroom/districts (filtered client-side, no refetch on toggle)
+    deps: ['time-trend', timeframe, saleType],
+    // Enable client-side bedroom/region filtering
+    filterDimensions: true,
     chartName: 'TimeTrendChart',
   });
 
   // Market Core is Resale-only - single transaction count bar + total value line
   const labels = safeData.map(d => d.period ?? '');
-  // Since we're Resale-only, totalCount IS the resale count (no sale_type grouping)
-  const transactionCounts = safeData.map(d => d.totalCount || 0);
+  // Multi-dim data uses 'count' field; legacy uses 'totalCount' - handle both
+  const transactionCounts = safeData.map(d => d.count ?? d.totalCount ?? 0);
   const totalValues = safeData.map(d => d.totalValue || 0);
 
   // Find peak values for axis scaling
