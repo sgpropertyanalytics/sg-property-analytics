@@ -42,7 +42,7 @@ def set_csrf_cookie(response):
         token,
         httponly=False,
         secure=_cookie_secure(),
-        samesite="Strict",
+        samesite="Lax",  # Must match auth cookie for cross-origin (Vercel→Render)
         max_age=Config.JWT_EXPIRATION_HOURS * 3600,
         path="/",
     )
