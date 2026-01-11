@@ -11,11 +11,14 @@ import { getDashboard } from '../../api/client';
 import {
   DataCard,
   DataCardHeader,
+  DataCardToolbar,
+  ToolbarStat,
   DataCardCanvas,
   StatusDeck,
   StatusCount,
   LegendDot,
 } from '../ui';
+import { useSubscription } from '../../context/SubscriptionContext';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 import { CHART_COLORS, BEADS } from '../../constants/colors';
 import { REGIONS } from '../../constants';
@@ -75,6 +78,7 @@ function BeadsChartBase({
   // Extract filter values directly (simple, explicit)
   const timeframe = filters.timeFilter?.type === 'preset' ? filters.timeFilter.value : 'Y1';
   // bedroom/district excluded - this chart shows ALL bedroom types as separate bubbles
+  const { isFreeResolved } = useSubscription();
 
   const chartRef = useRef(null);
   const { wrapApiCall, DebugOverlay, debugInfo } = useDebugOverlay('BeadsChart');
@@ -350,6 +354,25 @@ Bubble Size — Number of transactions.
 Color — Bedroom type (1BR to 5BR).
 String Line — Price range for that region.`}
         />
+
+        {/* KPI Strip: h-20 fixed */}
+        <DataCardToolbar columns={3} blur={isFreeResolved}>
+          <ToolbarStat
+            label="Transactions"
+            value={(stats?.totalTransactions || 0).toLocaleString()}
+            subtext="total"
+          />
+          <ToolbarStat
+            label="Price Floor"
+            value={stats?.priceRange?.min ? `$${(stats.priceRange.min / 1e6).toFixed(2)}M` : '—'}
+            subtext="min median"
+          />
+          <ToolbarStat
+            label="Price Ceiling"
+            value={stats?.priceRange?.max ? `$${(stats.priceRange.max / 1e6).toFixed(2)}M` : '—'}
+            subtext="max median"
+          />
+        </DataCardToolbar>
 
         {/* Canvas: flex-grow */}
         <DataCardCanvas minHeight={height} cinema={cinema}>

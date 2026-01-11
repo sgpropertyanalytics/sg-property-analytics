@@ -11,12 +11,15 @@ import {
   PreviewChartOverlay,
   DataCard,
   DataCardHeader,
+  DataCardToolbar,
+  ToolbarStat,
   DataCardCanvas,
   StatusDeck,
   StatusPeriod,
   StatusCount,
   LegendLine,
 } from '../ui';
+import { useSubscription } from '../../context/SubscriptionContext';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 import { CHART_COLORS } from '../../constants/colors';
 // SaleType imports removed - Market Core is Resale-only
@@ -56,6 +59,7 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, v
   const timeframe = filters.timeFilter?.type === 'preset' ? filters.timeFilter.value : 'Y1';
   const bedroom = filters.bedroomTypes?.join(',') || '';
   const districts = filters.districts?.join(',') || '';
+  const { isFreeResolved } = useSubscription();
 
   const chartRef = useRef(null);
 
@@ -204,20 +208,9 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, v
     },
     scales: {
       x: {
-        grid: {
-          display: true,
-          color: CHART_COLORS.skyAlpha15,
-          lineWidth: 1,
-          drawTicks: false,
-        },
-        border: {
-          display: true,
-          color: CHART_COLORS.slate300,
-          width: 1,
-        },
+        grid: { display: false },
         ticks: {
           ...CHART_AXIS_DEFAULTS.ticks,
-          font: { size: 10, family: "'JetBrains Mono', monospace" },
           maxRotation: 45,
           minRotation: 45,
         },
@@ -228,28 +221,15 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, v
         position: 'left',
         min: 0,
         max: yAxisMax,
-        border: {
-          display: true,
-          color: CHART_COLORS.slate300,
-          width: 1,
-        },
         title: {
           display: true,
-          text: 'VOLUME',
-          font: { size: 9, family: "'JetBrains Mono', monospace", weight: '600' },
-          color: CHART_COLORS.slate500,
+          text: 'Volume',
+          ...CHART_AXIS_DEFAULTS.title,
         },
-        grid: {
-          color: CHART_COLORS.skyAlpha20,
-          lineWidth: 1,
-          drawTicks: false,
-          borderDash: [3, 3],
-        },
+        grid: { color: CHART_COLORS.skyAlpha20 },
         ticks: {
           ...CHART_AXIS_DEFAULTS.ticks,
-          font: { size: 10, family: "'JetBrains Mono', monospace" },
           callback: (value) => Math.round(value).toLocaleString(),
-          padding: 8,
         },
       },
       y1: {
@@ -257,35 +237,29 @@ function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, v
         display: true,
         position: 'right',
         min: 0,
-        border: {
-          display: true,
-          color: CHART_COLORS.slate300,
-          width: 1,
-        },
         title: {
           display: true,
-          text: 'QUANTUM ($)',
-          font: { size: 9, family: "'JetBrains Mono', monospace", weight: '600' },
-          color: CHART_COLORS.slate500,
+          text: 'Quantum ($)',
+          ...CHART_AXIS_DEFAULTS.title,
         },
         grid: { drawOnChartArea: false },
         ticks: {
           ...CHART_AXIS_DEFAULTS.ticks,
-          font: { size: 10, family: "'JetBrains Mono', monospace" },
           callback: (value) => {
             if (value >= 1000000000) {
               return `$${(value / 1000000000).toFixed(1)}B`;
             }
             return `$${(value / 1000000).toFixed(0)}M`;
           },
-          padding: 8,
         },
       },
     },
   }), [yAxisMax]);
 
-  // Calculate total transactions for StatusDeck
+  // Calculate KPI values
   const totalTransactions = transactionCounts.reduce((sum, c) => sum + c, 0);
+  const totalQuantum = totalValues.reduce((sum, v) => sum + v, 0);
+  const avgPerPeriod = safeData.length > 0 ? Math.round(totalTransactions / safeData.length) : 0;
 
   return (
     <ChartFrame
@@ -311,7 +285,26 @@ Quantum — Total transaction value (linear).
 Grouped by ${TIME_LABELS[timeGrouping]}.`}
         />
 
-        {/* Layer 2: Canvas - flex-grow */}
+        {/* Layer 2: KPI Strip - h-20 fixed */}
+        <DataCardToolbar columns={3} blur={isFreeResolved}>
+          <ToolbarStat
+            label="Total Volume"
+            value={totalTransactions.toLocaleString()}
+            subtext="transactions"
+          />
+          <ToolbarStat
+            label="Total Quantum"
+            value={totalQuantum >= 1e9 ? `$${(totalQuantum / 1e9).toFixed(1)}B` : `$${(totalQuantum / 1e6).toFixed(0)}M`}
+            subtext="total value"
+          />
+          <ToolbarStat
+            label="Avg per Period"
+            value={avgPerPeriod.toLocaleString()}
+            subtext={`per ${TIME_LABELS[timeGrouping].toLowerCase()}`}
+          />
+        </DataCardToolbar>
+
+        {/* Layer 3: Canvas - flex-grow */}
         <DataCardCanvas minHeight={height} cinema={cinema}>
           <PreviewChartOverlay chartRef={chartRef}>
             <Chart ref={chartRef} type="bar" data={chartData} options={options} />
