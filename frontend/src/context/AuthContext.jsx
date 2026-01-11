@@ -288,14 +288,15 @@ export function AuthProvider({ children }) {
                 // Non-abort error (including timeout) → enter guest mode
                 // AUTH INVARIANT: ERROR sets user=null (monotonic guest transition)
                 // AUTH INVARIANT: After timeout → no API calls assume PRESENT token until next login
-                // DO NOT bootstrap subscription - SubscriptionContext handles itself
-                // The boot gate will use publicReady (not proReady) for public charts
+                // CRITICAL: Must also resolve subscription to 'free' to unblock boot gate
+                // Without this, SubscriptionContext stays PENDING → appReady blocked forever
                 console.warn('[Auth] Token sync failed, entering guest mode', {
                   timedOut: result.timedOut,
                   error: result.error?.message,
                 });
                 setTokenStatus(TokenStatus.ERROR);
                 setUser(null); // Force guest mode - user must re-login
+                clearSubscription(); // Resolve subscription as free to unblock boot
               }
             }
           }
@@ -609,11 +610,13 @@ export function AuthProvider({ children }) {
 
       // Non-abort error (including timeout) → enter guest mode
       // AUTH INVARIANT: ERROR sets user=null (monotonic guest transition)
+      // CRITICAL: Must also resolve subscription to 'free' to unblock boot gate
       setTokenStatus(TokenStatus.ERROR);
       setUser(null); // Force guest mode
+      clearSubscription(); // Resolve subscription as free to unblock boot
       return { ok: false, tokenStored: false, reason };
     }
-  }, [user, tokenRefreshGuard, tokenStatus]);
+  }, [user, tokenRefreshGuard, tokenStatus, clearSubscription]);
 
   // Manual retry for token sync (called by BootStuckBanner)
   // P0 FIX: Uses tokenRefreshGuard (not authStateGuard) to avoid cross-abort
@@ -681,12 +684,13 @@ export function AuthProvider({ children }) {
 
       // Non-abort error (including timeout) → enter guest mode
       // AUTH INVARIANT: ERROR sets user=null (monotonic guest transition)
-      // DO NOT bootstrap subscription - SubscriptionContext handles itself
+      // CRITICAL: Must also resolve subscription to 'free' to unblock boot gate
       setTokenStatus(TokenStatus.ERROR);
       setUser(null); // Force guest mode
+      clearSubscription(); // Resolve subscription as free to unblock boot
       return { ok: false, reason };
     }
-  }, [user, tokenRefreshGuard, tokenStatus]);
+  }, [user, tokenRefreshGuard, tokenStatus, clearSubscription]);
 
   // Shared refresh promise ref - persists across effect runs
   // SINGLE-FLIGHT PATTERN: concurrent 401s await the same refresh

@@ -345,6 +345,19 @@ def create_app():
         except Exception as e:
             print(f"   ⚠️  Cache warming skipped: {e}")
 
+        # Firebase Admin SDK pre-initialization (non-blocking)
+        # This prevents 502 timeouts on cold starts by initializing Firebase
+        # during app startup instead of on first /auth/firebase-sync request
+        try:
+            from routes.auth import get_firebase_app
+            firebase_app = get_firebase_app()
+            if firebase_app:
+                print("   ✓ Firebase Admin SDK initialized")
+            else:
+                print("   ℹ️  Firebase Admin SDK not configured (email-only auth)")
+        except Exception as e:
+            print(f"   ⚠️  Firebase pre-init skipped: {e}")
+
         # Data guard: Validate critical CSVs on startup (non-blocking)
         # This logs warnings if data files have issues but does NOT block startup
         try:
