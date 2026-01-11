@@ -489,3 +489,6 @@ def run_app():
 
 if __name__ == "__main__":
     run_app()
+
+# Expose app instance for gunicorn (gunicorn app:app)
+app = create_app()
