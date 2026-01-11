@@ -37,6 +37,21 @@ def _is_production_env() -> bool:
     return env in {"prod", "production"}
 
 
+def _is_strict_mode_enabled() -> bool:
+    """
+    Kill switch for STRICT mode in production.
+
+    Controlled by CONTRACT_STRICT_MODE env var:
+    - "1", "true", "on" → STRICT mode enabled
+    - "0", "false", "off", or unset → STRICT mode disabled (default)
+
+    This is the explicit policy gate, separate from environment detection.
+    Even in production, STRICT mode is OFF by default until schemas are validated.
+    """
+    value = os.environ.get("CONTRACT_STRICT_MODE", "0").lower()
+    return value in {"1", "true", "on"}
+
+
 DEFAULT_STRICT_ENDPOINTS = {
     "dashboard",
     "aggregate",
@@ -207,7 +222,13 @@ def register_contract(contract: EndpointContract) -> None:
     if contract.endpoint in CONTRACTS:
         # Allow re-registration (for testing/hot-reload)
         pass
-    if _is_production_env() and contract.endpoint in _get_strict_endpoints():
+    # STRICT mode requires BOTH conditions:
+    # 1. Production environment (FLASK_ENV=production, etc.)
+    # 2. Explicit opt-in via CONTRACT_STRICT_MODE=1 (kill switch)
+    # This prevents schema mismatches from bricking production.
+    if (_is_production_env()
+            and _is_strict_mode_enabled()
+            and contract.endpoint in _get_strict_endpoints()):
         contract.mode = SchemaMode.STRICT
     CONTRACTS[contract.endpoint] = contract
 
