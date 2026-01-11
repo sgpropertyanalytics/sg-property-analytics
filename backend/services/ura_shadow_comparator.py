@@ -99,6 +99,8 @@ class ComparisonReport:
     coverage_pct: float = 0.0  # % rows present in both sets (by row_hash)
     missing_in_current: int = 0  # Rows in baseline but not in current
     missing_in_baseline: int = 0  # Rows in current but not in baseline
+    ambiguous_matches: int = 0  # 1-to-many matches (row_hash with multiple rows)
+    max_multiplicity: int = 1  # Highest row count for any single row_hash
     top_mismatches: List[Dict[str, Any]] = field(default_factory=list)
 
     # Overall assessment
@@ -301,6 +303,8 @@ class URAShadowComparator:
             report.coverage_pct = coverage['coverage_pct']
             report.missing_in_current = coverage['missing_in_current']
             report.missing_in_baseline = coverage['missing_in_baseline']
+            report.ambiguous_matches = coverage['ambiguous_matches']
+            report.max_multiplicity = coverage['max_multiplicity']
 
             # 5. Top mismatches
             report.top_mismatches = self._get_top_mismatches(
@@ -537,11 +541,34 @@ class URAShadowComparator:
         if max_count > 0:
             coverage_pct = (row.matched or 0) / max_count * 100
 
+        # Query for ambiguous (1-to-many) matches
+        ambiguous_query = text(f"""
+            WITH matched_hashes AS (
+                SELECT row_hash,
+                       COUNT(*) FILTER (WHERE {current_cond}) as current_cnt,
+                       COUNT(*) FILTER (WHERE {baseline_cond}) as baseline_cnt
+                FROM transactions
+                WHERE ({current_cond} OR {baseline_cond})
+                  AND {common_cond}
+                  AND row_hash IS NOT NULL
+                GROUP BY row_hash
+                HAVING COUNT(*) FILTER (WHERE {current_cond}) > 0
+                   AND COUNT(*) FILTER (WHERE {baseline_cond}) > 0
+            )
+            SELECT
+                COUNT(*) FILTER (WHERE current_cnt > 1 OR baseline_cnt > 1) as ambiguous_count,
+                MAX(current_cnt + baseline_cnt) as max_multiplicity
+            FROM matched_hashes
+        """)
+        ambig_row = conn.execute(ambiguous_query, params).fetchone()
+
         return {
             'coverage_pct': round(coverage_pct, 2),
             'matched': row.matched or 0,
             'missing_in_current': row.missing_in_current or 0,
-            'missing_in_baseline': row.missing_in_baseline or 0
+            'missing_in_baseline': row.missing_in_baseline or 0,
+            'ambiguous_matches': ambig_row.ambiguous_count or 0 if ambig_row else 0,
+            'max_multiplicity': ambig_row.max_multiplicity or 1 if ambig_row else 1
         }
 
     def _get_top_mismatches(

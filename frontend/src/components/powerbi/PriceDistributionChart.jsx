@@ -66,7 +66,6 @@ function PriceDistributionChartBase({
   const isDashboard = variant === 'dashboard';
   const embedded = isDashboard;
   const cinema = isDashboard;
-  const anchored = isDashboard;
   // Phase 4: Simplified filter access - read values directly from Zustand
   const { filters } = useZustandFilters();
 
@@ -269,12 +268,6 @@ function PriceDistributionChartBase({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [bins, displayCount, medianBinIndex, q1BinIndex, q3BinIndex]);
 
-  // Methodology text for (i) tooltip
-  const methodologyText = `Median — The typical transaction price.
-Q1–Q3 — Where the middle 50% of homes sell.
-IQR — How wide prices vary within the market.
-Mode — The most common price range.`;
-
   return (
     <ChartFrame
       status={resolvedStatus}
@@ -290,8 +283,11 @@ Mode — The most common price range.`;
         {/* Header: h-14 fixed */}
         <DataCardHeader
           title="Price Distribution"
-          info={methodologyText}
-          anchored={anchored}
+          logic="Median = typical price. Q1-Q3 = middle 50%. Mode = most common range."
+          info={`Median — The typical transaction price.
+Q1–Q3 — Where the middle 50% of homes sell.
+IQR — How wide prices vary within the market.
+Mode — The most common price range.`}
           controls={
             <button
               onClick={() => setShowFullRange(!showFullRange)}

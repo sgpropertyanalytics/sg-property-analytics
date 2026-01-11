@@ -111,13 +111,15 @@ export function DataCard({ children, variant = 'standalone', className = '' }: D
 interface DataCardHeaderProps {
   /** Chart title (uppercase, bold) */
   title: string;
-  /** Methodology text shown via (i) tooltip */
+  /** Logic/methodology text shown in grey inset below title */
+  logic?: string;
+  /** Methodology text shown in hover tooltip (i) icon */
   info?: string;
   /** Optional controls (toggles, buttons) on right side */
   controls?: React.ReactNode;
   /** Metadata displayed on far right (e.g., transaction count) */
   metadata?: React.ReactNode;
-  /** Anchored header style - heavier bottom border for control manual look */
+  /** @deprecated No longer used */
   anchored?: boolean;
   /** Additional className */
   className?: string;
@@ -125,99 +127,139 @@ interface DataCardHeaderProps {
 
 export function DataCardHeader({
   title,
+  logic,
   info,
   controls,
   metadata,
-  anchored = false,
+  anchored: _anchored = false, // deprecated
   className = '',
 }: DataCardHeaderProps) {
-  // Anchored mode: heavier bottom border for "control manual" look
-  const borderClass = anchored
-    ? 'border-b-2 border-slate-400'
-    : 'border-b border-slate-200';
-
   return (
-    <div
-      className={`
-        h-14 px-6 shrink-0
-        flex justify-between items-center
-        ${borderClass}
-        ${className}
-      `.trim()}
-    >
-      {/* Left: Title + Info Icon */}
-      <div className="flex items-center gap-2">
+    <div className={`flex flex-col w-full shrink-0 border-b border-slate-200 ${className}`.trim()}>
+
+      {/* 1. Title Row */}
+      <div className="flex items-center h-10 px-6 bg-white">
+        {/* Accent Anchor */}
+        <div className="w-1.5 h-5 bg-slate-800 mr-3 shrink-0" />
+
         <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">
           {title}
         </h3>
-        {info && (
-          <HelpTooltip
-            content={info}
-            trigger="info"
-            title="How to Interpret"
-          />
-        )}
-      </div>
 
-      {/* Right: Controls + Metadata */}
-      <div className="flex items-center gap-4">
-        {controls}
-        {metadata && (
-          <div className="font-mono text-[10px] text-slate-500 tabular-nums">
-            {metadata}
+        {/* Info Tooltip */}
+        {info && (
+          <span className="ml-2">
+            <HelpTooltip content={info} trigger="info" />
+          </span>
+        )}
+
+        {/* Spacer */}
+        <div className="flex-grow" />
+
+        {/* Controls + Metadata */}
+        {(controls || metadata) && (
+          <div className="flex items-center gap-4 shrink-0">
+            {controls}
+            {metadata && (
+              <div className="font-mono text-[10px] text-slate-500 tabular-nums">
+                {metadata}
+              </div>
+            )}
           </div>
         )}
       </div>
+
+      {/* 2. Logic Inset - unified grey panel */}
+      {logic && (
+        <div className="w-full bg-slate-50 px-6 py-2 border-t border-slate-100 flex items-center gap-3">
+          <span className="font-mono text-[10px] font-bold text-emerald-600 select-none">
+            {'>_'}
+          </span>
+          <p className="font-mono text-[10px] text-slate-500 uppercase tracking-tight">
+            {logic}
+          </p>
+        </div>
+      )}
+
     </div>
   );
 }
 
 // ============================================
-// DataCardDescription - Fixed h-8 (32px), Optional
+// DataCardDescription - System Logic Strip
 // ============================================
 /**
- * DataCardDescription - Fixed-height description slot below header.
+ * DataCardDescription - Terminal-style logic strip below header.
  *
- * Pattern #2: Controlled height for consistent card layouts.
- * - Fixed 32px height (h-8)
- * - Max 2 lines with line-clamp
- * - Ellipsis on overflow
- * - Empty slot still renders for layout consistency
+ * Creates a "System Logic Strip" aesthetic:
+ * - bg-slate-50 differentiates from white content area
+ * - font-mono uppercase = "System" voice, not "Human" voice
+ * - >_ prompt mimics terminal/computed logic
+ * - border-y creates distinct "track" for data
  *
  * Usage:
  *   <DataCard>
  *     <DataCardHeader title="Chart Title" />
  *     <DataCardDescription>
- *       Brief explanation of what this chart shows and how to interpret it.
+ *       IF: NARROWING → CATCH_UP | IF: WIDENING → OUTPERFORM
  *     </DataCardDescription>
  *     <DataCardCanvas>...</DataCardCanvas>
  *   </DataCard>
  */
 interface DataCardDescriptionProps {
-  /** Description text (max 2 lines, will be clamped) */
+  /** Logic/description text */
   children?: React.ReactNode;
   /** Additional className */
   className?: string;
+  /** Style variant: 'console' (default) or 'default' */
+  variant?: 'default' | 'console';
 }
 
 export function DataCardDescription({
   children,
   className = '',
+  variant = 'console',
 }: DataCardDescriptionProps) {
+  if (!children) return null;
+
   return (
     <div
       className={`
-        h-8 px-6 shrink-0
-        flex items-center
-        border-b border-slate-100
+        h-6 px-6 shrink-0
+        flex
         ${className}
       `.trim()}
     >
-      {children && (
-        <p className="text-xs text-slate-500 line-clamp-2 leading-tight">
-          {children}
-        </p>
+      {/* 1. The Tree Connector */}
+      {variant === 'console' && (
+        <div className="w-1.5 flex justify-center shrink-0">
+          {/* Vertical line from header */}
+          <div className="w-px bg-slate-300 h-full" />
+        </div>
       )}
+
+      {/* 2. The Elbow + Content */}
+      <div className="relative flex items-center pl-3">
+        {/* Horizontal dash (the elbow) */}
+        {variant === 'console' && (
+          <div className="absolute left-0 top-1/2 w-3 h-px bg-slate-300" />
+        )}
+
+        {/* Terminal Prompt + Logic Text */}
+        <div className="flex items-center gap-2 ml-1">
+          {variant === 'console' && (
+            <span className="font-mono text-[10px] font-bold text-emerald-600 select-none">
+              {'>_'}
+            </span>
+          )}
+          <p className={`
+            text-[10px] leading-none tracking-wide truncate
+            ${variant === 'console' ? 'font-mono uppercase text-slate-500' : 'text-xs text-slate-500'}
+          `}>
+            {children}
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
