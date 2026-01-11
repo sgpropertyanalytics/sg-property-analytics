@@ -1,6 +1,6 @@
 import React, { useRef, useMemo } from 'react';
 import { useInView } from 'react-intersection-observer';
-import { useDebouncedValue } from 'use-debounce';
+import { useDebounce } from 'use-debounce';
 // Phase 2: Using TanStack Query via useAppQuery wrapper
 import { useAppQuery } from '../../hooks';
 import { ChartFrame } from '../common/ChartFrame';
@@ -74,7 +74,7 @@ function PriceCompressionChartBase({ height = 380, saleType = null, sharedData =
   const bedroom = filters.bedroomTypes?.join(',') || '';
 
   // Debounce filter values for smoother UX (prevents rapid API calls during filter changes)
-  const [debouncedBedroom] = useDebouncedValue(bedroom, 300);
+  const [debouncedBedroom] = useDebounce(bedroom, 300);
 
   // district excluded - shows all regions for comparison
   const { isFreeResolved } = useSubscription();
