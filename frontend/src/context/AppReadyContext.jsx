@@ -6,7 +6,8 @@ import { useSubscription } from './SubscriptionContext';
 import { useFilterStore } from '../stores';
 
 // Boot stuck detection thresholds (milliseconds)
-const BOOT_WARNING_THRESHOLD_MS = 3000;   // Warning: Something might be slow
+const BOOT_WARNING_THRESHOLD_MS = 3000;   // Warning: Something might be slow (console only)
+const BOOT_SLOW_THRESHOLD_MS = 5000;      // Slow: Show "backend waking up" banner
 const BOOT_CRITICAL_THRESHOLD_MS = 10000; // Critical: Likely a bug
 
 /**
@@ -74,8 +75,8 @@ export function useAppReadyOptional() {
 }
 
 export function AppReadyProvider({ children }) {
-  const { initialized: authInitialized, isAuthenticated } = useAuth();
-  const { isSubscriptionReady, isTierKnown } = useSubscription();
+  const { initialized: authInitialized, isAuthenticated, tokenStatus } = useAuth();
+  const { isSubscriptionReady, isTierKnown, status: subscriptionStatus, tier } = useSubscription();
 
   // Phase 4: Filter state from Zustand store (includes forceDefaults action)
   const filterStore = useFilterStore();
@@ -115,6 +116,8 @@ export function AppReadyProvider({ children }) {
   const didForceDefaultsRef = useRef(false);
 
   // Boot stuck state for UI banner (Fix 2)
+  // Two-phase: isBootSlow (5s) shows "waking up", isBootStuck (10s) shows critical
+  const [isBootSlow, setIsBootSlow] = useState(false);
   const [isBootStuck, setIsBootStuck] = useState(false);
 
   // Detailed boot status for debugging
@@ -170,6 +173,7 @@ export function AppReadyProvider({ children }) {
       // Reset flags for potential page navigation
       hasLoggedWarningRef.current = false;
       hasLoggedCriticalRef.current = false;
+      setIsBootSlow(false); // Reset slow state on boot completion
       setIsBootStuck(false); // Reset stuck state on boot completion
       return;
     }
@@ -189,6 +193,13 @@ export function AppReadyProvider({ children }) {
       }
     }, BOOT_WARNING_THRESHOLD_MS);
 
+    // Show "waking up" banner at 5s (before critical)
+    const slowTimeoutId = setTimeout(() => {
+      if (!appReady) {
+        setIsBootSlow(true); // Show "Backend may be waking up" banner
+      }
+    }, BOOT_SLOW_THRESHOLD_MS);
+
     const criticalTimeoutId = setTimeout(() => {
       if (!hasLoggedCriticalRef.current && !appReady) {
         hasLoggedCriticalRef.current = true;
@@ -207,6 +218,7 @@ export function AppReadyProvider({ children }) {
 
     return () => {
       clearTimeout(warningTimeoutId);
+      clearTimeout(slowTimeoutId);
       clearTimeout(criticalTimeoutId);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- buildTelemetryPayload is stable
@@ -223,18 +235,26 @@ export function AppReadyProvider({ children }) {
   }, [isBootStuck, filtersReady, filtersDefaulted, forceDefaults]);
 
   // Log boot state changes (dev only)
+  // User requirement: Print 3 key values on boot state changes
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
       // Only log when appReady changes or during boot phase
       if (prevAppReadyRef.current !== appReady || !appReady) {
+        // Key debug values: tokenStatus, subscriptionStatus, publicReady/proReady
         console.warn('[AppReady] Boot status:', {
+          // 3 key values for debugging auth issues
+          tokenStatus,
+          subscriptionStatus,
+          'publicReady/proReady': `${publicReady}/${proReady}`,
+          tier,
+          // Full status
           ...bootStatus,
           elapsed: `${Date.now() - bootStartRef.current}ms`,
         });
       }
       prevAppReadyRef.current = appReady;
     }
-  }, [bootStatus, appReady]);
+  }, [bootStatus, appReady, tokenStatus, subscriptionStatus, publicReady, proReady, tier]);
 
   // Expose debug info on window for DevTools console access
   // Gated: development mode OR ?__debug query param (for prod debugging)
@@ -248,6 +268,10 @@ export function AppReadyProvider({ children }) {
     window.__APP_READY_DEBUG__ = {
       get status() {
         return {
+          // 3 KEY DEBUG VALUES (for cold start debugging)
+          tokenStatus,
+          subscriptionStatus,
+          tier,
           // Progressive gates
           appReady,
           publicReady,
@@ -260,6 +284,7 @@ export function AppReadyProvider({ children }) {
           tierResolved,
           filtersReady,
           filtersDefaulted,
+          isBootSlow,
           isBootStuck,
           bootElapsed: `${Date.now() - bootStartRef.current}ms`,
           // NOTE: Does NOT expose tokens or sensitive data
@@ -270,7 +295,7 @@ export function AppReadyProvider({ children }) {
     return () => {
       delete window.__APP_READY_DEBUG__;
     };
-  }, [appReady, publicReady, proReady, subscriptionResolved, authInitialized, isSubscriptionReady, isTierKnown, tierResolved, filtersReady, filtersDefaulted, isBootStuck]);
+  }, [appReady, publicReady, proReady, subscriptionResolved, authInitialized, isSubscriptionReady, isTierKnown, tierResolved, filtersReady, filtersDefaulted, isBootSlow, isBootStuck, tokenStatus, subscriptionStatus, tier]);
 
   const value = useMemo(() => ({
     // === Progressive Boot Gates (P0 Fix) ===
@@ -280,7 +305,8 @@ export function AppReadyProvider({ children }) {
     subscriptionResolved, // Subscription thread completed (free, premium, or error)
 
     bootStatus,
-    isBootStuck, // True when boot is stuck for >10s (for BootStuckBanner)
+    isBootSlow, // True when boot is slow (>5s) - shows "waking up" banner
+    isBootStuck, // True when boot is stuck (>10s) - shows critical banner
 
     // Individual flags for specific checks
     authInitialized,
@@ -289,7 +315,7 @@ export function AppReadyProvider({ children }) {
     tierResolved,
     filtersReady,
     filtersDefaulted, // True if defaults were forced by timeout
-  }), [appReady, publicReady, proReady, subscriptionResolved, bootStatus, isBootStuck, authInitialized, isSubscriptionReady, isTierKnown, tierResolved, filtersReady, filtersDefaulted]);
+  }), [appReady, publicReady, proReady, subscriptionResolved, bootStatus, isBootSlow, isBootStuck, authInitialized, isSubscriptionReady, isTierKnown, tierResolved, filtersReady, filtersDefaulted]);
 
   return (
     <AppReadyContext.Provider value={value}>

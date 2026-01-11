@@ -107,10 +107,12 @@ const apiClient = axios.create({
 // ===== Retry Configuration =====
 // Centralized retry logic for all retryable errors
 // PR2: Consolidates retry from useQuery into API client layer
+// Optimized for Render cold-start recovery: 2 retries, short delays, < 4s total
 const RETRY_CONFIG = {
-  maxRetries: 1,
-  retryDelay: 1000, // 1 second base delay
+  maxRetries: 2, // Total 3 tries (initial + 2 retries)
+  baseDelay: 300, // 300ms base → 300ms, 900ms with exponential backoff
   retryableStatuses: [502, 503, 504], // Gateway errors only (not all 5xx)
+  jitterMax: 100, // Add up to 100ms random jitter to prevent thundering herd
 };
 
 /**
@@ -187,8 +189,11 @@ const setupRetryInterceptor = (client) => {
       if (isRetryableError(error, config) && config.__retryCount < RETRY_CONFIG.maxRetries) {
         config.__retryCount += 1;
 
-        // Exponential backoff
-        const delay = RETRY_CONFIG.retryDelay * config.__retryCount;
+        // Exponential backoff with jitter: 300ms, 900ms (3^n pattern)
+        // Jitter prevents thundering herd when multiple clients retry simultaneously
+        const exponentialDelay = RETRY_CONFIG.baseDelay * Math.pow(3, config.__retryCount - 1);
+        const jitter = Math.floor(Math.random() * RETRY_CONFIG.jitterMax);
+        const delay = exponentialDelay + jitter;
 
         if (process.env.NODE_ENV === 'development') {
           console.warn(
