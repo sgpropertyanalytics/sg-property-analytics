@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { useInView } from 'react-intersection-observer';
+import { useDebouncedValue } from 'use-debounce';
 // Phase 2: Using TanStack Query via useAppQuery wrapper
 import { useAppQuery } from '../../hooks/useAppQuery';
 import { ChartFrame } from '../common/ChartFrame';
@@ -68,6 +69,11 @@ function AbsolutePsfChartBase({ height = 300, saleType = null, sharedData = null
   // Extract filter values directly (simple, explicit)
   const timeframe = filters.timeFilter?.type === 'preset' ? filters.timeFilter.value : 'Y1';
   const bedroom = filters.bedroomTypes?.join(',') || '';
+
+  // Debounce filter values for smoother UX (prevents rapid API calls during filter changes)
+  // 300ms debounce with keepPreviousData gives instant visual feedback
+  const [debouncedBedroom] = useDebouncedValue(bedroom, 300);
+
   // district excluded - shows all regions for comparison
   const { isFreeResolved } = useSubscription();
   const chartRef = useRef(null);
@@ -92,7 +98,7 @@ function AbsolutePsfChartBase({ height = 300, saleType = null, sharedData = null
         group_by: `${TIME_GROUP_BY[timeGrouping]},region`,
         metrics: 'median_psf,count',
         timeframe,
-        bedroom,
+        bedroom: debouncedBedroom,  // Use debounced value for smoother UX
         // segment excluded - shows all regions for comparison
         ...(saleType && { sale_type: saleType }),
       };
@@ -114,8 +120,8 @@ function AbsolutePsfChartBase({ height = 300, saleType = null, sharedData = null
       // Transform is grain-agnostic - trusts data's own periodGrain
       return transformCompressionSeries(rawData);
     },
-    // Explicit query key - TanStack handles cache deduplication
-    ['absolute-psf', timeframe, bedroom, timeGrouping, saleType],
+    // Explicit query key - uses debounced bedroom for stable cache key
+    ['absolute-psf', timeframe, debouncedBedroom, timeGrouping, saleType],
     { chartName: 'AbsolutePsfChart', initialData: null, enabled: inView && !useSharedData, keepPreviousData: true }
   );
 

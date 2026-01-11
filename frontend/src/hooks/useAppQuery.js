@@ -1,12 +1,19 @@
 /**
- * useAppQuery - TanStack Query wrapper with app boot gating
+ * useAppQuery - TanStack Query wrapper with progressive boot gating
  *
  * Phase 2 of filter system simplification.
  *
  * This hook wraps @tanstack/react-query's useQuery with:
- * 1. Boot gating - waits for app to be ready (auth + subscription + filters)
+ * 1. Progressive boot gating - publicReady for most charts, proReady for premium
  * 2. Timing instrumentation - dev-only chart timing tracking
  * 3. Status compatibility - maps TanStack status to existing ChartFrame status
+ *
+ * PROGRESSIVE BOOT GATES (P0 Fix):
+ * - requiresSubscription: false (default) → gates on publicReady (auth + filters)
+ * - requiresSubscription: true → gates on proReady (publicReady + subscription)
+ *
+ * IMPORTANT: Premium charts that require entitlement MUST be wrapped in <RequirePro>.
+ * The requiresSubscription flag only gates on subscription resolution, not entitlement.
  *
  * MIGRATION GUIDE:
  * Replace useGatedAbortableQuery with useAppQuery using the same arguments.
@@ -47,7 +54,8 @@
  * @param {Array} deps - Dependencies that become part of the query key
  * @param {Object} options - Configuration options:
  *   - chartName: string - Name for timing tracking (dev-only)
- *   - enabled: boolean - ANDed with appReady
+ *   - enabled: boolean - ANDed with boot gate
+ *   - requiresSubscription: boolean - Wait for subscription resolution (default: false)
  *   - keepPreviousData: boolean - Show old data while fetching (uses placeholderData)
  *   - initialData: any - Initial data before first fetch
  *   - staleTime: number - Override default staleTime (30s) - controls cache freshness
@@ -65,13 +73,14 @@ import { QueryStatus, deriveQueryStatus, hasRealData } from '../lib/queryClient'
 const isDev = import.meta.env.DEV;
 
 export function useAppQuery(queryFn, deps = [], options = {}) {
-  const appReadyContext = useAppReadyOptional();
-  const appReady = appReadyContext?.appReady ?? true;
+  // Get progressive boot gates with safe defaults for components outside provider
+  const { publicReady, proReady } = useAppReadyOptional() ?? { publicReady: true, proReady: true };
 
   // Extract our custom options
   const {
     chartName,
     enabled: userEnabled = true,
+    requiresSubscription = false, // P0 Fix: Choose gate based on subscription requirement
     keepPreviousData = false,
     initialData,
     staleTime,
@@ -84,8 +93,12 @@ export function useAppQuery(queryFn, deps = [], options = {}) {
   const timing = useChartTiming(chartName || '');
   const hasTimingEnabled = isDev && chartName;
 
-  // Gate enabled on appReady - query won't execute until boot completes
-  const effectiveEnabled = userEnabled && appReady;
+  // BOOT GATE SELECTION (P0 Fix):
+  // - requiresSubscription: false (default) → gates on publicReady (auth + filters)
+  // - requiresSubscription: true → gates on proReady (publicReady + subscription)
+  // NOTE: Premium charts that require entitlement MUST be wrapped in <RequirePro>
+  const bootReady = requiresSubscription ? proReady : publicReady;
+  const effectiveEnabled = userEnabled && bootReady;
 
   // Query key from deps
   // TanStack Query uses hashQueryKey() for structural comparison, so we don't
@@ -173,8 +186,8 @@ export function useAppQuery(queryFn, deps = [], options = {}) {
   const dataHasContent = hasRealData(queryResult.data);
   const status = deriveQueryStatus(queryResult, effectiveEnabled, dataHasContent);
 
-  // isBootPending = !appReady (for ChartFrame to show skeleton during boot)
-  const isBootPending = !appReady;
+  // isBootPending = !bootReady (for ChartFrame to show skeleton during boot)
+  const isBootPending = !bootReady;
 
   // Return value compatible with useGatedAbortableQuery
   return {

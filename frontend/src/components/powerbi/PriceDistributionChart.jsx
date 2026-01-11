@@ -1,4 +1,5 @@
 import React, { useState, useRef, useMemo } from 'react';
+import { useDebouncedValue } from 'use-debounce';
 // Phase 2: Using TanStack Query via useAppQuery wrapper
 import { useAppQuery } from '../../hooks';
 import { ChartFrame } from '../common/ChartFrame';
@@ -72,6 +73,10 @@ function PriceDistributionChartBase({
   // Extract filter values directly (simple, explicit)
   const timeframe = filters.timeFilter?.type === 'preset' ? filters.timeFilter.value : 'Y1';
   const bedroom = filters.bedroomTypes?.join(',') || '';
+
+  // Debounce filter values for smoother UX (prevents rapid API calls during filter changes)
+  const [debouncedBedroom] = useDebouncedValue(bedroom, 300);
+
   // district excluded - histogram shows overall distribution (not location-filtered)
 
   const [showFullRange, setShowFullRange] = useState(false);
@@ -88,7 +93,7 @@ function PriceDistributionChartBase({
         panels: 'price_histogram',
         histogram_bins: numBins,
         timeframe,
-        bedroom,
+        bedroom: debouncedBedroom,  // Use debounced value for smoother UX
         // district excluded - histogram shows overall distribution
         ...(saleType && { sale_type: saleType }),
         // Only send show_full_range when true (backend defaults to false)
@@ -115,8 +120,8 @@ function PriceDistributionChartBase({
       // Use adapter for transformation - handles legacy vs new format
       return transformDistributionSeries(apiData.price_histogram);
     },
-    // Explicit query key - TanStack handles cache deduplication
-    ['price-distribution', timeframe, bedroom, numBins, showFullRange, saleType],
+    // Explicit query key - uses debounced bedroom for stable cache key
+    ['price-distribution', timeframe, debouncedBedroom, numBins, showFullRange, saleType],
     { chartName: 'PriceDistributionChart', initialData: null, enabled: !useShared, keepPreviousData: true }
   );
 

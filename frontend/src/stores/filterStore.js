@@ -184,6 +184,7 @@ export function createFilterStore(pageId) {
           // Meta
           pageId: safePageId,
           filtersReady: false,
+          filtersDefaulted: false, // True if defaults were forced by watchdog timeout
           _version: STORAGE_VERSION,
 
           // Core filters (persisted)
@@ -472,6 +473,27 @@ export function createFilterStore(pageId) {
           hydrate: () => set({ filtersReady: true }),
 
           /**
+           * Force defaults when hydration times out.
+           * BOOT INVARIANT: Executes only once (guard against repeated calls).
+           *
+           * Called by AppReadyContext watchdog when boot is stuck due to
+           * filter hydration failure. Allows public charts to load with defaults.
+           */
+          forceDefaults: () =>
+            set((state) => {
+              // Guard: only execute if not already defaulted or ready
+              if (state.filtersReady || state.filtersDefaulted) {
+                return state; // No-op
+              }
+              console.warn('[filterStore] Forcing defaults due to hydration timeout');
+              return {
+                filtersDefaulted: true,
+                filtersReady: true,
+                filters: { ...INITIAL_FILTERS },
+              };
+            }),
+
+          /**
            * Reset all filters to initial state.
            */
           resetFilters: () =>
@@ -645,6 +667,7 @@ export function useZustandFilterState() {
     () => ({
       pageId: store.pageId,
       filtersReady: store.filtersReady,
+      filtersDefaulted: store.filtersDefaulted, // True if defaults were forced by timeout
       filters: store.filters,
       factFilter: store.factFilter,
       drillPath: store.drillPath,
@@ -761,6 +784,7 @@ export function useZustandFilters() {
       // === State ===
       pageId: store.pageId,
       filtersReady: store.filtersReady,
+      filtersDefaulted: store.filtersDefaulted, // True if defaults were forced by timeout
       filters: store.filters,
       factFilter: store.factFilter,
       drillPath: store.drillPath,

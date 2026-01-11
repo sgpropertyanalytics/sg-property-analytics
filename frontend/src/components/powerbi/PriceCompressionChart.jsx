@@ -1,5 +1,6 @@
 import React, { useRef, useMemo } from 'react';
 import { useInView } from 'react-intersection-observer';
+import { useDebouncedValue } from 'use-debounce';
 // Phase 2: Using TanStack Query via useAppQuery wrapper
 import { useAppQuery } from '../../hooks';
 import { ChartFrame } from '../common/ChartFrame';
@@ -71,6 +72,10 @@ function PriceCompressionChartBase({ height = 380, saleType = null, sharedData =
   // Extract filter values directly (simple, explicit)
   const timeframe = filters.timeFilter?.type === 'preset' ? filters.timeFilter.value : 'Y1';
   const bedroom = filters.bedroomTypes?.join(',') || '';
+
+  // Debounce filter values for smoother UX (prevents rapid API calls during filter changes)
+  const [debouncedBedroom] = useDebouncedValue(bedroom, 300);
+
   // district excluded - shows all regions for comparison
   const { isFreeResolved } = useSubscription();
 
@@ -120,7 +125,7 @@ function PriceCompressionChartBase({ height = 380, saleType = null, sharedData =
         group_by: `${TIME_GROUP_BY[timeGrouping]},region`,
         metrics: 'median_psf,count',
         timeframe,
-        bedroom,
+        bedroom: debouncedBedroom,  // Use debounced value for smoother UX
         // segment excluded - shows all regions for comparison
         ...(saleType && { sale_type: saleType }),
       };
@@ -147,8 +152,8 @@ function PriceCompressionChartBase({ height = 380, saleType = null, sharedData =
       // Transform is grain-agnostic - trusts data's own periodGrain
       return transformCompressionSeries(rawData);
     },
-    // Explicit query key - TanStack handles cache deduplication
-    ['price-compression', timeframe, bedroom, timeGrouping, saleType],
+    // Explicit query key - uses debounced bedroom for stable cache key
+    ['price-compression', timeframe, debouncedBedroom, timeGrouping, saleType],
     { chartName: 'PriceCompressionChart', initialData: null, enabled: inView && !useSharedData, keepPreviousData: true }
   );
 

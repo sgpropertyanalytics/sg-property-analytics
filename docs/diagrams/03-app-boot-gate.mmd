@@ -5,21 +5,30 @@ stateDiagram-v2
         state Parallel {
             state "Auth Thread" as auth {
                 AuthInit --> AuthReady : onAuthStateChanged
+                AuthInit --> AuthError : 8s timeout
             }
             state "Subscription Thread" as sub {
                 SubPending --> SubResolved : bootstrap/fetch
+                SubPending --> SubError : API error
             }
             state "Filter Thread" as filter {
                 FilterHydrating --> FilterReady : sessionStorage restored
+                FilterHydrating --> FilterDefaulted : 10s watchdog
             }
         }
-
-        Parallel --> GateCheck : All threads complete
     }
 
-    state GateCheck <<choice>>
-    GateCheck --> AppReady : All conditions met
-    GateCheck --> Stuck : Timeout > 10s
+    note right of boot
+        P0 FIX: Progressive gates
+        publicReady = auth && (filters || defaulted)
+        proReady = publicReady && subscription
+    end note
 
-    state AppReady : Charts can fetch data
-    state Stuck : BootStuckBanner shown
+    boot --> PublicReady : Auth + Filters ready
+    PublicReady --> ProReady : Subscription resolved
+
+    state PublicReady : Public charts can fetch
+    state ProReady : Premium charts can mount (via RequirePro)
+
+    boot --> Stuck : Timeout > 10s
+    state Stuck : BootStuckBanner shown + forceDefaults
