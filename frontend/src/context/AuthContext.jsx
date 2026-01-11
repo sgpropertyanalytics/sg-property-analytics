@@ -209,6 +209,7 @@ export function AuthProvider({ children }) {
                 photoURL: result.user.photoURL,
               }, {
                 signal: authStateGuardRef.current.getSignal(),
+                __allowRetry: true, // Retry on 502/503/504 (Render cold start)
               });
 
               if (!authStateGuardRef.current.isStale(requestId)) {
@@ -341,6 +342,7 @@ export function AuthProvider({ children }) {
               photoURL: firebaseUser.photoURL,
             }, {
               signal: getSignalFn(),
+              __allowRetry: true, // Retry on 502/503/504 (Render cold start)
             }),
             TOKEN_REFRESH_TIMEOUT_MS,
             'Token sync'
@@ -412,6 +414,7 @@ export function AuthProvider({ children }) {
         photoURL: firebaseUser.photoURL,
       }, {
         signal: getSignal(),
+        __allowRetry: true, // Retry on 502/503/504 (Render cold start)
       });
 
       // Guard: Don't update if request is stale
@@ -569,6 +572,7 @@ export function AuthProvider({ children }) {
           photoURL: user.photoURL,
         }, {
           signal: tokenRefreshGuard.getSignal(),
+          __allowRetry: true, // Retry on 502/503/504 (Render cold start)
         }),
         TOKEN_REFRESH_TIMEOUT_MS,
         'Token refresh'
@@ -647,6 +651,7 @@ export function AuthProvider({ children }) {
           photoURL: user.photoURL,
         }, {
           signal: tokenRefreshGuard.getSignal(),
+          __allowRetry: true, // Retry on 502/503/504 (Render cold start)
         }),
         TOKEN_REFRESH_TIMEOUT_MS,
         'Token sync retry'
