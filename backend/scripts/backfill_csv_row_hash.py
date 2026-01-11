@@ -550,14 +550,77 @@ def run_validation():
                 logger.warning(f"  {row[0]}: {row[1]} to {row[2]}")
 
 
+def run_comparison():
+    """Run shadow comparison using existing URAShadowComparator."""
+    from app import create_app
+    from models.database import db
+    from services.ura_shadow_comparator import URAShadowComparator
+
+    logger.info("\n" + "=" * 60)
+    logger.info("Shadow Comparison (CSV vs URA API)")
+    logger.info("=" * 60)
+
+    app = create_app()
+
+    with app.app_context():
+        engine = db.engine
+        comparator = URAShadowComparator(engine)
+
+        # Compare all API data against all CSV data
+        report = comparator.compare_api_vs_csv()
+
+        # Print summary
+        logger.info("\n1. Row Counts:")
+        logger.info(f"  CSV (baseline):  {report.baseline_row_count:,}")
+        logger.info(f"  URA API:         {report.current_row_count:,}")
+        logger.info(f"  Diff:            {report.row_count_diff:+,} ({report.row_count_diff_pct:+.1f}%)")
+
+        logger.info("\n2. Coverage:")
+        logger.info(f"  Matched:         {report.coverage_pct:.1f}%")
+        logger.info(f"  Missing in API:  {report.missing_in_current:,}")
+        logger.info(f"  Missing in CSV:  {report.missing_in_baseline:,}")
+        logger.info(f"  Ambiguous (1-to-many): {report.ambiguous_matches:,}")
+        logger.info(f"  Max multiplicity: {report.max_multiplicity}")
+
+        # Show top PSF diffs by month (last 6 months)
+        if report.psf_median_by_month:
+            logger.info("\n3. PSF Median Diffs (by month):")
+            sorted_months = sorted(report.psf_median_by_month.keys(), reverse=True)[:6]
+            for month in sorted_months:
+                data = report.psf_median_by_month[month]
+                if data.get('diff_pct') is not None:
+                    logger.info(f"  {month}: {data['diff_pct']:+.1f}%")
+
+        # Show top mismatches
+        if report.top_mismatches:
+            logger.info(f"\n4. Top Mismatches ({len(report.top_mismatches)} shown):")
+            for i, m in enumerate(report.top_mismatches[:5], 1):
+                logger.info(f"  {i}. {m['project_name']} ({m['district']}) - {m['transaction_month']}")
+
+        # Assessment
+        logger.info("\n" + "=" * 60)
+        if report.is_acceptable:
+            logger.info("RESULT: PASSED - All thresholds met")
+        else:
+            logger.warning("RESULT: FAILED - Issues found:")
+            for issue in report.issues:
+                logger.warning(f"  - {issue}")
+        logger.info("=" * 60)
+
+        return 0 if report.is_acceptable else 1
+
+
 def main():
     parser = argparse.ArgumentParser(description='Backfill row_hash for CSV transactions')
     parser.add_argument('--dry-run', action='store_true', help='Preview without changes')
-    parser.add_argument('--validate-only', action='store_true', help='Only validate')
+    parser.add_argument('--validate-only', action='store_true', help='Only validate backfill')
+    parser.add_argument('--compare', action='store_true', help='Run shadow comparison (CSV vs API)')
     args = parser.parse_args()
 
     try:
-        if args.validate_only:
+        if args.compare:
+            sys.exit(run_comparison())
+        elif args.validate_only:
             run_validation()
         else:
             run_backfill(dry_run=args.dry_run)
