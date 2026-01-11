@@ -4,7 +4,7 @@
 services:
   # Main API server
   - type: web
-    name: sgproperty-api
+    name: sg-property-analyzer
     env: python
     region: singapore
     plan: starter
