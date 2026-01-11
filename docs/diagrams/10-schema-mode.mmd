@@ -1,0 +1,23 @@
+stateDiagram-v2
+    [*] --> ModeCheck
+
+    state ModeCheck <<choice>>
+    ModeCheck --> STRICT : PRODUCTION and CONTRACT_STRICT_MODE=1
+    ModeCheck --> WARN : Otherwise
+
+    state STRICT {
+        [*] --> Validate
+        Validate --> Return400 : ContractViolation
+        Validate --> Return500 : Response schema mismatch
+        Validate --> Continue : Valid
+    }
+
+    state WARN {
+        [*] --> ValidateWarn
+        ValidateWarn --> LogWarning : Violation detected
+        ValidateWarn --> Continue2 : Valid
+        LogWarning --> Continue2 : Continue execution
+    }
+
+    Continue --> [*]
+    Continue2 --> [*]

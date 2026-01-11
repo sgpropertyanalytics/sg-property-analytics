@@ -1,0 +1,25 @@
+stateDiagram-v2
+    [*] --> RequestReceived
+
+    state "Request Phase" as req {
+        RequestReceived --> ParamsCollection : Extract X-Request-ID
+        ParamsCollection --> Validation : Merge query + body + path
+        Validation --> Normalization : Pydantic validation
+        Normalization --> FilterExtraction : Convert to canonical types
+        FilterExtraction --> HandlerExecution : Inject g.normalized_params
+    }
+
+    state "Handler Phase" as handler {
+        HandlerExecution --> ResponseNorm : Handler returns
+        HandlerExecution --> ErrorCatch : Exception raised
+    }
+
+    state "Response Phase" as resp {
+        ResponseNorm --> MetaInjection : Wrap in envelope
+        MetaInjection --> ResponseValidation : Add requestId, elapsedMs
+        ResponseValidation --> SerializerApp : Validate against schema
+        SerializerApp --> ResponseReturn : Apply serializer
+    }
+
+    ErrorCatch --> ResponseReturn : Error envelope
+    ResponseReturn --> [*]

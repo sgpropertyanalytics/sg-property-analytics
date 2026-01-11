@@ -1,0 +1,30 @@
+sequenceDiagram
+    participant U as User
+    participant FB as Firebase
+    participant AC as AuthContext
+    participant SC as SubscriptionContext
+    participant AR as AppReadyContext
+    participant Q as useAppQuery
+    participant API as Backend API
+
+    U->>FB: Sign in
+    FB->>AC: onAuthStateChanged(user)
+    AC->>AC: setTokenStatus(REFRESHING)
+    AC->>API: POST /auth/firebase-sync
+    API-->>AC: {token, subscription}
+    AC->>AC: setTokenStatus(PRESENT)
+    AC->>SC: bootstrapSubscription(sub)
+    SC->>SC: setStatus(RESOLVED)
+
+    par Filter Hydration
+        Note over AR: Zustand restores from sessionStorage
+        AR->>AR: filtersReady = true
+    end
+
+    AR->>AR: Check all gates
+    AR->>AR: appReady = true
+
+    Q->>Q: enabled = true (gate open)
+    Q->>API: GET /api/v2/aggregate
+    API-->>Q: {data, meta}
+    Q->>Q: status = success

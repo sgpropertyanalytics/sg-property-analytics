@@ -1,0 +1,15 @@
+stateDiagram-v2
+    [*] --> MISSING : App starts
+
+    MISSING --> REFRESHING : User exists, need token
+    MISSING --> PRESENT : No user (guest mode)
+
+    REFRESHING --> PRESENT : syncTokenWithBackend success
+    REFRESHING --> MISSING : Request aborted (safe restore)
+    REFRESHING --> ERROR : API error
+
+    PRESENT --> REFRESHING : 401 or token expired event
+    PRESENT --> MISSING : User logs out
+
+    ERROR --> REFRESHING : retryTokenSync
+    ERROR --> MISSING : User logs out

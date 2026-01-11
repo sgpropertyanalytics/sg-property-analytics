@@ -1,0 +1,16 @@
+stateDiagram-v2
+    [*] --> Level0 : Initial view
+
+    Level0 --> Level1 : drillDown(time, value)
+    Level0 --> Level1 : drillDown(location, value)
+
+    Level1 --> Level2 : drillDown(any, value)
+    Level1 --> Level0 : drillUp() / breadcrumb click
+
+    Level2 --> Level3 : drillDown(any, value)
+    Level2 --> Level1 : drillUp()
+    Level2 --> Level0 : breadcrumb(0)
+
+    Level3 --> Level2 : drillUp()
+    Level3 --> Level0 : breadcrumb(0)
+    Level3 --> Level1 : breadcrumb(1)

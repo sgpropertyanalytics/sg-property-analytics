@@ -1,0 +1,17 @@
+stateDiagram-v2
+    [*] --> DataFetch
+
+    DataFetch --> Calculate : Transaction data available
+    DataFetch --> Unknown : No data
+
+    Calculate --> ZoneClassify
+
+    state ZoneClassify <<choice>>
+    ZoneClassify --> Low : turnover < 5 per 100 units
+    ZoneClassify --> Healthy : 5 <= turnover <= 15
+    ZoneClassify --> High : turnover > 15 per 100 units
+
+    Unknown --> [*] : zone = unknown
+    Low --> [*] : zone = low (liquidity concern)
+    Healthy --> [*] : zone = healthy (optimal)
+    High --> [*] : zone = high (volatility concern)

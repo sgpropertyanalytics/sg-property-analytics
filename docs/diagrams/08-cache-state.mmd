@@ -1,0 +1,17 @@
+stateDiagram-v2
+    [*] --> Empty
+
+    Empty --> CacheMiss : get(key)
+
+    CacheMiss --> QueryExecute : Acquire lock
+    QueryExecute --> CacheSet : Query success
+    QueryExecute --> CacheMiss : Query error (no cache)
+
+    CacheSet --> CacheHit : Same key requested
+
+    CacheHit --> CacheReturn : Not expired
+    CacheHit --> CacheEvict : Expired (TTL > 10min)
+
+    CacheEvict --> CacheMiss : Refetch needed
+
+    CacheReturn --> [*] : Return with cache_hit=true
