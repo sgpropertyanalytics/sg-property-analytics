@@ -14,3 +14,4 @@ beautifulsoup4
 requests
 redis
 pydantic>=2.5.0
+PyYAML>=6.0
