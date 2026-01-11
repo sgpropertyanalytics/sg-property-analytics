@@ -54,6 +54,9 @@ const REGION_COLORS = REGION;
  *  saleType?: string | null,
  *  sharedData?: Record<string, any> | null,
  *  sharedStatus?: string,
+ *  embedded?: boolean,
+ *  cinema?: boolean,
+ *  anchored?: boolean,
  * }} props
  */
 function BeadsChartBase({
@@ -62,6 +65,9 @@ function BeadsChartBase({
   sharedData = null,
   sharedStatus = 'idle',
   staggerIndex = 0,
+  embedded = false,
+  cinema = false,
+  anchored = false,
 }) {
   // Phase 4: Simplified filter access - read values directly from Zustand
   const { filters } = useZustandFilters();
@@ -338,17 +344,18 @@ String Line — Price range for that region.`;
       staggerIndex={staggerIndex}
       debugInfo={debugInfo}
     >
-      <DataCard>
+      <DataCard variant={embedded ? 'embedded' : 'standalone'}>
         <DebugOverlay />
 
         {/* Header: h-14 fixed */}
         <DataCardHeader
           title="Volume-Weighted Median Price by Region & Bedroom"
           info={methodologyText}
+          anchored={anchored}
         />
 
         {/* Canvas: flex-grow */}
-        <DataCardCanvas minHeight={height}>
+        <DataCardCanvas minHeight={height} cinema={cinema}>
           <Bubble ref={chartRef} data={resolvedData} options={options} />
         </DataCardCanvas>
 

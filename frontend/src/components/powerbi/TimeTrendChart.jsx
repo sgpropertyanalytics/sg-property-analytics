@@ -40,10 +40,12 @@ const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
  *  height?: number,
  *  saleType?: string | null,
  *  staggerIndex?: number,
+ *  embedded?: boolean,
+ *  cinema?: boolean,
  *  onDrillThrough?: (value: string) => void,
  * }} props
  */
-function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, onDrillThrough: _onDrillThrough }) {
+function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, embedded = false, cinema = false, onDrillThrough: _onDrillThrough }) {
   // Phase 4: Simplified filter access - read values directly from Zustand
   const { filters, timeGrouping } = useZustandFilters();
 
@@ -298,7 +300,7 @@ Grouped by ${TIME_LABELS[timeGrouping]}.`;
       height={height + 40}
       staggerIndex={staggerIndex}
     >
-      <DataCard>
+      <DataCard variant={embedded ? 'embedded' : 'standalone'}>
         {/* Debug overlay - shows API call info when Ctrl+Shift+D is pressed */}
         <DebugOverlay />
 
@@ -310,7 +312,7 @@ Grouped by ${TIME_LABELS[timeGrouping]}.`;
         />
 
         {/* Layer 2: Canvas - flex-grow */}
-        <DataCardCanvas minHeight={height}>
+        <DataCardCanvas minHeight={height} cinema={cinema}>
           <PreviewChartOverlay chartRef={chartRef}>
             <Chart ref={chartRef} type="bar" data={chartData} options={options} />
           </PreviewChartOverlay>

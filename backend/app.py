@@ -489,3 +489,7 @@ def run_app():
 
 if __name__ == "__main__":
     run_app()
+
+# Module-level app instance for gunicorn: `gunicorn app:app`
+# This is the standard Flask deployment pattern
+app = create_app()

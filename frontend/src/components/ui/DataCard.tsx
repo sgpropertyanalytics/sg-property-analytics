@@ -82,19 +82,24 @@ import { HelpTooltip } from './HelpTooltip';
 // ============================================
 interface DataCardProps {
   children: React.ReactNode;
+  /**
+   * Layout variant:
+   * - "standalone": Full card styling (bg, border, shadow) - for use outside sections
+   * - "embedded": No container chrome - integrates seamlessly into parent section
+   */
+  variant?: 'standalone' | 'embedded';
   className?: string;
 }
 
-export function DataCard({ children, className = '' }: DataCardProps) {
+export function DataCard({ children, variant = 'standalone', className = '' }: DataCardProps) {
+  // Embedded variant removes container chrome for "blueprint" integration
+  // Chart axes align directly with parent section's grid
+  const containerStyles = variant === 'embedded'
+    ? 'flex flex-col'
+    : 'bg-white border border-slate-300 rounded-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,0.05)] flex flex-col overflow-hidden';
+
   return (
-    <div
-      className={`
-        bg-white border border-slate-300 rounded-sm
-        shadow-[2px_2px_0px_0px_rgba(0,0,0,0.05)]
-        flex flex-col overflow-hidden
-        ${className}
-      `.trim()}
-    >
+    <div className={`${containerStyles} ${className}`.trim()}>
       {children}
     </div>
   );
@@ -114,6 +119,8 @@ interface DataCardHeaderProps {
   controls?: React.ReactNode;
   /** Metadata displayed on far right (e.g., transaction count) */
   metadata?: React.ReactNode;
+  /** Anchored header style - heavier bottom border for control manual look */
+  anchored?: boolean;
   /** Additional className */
   className?: string;
 }
@@ -124,21 +131,28 @@ export function DataCardHeader({
   info,
   controls,
   metadata,
+  anchored = false,
   className = '',
 }: DataCardHeaderProps) {
+  // Anchored mode: heavier bottom border for "control manual" look
+  const borderClass = anchored
+    ? 'border-b-2 border-slate-400'
+    : 'border-b border-slate-200';
+
   return (
     <div
       className={`
         h-14 px-6 shrink-0
         flex justify-between items-center
-        border-b border-slate-200
+        ${borderClass}
         ${className}
       `.trim()}
     >
       {/* Left: Title + Subtitle + Info Icon */}
       <div className="flex items-center gap-2">
         <div className="min-w-0">
-          <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">
+          <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide flex items-center gap-2">
+            {anchored && <span className="text-slate-400 font-mono">::</span>}
             {title}
           </h3>
           {subtitle && (
@@ -405,6 +419,8 @@ interface DataCardCanvasProps {
   children: React.ReactNode;
   /** Minimum height for the canvas */
   minHeight?: number;
+  /** Cinema mode: minimal horizontal padding for panoramic aspect ratio */
+  cinema?: boolean;
   /** Additional className */
   className?: string;
 }
@@ -412,11 +428,16 @@ interface DataCardCanvasProps {
 export function DataCardCanvas({
   children,
   minHeight = 300,
+  cinema = false,
   className = '',
 }: DataCardCanvasProps) {
+  // Cinema mode: tight horizontal padding for edge-to-edge chart
+  // Standard mode: p-6 for comfortable spacing
+  const paddingClass = cinema ? 'px-2 py-4' : 'p-6';
+
   return (
     <div
-      className={`flex-grow p-6 relative ${className}`}
+      className={`flex-grow ${paddingClass} relative ${className}`}
       style={{ minHeight }}
     >
       {children}

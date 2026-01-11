@@ -57,9 +57,12 @@ const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
  *  saleType?: string | null,
  *  sharedData?: Array<Record<string, any>> | null,
  *  sharedStatus?: string,
+ *  embedded?: boolean,
+ *  cinema?: boolean,
+ *  anchored?: boolean,
  * }} props
  */
-function PriceCompressionChartBase({ height = 380, saleType = null, sharedData = null, sharedStatus = 'idle', staggerIndex = 0 }) {
+function PriceCompressionChartBase({ height = 380, saleType = null, sharedData = null, sharedStatus = 'idle', staggerIndex = 0, embedded = false, cinema = false, anchored = false }) {
   // Phase 4: Simplified filter access - read values directly from Zustand
   const { filters, timeGrouping } = useZustandFilters();
 
@@ -273,11 +276,12 @@ Watch for lines dipping below $0 — that's a price inversion anomaly.`;
       height={350}
       staggerIndex={staggerIndex}
     >
-      <DataCard>
+      <DataCard variant={embedded ? 'embedded' : 'standalone'}>
         {/* Header: h-14 fixed */}
         <DataCardHeader
           title="Market Compression Analysis"
           info={methodologyText}
+          anchored={anchored}
         />
 
         {/* Toolbar: h-20 fixed - 3 columns for score + spreads */}
@@ -314,7 +318,7 @@ Watch for lines dipping below $0 — that's a price inversion anomaly.`;
         </DataCardToolbar>
 
         {/* Canvas: flex-grow */}
-        <DataCardCanvas minHeight={height}>
+        <DataCardCanvas minHeight={height} cinema={cinema}>
           <PreviewChartOverlay chartRef={chartRef}>
             <Line ref={chartRef} data={spreadChartData} options={spreadChartOptions} />
           </PreviewChartOverlay>
