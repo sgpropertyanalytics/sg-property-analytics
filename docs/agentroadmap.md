@@ -175,25 +175,25 @@ Rationale: Less controllable, higher variance, harder to cache, latency.
 ## TODO
 
 ### Phase 1: Backend Core
-- [ ] Add `anthropic>=0.49.0` to `requirements.txt`
-- [ ] Add `ANTHROPIC_API_KEY` to config and `.env`
+- [x] Add `anthropic>=0.49.0` to `requirements.txt`
+- [x] Add `ANTHROPIC_API_KEY` to config and `.env`
 - [x] Create `docs/ai-context/` directory structure
 - [x] Create `docs/ai-context/manifest.json` with per-file versions, injection rules
 - [x] Create `docs/ai-context/sources.md` - allowed sources + citation rules
 - [x] Create static docs: `definitions.md`, `district-mapping.md`, `market-cycles.md`, `reasoning-guide.md`
 - [x] Create snapshot docs: `market-snapshot.md`, `policy-measures.md`
-- [ ] Create `backend/services/ai_context.py` - context assembly with chunked retrieval
-- [ ] Create `backend/services/ai_service.py` - Claude streaming with citation rules
-- [ ] Create `backend/routes/ai.py` - SSE endpoint `POST /api/ai/interpret-chart`
-- [ ] Register AI blueprint in `app.py`
-- [ ] Add rate limiting (10/minute per user)
-- [ ] Add response caching with version-aware keys (1 hour TTL)
+- [x] Create `backend/services/ai_context.py` - context assembly with chunked retrieval
+- [x] Create `backend/services/ai_service.py` - Claude streaming with citation rules
+- [x] Create `backend/routes/ai.py` - SSE endpoint `POST /api/ai/interpret-chart`
+- [x] Register AI blueprint in `app.py`
+- [x] Add rate limiting (10/minute per user)
+- [x] Add response caching with version-aware keys (1 hour TTL)
 
 ### Phase 2: Frontend Integration
-- [ ] Create `frontend/src/hooks/useChartInterpret.js` - SSE consumer hook
-- [ ] Enhance `AgentFooter` in `DataCard.tsx` with `isStreaming` and `error` props
-- [ ] Display context freshness: "Market context as of {date}"
-- [ ] Integrate with `AbsolutePsfChart.jsx` (reference implementation)
+- [x] Create `frontend/src/hooks/useChartInterpret.js` - SSE consumer hook
+- [x] Enhance `AgentFooter` in `DataCard.tsx` with `isStreaming` and `error` props
+- [x] Display context freshness: "Market context as of {date}"
+- [x] Integrate with `AbsolutePsfChart.jsx` (reference implementation)
 - [ ] Rollout to other charts
 
 ### Phase 3: Future Upgrades (Not v1)

@@ -762,8 +762,19 @@ export function AgentButton({
 interface AgentFooterProps {
   /** Whether footer is visible */
   isOpen: boolean;
-  /** Agent log/analysis content */
-  children: React.ReactNode;
+  /** Agent log/analysis content (static fallback or streamed response) */
+  children?: React.ReactNode;
+  /** Whether AI is currently streaming response */
+  isStreaming?: boolean;
+  /** Error message if AI interpretation failed */
+  error?: string | null;
+  /** Version metadata from AI service */
+  versions?: {
+    snapshot_version?: string;
+    data_watermark?: string;
+  } | null;
+  /** Whether response was served from cache */
+  isCached?: boolean;
   /** Additional className */
   className?: string;
 }
@@ -771,15 +782,63 @@ interface AgentFooterProps {
 export function AgentFooter({
   isOpen,
   children,
+  isStreaming = false,
+  error = null,
+  versions = null,
+  isCached = false,
   className = '',
 }: AgentFooterProps) {
   if (!isOpen) return null;
 
+  // Error state
+  if (error) {
+    return (
+      <div className={`border-t border-red-200 bg-red-50/50 p-3 ${className}`}>
+        <p className="font-mono text-[10px] text-red-700 leading-relaxed">
+          <span className="font-bold">&gt; AGENT_ERROR:</span> {error}
+        </p>
+      </div>
+    );
+  }
+
+  // Streaming state (no content yet)
+  if (isStreaming && !children) {
+    return (
+      <div className={`border-t border-indigo-100 bg-indigo-50/30 p-3 ${className}`}>
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+          <p className="font-mono text-[10px] text-indigo-700">
+            <span className="font-bold">&gt; AGENT_THINKING</span>
+            <span className="animate-pulse">...</span>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`border-t border-indigo-100 bg-indigo-50/30 p-3 ${className}`}>
-      <p className="font-mono text-[10px] text-indigo-900 leading-relaxed">
-        <span className="font-bold">&gt; AGENT_LOG:</span> {children}
-      </p>
+      {/* Freshness metadata */}
+      {versions && (
+        <div className="flex items-center gap-3 mb-2 text-[9px] font-mono text-indigo-400">
+          {versions.data_watermark && (
+            <span>Data through: {versions.data_watermark}</span>
+          )}
+          {isCached && (
+            <span className="px-1 py-0.5 bg-indigo-100 rounded text-indigo-500">
+              cached
+            </span>
+          )}
+        </div>
+      )}
+      {/* Response content */}
+      <div className="font-mono text-[10px] text-indigo-900 leading-relaxed whitespace-pre-wrap">
+        <span className="font-bold">&gt; AGENT_LOG:</span>{' '}
+        {children}
+        {isStreaming && (
+          <span className="inline-block w-1.5 h-3 ml-0.5 bg-indigo-500 animate-pulse" />
+        )}
+      </div>
     </div>
   );
 }

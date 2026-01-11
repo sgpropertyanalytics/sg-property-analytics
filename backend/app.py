@@ -424,6 +424,11 @@ def create_app():
     from routes.insights import insights_bp
     app.register_blueprint(insights_bp, url_prefix='/api/insights')
 
+    # AI routes (Chart interpretation - Premium feature)
+    from routes.ai import ai_bp
+    app.register_blueprint(ai_bp, url_prefix='/api/ai')
+    print("   ✓ AI routes registered")
+
     # Supply Pipeline routes (waterfall chart data)
     try:
         from routes.supply import supply_bp
