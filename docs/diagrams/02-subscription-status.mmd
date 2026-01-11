@@ -1,0 +1,13 @@
+stateDiagram-v2
+    [*] --> PENDING : App starts
+
+    PENDING --> RESOLVED : bootstrapSubscription() from firebase-sync
+    PENDING --> LOADING : fetchSubscription() (no cache)
+
+    LOADING --> RESOLVED : API success
+    LOADING --> PENDING : Request aborted (safe restore)
+    LOADING --> ERROR : API error
+
+    RESOLVED --> PENDING : logout() or 401 token failure
+
+    ERROR --> LOADING : ensureSubscription() retry

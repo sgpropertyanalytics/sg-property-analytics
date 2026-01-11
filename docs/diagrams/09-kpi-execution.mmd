@@ -1,0 +1,17 @@
+stateDiagram-v2
+    [*] --> BuildParams
+
+    BuildParams --> SQLValidation : params dict ready
+    BuildParams --> Error : Build failed
+
+    SQLValidation --> QueryExec : Params match SQL placeholders
+    SQLValidation --> Error : Param mismatch
+
+    QueryExec --> MapResult : Query success
+    QueryExec --> Error : DB error
+
+    MapResult --> Success : KPIResult ready
+    MapResult --> Error : Mapping failed
+
+    Success --> [*] : Return KPIResult
+    Error --> [*] : Return KPIResult with error

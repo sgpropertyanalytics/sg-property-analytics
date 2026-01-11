@@ -1,0 +1,25 @@
+stateDiagram-v2
+    state "Boot Phase" as boot {
+        [*] --> Parallel
+
+        state Parallel {
+            state "Auth Thread" as auth {
+                AuthInit --> AuthReady : onAuthStateChanged
+            }
+            state "Subscription Thread" as sub {
+                SubPending --> SubResolved : bootstrap/fetch
+            }
+            state "Filter Thread" as filter {
+                FilterHydrating --> FilterReady : sessionStorage restored
+            }
+        }
+
+        Parallel --> GateCheck : All threads complete
+    }
+
+    state GateCheck <<choice>>
+    GateCheck --> AppReady : All conditions met
+    GateCheck --> Stuck : Timeout > 10s
+
+    state AppReady : Charts can fetch data
+    state Stuck : BootStuckBanner shown

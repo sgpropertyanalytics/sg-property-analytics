@@ -1,0 +1,15 @@
+stateDiagram-v2
+    [*] --> idle : Query disabled
+
+    idle --> pending : appReady = false
+    idle --> loading : appReady = true, deps change
+
+    pending --> loading : appReady becomes true
+
+    loading --> success : Data received, length > 0
+    loading --> empty : Data received, length = 0
+    loading --> error : Request failed
+
+    success --> loading : Deps change (refetch)
+    empty --> loading : Deps change (refetch)
+    error --> loading : Manual refetch

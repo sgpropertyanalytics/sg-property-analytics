@@ -1,0 +1,27 @@
+sequenceDiagram
+    participant U as User
+    participant FS as filterStore
+    participant C as Chart Component
+    participant Q as useAppQuery
+    participant TQ as TanStack Query
+    participant API as Backend
+
+    U->>FS: setDistricts(['D01', 'D02'])
+    FS->>FS: Update state
+    FS->>C: Zustand subscription notifies
+    C->>C: Re-render
+    C->>Q: New deps array
+    Q->>TQ: queryKey changed
+    TQ->>TQ: Check cache
+
+    alt Cache Hit
+        TQ-->>Q: Return cached data
+    else Cache Miss
+        TQ->>API: Fetch with new filters
+        API-->>TQ: Response
+        TQ->>TQ: Update cache
+        TQ-->>Q: Return fresh data
+    end
+
+    Q->>C: data, status updated
+    C->>C: Re-render with new data

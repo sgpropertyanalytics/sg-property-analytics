@@ -1,0 +1,28 @@
+stateDiagram-v2
+    [*] --> Config
+
+    Config --> Init : Config valid
+    Config --> Failed : Config error
+
+    Init --> Fetch : DB ready, run created
+    Init --> Failed : DB error
+
+    Fetch --> Map : All batches fetched
+    Fetch --> Failed : API error
+
+    Map --> Upsert : Rows mapped to schema
+    Map --> Failed : Mapping error
+
+    Upsert --> FailureCheck : Rows written
+    Upsert --> Failed : DB write error
+
+    FailureCheck --> Compare : Failure rate < 5%
+    FailureCheck --> Failed : Failure rate >= 5%
+
+    Compare --> Mark : Comparison complete
+    Compare --> Failed : Comparison error
+
+    Mark --> Succeeded : Mark run succeeded
+
+    Failed --> [*] : SyncResult(success=false)
+    Succeeded --> [*] : SyncResult(success=true)
