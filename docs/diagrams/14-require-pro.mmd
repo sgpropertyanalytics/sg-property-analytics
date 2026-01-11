@@ -1,0 +1,36 @@
+stateDiagram-v2
+    [*] --> CheckPending
+
+    state CheckPending <<choice>>
+    CheckPending --> ShowSkeleton : isPending = true
+    CheckPending --> CheckProReady : isPending = false
+
+    state CheckProReady <<choice>>
+    CheckProReady --> ShowSkeleton : proReady = false
+    CheckProReady --> CheckError : proReady = true
+
+    state CheckError <<choice>>
+    CheckError --> ShowErrorRetry : isError = true
+    CheckError --> CheckTier : isError = false
+
+    state CheckTier <<choice>>
+    CheckTier --> ShowPaywall : isFreeResolved = true
+    CheckTier --> ShowContent : isPremiumResolved = true
+
+    state ShowSkeleton : Loading skeleton
+    state ShowErrorRetry : Retry UI (not paywall)
+    state ShowPaywall : Hard paywall (children never mount)
+    state ShowContent : Children mounted
+
+    note right of ShowPaywall
+        HARD PAYWALL:
+        - Children never mount
+        - No API calls made
+        - Upgrade CTA shown
+    end note
+
+    note right of ShowErrorRetry
+        SUBSCRIPTION INVARIANT:
+        ERROR != FREE
+        Show retry, not paywall
+    end note

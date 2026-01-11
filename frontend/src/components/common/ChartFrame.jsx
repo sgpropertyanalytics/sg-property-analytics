@@ -51,12 +51,13 @@ export const ChartFrame = React.memo(function ChartFrame({
   staggerIndex = 0, // Cascade delay index for waterfall reveal
   children,
 }) {
-  // CENTRAL BOOT GATING: Automatically check appReady from context
+  // CENTRAL BOOT GATING: Use publicReady by default (matches useAppQuery default)
+  // Charts that need subscription resolution should use RequirePro wrapper
   const appReadyContext = useAppReadyOptional();
-  const appReady = appReadyContext?.appReady ?? true;
+  const publicReady = appReadyContext?.publicReady ?? true;
 
   // Boot pending if explicit prop OR context says boot isn't complete
-  const isBootPending = isBootPendingProp || !appReady;
+  const isBootPending = isBootPendingProp || !publicReady;
 
   // === BOOT PENDING: Show frost overlay (or skeleton if useSkeleton) ===
   if (isBootPending) {

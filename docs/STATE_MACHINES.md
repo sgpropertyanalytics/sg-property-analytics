@@ -14,14 +14,16 @@ This document contains state machine diagrams for key components in the Singapor
 | State | Description |
 |-------|-------------|
 | `MISSING` | No token stored, user may not be authenticated |
-| `REFRESHING` | API call in flight to sync token with backend |
+| `REFRESHING` | API call in flight to sync token with backend (max 8s) |
 | `PRESENT` | Token is valid and ready for API calls |
-| `ERROR` | Token sync failed, fallback to free tier |
+| `ERROR` | Token sync failed, guest mode (user=null, auth headers cleared) |
 
 **Key Transitions:**
 - User login triggers `MISSING → REFRESHING → PRESENT`
 - 401 responses trigger automatic token refresh
 - Aborted requests safely restore previous state
+- **P0 FIX:** 8s terminal timeout ensures REFRESHING never hangs forever
+- ERROR = guest mode (no automatic retry, manual retryTokenSync required)
 
 ---
 
@@ -47,17 +49,26 @@ if (isPremiumResolved) return <Content />;
 
 ![App Boot Gate State Machine](diagrams/03-app-boot-gate.png)
 
-**Gate Logic:**
+**Progressive Gates (P0 Fix):**
 ```javascript
-appReady = authInitialized
-       && isSubscriptionReady
-       && (isAuthenticated === false || isTierKnown === true)
-       && filtersReady
+// PublicReady: For public charts (most charts)
+publicReady = authInitialized && (filtersReady || filtersDefaulted)
+
+// ProReady: For premium-gated content (via RequirePro)
+proReady = publicReady && subscriptionResolved
+
+// Backward compatibility
+appReady = proReady
 ```
+
+**Key Points:**
+- Public charts load as soon as `publicReady` (don't wait for subscription)
+- Premium charts wrapped in `<RequirePro>` wait for `proReady`
+- `filtersDefaulted` fallback prevents boot stuck from filter hydration failures
 
 **Watchdog Timers:**
 - 3s warning: Log slow boot
-- 10s critical: Show `BootStuckBanner`
+- 10s critical: Show `BootStuckBanner` + force filter defaults (once)
 
 ---
 
@@ -223,15 +234,44 @@ else:
 
 ---
 
+### 14. RequirePro Component State Machine (P0 Fix)
+
+![RequirePro State Machine](diagrams/14-require-pro.png)
+
+**Hard Paywall Pattern:**
+```jsx
+// Children are NOT mounted until premium confirmed
+<RequirePro>
+  <PremiumInsightsChart />  {/* Never mounts for free users */}
+</RequirePro>
+```
+
+**Decision Flow:**
+| Check | Result | Action |
+|-------|--------|--------|
+| `isPending` | true | Show skeleton (NEVER paywall) |
+| `!proReady` | true | Show skeleton (boot not complete) |
+| `isError` | true | Show retry UI (not paywall) |
+| `isFreeResolved` | true | Show paywall (children never mount) |
+| `isPremiumResolved` | true | Mount children |
+
+**Critical Invariants:**
+- `ERROR ≠ FREE` - subscription error shows retry, not paywall
+- Children never mount for free users (prevents unauthorized API calls)
+- `isPending` safety check prevents paywall flash during loading
+
+---
+
 ## State Machine Summary Table
 
 | Component | States | Persistence | File |
 |-----------|--------|-------------|------|
-| **TokenStatus** | MISSING, REFRESHING, PRESENT, ERROR | None | `AuthContext.jsx` |
+| **TokenStatus** | MISSING, REFRESHING (8s max), PRESENT, ERROR | None | `AuthContext.jsx` |
 | **SubscriptionStatus** | PENDING, LOADING, RESOLVED, ERROR | localStorage (cache) | `SubscriptionContext.jsx` |
-| **AppReady** | Booting, Ready, Stuck | None (derived) | `AppReadyContext.jsx` |
+| **AppReady** | publicReady, proReady, Stuck | None (derived) | `AppReadyContext.jsx` |
+| **RequirePro** | Skeleton, Paywall, Error, Content | None (derived) | `RequirePro.jsx` |
 | **useAppQuery** | idle, pending, loading, success, empty, error | TanStack cache | `useAppQuery.js` |
-| **FilterStore** | ~40 actions | sessionStorage | `filterStore.js` |
+| **FilterStore** | ~40 actions + filtersDefaulted | sessionStorage | `filterStore.js` |
 | **API Contract** | 12 stages | Request scope | `api/contracts/wrapper.py` |
 | **URA Sync** | 8 stages | Database (ura_sync_runs) | `services/ura_sync_engine.py` |
 | **TTLCache** | Empty, Hit, Miss, Evict | In-memory (TTL) | `services/dashboard_service.py` |

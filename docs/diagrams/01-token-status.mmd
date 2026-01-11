@@ -6,10 +6,22 @@ stateDiagram-v2
 
     REFRESHING --> PRESENT : syncTokenWithBackend success
     REFRESHING --> MISSING : Request aborted (safe restore)
-    REFRESHING --> ERROR : API error
+    REFRESHING --> ERROR : API error or 8s timeout
+
+    note right of REFRESHING
+        P0 FIX: 8s terminal timeout
+        ensures REFRESHING never hangs forever
+    end note
 
     PRESENT --> REFRESHING : 401 or token expired event
     PRESENT --> MISSING : User logs out
 
-    ERROR --> REFRESHING : retryTokenSync
+    ERROR --> REFRESHING : retryTokenSync (manual)
     ERROR --> MISSING : User logs out
+
+    note right of ERROR
+        ERROR = guest mode:
+        - user = null
+        - auth headers cleared
+        - no automatic retry
+    end note

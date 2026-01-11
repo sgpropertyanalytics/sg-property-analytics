@@ -1,8 +1,9 @@
 import { createContext, useContext, useMemo, useEffect, useRef, useState } from 'react';
 import { useAuth } from './AuthContext';
 import { useSubscription } from './SubscriptionContext';
-// Phase 4: Migrated from useFilterState (Context) to useZustandFilterState (Zustand)
-import { useZustandFilterState } from '../stores';
+// Phase 4: Migrated from useFilterState (Context) to useFilterStore (Zustand)
+// Using useFilterStore directly to access both state and forceDefaults action
+import { useFilterStore } from '../stores';
 
 // Boot stuck detection thresholds (milliseconds)
 const BOOT_WARNING_THRESHOLD_MS = 3000;   // Warning: Something might be slow
@@ -62,34 +63,56 @@ export function useAppReady() {
  */
 export function useAppReadyOptional() {
   const context = useContext(AppReadyContext);
-  // Return a safe default for public pages
-  return context ?? { appReady: true, bootStatus: null };
+  // Return a safe default for public pages (all gates open)
+  return context ?? {
+    appReady: true,
+    publicReady: true,
+    proReady: true,
+    subscriptionResolved: true,
+    bootStatus: null,
+  };
 }
 
 export function AppReadyProvider({ children }) {
   const { initialized: authInitialized, isAuthenticated } = useAuth();
   const { isSubscriptionReady, isTierKnown } = useSubscription();
 
-  // Phase 4: filtersReady now comes from Zustand store
-  const { filtersReady } = useZustandFilterState();
+  // Phase 4: Filter state from Zustand store (includes forceDefaults action)
+  const filterStore = useFilterStore();
+  const { filtersReady, filtersDefaulted, forceDefaults } = filterStore;
 
   // P0 CONSTRAINT: App is NOT ready while tier is 'unknown'
   // Exception: if user is NOT authenticated, tier='free' is immediate (no waiting)
   // isTierKnown = true when subscription.tier !== 'unknown'
   const tierResolved = !isAuthenticated || isTierKnown;
 
-  // App is ready when ALL conditions are met:
-  // 1. Auth initialized (Firebase state known)
-  // 2. Subscription resolved from backend
-  // 3. Tier is known (not 'unknown' loading state)
-  // 4. Filters hydrated from storage
-  const appReady = authInitialized && isSubscriptionReady && tierResolved && filtersReady;
+  // ==========================================================================
+  // PROGRESSIVE BOOT GATES (P0 Fix)
+  // ==========================================================================
+
+  // BOOT INVARIANT: publicReady = authInitialized && (filtersReady || filtersDefaulted)
+  // Allows public charts to load even if filter hydration fails (falls back to defaults)
+  const publicReady = authInitialized && (filtersReady || filtersDefaulted);
+
+  // BOOT INVARIANT: subscriptionResolved = subscription thread completed (free, premium, OR error)
+  // This is what "proReady" gates on - we know the subscription state, even if it's an error
+  const subscriptionResolved = isSubscriptionReady;
+
+  // BOOT INVARIANT: proReady = publicReady && subscriptionResolved
+  // For premium-gated content (entitlement checked in RequirePro component)
+  const proReady = publicReady && subscriptionResolved;
+
+  // Backward compatibility: appReady = proReady
+  // Legacy code that checks appReady will get the full gate behavior
+  const appReady = proReady;
 
   // Track boot start time for stuck detection
   const bootStartRef = useRef(Date.now());
   const hasLoggedWarningRef = useRef(false);
   const hasLoggedCriticalRef = useRef(false);
   const prevAppReadyRef = useRef(appReady);
+  // BOOT INVARIANT: forceDefaults executes only once (guard against repeated calls)
+  const didForceDefaultsRef = useRef(false);
 
   // Boot stuck state for UI banner (Fix 2)
   const [isBootStuck, setIsBootStuck] = useState(false);
@@ -98,11 +121,15 @@ export function AppReadyProvider({ children }) {
   const bootStatus = useMemo(() => ({
     authInitialized,
     isSubscriptionReady,
+    subscriptionResolved,
     isTierKnown,
     tierResolved,
     filtersReady,
+    filtersDefaulted,
+    publicReady,
+    proReady,
     appReady,
-  }), [authInitialized, isSubscriptionReady, isTierKnown, tierResolved, filtersReady, appReady]);
+  }), [authInitialized, isSubscriptionReady, subscriptionResolved, isTierKnown, tierResolved, filtersReady, filtersDefaulted, publicReady, proReady, appReady]);
 
   /**
    * Build telemetry payload for boot stuck events
@@ -185,6 +212,16 @@ export function AppReadyProvider({ children }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps -- buildTelemetryPayload is stable
   }, [appReady, authInitialized, isSubscriptionReady, tierResolved, filtersReady]);
 
+  // Force filter defaults when boot is stuck due to hydration failure
+  // BOOT INVARIANT: forceDefaults executes only once (didForceDefaultsRef guard)
+  useEffect(() => {
+    if (isBootStuck && !filtersReady && !filtersDefaulted && !didForceDefaultsRef.current) {
+      didForceDefaultsRef.current = true;
+      console.warn('[AppReady] Boot stuck due to filter hydration, forcing defaults');
+      forceDefaults();
+    }
+  }, [isBootStuck, filtersReady, filtersDefaulted, forceDefaults]);
+
   // Log boot state changes (dev only)
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
@@ -211,12 +248,18 @@ export function AppReadyProvider({ children }) {
     window.__APP_READY_DEBUG__ = {
       get status() {
         return {
+          // Progressive gates
           appReady,
+          publicReady,
+          proReady,
+          subscriptionResolved,
+          // Individual flags
           authInitialized,
           isSubscriptionReady,
           isTierKnown,
           tierResolved,
           filtersReady,
+          filtersDefaulted,
           isBootStuck,
           bootElapsed: `${Date.now() - bootStartRef.current}ms`,
           // NOTE: Does NOT expose tokens or sensitive data
@@ -227,19 +270,26 @@ export function AppReadyProvider({ children }) {
     return () => {
       delete window.__APP_READY_DEBUG__;
     };
-  }, [appReady, authInitialized, isSubscriptionReady, isTierKnown, tierResolved, filtersReady, isBootStuck]);
+  }, [appReady, publicReady, proReady, subscriptionResolved, authInitialized, isSubscriptionReady, isTierKnown, tierResolved, filtersReady, filtersDefaulted, isBootStuck]);
 
   const value = useMemo(() => ({
-    appReady,
+    // === Progressive Boot Gates (P0 Fix) ===
+    appReady,         // Backward compat: same as proReady
+    publicReady,      // For public charts: authInitialized && (filtersReady || filtersDefaulted)
+    proReady,         // For premium charts: publicReady && subscriptionResolved
+    subscriptionResolved, // Subscription thread completed (free, premium, or error)
+
     bootStatus,
     isBootStuck, // True when boot is stuck for >10s (for BootStuckBanner)
+
     // Individual flags for specific checks
     authInitialized,
     isSubscriptionReady,
     isTierKnown,
     tierResolved,
     filtersReady,
-  }), [appReady, bootStatus, isBootStuck, authInitialized, isSubscriptionReady, isTierKnown, tierResolved, filtersReady]);
+    filtersDefaulted, // True if defaults were forced by timeout
+  }), [appReady, publicReady, proReady, subscriptionResolved, bootStatus, isBootStuck, authInitialized, isSubscriptionReady, isTierKnown, tierResolved, filtersReady, filtersDefaulted]);
 
   return (
     <AppReadyContext.Provider value={value}>

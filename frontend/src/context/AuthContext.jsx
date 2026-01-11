@@ -42,6 +42,34 @@ export const isAbortError = (err) => {
   return err?.name === 'CanceledError' || err?.name === 'AbortError';
 };
 
+/**
+ * AUTH INVARIANT: REFRESHING must resolve to PRESENT | MISSING | ERROR within this timeout.
+ * This prevents infinite pending states when backend is unresponsive.
+ */
+const TOKEN_REFRESH_TIMEOUT_MS = 8000;
+
+/**
+ * Helper: Wrap a promise with a timeout
+ * On timeout, rejects with a timeout error (NOT an abort error - timeouts are real failures)
+ */
+const withTimeout = (promise, ms, operation) => {
+  let timeoutId;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = setTimeout(
+      () => reject(new Error(`${operation} timed out after ${ms}ms`)),
+      ms
+    );
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timeoutId));
+};
+
+/**
+ * Helper: Check if error is a timeout error (from withTimeout)
+ */
+const isTimeoutError = (err) => {
+  return err?.message?.includes('timed out after');
+};
+
 const logAuthError = (message, err, details = {}) => {
   console.error(message, {
     ...details,
@@ -257,18 +285,17 @@ export function AuthProvider({ children }) {
               } else if (result.ok) {
                 setTokenStatus(TokenStatus.PRESENT);
               } else {
-                // Non-abort error → set error state
-                // P0 FIX: Bootstrap subscription with free tier to break deadlock.
-                // Without this, subscription stays in PENDING forever because:
-                // 1. Backend sync failed
-                // 2. Subscription never transitions out of PENDING
-                // 3. AppReadyContext waits forever
-                // By bootstrapping free tier, we ensure subscription resolves and boot completes.
+                // Non-abort error (including timeout) → enter guest mode
+                // AUTH INVARIANT: ERROR sets user=null (monotonic guest transition)
+                // AUTH INVARIANT: After timeout → no API calls assume PRESENT token until next login
+                // DO NOT bootstrap subscription - SubscriptionContext handles itself
+                // The boot gate will use publicReady (not proReady) for public charts
+                console.warn('[Auth] Token sync failed, entering guest mode', {
+                  timedOut: result.timedOut,
+                  error: result.error?.message,
+                });
                 setTokenStatus(TokenStatus.ERROR);
-                bootstrapSubscriptionRef.current(
-                  { tier: 'free', subscribed: false, ends_at: null },
-                  firebaseUser.email
-                );
+                setUser(null); // Force guest mode - user must re-login
               }
             }
           }
@@ -295,19 +322,28 @@ export function AuthProvider({ children }) {
        * This is separated to make the main auth flow clearer.
        * Abort/cancel is expected control flow and logged at debug level.
        *
-       * @returns {{ ok: boolean, aborted: boolean, error?: Error }}
+       * AUTH INVARIANT: Must resolve within TOKEN_REFRESH_TIMEOUT_MS (8s)
+       * On timeout → treat as error, not abort (timeouts are real failures)
+       *
+       * @returns {{ ok: boolean, aborted: boolean, timedOut?: boolean, error?: Error }}
        */
       async function syncTokenWithBackend(firebaseUser, requestId, getSignalFn, isStaleFn) {
         try {
           const idToken = await firebaseUser.getIdToken();
-          const response = await apiClient.post('/auth/firebase-sync', {
-            idToken,
-            email: firebaseUser.email,
-            displayName: firebaseUser.displayName,
-            photoURL: firebaseUser.photoURL,
-          }, {
-            signal: getSignalFn(),
-          });
+
+          // Wrap API call with timeout to guarantee terminal resolution
+          const response = await withTimeout(
+            apiClient.post('/auth/firebase-sync', {
+              idToken,
+              email: firebaseUser.email,
+              displayName: firebaseUser.displayName,
+              photoURL: firebaseUser.photoURL,
+            }, {
+              signal: getSignalFn(),
+            }),
+            TOKEN_REFRESH_TIMEOUT_MS,
+            'Token sync'
+          );
 
           // Guard: Don't update if auth state changed again
           if (isStaleFn(requestId)) {
@@ -328,6 +364,13 @@ export function AuthProvider({ children }) {
             }
             return { ok: false, aborted: true };
           }
+
+          // Timeout is a REAL failure (not abort) - must terminate state machine
+          if (isTimeoutError(err)) {
+            logAuthError('[Auth] Token sync timed out', err, { timeout_ms: TOKEN_REFRESH_TIMEOUT_MS });
+            return { ok: false, aborted: false, timedOut: true, error: err };
+          }
+
           // Guard: Check stale after error
           if (isStaleFn(requestId)) {
             return { ok: false, aborted: false, stale: true };
@@ -515,14 +558,20 @@ export function AuthProvider({ children }) {
     try {
       // Force refresh the Firebase ID token
       const idToken = await user.getIdToken(true); // true = force refresh
-      const response = await apiClient.post('/auth/firebase-sync', {
-        idToken,
-        email: user.email,
-        displayName: user.displayName,
-        photoURL: user.photoURL,
-      }, {
-        signal: tokenRefreshGuard.getSignal(),
-      });
+
+      // Wrap API call with timeout to guarantee terminal resolution
+      const response = await withTimeout(
+        apiClient.post('/auth/firebase-sync', {
+          idToken,
+          email: user.email,
+          displayName: user.displayName,
+          photoURL: user.photoURL,
+        }, {
+          signal: tokenRefreshGuard.getSignal(),
+        }),
+        TOKEN_REFRESH_TIMEOUT_MS,
+        'Token refresh'
+      );
 
       // Guard: Don't update if request is stale
       if (tokenRefreshGuard.isStale(requestId)) {
@@ -537,7 +586,7 @@ export function AuthProvider({ children }) {
       return { ok: true, tokenStored: true, reason: null };
     } catch (err) {
       // Handle abort/cancel errors - restore previous status
-      if (err.name === 'CanceledError' || err.name === 'AbortError') {
+      if (isAbortError(err)) {
         // Abort is transient - restore prev status (never stay in REFRESHING)
         if (!tokenRefreshGuard.isStale(requestId)) {
           setTokenStatus(prevTokenStatusRef.current);
@@ -550,15 +599,18 @@ export function AuthProvider({ children }) {
         return { ok: false, tokenStored: false, reason: 'stale_request' };
       }
 
-      const reason = err.response?.status === 401 ? '401_unauthorized'
+      const reason = isTimeoutError(err) ? 'timeout'
+        : err.response?.status === 401 ? '401_unauthorized'
         : err.response?.status === 500 ? '500_server_error'
         : err.message?.includes('Network') ? 'network_error'
         : 'unknown_error';
 
       logAuthError('[Auth] Token refresh failed', err, { reason });
 
-      // Non-abort error → set error state
+      // Non-abort error (including timeout) → enter guest mode
+      // AUTH INVARIANT: ERROR sets user=null (monotonic guest transition)
       setTokenStatus(TokenStatus.ERROR);
+      setUser(null); // Force guest mode
       return { ok: false, tokenStored: false, reason };
     }
   }, [user, tokenRefreshGuard, tokenStatus]);
@@ -582,14 +634,20 @@ export function AuthProvider({ children }) {
 
     try {
       const idToken = await user.getIdToken(true); // Force refresh
-      const response = await apiClient.post('/auth/firebase-sync', {
-        idToken,
-        email: user.email,
-        displayName: user.displayName,
-        photoURL: user.photoURL,
-      }, {
-        signal: tokenRefreshGuard.getSignal(),
-      });
+
+      // Wrap API call with timeout to guarantee terminal resolution
+      const response = await withTimeout(
+        apiClient.post('/auth/firebase-sync', {
+          idToken,
+          email: user.email,
+          displayName: user.displayName,
+          photoURL: user.photoURL,
+        }, {
+          signal: tokenRefreshGuard.getSignal(),
+        }),
+        TOKEN_REFRESH_TIMEOUT_MS,
+        'Token sync retry'
+      );
 
       // Guard: Don't update if request is stale
       if (tokenRefreshGuard.isStale(requestId)) {
@@ -618,24 +676,27 @@ export function AuthProvider({ children }) {
         return { ok: false, reason: 'stale_request' };
       }
 
-      // P0 FIX: Bootstrap free tier on error to ensure subscription resolves
-      logAuthError('[Auth] Token sync retry failed', err);
+      const reason = isTimeoutError(err) ? 'timeout' : 'error';
+      logAuthError('[Auth] Token sync retry failed', err, { reason });
+
+      // Non-abort error (including timeout) → enter guest mode
+      // AUTH INVARIANT: ERROR sets user=null (monotonic guest transition)
+      // DO NOT bootstrap subscription - SubscriptionContext handles itself
       setTokenStatus(TokenStatus.ERROR);
-      bootstrapSubscription(
-        { tier: 'free', subscribed: false, ends_at: null },
-        user.email
-      );
-      return { ok: false, reason: 'error' };
+      setUser(null); // Force guest mode
+      return { ok: false, reason };
     }
-  }, [user, tokenRefreshGuard, tokenStatus, bootstrapSubscription]);
+  }, [user, tokenRefreshGuard, tokenStatus]);
+
+  // Shared refresh promise ref - persists across effect runs
+  // SINGLE-FLIGHT PATTERN: concurrent 401s await the same refresh
+  const refreshPromiseRef = useRef(null);
+  const lastRefreshTimeRef = useRef(0);
 
   // Listen for auth:token-expired events from API client
   // When a 401 occurs on non-auth endpoints, the client dispatches this event
   // We handle it by refreshing the token and notifying listeners to retry
-  // Includes time-based debounce to prevent rapid-fire refresh attempts
   useEffect(() => {
-    let isRefreshing = false;
-    let lastRefreshTime = 0;
     const REFRESH_DEBOUNCE_MS = 2000; // Prevent more than one refresh per 2s
 
     const handleTokenExpired = async (event) => {
@@ -643,7 +704,7 @@ export function AuthProvider({ children }) {
       const now = Date.now();
 
       // Debounce: Skip if refresh was done recently
-      if (now - lastRefreshTime < REFRESH_DEBOUNCE_MS) {
+      if (now - lastRefreshTimeRef.current < REFRESH_DEBOUNCE_MS) {
         console.warn('[Auth] Token refresh skipped (debounced)', { url });
         return;
       }
@@ -654,39 +715,47 @@ export function AuthProvider({ children }) {
         return;
       }
 
-      // Skip if already refreshing (debounce parallel 401s)
-      if (isRefreshing) {
-        console.warn('[Auth] Token refresh already in progress - skipping');
+      // SINGLE-FLIGHT: If refresh in progress, await the same promise
+      if (refreshPromiseRef.current) {
+        console.warn('[Auth] Token refresh in progress - awaiting existing promise', { url });
+        try {
+          await refreshPromiseRef.current;
+        } catch {
+          // Existing refresh failed
+        }
         return;
       }
 
       console.warn('[Auth] Token expired event received, refreshing...', { url });
-      isRefreshing = true;
 
-      try {
-        const result = await refreshToken();
-        console.warn('[Auth] Token refresh result:', result);
+      // Create shared promise for this refresh (stored in ref for persistence)
+      refreshPromiseRef.current = (async () => {
+        try {
+          const result = await refreshToken();
+          console.warn('[Auth] Token refresh result:', result);
 
-        if (result.ok) {
-          // Only update lastRefreshTime on SUCCESS (requirement: debounce successful refreshes)
-          lastRefreshTime = Date.now();
-          // Emit event so components can retry their failed requests
-          window.dispatchEvent(new CustomEvent('auth:token-refreshed', {
-            detail: { originalUrl: url }
-          }));
-        } else {
-          // Refresh failed - user may need to re-login
-          console.error('[Auth] Token refresh failed:', result.reason);
-          // Emit failure event so UI can show re-login prompt
-          window.dispatchEvent(new CustomEvent('auth:token-refresh-failed', {
-            detail: { reason: result.reason, originalUrl: url }
-          }));
-        }
-      } catch (err) {
+          if (result.ok) {
+            lastRefreshTimeRef.current = Date.now();
+            window.dispatchEvent(new CustomEvent('auth:token-refreshed', {
+              detail: { originalUrl: url }
+            }));
+            return { ok: true };
+          } else {
+            console.error('[Auth] Token refresh failed:', result.reason);
+            window.dispatchEvent(new CustomEvent('auth:token-refresh-failed', {
+              detail: { reason: result.reason, originalUrl: url }
+            }));
+            return { ok: false, reason: result.reason };
+          }
+        } catch (err) {
           logAuthError('[Auth] Token refresh threw error', err);
-      } finally {
-        isRefreshing = false;
-      }
+          throw err;
+        } finally {
+          refreshPromiseRef.current = null;
+        }
+      })();
+
+      await refreshPromiseRef.current;
     };
 
     window.addEventListener('auth:token-expired', handleTokenExpired);
