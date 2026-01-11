@@ -19,7 +19,7 @@ import {
   StatusCount,
   StatusBadge,
 } from '../ui';
-import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
+import { baseChartJsOptions, CHART_AXIS_DEFAULTS, CHART_TOOLTIP } from '../../constants/chartOptions';
 import { CHART_COLORS } from '../../constants/colors';
 import {
   transformDistributionSeries,
@@ -54,7 +54,7 @@ import {
  * }} props
  */
 function PriceDistributionChartBase({
-  height = 300,
+  height = 380,
   numBins = 20,
   saleType = null,
   sharedData = null,
@@ -215,21 +215,14 @@ function PriceDistributionChartBase({
 
   const options = useMemo(() => ({
     ...baseChartJsOptions,
-    // layout.padding aligns plot area with sibling charts
-    layout: {
-      padding: {
-        top: 8,
-        right: 16,
-        bottom: 8,
-        left: 8,
-      },
-    },
+    // layout.padding inherited from baseChartJsOptions
     // NO onClick - histogram is for context, not filtering
     plugins: {
       legend: {
         display: false,
       },
       tooltip: {
+        ...CHART_TOOLTIP,
         callbacks: {
           title: (items) => {
             const bin = bins[items[0].dataIndex];
@@ -281,7 +274,7 @@ function PriceDistributionChartBase({
       onRetry={refetch}
       empty={!bins || bins.length === 0}
       skeleton="bar"
-      height={350}
+      height={height}
       staggerIndex={staggerIndex}
     >
       <DataCard variant={embedded ? 'embedded' : 'standalone'}>

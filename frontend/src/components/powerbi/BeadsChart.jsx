@@ -19,7 +19,7 @@ import {
   LegendDot,
 } from '../ui';
 import { useSubscription } from '../../context/SubscriptionContext';
-import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
+import { baseChartJsOptions, CHART_AXIS_DEFAULTS, CHART_TOOLTIP } from '../../constants/chartOptions';
 import { CHART_COLORS, BEADS } from '../../constants/colors';
 import { REGIONS } from '../../constants';
 import { REGION } from '../../constants/colors';
@@ -61,7 +61,7 @@ const REGION_COLORS = REGION;
  * }} props
  */
 function BeadsChartBase({
-  height = 300,
+  height = 380,
   saleType = null,
   sharedData = null,
   sharedStatus = 'idle',
@@ -227,28 +227,16 @@ function BeadsChartBase({
     return annotations;
   }, [stringRanges]);
 
-  // Chart.js configuration - layout.padding aligns plot area with sibling charts
+  // Chart.js configuration - layout.padding inherited from baseChartJsOptions
   const options = useMemo(
     () => ({
       ...baseChartJsOptions,
-      layout: {
-        padding: {
-          top: 8,
-          right: 16,
-          bottom: 8,
-          left: 8,
-        },
-      },
       plugins: {
         legend: {
           display: false, // Using ToolbarLegend instead
         },
         tooltip: {
-          backgroundColor: CHART_COLORS.navyAlpha95,  // slate-900
-          titleFont: { size: 12, weight: 'bold' },
-          bodyFont: { size: 11 },
-          padding: 12,
-          cornerRadius: 6,
+          ...CHART_TOOLTIP,
           callbacks: {
             title: (context) => {
               const raw = context[0]?.raw?._raw;
@@ -338,7 +326,7 @@ function BeadsChartBase({
       onRetry={refetch}
       empty={!hasData}
       skeleton="bar"
-      height={350}
+      height={height}
       staggerIndex={staggerIndex}
       debugInfo={debugInfo}
     >
