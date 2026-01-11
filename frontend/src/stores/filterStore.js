@@ -34,11 +34,7 @@ import { useFilterOptions } from '../context/PowerBIFilter/hooks';
 import {
   INITIAL_FILTERS,
   INITIAL_FACT_FILTER,
-  INITIAL_DRILL_PATH,
-  INITIAL_BREADCRUMBS,
   INITIAL_SELECTED_PROJECT,
-  TIME_LEVELS,
-  LOCATION_LEVELS,
   DEFAULT_TIME_FILTER,
   isValidTimeFilter,
 } from '../context/PowerBIFilter/constants';
@@ -192,8 +188,6 @@ export function createFilterStore(pageId) {
 
           // Transient state (resets on route change, not persisted)
           factFilter: { ...INITIAL_FACT_FILTER },
-          drillPath: { ...INITIAL_DRILL_PATH },
-          breadcrumbs: { ...INITIAL_BREADCRUMBS },
           selectedProject: { ...INITIAL_SELECTED_PROJECT },
 
           // View context (persisted separately)
@@ -204,12 +198,12 @@ export function createFilterStore(pageId) {
           // =================================================================
 
           /**
-           * Get active filters with drill state applied.
-           * Combines sidebar filters with breadcrumb overrides.
+           * Get active filters.
+           * Returns sidebar filters for API calls.
            */
           getActiveFilters: () => {
-            const { filters, breadcrumbs, drillPath } = get();
-            return deriveActiveFilters(filters, breadcrumbs, drillPath);
+            const { filters } = get();
+            return deriveActiveFilters(filters);
           },
 
           /**
@@ -377,77 +371,6 @@ export function createFilterStore(pageId) {
             })),
 
           // =================================================================
-          // DRILL NAVIGATION ACTIONS
-          // =================================================================
-
-          /**
-           * Drill down into a dimension.
-           */
-          drillDown: (type, value, label) =>
-            set((state) => {
-              const levels = type === 'time' ? TIME_LEVELS : LOCATION_LEVELS;
-              const currentLevel = state.drillPath[type];
-              const currentIndex = levels.indexOf(currentLevel);
-
-              // Can't drill deeper than max level
-              if (currentIndex >= levels.length - 1) return state;
-
-              const nextLevel = levels[currentIndex + 1];
-              const breadcrumbEntry = { value, label: label || value };
-
-              return {
-                drillPath: { ...state.drillPath, [type]: nextLevel },
-                breadcrumbs: {
-                  ...state.breadcrumbs,
-                  [type]: [...state.breadcrumbs[type], breadcrumbEntry],
-                },
-              };
-            }),
-
-          /**
-           * Drill up one level.
-           */
-          drillUp: (type) =>
-            set((state) => {
-              const levels = type === 'time' ? TIME_LEVELS : LOCATION_LEVELS;
-              const currentLevel = state.drillPath[type];
-              const currentIndex = levels.indexOf(currentLevel);
-
-              // Can't drill up from top level
-              if (currentIndex <= 0) return state;
-
-              const prevLevel = levels[currentIndex - 1];
-
-              return {
-                drillPath: { ...state.drillPath, [type]: prevLevel },
-                breadcrumbs: {
-                  ...state.breadcrumbs,
-                  [type]: state.breadcrumbs[type].slice(0, -1),
-                },
-              };
-            }),
-
-          /**
-           * Navigate to a specific breadcrumb index.
-           */
-          navigateToBreadcrumb: (type, index) =>
-            set((state) => {
-              const levels = type === 'time' ? TIME_LEVELS : LOCATION_LEVELS;
-
-              // index 0 = root level (no breadcrumbs)
-              // index 1 = first drill level, etc.
-              const targetLevel = levels[index] || levels[0];
-
-              return {
-                drillPath: { ...state.drillPath, [type]: targetLevel },
-                breadcrumbs: {
-                  ...state.breadcrumbs,
-                  [type]: state.breadcrumbs[type].slice(0, index),
-                },
-              };
-            }),
-
-          // =================================================================
           // PROJECT SELECTION (DRILL-THROUGH)
           // =================================================================
 
@@ -500,8 +423,6 @@ export function createFilterStore(pageId) {
             set({
               filters: { ...INITIAL_FILTERS },
               factFilter: { ...INITIAL_FACT_FILTER },
-              drillPath: { ...INITIAL_DRILL_PATH },
-              breadcrumbs: { ...INITIAL_BREADCRUMBS },
               selectedProject: { ...INITIAL_SELECTED_PROJECT },
             }),
 
@@ -511,8 +432,6 @@ export function createFilterStore(pageId) {
           resetTransient: () =>
             set({
               factFilter: { ...INITIAL_FACT_FILTER },
-              drillPath: { ...INITIAL_DRILL_PATH },
-              breadcrumbs: { ...INITIAL_BREADCRUMBS },
               selectedProject: { ...INITIAL_SELECTED_PROJECT },
             }),
         }),
@@ -670,8 +589,6 @@ export function useZustandFilterState() {
       filtersDefaulted: store.filtersDefaulted, // True if defaults were forced by timeout
       filters: store.filters,
       factFilter: store.factFilter,
-      drillPath: store.drillPath,
-      breadcrumbs: store.breadcrumbs,
       selectedProject: store.selectedProject,
       timeGrouping: store.timeGrouping,
       // Derived state
@@ -714,10 +631,6 @@ export function useZustandFilterActions() {
     setPropertyAgeBucket: store.setPropertyAgeBucket,
     // Fact filter
     setFactPriceRange: store.setFactPriceRange,
-    // Drill navigation
-    drillDown: store.drillDown,
-    drillUp: store.drillUp,
-    navigateToBreadcrumb: store.navigateToBreadcrumb,
     // Project selection
     setSelectedProject: store.setSelectedProject,
     clearSelectedProject: store.clearSelectedProject,
@@ -769,7 +682,7 @@ export function useZustandFilters() {
   useEffect(() => {
     if (prevPathnameRef.current !== pathname) {
       prevPathnameRef.current = pathname;
-      // Reset transient state (drillPath, breadcrumbs, factFilter, selectedProject)
+      // Reset transient state (factFilter, selectedProject)
       store.resetTransient();
     }
   }, [pathname, store]);
@@ -787,8 +700,6 @@ export function useZustandFilters() {
       filtersDefaulted: store.filtersDefaulted, // True if defaults were forced by timeout
       filters: store.filters,
       factFilter: store.factFilter,
-      drillPath: store.drillPath,
-      breadcrumbs: store.breadcrumbs,
       selectedProject: store.selectedProject,
       timeGrouping: store.timeGrouping,
 
@@ -822,11 +733,6 @@ export function useZustandFilters() {
       setSizeRange: store.setSizeRange,
       setPropertyAge: store.setPropertyAge,
       setPropertyAgeBucket: store.setPropertyAgeBucket,
-
-      // === Actions (Drill Navigation) ===
-      drillDown: store.drillDown,
-      drillUp: store.drillUp,
-      navigateToBreadcrumb: store.navigateToBreadcrumb,
 
       // === Actions (Project Selection) ===
       setSelectedProject: store.setSelectedProject,
@@ -871,8 +777,6 @@ export function logFilterState(pageId) {
     console.group(`[filterStore] ${pageId}`);
     console.log('filters:', state.filters);
     console.log('activeFilters:', state.getActiveFilters());
-    console.log('drillPath:', state.drillPath);
-    console.log('breadcrumbs:', state.breadcrumbs);
     console.groupEnd();
   }
 }

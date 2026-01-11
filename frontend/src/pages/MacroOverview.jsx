@@ -9,7 +9,6 @@ import { BeadsChart } from '../components/powerbi/BeadsChart';
 // NewVsResaleChart moved to Primary Market page
 import { SaleType, getKpiField, KpiField } from '../schemas/apiContract';
 import { TransactionDetailModal } from '../components/powerbi/TransactionDetailModal';
-import { DrillBreadcrumb } from '../components/powerbi/DrillBreadcrumb';
 import { ProjectDetailPanel } from '../components/powerbi/ProjectDetailPanel';
 import { getKpiSummaryV2, getAggregate, getDashboard } from '../api/client';
 // apiMetadata now displayed in DashboardLayout console header (useData removed)
@@ -46,10 +45,7 @@ const ChartLoadingFallback = ({ height }) => (
  *
  * Features:
  * - Dynamic filtering with horizontal Control Bar
- * - Cross-filtering (click chart to filter others)
- * - Drill-down hierarchies:
- *   - Time: year -> quarter -> month
- *   - Location: region -> district (global hierarchy stops here)
+ * - Time grouping controls (year/quarter/month)
  * - Project drill-through: Opens ProjectDetailPanel without affecting global charts
  * - Drill-through to transaction details
  *
@@ -58,7 +54,6 @@ const ChartLoadingFallback = ({ height }) => (
  * See CLAUDE.md "Business Logic Enforcement" for architectural rationale.
  *
  * NOTE: This component is designed to be wrapped by DashboardLayout which provides:
- * - PowerBIFilterProvider context
  * - GlobalNavRail (primary navigation)
  * - Mobile responsive header and drawers
  */
@@ -201,9 +196,6 @@ export function MacroOverviewContent() {
 
   return (
     <PageCanvas>
-      {/* Drill Breadcrumb - Shows current drill-down context */}
-      <DrillBreadcrumb />
-
       {/* Filter Bar - Contained in sticky ribbon */}
       <ControlRibbon>
         <FilterBar />

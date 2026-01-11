@@ -5,7 +5,6 @@ export { TimeTrendChart } from './TimeTrendChart';
 export { PriceDistributionChart } from './PriceDistributionChart';
 export { NewVsResaleChart } from './NewVsResaleChart';
 export { TransactionDetailModal } from './TransactionDetailModal';
-export { DrillBreadcrumb } from './DrillBreadcrumb';
 export { GLSDataTable } from './GLSDataTable';
 export { AbsolutePsfChart } from './AbsolutePsfChart';
 

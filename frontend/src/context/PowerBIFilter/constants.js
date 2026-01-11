@@ -72,28 +72,11 @@ export const INITIAL_FACT_FILTER = {
 };
 
 /**
- * Default drill path state.
- * Current granularity level for hierarchical dimensions.
- */
-export const INITIAL_DRILL_PATH = {
-  time: 'month',       // 'year' | 'quarter' | 'month'
-  location: 'region',  // 'region' | 'district' (NO 'project' - that's drill-through)
-};
-
-/**
  * Default selected project state (drill-through only).
  */
 export const INITIAL_SELECTED_PROJECT = {
   name: null,      // Project name
   district: null,  // District the project is in (for context)
-};
-
-/**
- * Default breadcrumbs state.
- */
-export const INITIAL_BREADCRUMBS = {
-  time: [],      // e.g., ['All', '2024', 'Q3']
-  location: [],  // e.g., ['All', 'CCR', 'D09']
 };
 
 /**
@@ -120,13 +103,3 @@ export const INITIAL_FILTER_OPTIONS = {
   error: null,
 };
 
-/**
- * Time drill levels.
- */
-export const TIME_LEVELS = ['year', 'quarter', 'month'];
-
-/**
- * Location drill levels.
- * NOTE: No 'project' - project is drill-through only.
- */
-export const LOCATION_LEVELS = ['region', 'district'];
