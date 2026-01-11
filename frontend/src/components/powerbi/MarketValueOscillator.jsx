@@ -13,11 +13,10 @@ import { useSubscription } from '../../context/SubscriptionContext';
 import {
   KeyInsightBox,
   PreviewChartOverlay,
-  InlineCard,
-  InlineCardRow,
   DataCard,
   DataCardHeader,
   DataCardToolbar,
+  ToolbarStat,
   DataCardCanvas,
   StatusDeck,
   LegendLine,
@@ -61,12 +60,15 @@ const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
  *  saleType?: string | null,
  *  sharedRawData?: Array<Record<string, any>> | null,
  *  sharedStatus?: string,
- *  embedded?: boolean,
- *  cinema?: boolean,
- *  anchored?: boolean,
+ *  variant?: 'standalone' | 'dashboard',
  * }} props
  */
-function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawData = null, sharedStatus = 'idle', staggerIndex = 0, embedded = false, cinema = false, anchored = false }) {
+function MarketValueOscillatorBase({ height = 420, saleType = null, sharedRawData = null, sharedStatus = 'idle', staggerIndex = 0, variant = 'standalone' }) {
+  // Derive layout flags from variant
+  const isDashboard = variant === 'dashboard';
+  const embedded = isDashboard;
+  const cinema = isDashboard;
+  const anchored = isDashboard;
   // Phase 4: Simplified filter access - read values directly from Zustand
   const { filters, timeGrouping } = useZustandFilters();
 
@@ -372,35 +374,43 @@ Based on resale transactions only, with outliers excluded.
           {/* Header: h-14 fixed */}
           <DataCardHeader
             title="Market Value Oscillator"
-            subtitle={`Z-Score normalized spread analysis (${TIME_LABELS[timeGrouping]})`}
             info={methodologyText}
             anchored={anchored}
           />
 
-          {/* KPI Row */}
-          <div className="px-6 py-3 border-b border-slate-200 shrink-0">
-            <InlineCardRow blur={isFreeResolved}>
-              <ZScoreSignalCard
-                label="CCR-RCR"
-                zScore={latestZCcrRcr}
-                spread={latestData.ccrRcrSpread}
-                avgSpread={safeBaselineStats.ccrRcr.mean}
-              />
-              <ZScoreSignalCard
-                label="RCR-OCR"
-                zScore={latestZRcrOcr}
-                spread={latestData.rcrOcrSpread}
-                avgSpread={safeBaselineStats.rcrOcr.mean}
-              />
-              {divergence !== null && (
-                <InlineCard
-                  label="Divergence"
-                  value={`${divergence >= 0 ? '+' : ''}${divergence.toFixed(1)}σ`}
-                  subtext={divergence > 0.5 ? 'CCR stretched' : divergence < -0.5 ? 'RCR stretched' : 'Aligned'}
-                />
-              )}
-            </InlineCardRow>
-          </div>
+          {/* KPI Row - using standard DataCardToolbar */}
+          <DataCardToolbar columns={3} blur={isFreeResolved}>
+            <ToolbarStat
+              label="CCR-RCR Signal"
+              value={
+                latestZCcrRcr != null ? (
+                  <span className={getZScoreColor(latestZCcrRcr)}>
+                    {latestZCcrRcr >= 0 ? '+' : ''}{latestZCcrRcr.toFixed(2)}σ
+                  </span>
+                ) : '—'
+              }
+              subtext={latestZCcrRcr != null ? getZScoreLabel(latestZCcrRcr) : undefined}
+              trend={latestZCcrRcr > 1.0 ? 'down' : latestZCcrRcr < -1.0 ? 'up' : 'neutral'}
+            />
+            <ToolbarStat
+              label="RCR-OCR Signal"
+              value={
+                latestZRcrOcr != null ? (
+                  <span className={getZScoreColor(latestZRcrOcr)}>
+                    {latestZRcrOcr >= 0 ? '+' : ''}{latestZRcrOcr.toFixed(2)}σ
+                  </span>
+                ) : '—'
+              }
+              subtext={latestZRcrOcr != null ? getZScoreLabel(latestZRcrOcr) : undefined}
+              trend={latestZRcrOcr > 1.0 ? 'down' : latestZRcrOcr < -1.0 ? 'up' : 'neutral'}
+            />
+            <ToolbarStat
+              label="Divergence"
+              value={divergence != null ? `${divergence >= 0 ? '+' : ''}${divergence.toFixed(1)}σ` : '—'}
+              subtext={divergence != null ? (divergence > 0.5 ? 'CCR stretched' : divergence < -0.5 ? 'RCR stretched' : 'Aligned') : undefined}
+              trend={divergence != null ? (divergence > 0.5 ? 'down' : divergence < -0.5 ? 'up' : 'neutral') : 'neutral'}
+            />
+          </DataCardToolbar>
 
           {/* Canvas: flex-grow */}
           <DataCardCanvas minHeight={height} cinema={cinema}>
@@ -419,39 +429,6 @@ Based on resale transactions only, with outliers excluded.
         </DataCard>
       </ChartFrame>
     </div>
-  );
-}
-
-/**
- * Z-Score Signal Card - Shows Z-score value with color-coded label
- */
-function ZScoreSignalCard({ label, zScore, spread, avgSpread }) {
-  if (zScore === null || zScore === undefined) return null;
-
-  const signalLabel = getZScoreLabel(zScore);
-  const colorClass = getZScoreColor(zScore);
-
-  // Determine variant based on Z-score
-  let variant = 'default';
-  if (zScore > 1.0) variant = 'danger';
-  else if (zScore < -1.0) variant = 'success';
-
-  const deviation = spread !== null ? spread - avgSpread : null;
-  const _deviationText = deviation !== null
-    ? `${deviation >= 0 ? '+' : ''}$${Math.round(deviation)} vs avg`
-    : undefined;
-
-  return (
-    <InlineCard
-      label={`${label} Signal`}
-      value={
-        <span className={colorClass}>
-          {zScore >= 0 ? '+' : ''}{zScore.toFixed(2)}σ
-        </span>
-      }
-      subtext={signalLabel}
-      variant={variant}
-    />
   );
 }
 

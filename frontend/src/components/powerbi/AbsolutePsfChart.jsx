@@ -54,12 +54,15 @@ const REGION_COLORS = REGION;
  *  saleType?: string | null,
  *  sharedData?: Array<Record<string, any>> | null,
  *  sharedStatus?: string,
- *  embedded?: boolean,
- *  cinema?: boolean,
- *  anchored?: boolean,
+ *  variant?: 'standalone' | 'dashboard',
  * }} props
  */
-function AbsolutePsfChartBase({ height = 300, saleType = null, sharedData = null, sharedStatus = 'idle', staggerIndex = 0, embedded = false, cinema = false, anchored = false }) {
+function AbsolutePsfChartBase({ height = 300, saleType = null, sharedData = null, sharedStatus = 'idle', staggerIndex = 0, variant = 'standalone' }) {
+  // Derive layout flags from variant
+  const isDashboard = variant === 'dashboard';
+  const embedded = isDashboard;
+  const cinema = isDashboard;
+  const anchored = isDashboard;
   // Phase 4: Simplified filter access - read values directly from Zustand
   const { filters, timeGrouping } = useZustandFilters();
 
@@ -263,7 +266,6 @@ OCR = Outside Central (suburban).`;
         {/* Header: h-14 fixed with Agent button */}
         <DataCardHeader
           title="Absolute PSF by Region"
-          subtitle={`Median PSF trend (${TIME_LABELS[timeGrouping]}) • Values show latest ${TIME_LABELS[timeGrouping].toLowerCase()}`}
           info={methodologyText}
           anchored={anchored}
           controls={

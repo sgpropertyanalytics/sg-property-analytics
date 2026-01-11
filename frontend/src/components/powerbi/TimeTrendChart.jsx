@@ -40,12 +40,16 @@ const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
  *  height?: number,
  *  saleType?: string | null,
  *  staggerIndex?: number,
- *  embedded?: boolean,
- *  cinema?: boolean,
+ *  variant?: 'standalone' | 'dashboard',
  *  onDrillThrough?: (value: string) => void,
  * }} props
  */
-function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, embedded = false, cinema = false, onDrillThrough: _onDrillThrough }) {
+function TimeTrendChartBase({ height = 300, saleType = null, staggerIndex = 0, variant = 'standalone', onDrillThrough: _onDrillThrough }) {
+  // Derive layout flags from variant
+  const isDashboard = variant === 'dashboard';
+  const embedded = isDashboard;
+  const cinema = isDashboard;
+  const anchored = isDashboard;
   // Phase 4: Simplified filter access - read values directly from Zustand
   const { filters, timeGrouping } = useZustandFilters();
 
@@ -307,8 +311,8 @@ Grouped by ${TIME_LABELS[timeGrouping]}.`;
         {/* Layer 1: Header - h-14 fixed */}
         <DataCardHeader
           title="Resale Volume & Quantum"
-          subtitle={`Grouped by ${TIME_LABELS[timeGrouping]}`}
           info={methodologyText}
+          anchored={anchored}
         />
 
         {/* Layer 2: Canvas - flex-grow */}

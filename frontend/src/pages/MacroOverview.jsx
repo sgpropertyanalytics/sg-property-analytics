@@ -324,8 +324,7 @@ export function MacroOverviewContent() {
                       height={trendChartHeight}
                       saleType={SALE_TYPE}
                       staggerIndex={0}
-                      embedded
-                      cinema
+                      variant="dashboard"
                     />
                   </ErrorBoundary>
                 </ChartPanel>
@@ -352,9 +351,7 @@ export function MacroOverviewContent() {
                             sharedData={compressionData}
                             sharedStatus={compressionInView ? compressionStatus : 'pending'}
                             staggerIndex={1}
-                            embedded
-                            cinema
-                            anchored
+                            variant="dashboard"
                           />
                         </Suspense>
                       </ChartWatermark>
@@ -371,9 +368,7 @@ export function MacroOverviewContent() {
                             sharedData={compressionData}
                             sharedStatus={compressionInView ? compressionStatus : 'pending'}
                             staggerIndex={2}
-                            embedded
-                            cinema
-                            anchored
+                            variant="dashboard"
                           />
                         </Suspense>
                       </ChartWatermark>
@@ -397,9 +392,7 @@ export function MacroOverviewContent() {
                           sharedRawData={compressionRaw}
                           sharedStatus={compressionInView ? compressionStatus : 'pending'}
                           staggerIndex={3}
-                          embedded
-                          cinema
-                          anchored
+                          variant="dashboard"
                         />
                       </Suspense>
                     </ChartWatermark>
@@ -425,9 +418,7 @@ export function MacroOverviewContent() {
                           sharedData={dashboardPanels?.price_histogram}
                           sharedStatus={panelsInView ? dashboardStatus : 'pending'}
                           staggerIndex={4}
-                          embedded
-                          cinema
-                          anchored
+                          variant="dashboard"
                         />
                       </ChartWatermark>
                     </ErrorBoundary>
@@ -443,9 +434,7 @@ export function MacroOverviewContent() {
                           sharedData={dashboardPanels?.beads_chart}
                           sharedStatus={panelsInView ? dashboardStatus : 'pending'}
                           staggerIndex={5}
-                          embedded
-                          cinema
-                          anchored
+                          variant="dashboard"
                         />
                       </ChartWatermark>
                     </ErrorBoundary>

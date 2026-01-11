@@ -48,9 +48,7 @@ import {
  *  saleType?: string | null,
  *  sharedData?: Record<string, any> | null,
  *  sharedStatus?: string,
- *  embedded?: boolean,
- *  cinema?: boolean,
- *  anchored?: boolean,
+ *  variant?: 'standalone' | 'dashboard',
  *  onDrillThrough?: (value: string) => void,
  * }} props
  */
@@ -61,11 +59,14 @@ function PriceDistributionChartBase({
   sharedData = null,
   sharedStatus = 'idle',
   staggerIndex = 0,
-  embedded = false,
-  cinema = false,
-  anchored = false,
+  variant = 'standalone',
   onDrillThrough: _onDrillThrough,
 }) {
+  // Derive layout flags from variant
+  const isDashboard = variant === 'dashboard';
+  const embedded = isDashboard;
+  const cinema = isDashboard;
+  const anchored = isDashboard;
   // Phase 4: Simplified filter access - read values directly from Zustand
   const { filters } = useZustandFilters();
 

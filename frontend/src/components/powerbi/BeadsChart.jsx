@@ -54,9 +54,7 @@ const REGION_COLORS = REGION;
  *  saleType?: string | null,
  *  sharedData?: Record<string, any> | null,
  *  sharedStatus?: string,
- *  embedded?: boolean,
- *  cinema?: boolean,
- *  anchored?: boolean,
+ *  variant?: 'standalone' | 'dashboard',
  * }} props
  */
 function BeadsChartBase({
@@ -65,10 +63,13 @@ function BeadsChartBase({
   sharedData = null,
   sharedStatus = 'idle',
   staggerIndex = 0,
-  embedded = false,
-  cinema = false,
-  anchored = false,
+  variant = 'standalone',
 }) {
+  // Derive layout flags from variant
+  const isDashboard = variant === 'dashboard';
+  const embedded = isDashboard;
+  const cinema = isDashboard;
+  const anchored = isDashboard;
   // Phase 4: Simplified filter access - read values directly from Zustand
   const { filters } = useZustandFilters();
 

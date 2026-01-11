@@ -57,12 +57,15 @@ const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
  *  saleType?: string | null,
  *  sharedData?: Array<Record<string, any>> | null,
  *  sharedStatus?: string,
- *  embedded?: boolean,
- *  cinema?: boolean,
- *  anchored?: boolean,
+ *  variant?: 'standalone' | 'dashboard',
  * }} props
  */
-function PriceCompressionChartBase({ height = 380, saleType = null, sharedData = null, sharedStatus = 'idle', staggerIndex = 0, embedded = false, cinema = false, anchored = false }) {
+function PriceCompressionChartBase({ height = 380, saleType = null, sharedData = null, sharedStatus = 'idle', staggerIndex = 0, variant = 'standalone' }) {
+  // Derive layout flags from variant
+  const isDashboard = variant === 'dashboard';
+  const embedded = isDashboard;
+  const cinema = isDashboard;
+  const anchored = isDashboard;
   // Phase 4: Simplified filter access - read values directly from Zustand
   const { filters, timeGrouping } = useZustandFilters();
 

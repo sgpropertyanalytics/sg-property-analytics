@@ -17,9 +17,6 @@
 export { KPICardV2, KPICardV2Group, KPIHeroContent, KPIHudStrip } from './KPICardV2';
 export { HelpTooltip } from './HelpTooltip';
 
-// Inline cards (compact cards inside chart headers)
-export { InlineCard, InlineCardRow } from './InlineCard';
-
 // Insight components
 export { KeyInsightBox } from './KeyInsightBox';
 
@@ -41,6 +38,7 @@ export { ChartSlot } from './ChartSlot';
 export {
   DataCard,
   DataCardHeader,
+  DataCardDescription, // Optional fixed-height description slot (h-8, 2 lines max)
   DataCardToolbar,
   DataCardCanvas,
   // Footerless Standard (Recommended - maximizes chart area)

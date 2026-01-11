@@ -111,8 +111,6 @@ export function DataCard({ children, variant = 'standalone', className = '' }: D
 interface DataCardHeaderProps {
   /** Chart title (uppercase, bold) */
   title: string;
-  /** Optional subtitle below title */
-  subtitle?: string;
   /** Methodology text shown via (i) tooltip */
   info?: string;
   /** Optional controls (toggles, buttons) on right side */
@@ -127,7 +125,6 @@ interface DataCardHeaderProps {
 
 export function DataCardHeader({
   title,
-  subtitle,
   info,
   controls,
   metadata,
@@ -148,19 +145,11 @@ export function DataCardHeader({
         ${className}
       `.trim()}
     >
-      {/* Left: Title + Subtitle + Info Icon */}
+      {/* Left: Title + Info Icon */}
       <div className="flex items-center gap-2">
-        <div className="min-w-0">
-          <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide flex items-center gap-2">
-            {anchored && <span className="text-slate-400 font-mono">::</span>}
-            {title}
-          </h3>
-          {subtitle && (
-            <p className="text-[10px] text-slate-400 mt-0.5 truncate">
-              {subtitle}
-            </p>
-          )}
-        </div>
+        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">
+          {title}
+        </h3>
         {info && (
           <HelpTooltip
             content={info}
@@ -179,6 +168,56 @@ export function DataCardHeader({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// ============================================
+// DataCardDescription - Fixed h-8 (32px), Optional
+// ============================================
+/**
+ * DataCardDescription - Fixed-height description slot below header.
+ *
+ * Pattern #2: Controlled height for consistent card layouts.
+ * - Fixed 32px height (h-8)
+ * - Max 2 lines with line-clamp
+ * - Ellipsis on overflow
+ * - Empty slot still renders for layout consistency
+ *
+ * Usage:
+ *   <DataCard>
+ *     <DataCardHeader title="Chart Title" />
+ *     <DataCardDescription>
+ *       Brief explanation of what this chart shows and how to interpret it.
+ *     </DataCardDescription>
+ *     <DataCardCanvas>...</DataCardCanvas>
+ *   </DataCard>
+ */
+interface DataCardDescriptionProps {
+  /** Description text (max 2 lines, will be clamped) */
+  children?: React.ReactNode;
+  /** Additional className */
+  className?: string;
+}
+
+export function DataCardDescription({
+  children,
+  className = '',
+}: DataCardDescriptionProps) {
+  return (
+    <div
+      className={`
+        h-8 px-6 shrink-0
+        flex items-center
+        border-b border-slate-100
+        ${className}
+      `.trim()}
+    >
+      {children && (
+        <p className="text-xs text-slate-500 line-clamp-2 leading-tight">
+          {children}
+        </p>
+      )}
     </div>
   );
 }
