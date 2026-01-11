@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { useInView } from 'react-intersection-observer';
-import { useDebouncedValue } from 'use-debounce';
+import { useDebounce } from 'use-debounce';
 // Phase 2: Using TanStack Query via useAppQuery wrapper
 import { useAppQuery } from '../../hooks/useAppQuery';
 import { ChartFrame } from '../common/ChartFrame';
@@ -72,7 +72,7 @@ function AbsolutePsfChartBase({ height = 300, saleType = null, sharedData = null
 
   // Debounce filter values for smoother UX (prevents rapid API calls during filter changes)
   // 300ms debounce with keepPreviousData gives instant visual feedback
-  const [debouncedBedroom] = useDebouncedValue(bedroom, 300);
+  const [debouncedBedroom] = useDebounce(bedroom, 300);
 
   // district excluded - shows all regions for comparison
   const { isFreeResolved } = useSubscription();
