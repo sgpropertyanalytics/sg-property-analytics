@@ -35,9 +35,18 @@ ALLOWED_THREE_PLUS_DIM_GROUP_BY = frozenset([
     'year,region,bedroom',
 ])
 
-# Max time buckets for 3+ dim queries (auto-downsample if exceeded)
-# 120 buckets × 3 regions × 5 bedrooms = 1,800 rows max (acceptable)
-MAX_MULTI_DIM_TIME_BUCKETS = 120
+# Row-based limit for 3+ dim queries (future-proof against new dimensions)
+# 5000 rows is acceptable for client-side processing
+MAX_MULTI_DIM_ROWS = 5000
+
+# Known cardinalities for each dimension (used for row estimation)
+# Update these if adding new dimensions or values
+DIMENSION_CARDINALITIES = {
+    'region': 3,      # CCR, RCR, OCR
+    'bedroom': 5,     # 1, 2, 3, 4, 5
+    'district': 28,   # D01-D28
+    'tenure': 3,      # Freehold, 99-year, 999-year
+}
 
 # Metrics NOT allowed in 3+ dim responses (require raw data, can't aggregate client-side)
 MULTI_DIM_FORBIDDEN_METRICS = frozenset([
@@ -66,20 +75,43 @@ def _calculate_time_buckets(date_from: date, date_to: date, grain: str) -> int:
     return months
 
 
+def _estimate_row_count(dimensions: list, time_buckets: int) -> int:
+    """
+    Estimate total row count for a multi-dimensional query.
+
+    Uses known cardinalities for each dimension to estimate upper bound.
+    This is future-proof: adding new dimensions updates DIMENSION_CARDINALITIES.
+    """
+    rows = time_buckets
+
+    for dim in dimensions:
+        if dim in TIME_GRAINS:
+            continue  # Already counted as time_buckets
+        cardinality = DIMENSION_CARDINALITIES.get(dim, 10)  # Default to 10 for unknown
+        rows *= cardinality
+
+    return rows
+
+
 def _auto_downsample_time_grain(
     group_by_str: str,
     date_from: Optional[date],
     date_to: Optional[date]
 ) -> Tuple[str, Optional[str], bool]:
     """
-    Auto-downsample time grain for 3+ dim queries if needed.
+    Auto-downsample time grain for 3+ dim queries if row estimate exceeds limit.
+
+    Uses row-based estimation (future-proof) instead of just time buckets.
 
     Returns:
         (effective_group_by, effective_time_grain, was_downsampled)
 
     Example:
-        Input: 'month,region,bedroom' with 10-year range
-        Output: ('quarter,region,bedroom', 'quarter', True)
+        Input: 'month,region,bedroom' with 10-year range (120 months × 3 × 5 = 1800 rows)
+        Output: ('month,region,bedroom', 'month', False) - under 5000 limit
+
+        Input: 'month,region,bedroom' with 30-year range (360 months × 3 × 5 = 5400 rows)
+        Output: ('quarter,region,bedroom', 'quarter', True) - downsampled to fit
     """
     dimensions = group_by_str.split(',')
 
@@ -96,21 +128,23 @@ def _auto_downsample_time_grain(
     if time_dim_idx is None:
         return group_by_str, None, False
 
-    # Calculate buckets for current grain
+    # Calculate estimated rows for current grain
     buckets = _calculate_time_buckets(date_from, date_to, original_grain)
+    estimated_rows = _estimate_row_count(dimensions, buckets)
 
     # If under limit, no downsampling needed
-    if buckets <= MAX_MULTI_DIM_TIME_BUCKETS:
+    if estimated_rows <= MAX_MULTI_DIM_ROWS:
         return group_by_str, original_grain, False
 
-    # Try coarser grains
+    # Try coarser grains until under row limit
     grain_idx = TIME_GRAINS.index(original_grain)
     effective_grain = original_grain
 
     for coarser_grain in TIME_GRAINS[grain_idx + 1:]:
         buckets = _calculate_time_buckets(date_from, date_to, coarser_grain)
+        estimated_rows = _estimate_row_count(dimensions, buckets)
         effective_grain = coarser_grain
-        if buckets <= MAX_MULTI_DIM_TIME_BUCKETS:
+        if estimated_rows <= MAX_MULTI_DIM_ROWS:
             break
 
     # Build new group_by with coarsened grain
