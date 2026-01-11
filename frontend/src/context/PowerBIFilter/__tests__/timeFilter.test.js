@@ -8,7 +8,7 @@
  * 1. isValidTimeFilter - validates timeFilter structure
  * 2. getTimeFilter - safe getter with fallback
  * 3. countActiveFilters - counts timeFilter correctly
- * 4. deriveActiveFilters - breadcrumb overrides work with timeFilter
+ * 4. deriveActiveFilters - returns copy of filters
  */
 
 import { describe, it, expect } from 'vitest';
@@ -167,48 +167,41 @@ describe('countActiveFilters', () => {
 });
 
 describe('deriveActiveFilters', () => {
-  const emptyBreadcrumbs = { time: [], location: [] };
-  const defaultDrillPath = { time: 'month', location: 'region' };
-
-  it('preserves timeFilter from filters when no breadcrumbs', () => {
+  it('returns a copy of filters with preset timeFilter', () => {
     const filters = {
       ...INITIAL_FILTERS,
       timeFilter: { type: 'preset', value: 'M6' },
     };
 
-    const active = deriveActiveFilters(filters, emptyBreadcrumbs, defaultDrillPath);
+    const active = deriveActiveFilters(filters);
 
     expect(active.timeFilter).toEqual({ type: 'preset', value: 'M6' });
+    // Should be a copy, not the same object
+    expect(active).not.toBe(filters);
   });
 
-  it('preserves custom timeFilter when no breadcrumbs', () => {
+  it('returns a copy of filters with custom timeFilter', () => {
     const filters = {
       ...INITIAL_FILTERS,
       timeFilter: { type: 'custom', start: '2024-01-01', end: '2024-06-30' },
     };
 
-    const active = deriveActiveFilters(filters, emptyBreadcrumbs, defaultDrillPath);
+    const active = deriveActiveFilters(filters);
 
     expect(active.timeFilter).toEqual({ type: 'custom', start: '2024-01-01', end: '2024-06-30' });
   });
 
-  it('overrides timeFilter with breadcrumb date range when drilling down', () => {
+  it('preserves all filter fields', () => {
     const filters = {
       ...INITIAL_FILTERS,
       timeFilter: { type: 'preset', value: 'Y1' },
+      districts: ['D01', 'D02'],
+      bedroomTypes: ['2', '3'],
     };
 
-    const breadcrumbs = {
-      time: [{ value: '2024', label: '2024' }],
-      location: [],
-    };
-    const drillPath = { time: 'quarter', location: 'region' };
+    const active = deriveActiveFilters(filters);
 
-    const active = deriveActiveFilters(filters, breadcrumbs, drillPath);
-
-    // Breadcrumb should override timeFilter to custom date range for 2024
-    expect(active.timeFilter.type).toBe('custom');
-    expect(active.timeFilter.start).toBe('2024-01-01');
-    expect(active.timeFilter.end).toBe('2024-12-31');
+    expect(active.districts).toEqual(['D01', 'D02']);
+    expect(active.bedroomTypes).toEqual(['2', '3']);
   });
 });

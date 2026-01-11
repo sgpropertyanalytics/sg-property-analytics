@@ -9,59 +9,14 @@
 // =============================================================================
 
 /**
- * Derive active filters from all filter sources.
+ * Derive active filters from sidebar filters.
+ * Returns a copy of filters for consistency with the store API.
  *
  * @param {Object} filters - Sidebar filters
- * @param {Object} breadcrumbs - Breadcrumb state
- * @param {Object} drillPath - Drill path state
- * @returns {Object} Combined active filters
+ * @returns {Object} Active filters
  */
-export function deriveActiveFilters(filters, breadcrumbs, drillPath) {
-  const combined = { ...filters };
-
-  // Apply time breadcrumb filters (overrides timeFilter with custom date range)
-  if (breadcrumbs.time.length > 0) {
-    const lastTime = breadcrumbs.time[breadcrumbs.time.length - 1];
-    if (lastTime && lastTime.value) {
-      if (drillPath.time === 'quarter') {
-        const yearStr = String(breadcrumbs.time[0].value);
-        combined.timeFilter = {
-          type: 'custom',
-          start: `${yearStr}-01-01`,
-          end: `${yearStr}-12-31`,
-        };
-      } else if (drillPath.time === 'month') {
-        const lastValue = String(lastTime.value);
-        let year;
-        if (breadcrumbs.time.length >= 2) {
-          year = String(breadcrumbs.time[0].value);
-        } else {
-          const yearMatch = lastValue.match(/^(\d{4})/);
-          year = yearMatch ? yearMatch[1] : new Date().getFullYear().toString();
-        }
-        const qMatch = lastValue.match(/Q(\d)/);
-        const q = qMatch ? parseInt(qMatch[1]) : 1;
-        const quarterStartMonth = (q - 1) * 3 + 1;
-        const quarterEndMonth = quarterStartMonth + 2;
-        const lastDay = new Date(parseInt(year), quarterEndMonth, 0).getDate();
-        combined.timeFilter = {
-          type: 'custom',
-          start: `${year}-${String(quarterStartMonth).padStart(2, '0')}-01`,
-          end: `${year}-${String(quarterEndMonth).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`,
-        };
-      }
-    }
-  }
-
-  // Apply location breadcrumb filters
-  if (breadcrumbs.location.length > 0 && drillPath.location === 'district') {
-    const regionBreadcrumb = breadcrumbs.location[0];
-    if (regionBreadcrumb?.value) {
-      combined.segments = [String(regionBreadcrumb.value)];
-    }
-  }
-
-  return combined;
+export function deriveActiveFilters(filters) {
+  return { ...filters };
 }
 
 /**
