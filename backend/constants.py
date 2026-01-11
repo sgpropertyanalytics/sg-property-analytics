@@ -11,6 +11,7 @@ Reference: URA Market Segments
 - RCR: Rest of Central Region (City fringe)
 - OCR: Outside Central Region (Suburban)
 """
+from functools import lru_cache
 
 # =============================================================================
 # DISTRICT TO REGION MAPPING (URA Market Segments)
@@ -29,6 +30,7 @@ OCR_DISTRICTS = ['D16', 'D17', 'D18', 'D19', 'D21', 'D22', 'D23', 'D24', 'D25', 
 ALL_DISTRICTS = CCR_DISTRICTS + RCR_DISTRICTS + OCR_DISTRICTS
 
 
+@lru_cache(maxsize=128)
 def get_region_for_district(district: str) -> str:
     """
     Get the market segment/region for a given district.
@@ -52,7 +54,8 @@ def get_region_for_district(district: str) -> str:
         return 'OCR'
 
 
-def get_districts_for_region(region: str) -> list:
+@lru_cache(maxsize=8)
+def get_districts_for_region(region: str) -> tuple:
     """
     Get all districts for a given market segment/region.
 
@@ -60,17 +63,17 @@ def get_districts_for_region(region: str) -> list:
         region: 'CCR', 'RCR', or 'OCR'
 
     Returns:
-        List of district codes
+        Tuple of district codes (immutable for cache safety)
     """
     region = region.upper().strip()
     if region == 'CCR':
-        return CCR_DISTRICTS
+        return tuple(CCR_DISTRICTS)
     elif region == 'RCR':
-        return RCR_DISTRICTS
+        return tuple(RCR_DISTRICTS)
     elif region == 'OCR':
-        return OCR_DISTRICTS
+        return tuple(OCR_DISTRICTS)
     else:
-        return []
+        return ()
 
 
 # =============================================================================
