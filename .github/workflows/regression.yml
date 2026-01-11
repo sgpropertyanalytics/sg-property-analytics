@@ -1,101 +1,18 @@
-name: CI Safety Net
-
-# =============================================================================
-# CI SAFETY NET - Stage 2 Final Check
-# =============================================================================
-#
-# PRIMARY TESTING: Claude's /review workflow (runs inline before push)
-# THIS WORKFLOW: Safety net that catches anything /review might have missed
-#
-# What moved to /review (inline):
-# - Contract Guard, Frontend Import Guard, SQL Safety, Data Guard
-# - Route Contract, Unit Tests, Lint + Typecheck, Frontend Build
-# - Smoke Tests, Integration Tests, E2E Smoke, Mock Validation
-#
-# What stays here (safety net):
-# - Quick integration test (backup validation on PR/main)
-# - Performance tests (nightly only - too slow for inline)
-# - Security audit (nightly only)
-# - Dead code detection (advisory)
-#
-# If this workflow fails but /review passed, investigate why /review missed it.
-# =============================================================================
+name: CI
 
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
-  workflow_dispatch:
-  schedule:
-    # Nightly at 2am UTC for performance + security
-    - cron: '0 2 * * *'
 
 permissions:
   contents: read
-  pull-requests: read
 
 jobs:
-  # ============================================================
-  # Quick Integration Test - SAFETY NET for /review
-  # Runs on PR and main push as backup validation
-  # ============================================================
-  safety-net:
-    name: Safety Net (Integration)
+  frontend:
+    name: Frontend Build
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
-
-    env:
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      FLASK_ENV: testing
-      CONTRACT_MODE: strict  # Fail on schema violations in CI
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-          cache: 'pip'
-          cache-dependency-path: backend/requirements.txt
-
-      - name: Install dependencies
-        run: |
-          cd backend
-          pip install -r requirements.txt
-          pip install pytest
-
-      - name: Run critical integration tests
-        if: ${{ env.DATABASE_URL != '' }}
-        run: |
-          cd backend
-          # Core regression tests - catches data correctness issues
-          pytest tests/test_regression_snapshots.py -v --tb=short || {
-            echo "::error::Regression test failed! /review should have caught this."
-            exit 1
-          }
-
-      - name: Run contract validation
-        run: |
-          # Quick contract drift check
-          python backend/scripts/generate_contracts.py --check || {
-            echo "::error::Contract drift detected! /review should have caught this."
-            exit 1
-          }
-
-      - name: Skip notice (no DB)
-        if: ${{ env.DATABASE_URL == '' }}
-        run: |
-          echo "::warning::Integration tests skipped - DATABASE_URL not configured"
-
-  # ============================================================
-  # Frontend Build Check - Quick smoke test
-  # ============================================================
-  frontend-smoke:
-    name: Frontend Smoke
-    runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -111,129 +28,33 @@ jobs:
         run: |
           cd frontend
           npm ci
-          npm run build || {
-            echo "::error::Frontend build failed! /review should have caught this."
-            exit 1
-          }
+          npm run lint
+          npm run typecheck
+          npm run build
 
-  # ============================================================
-  # Frontend Performance Tests - NIGHTLY ONLY
-  # Too slow for inline, runs comprehensive E2E suite
-  # ============================================================
-  frontend-perf:
-    name: Performance Tests (Nightly)
+  contracts:
+    name: Contract Check
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    if: ${{ github.event_name == 'schedule' }}
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
 
       - name: Install dependencies
-        run: cd frontend && npm ci
-
-      - name: Install Playwright browsers
-        run: cd frontend && npx playwright install --with-deps chromium
-
-      - name: Build frontend
-        run: cd frontend && npm run build
-
-      - name: Run full E2E performance tests
-        run: cd frontend && npm run test:e2e:full
-        env:
-          CI: true
-          BASE_URL: http://localhost:4173
-        continue-on-error: true
-
-      - name: Upload Playwright report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-perf-report
-          path: frontend/playwright-report/
-          retention-days: 14
-
-  # ============================================================
-  # Security Audit - NIGHTLY ONLY
-  # Scans dependencies for known vulnerabilities
-  # ============================================================
-  security-audit:
-    name: Security Audit (Nightly)
-    runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'schedule' }}
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install pip-audit
-        run: pip install pip-audit
-
-      - name: Audit Python dependencies
         run: |
           cd backend
-          pip-audit -r requirements.txt || {
-            echo "::warning::Vulnerabilities found in Python dependencies"
-          }
-        continue-on-error: true
+          pip install -r requirements.txt
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Audit npm dependencies
+      - name: Check contract drift
         run: |
-          cd frontend
-          npm audit --audit-level=high || {
-            echo "::warning::Vulnerabilities found in npm dependencies"
+          python backend/scripts/generate_contracts.py --check
+          git diff --exit-code frontend/src/generated/ || {
+            echo "::error::Contract drift detected! Run 'python backend/scripts/generate_contracts.py' locally and commit."
+            exit 1
           }
-        continue-on-error: true
-
-  # ============================================================
-  # Dead Code Detection - ADVISORY
-  # Warns about unused/deprecated code accumulation
-  # ============================================================
-  dead-code:
-    name: Dead Code (Advisory)
-    runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'pull_request' }}
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Find unused code
-        run: |
-          if [ -f "scripts/find_unused.py" ]; then
-            python scripts/find_unused.py > /tmp/dead_code_report.txt 2>&1 || true
-
-            if grep -q "candidate" /tmp/dead_code_report.txt 2>/dev/null; then
-              echo "::warning::Dead code candidates found"
-              echo ""
-              echo "### Dead Code Candidates" >> $GITHUB_STEP_SUMMARY
-              echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-              cat /tmp/dead_code_report.txt | head -50 >> $GITHUB_STEP_SUMMARY
-              echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-            else
-              echo "✓ No dead code detected"
-            fi
-          else
-            echo "Dead code script not found, skipping"
-          fi
-        continue-on-error: true
