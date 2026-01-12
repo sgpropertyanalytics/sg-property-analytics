@@ -47,11 +47,17 @@ Lease Age = Transaction Year - Lease Start Year
 Official certificate allowing residents to move in. Marks when a development is considered "completed" for occupancy purposes.
 
 ### Property Age Buckets
-- **New Sale**: Project with no resale transactions yet (market state, not age-based)
-- **Recently TOP (4-7 years)**: First resales becoming available
-- **Young Resale (8-14 years)**: Established resale track record
-- **Resale (15-24 years)**: Mature resale market
-- **Mature Resale (25+ years)**: Approaching lease decay concerns for 99-year
+
+Properties are classified into buckets based on age or market state:
+
+| Bucket | Age Range | Description |
+|--------|-----------|-------------|
+| New Sale | N/A | Project with no resale transactions yet (market state, not age-based) |
+| Recently TOP | 4-7 years | First resales becoming available |
+| Young Resale | 8-14 years | Established resale track record |
+| Resale | 15-24 years | Mature resale market |
+| Mature Resale | 25+ years | Approaching lease decay concerns for 99-year |
+| Freehold | N/A | Freehold properties (tenure-based, not age-based) |
 
 ## Floor Level Classification
 
