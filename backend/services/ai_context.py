@@ -98,6 +98,13 @@ class PropertyContext:
         "price_compression", "growth_dumbbell"
     }
 
+    # Chart types that need interest rate context (involve affordability/financing)
+    NEEDS_INTEREST_RATES = {
+        "absolute_psf", "time_trend", "price_distribution",
+        "price_band", "price_range_matrix", "budget_heatmap",
+        "market_oscillator", "new_vs_resale"
+    }
+
     def __init__(self, context_dir: Optional[Path] = None):
         self.context_dir = context_dir or AI_CONTEXT_DIR
         self._manifest = None
@@ -257,6 +264,12 @@ class PropertyContext:
             demographics = self._load_file("snapshot/demographics.md")
             if demographics:
                 snippets.append("# Demographics & Buyer Profiles\n" + demographics)
+
+        # Include interest rate context for affordability-related charts
+        if chart_type in self.NEEDS_INTEREST_RATES:
+            interest_rates = self._load_file("snapshot/interest-rates.md")
+            if interest_rates:
+                snippets.append("# Interest Rates & Affordability\n" + interest_rates)
 
         return snippets
 

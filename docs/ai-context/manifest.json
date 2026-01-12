@@ -96,6 +96,25 @@
       "description": "Allowed sources and citation rules",
       "injection": "never",
       "notes": "Reference doc for maintainers, not injected into prompts"
+    },
+    "snapshot/interest-rates.md": {
+      "updated_at": "2026-01-12",
+      "last_verified_at": "2026-01-12",
+      "source_urls": [
+        "https://www.mas.gov.sg/monetary-policy/sora",
+        "https://housingloansg.com/hl/charts/sibor-sor-daily-chart"
+      ],
+      "description": "Current SORA interest rates and mortgage context",
+      "injection": "conditional",
+      "injection_triggers": [
+        "interest rate",
+        "SORA",
+        "mortgage",
+        "loan",
+        "affordability",
+        "financing"
+      ],
+      "notes": "Inject for affordability and financing discussions."
     }
   },
   "injection_rules": {
