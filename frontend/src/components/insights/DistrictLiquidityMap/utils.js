@@ -59,6 +59,35 @@ export function getLiquidityFill(zScore) {
   return LIQUIDITY_FILLS.veryLow;
 }
 
+/**
+ * Get dimmed fill color for spotlight effect (non-hovered districts).
+ * Reduces opacity significantly for the "cinematic" dimming effect.
+ */
+export function getLiquidityFillDimmed(_zScore) {
+  // Return very faded gray for all non-hovered districts
+  return 'rgba(180, 180, 180, 0.25)';
+}
+
+/**
+ * Get the border color for a liquidity tier (for tethered callout).
+ */
+export function getTierBorderColor(tier) {
+  switch (tier) {
+    case 'Very High':
+      return '#213448'; // Deep Navy
+    case 'High':
+      return '#547792'; // Ocean Blue
+    case 'Neutral':
+      return '#94B4C1'; // Sky Blue
+    case 'Low':
+      return '#EAE0CF'; // Sand
+    case 'Very Low':
+      return '#d4c4a8'; // Darker Sand
+    default:
+      return '#cbd5e1'; // Slate-300
+  }
+}
+
 // =============================================================================
 // SCORE STYLING (shared by HoverCard and LiquidityRankingTable)
 // =============================================================================

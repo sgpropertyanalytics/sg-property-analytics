@@ -143,6 +143,7 @@
   --color-skeleton-border: #d4d0c8;
 }
 
+/* Dark theme disabled - no dark mode toggle implemented yet
 [data-theme='dark'] {
   --color-bg: #0A0A0A;
   --color-surface: #1A1A1A;
@@ -157,3 +158,4 @@
   --color-brand: #F2EFE9;
   --color-card: #1A1A1A;
 }
+*/

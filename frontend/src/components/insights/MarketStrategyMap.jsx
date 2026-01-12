@@ -45,11 +45,11 @@ const MAP_CONFIG = {
 // Light basemap (no labels - cleaner with only our district markers)
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json';
 
-// Region fill colors (strong shading for clear market segment separation)
+// Region fill colors (aligned with liquidity map color theme)
 const REGION_FILLS = {
-  CCR: 'rgba(33, 52, 72, 0.40)',   // Deep Navy - Premium/Core Central
-  RCR: 'rgba(84, 119, 146, 0.32)', // Ocean Blue - City Fringe
-  OCR: 'rgba(148, 180, 193, 0.25)', // Sky Blue - Suburban
+  CCR: 'rgba(33, 52, 72, 0.60)',   // Deep Navy - Premium/Core Central
+  RCR: 'rgba(84, 119, 146, 0.50)', // Ocean Blue - City Fringe
+  OCR: 'rgba(148, 180, 193, 0.35)', // Sky Blue - Suburban
 };
 
 // Volume glow colors (warm palette - only top 30% get glow)
@@ -147,12 +147,12 @@ function DistrictLabel({ district, data, zoom, onHover, onLeave, isHovered, volu
   const psf = data?.median_psf || 0;
   const isCompact = zoom < 11.2;
 
-  // Color based on PSF tier
+  // Color based on PSF tier - using slate palette
   const getPriceStyle = () => {
-    if (!hasData) return 'bg-brand-sand text-brand-sky border-brand-sky/30';
-    if (psf >= 2200) return 'bg-brand-navy text-white border-brand-navy';
-    if (psf >= 1400) return 'bg-brand-blue text-white border-brand-blue';
-    return 'bg-white text-brand-navy border-brand-sky';
+    if (!hasData) return 'bg-slate-100 text-slate-400 border-slate-300';
+    if (psf >= 2200) return 'bg-slate-800 text-white border-slate-800';
+    if (psf >= 1400) return 'bg-slate-600 text-white border-slate-600';
+    return 'bg-white text-slate-800 border-slate-300';
   };
 
   // Truncate area name for display
@@ -193,7 +193,7 @@ function DistrictLabel({ district, data, zoom, onHover, onLeave, isHovered, volu
       <div
         className={`
           mt-0.5 px-1.5 py-0.5 rounded bg-white/90 backdrop-blur-sm
-          shadow-sm border border-brand-sky/30
+          shadow-sm border border-slate-200
           transition-all duration-200
           ${isHovered ? 'bg-white shadow-md' : ''}
         `}
@@ -201,12 +201,12 @@ function DistrictLabel({ district, data, zoom, onHover, onLeave, isHovered, volu
       >
         <div className="flex flex-col items-center">
           {/* District number */}
-          <span className="text-[9px] font-semibold text-brand-navy">
+          <span className="text-[9px] font-semibold text-slate-800">
             {district.district}
           </span>
           {/* Area name - shown when zoomed in */}
           {!isCompact && (
-            <span className="text-[7px] text-brand-blue leading-tight text-center max-w-[60px] truncate">
+            <span className="text-[7px] text-slate-500 leading-tight text-center max-w-[60px] truncate">
               {getShortName(district.name)}
             </span>
           )}
@@ -234,10 +234,10 @@ function HoverCard({ district, data }) {
       transition={{ duration: 0.15 }}
       className="absolute z-50 pointer-events-none top-[180px] sm:top-[280px] left-2 sm:left-4"
     >
-      <div className="bg-white rounded-none shadow-weapon border border-mono-muted p-2 sm:p-3 w-[140px] sm:w-[165px]">
+      <div className="bg-white rounded-none shadow-[2px_2px_0px_0px_rgba(0,0,0,0.05)] border border-mono-muted p-2 sm:p-3 w-[140px] sm:w-[165px]">
         {/* Header */}
         <div className="flex items-center justify-between mb-2">
-          <span className="font-bold text-brand-navy text-sm">
+          <span className="font-bold text-slate-800 text-sm">
             {district.district}
           </span>
           <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-semibold ${getRegionBadgeClass(district.region)}`}>
@@ -246,31 +246,31 @@ function HoverCard({ district, data }) {
         </div>
 
         {/* District name */}
-        <p className="text-xs text-brand-blue mb-2 leading-tight">
+        <p className="text-xs text-slate-500 mb-2 leading-tight">
           {district.name}
         </p>
 
-        <div className="h-px bg-brand-sky/30 mb-2" />
+        <div className="h-px bg-slate-200 mb-2" />
 
         {/* Stats */}
         <div className="space-y-1.5">
           <div className="flex justify-between items-center">
-            <span className="text-xs text-brand-blue">Median PSF</span>
-            <span className="font-bold text-brand-navy text-sm">
+            <span className="text-xs text-slate-500">Median PSF</span>
+            <span className="font-bold text-slate-800 text-sm">
               {formatPsf(data.median_psf)}
             </span>
           </div>
 
           <div className="flex justify-between items-center">
-            <span className="text-xs text-brand-blue">Observations</span>
-            <span className="font-semibold text-brand-navy text-xs">
+            <span className="text-xs text-slate-500">Observations</span>
+            <span className="font-semibold text-slate-800 text-xs">
               {data.tx_count?.toLocaleString() || 0}
             </span>
           </div>
 
           {hasYoY && (
             <div className="flex justify-between items-center">
-              <span className="text-xs text-brand-blue">YoY Change</span>
+              <span className="text-xs text-slate-500">YoY Change</span>
               <span
                 className={`font-bold text-xs ${
                   yoyValue >= 0 ? 'text-emerald-600' : 'text-rose-600'
@@ -345,10 +345,11 @@ function RegionSummaryBar({ districtData, selectedPeriod }) {
         0
       ) / (totalTx || 1);
 
-      // Average YoY
-      const districtsWithYoY = districts.filter(d => d.yoy_pct !== null);
-      const avgYoY = districtsWithYoY.length > 0
-        ? districtsWithYoY.reduce((sum, d) => sum + d.yoy_pct, 0) / districtsWithYoY.length
+      // Weighted average YoY (consistent with PSF weighting)
+      const districtsWithYoY = districts.filter(d => d.yoy_pct !== null && d.tx_count > 0);
+      const totalTxWithYoY = districtsWithYoY.reduce((sum, d) => sum + (d.tx_count || 0), 0);
+      const avgYoY = totalTxWithYoY > 0
+        ? districtsWithYoY.reduce((sum, d) => sum + d.yoy_pct * (d.tx_count || 0), 0) / totalTxWithYoY
         : null;
 
       // District breakdown for tooltip (sorted by tx count descending)
@@ -371,24 +372,24 @@ function RegionSummaryBar({ districtData, selectedPeriod }) {
   }, [districtData]);
 
   const regionStyles = {
-    CCR: 'border-brand-navy/20 bg-brand-navy/5',
-    RCR: 'border-brand-blue/20 bg-brand-blue/5',
-    OCR: 'border-brand-sky/20 bg-brand-sky/5',
+    CCR: 'border-slate-400 bg-slate-100',
+    RCR: 'border-slate-300 bg-slate-50',
+    OCR: 'border-slate-200 bg-white',
   };
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 bg-brand-sand/30 border-t border-brand-sky/30">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 bg-slate-50 border-t border-slate-200">
       {regionStats.map(stat => (
         <div
           key={stat.region}
-          className={`rounded-lg border p-2 sm:p-3 ${regionStyles[stat.region]}`}
+          className={`rounded-sm border p-2 sm:p-3 ${regionStyles[stat.region]}`}
         >
           {/* Mobile: horizontal layout, Desktop: vertical */}
           <div className="flex sm:flex-col items-center sm:items-stretch gap-2 sm:gap-0">
             {/* Region name, Help tooltip, and YoY */}
             <div className="flex items-center justify-between sm:mb-1 min-w-[60px] sm:min-w-0">
               <div className="flex items-center gap-1">
-                <span className="font-semibold text-brand-navy text-xs sm:text-sm">
+                <span className="font-semibold text-slate-800 text-xs sm:text-sm">
                   <span className="sm:hidden">{stat.region}</span>
                   <span className="hidden sm:inline">{stat.region} Median PSF</span>
                 </span>
@@ -405,17 +406,17 @@ function RegionSummaryBar({ districtData, selectedPeriod }) {
               )}
             </div>
             {/* Description - hidden on mobile */}
-            <p className="hidden sm:block text-[10px] text-brand-blue mb-2">
+            <p className="hidden sm:block text-[10px] text-slate-500 mb-2">
               Volume-weighted by District Txs
             </p>
             {/* Stats */}
             <div className="flex items-baseline gap-2 sm:justify-between flex-1 sm:flex-none">
-              <span className="text-base sm:text-lg font-bold text-brand-navy">
+              <span className="text-base sm:text-lg font-bold text-slate-800">
                 {stat.medianPsf ? formatPsf(stat.medianPsf) : '-'}
               </span>
-              <span className="text-[10px] sm:text-xs text-brand-blue">
+              <span className="text-[10px] sm:text-xs text-slate-500">
                 {stat.txCount.toLocaleString()} tx
-                <span className="text-brand-blue/60 ml-1">
+                <span className="text-slate-500/60 ml-1">
                   ({selectedPeriod === 'all' ? 'all time' : PERIOD_FILTER_OPTIONS.find(p => p.value === selectedPeriod)?.label || '1Y'} avg)
                 </span>
               </span>
@@ -546,15 +547,15 @@ function MarketStrategyMapBase({
   }, []);
 
   return (
-    <div className="bg-card rounded-xl border border-brand-sky/50 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-sm border border-slate-300 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.05)] overflow-hidden">
       {/* Header with filters */}
-      <div className="px-3 sm:px-4 py-2 sm:py-3 border-b border-brand-sky/30">
+      <div className="px-4 py-3 border-b border-slate-200">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 sm:gap-3">
           <div>
-            <h2 className="text-base sm:text-lg font-bold text-brand-navy">
+            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">
               Price/PSF Analysis by District
             </h2>
-            <p className="text-[10px] sm:text-xs text-brand-blue">
+            <p className="text-[10px] text-slate-500 font-mono">
               <span className="hidden sm:inline">Median PSF by postal district</span>
               <span className="sm:hidden">Median PSF by district</span>
             </p>
@@ -565,17 +566,17 @@ function MarketStrategyMapBase({
             {/* Volume/Price Mode Toggle - kept for view switching */}
             {/* Filters (Bedroom, Time, Region) are now in the page-level FilterBar */}
             {onModeChange && (
-              <div className="flex items-center gap-0.5 sm:gap-1 bg-brand-sand/50 rounded-lg p-0.5 sm:p-1">
+              <div className="flex items-center gap-0.5 sm:gap-1 bg-slate-100 rounded-sm p-0.5 sm:p-1">
                 <button
                   onClick={() => onModeChange('volume')}
                   className={`relative flex items-center justify-center gap-1 min-h-[44px] px-3 sm:px-4 py-2 text-[10px] sm:text-xs font-medium rounded-md transition-all z-10 touch-manipulation ${
-                    mapMode === 'volume' ? 'text-white' : 'text-brand-blue hover:text-brand-navy'
+                    mapMode === 'volume' ? 'text-white' : 'text-slate-500 hover:text-slate-800'
                   }`}
                 >
                   {mapMode === 'volume' && (
                     <motion.div
                       layoutId="price-map-toggle"
-                      className="absolute inset-0 bg-brand-navy rounded-md -z-10 shadow-sm"
+                      className="absolute inset-0 bg-slate-800 rounded-md -z-10 shadow-sm"
                       transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
                     />
                   )}
@@ -586,7 +587,7 @@ function MarketStrategyMapBase({
                 <button
                   onClick={() => onModeChange('price')}
                   className={`relative flex items-center justify-center gap-1 min-h-[44px] px-3 sm:px-4 py-2 text-[10px] sm:text-xs font-medium rounded-md transition-all z-10 touch-manipulation ${
-                    mapMode === 'price' ? 'text-white' : 'text-brand-blue hover:text-brand-navy'
+                    mapMode === 'price' ? 'text-white' : 'text-slate-500 hover:text-slate-800'
                   }`}
                 >
                   {mapMode === 'price' && (
@@ -630,8 +631,8 @@ function MarketStrategyMapBase({
               className="absolute inset-0 bg-white/90 z-30 flex items-center justify-center"
             >
               <div className="flex flex-col items-center gap-3">
-                <div className="w-8 h-8 border-3 border-brand-blue border-t-transparent rounded-full animate-spin" />
-                <span className="text-sm text-brand-blue">Loading map...</span>
+                <div className="w-8 h-8 border-3 border-slate-600 border-t-transparent rounded-full animate-spin" />
+                <span className="text-sm text-slate-500">Loading map...</span>
               </div>
             </motion.div>
           )}
@@ -641,10 +642,10 @@ function MarketStrategyMapBase({
         {error && !loading && (
           <div className="absolute inset-0 flex items-center justify-center bg-white z-30">
             <div className="text-center">
-              <p className="text-brand-blue mb-3">Failed to load data</p>
+              <p className="text-slate-500 mb-3">Failed to load data</p>
               <button
                 onClick={refetch}
-                className="px-4 py-2 bg-brand-blue text-white text-sm font-medium rounded-lg hover:bg-brand-navy transition-colors"
+                className="px-4 py-2 bg-slate-600 text-white text-sm font-medium rounded-sm hover:bg-slate-800 transition-colors"
               >
                 Try again
               </button>
@@ -736,59 +737,59 @@ function MarketStrategyMapBase({
 
         {/* Legend - Market Segments (top-left) - smaller on mobile */}
         <div className="absolute top-2 left-2 sm:top-4 sm:left-4 z-20">
-          <div className="bg-white/95 backdrop-blur-sm rounded-lg border border-brand-sky/50 shadow-md p-2 sm:p-2.5 w-[130px] sm:w-[165px]">
-            <p className="text-[8px] sm:text-[9px] text-brand-blue uppercase tracking-wider font-semibold mb-1.5 sm:mb-2">
+          <div className="bg-white/95 backdrop-blur-sm rounded-sm border border-slate-300 shadow-md p-2 sm:p-2.5 w-[130px] sm:w-[165px]">
+            <p className="text-[8px] sm:text-[9px] text-slate-500 uppercase tracking-wider font-semibold mb-1.5 sm:mb-2">
               Market Segments
             </p>
             <div className="space-y-1 sm:space-y-1.5">
               <div className="flex items-center gap-1.5 sm:gap-2">
-                <div className="w-3 h-2 sm:w-4 sm:h-3 rounded shrink-0" style={{ backgroundColor: 'rgba(33, 52, 72, 0.50)' }} />
-                <span className="text-[9px] sm:text-[10px] text-brand-navy">
+                <div className="w-3 h-2 sm:w-4 sm:h-3 rounded shrink-0" style={{ backgroundColor: 'rgba(33, 52, 72, 0.60)' }} />
+                <span className="text-[9px] sm:text-[10px] text-slate-800">
                   <span className="sm:hidden">CCR</span>
                   <span className="hidden sm:inline">CCR (Core Central)</span>
                 </span>
               </div>
               <div className="flex items-center gap-1.5 sm:gap-2">
-                <div className="w-3 h-2 sm:w-4 sm:h-3 rounded shrink-0" style={{ backgroundColor: 'rgba(84, 119, 146, 0.42)' }} />
-                <span className="text-[9px] sm:text-[10px] text-brand-navy">
+                <div className="w-3 h-2 sm:w-4 sm:h-3 rounded shrink-0" style={{ backgroundColor: 'rgba(84, 119, 146, 0.50)' }} />
+                <span className="text-[9px] sm:text-[10px] text-slate-800">
                   <span className="sm:hidden">RCR</span>
                   <span className="hidden sm:inline">RCR (Rest of Central)</span>
                 </span>
               </div>
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <div className="w-3 h-2 sm:w-4 sm:h-3 rounded shrink-0" style={{ backgroundColor: 'rgba(148, 180, 193, 0.35)' }} />
-                <span className="text-[9px] sm:text-[10px] text-brand-navy">
+                <span className="text-[9px] sm:text-[10px] text-slate-800">
                   <span className="sm:hidden">OCR</span>
                   <span className="hidden sm:inline">OCR (Outside Central)</span>
                 </span>
               </div>
             </div>
 
-            <div className="h-px bg-brand-sky/30 my-1.5 sm:my-2" />
+            <div className="h-px bg-slate-200 my-1.5 sm:my-2" />
 
-            <p className="text-[8px] sm:text-[9px] text-brand-blue uppercase tracking-wider font-semibold mb-1 sm:mb-2">
+            <p className="text-[8px] sm:text-[9px] text-slate-500 uppercase tracking-wider font-semibold mb-1 sm:mb-2">
               Price Tier
             </p>
             <div className="space-y-1 sm:space-y-1.5">
               <div className="flex items-center gap-1.5 sm:gap-2">
-                <div className="w-3 h-2 sm:w-4 sm:h-3 rounded bg-brand-navy shrink-0" />
-                <span className="text-[9px] sm:text-[10px] text-brand-navy">&gt;$2.2K</span>
+                <div className="w-3 h-2 sm:w-4 sm:h-3 rounded bg-slate-800 shrink-0" />
+                <span className="text-[9px] sm:text-[10px] text-slate-800">&gt;$2.2K</span>
               </div>
               <div className="flex items-center gap-1.5 sm:gap-2">
-                <div className="w-3 h-2 sm:w-4 sm:h-3 rounded bg-brand-blue shrink-0" />
-                <span className="text-[9px] sm:text-[10px] text-brand-navy">$1.4-2.2K</span>
+                <div className="w-3 h-2 sm:w-4 sm:h-3 rounded bg-slate-600 shrink-0" />
+                <span className="text-[9px] sm:text-[10px] text-slate-800">$1.4-2.2K</span>
               </div>
               <div className="flex items-center gap-1.5 sm:gap-2">
-                <div className="w-3 h-2 sm:w-4 sm:h-3 rounded bg-white border border-brand-sky shrink-0" />
-                <span className="text-[9px] sm:text-[10px] text-brand-navy">&lt;$1.4K</span>
+                <div className="w-3 h-2 sm:w-4 sm:h-3 rounded bg-white border border-slate-300 shrink-0" />
+                <span className="text-[9px] sm:text-[10px] text-slate-800">&lt;$1.4K</span>
               </div>
             </div>
 
             {/* Volume Activity - hidden on mobile for space */}
             <div className="hidden sm:block">
-              <div className="h-px bg-brand-sky/30 my-2" />
+              <div className="h-px bg-slate-200 my-2" />
 
-              <p className="text-[9px] text-brand-blue uppercase tracking-wider font-semibold mb-1.5">
+              <p className="text-[9px] text-slate-500 uppercase tracking-wider font-semibold mb-1.5">
                 Volume Activity
               </p>
               {/* Gradient bar from red to yellow - full width */}
@@ -800,8 +801,8 @@ function MarketStrategyMapBase({
                 }}
               />
               <div className="flex justify-between mt-1">
-                <span className="text-[8px] text-brand-blue">High</span>
-                <span className="text-[8px] text-brand-blue">Low</span>
+                <span className="text-[8px] text-slate-500">High</span>
+                <span className="text-[8px] text-slate-500">Low</span>
               </div>
             </div>
           </div>

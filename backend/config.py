@@ -1,9 +1,10 @@
 import os
 import sys
+from pathlib import Path
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(Path(__file__).parent.parent / '.env')
 
 
 def get_database_url():
