@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Lock, Mail, Eye, EyeOff } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, TokenStatus } from '../context/AuthContext';
 
 /**
  * Login Page - Swiss International + Technical Brutalist
@@ -20,13 +20,16 @@ const DATA_COORDS = ['01.3521°N', '103.8198°E', '0x7F3A', 'SGP_001', '01.2894�
 function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { signInWithGoogle, error: authError, authUiLoading, isConfigured } = useAuth();
+  const { signInWithGoogle, error: authError, authUiLoading, isConfigured, tokenStatus, isAuthenticated } = useAuth();
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [cursorVisible, setCursorVisible] = useState(true);
+
+  // P0 Fix 2: Track if sign-in was initiated (to gate navigation)
+  const signInInitiatedRef = useRef(false);
 
   const from = location.state?.from?.pathname || '/market-overview';
 
@@ -38,16 +41,43 @@ function Login() {
     return () => clearInterval(interval);
   }, []);
 
+  // P0 Fix 2: Navigate only when tokenStatus resolves after sign-in
+  // Don't wait for subscription - that's handled by dashboard boot gate
+  useEffect(() => {
+    if (!signInInitiatedRef.current) return;
+
+    const tokenResolved =
+      tokenStatus === TokenStatus.PRESENT ||
+      tokenStatus === TokenStatus.ERROR;
+
+    if (tokenResolved) {
+      signInInitiatedRef.current = false;
+      setIsSigningIn(false);
+
+      // Only navigate if user is actually authenticated
+      if (isAuthenticated) {
+        console.warn('[Login] Auth stable, navigating to:', from);
+        navigate(from, { replace: true });
+      } else {
+        // Token sync failed → user forced to guest mode
+        console.warn('[Login] Auth resolved but not authenticated (guest mode)');
+      }
+    }
+  }, [tokenStatus, isAuthenticated, from, navigate]);
+
   const handleGoogleSignIn = async () => {
     if (!isConfigured) return;
 
     setIsSigningIn(true);
+    signInInitiatedRef.current = true;
+
     try {
       await signInWithGoogle();
-      navigate(from, { replace: true });
+      // P0 Fix 2: Don't navigate here - let the useEffect handle it
+      // Navigation happens when tokenStatus resolves to PRESENT or ERROR
     } catch (err) {
       console.error('Sign-in failed:', err);
-    } finally {
+      signInInitiatedRef.current = false;
       setIsSigningIn(false);
     }
   };

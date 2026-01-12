@@ -122,7 +122,7 @@ export function useAuth() {
  * INVARIANT: tokenStatus does NOT mean "sync succeeded".
  * Subscription fetch must not deadlock if backend sync fails.
  */
-const TokenStatus = {
+export const TokenStatus = {
   PRESENT: 'present',
   MISSING: 'missing',
   REFRESHING: 'refreshing',
@@ -285,19 +285,35 @@ export function AuthProvider({ children }) {
                 setTokenStatus(prevTokenStatusRef.current);
               } else if (result.ok) {
                 setTokenStatus(TokenStatus.PRESENT);
-              } else {
-                // Non-abort error (including timeout) → enter guest mode
+              } else if (result.retryable) {
+                // P0 FIX 3: Gateway errors (502/503/504) - backend waking up
+                // Don't degrade to guest - user is still authenticated with Firebase
+                // Keep PRESENT status - Firebase auth is valid, backend just needs to wake up
+                // The "backend waking up" banner will show via isBootSlow
+                console.warn('[Auth] Token sync retryable error, keeping user authenticated', {
+                  error: result.error?.message,
+                });
+                setTokenStatus(TokenStatus.PRESENT);
+                // ensureSubscription will handle subscription fetch when backend is ready
+              } else if (result.authFailure || result.timedOut) {
+                // P0 FIX 3: Only degrade to guest on auth failures (401/403) or timeout
                 // AUTH INVARIANT: ERROR sets user=null (monotonic guest transition)
-                // AUTH INVARIANT: After timeout → no API calls assume PRESENT token until next login
                 // CRITICAL: Must also resolve subscription to 'free' to unblock boot gate
-                // Without this, SubscriptionContext stays PENDING → appReady blocked forever
-                console.warn('[Auth] Token sync failed, entering guest mode', {
+                console.warn('[Auth] Token sync failed (auth failure or timeout), entering guest mode', {
+                  authFailure: result.authFailure,
                   timedOut: result.timedOut,
                   error: result.error?.message,
                 });
                 setTokenStatus(TokenStatus.ERROR);
                 setUser(null); // Force guest mode - user must re-login
                 clearSubscription(); // Resolve subscription as free to unblock boot
+              } else {
+                // Other errors (network, etc.) - don't degrade, similar to retryable
+                // Keep PRESENT - Firebase auth is valid
+                console.warn('[Auth] Token sync error (non-auth), keeping user authenticated', {
+                  error: result.error?.message,
+                });
+                setTokenStatus(TokenStatus.PRESENT);
               }
             }
           }
@@ -327,7 +343,10 @@ export function AuthProvider({ children }) {
        * AUTH INVARIANT: Must resolve within TOKEN_REFRESH_TIMEOUT_MS (8s)
        * On timeout → treat as error, not abort (timeouts are real failures)
        *
-       * @returns {{ ok: boolean, aborted: boolean, timedOut?: boolean, error?: Error }}
+       * P0 FIX 3: Only degrade to guest mode on 401/403 (auth failures)
+       * Gateway errors (502/503/504) should NOT cause guest mode.
+       *
+       * @returns {{ ok: boolean, aborted: boolean, timedOut?: boolean, retryable?: boolean, authFailure?: boolean, error?: Error }}
        */
       async function syncTokenWithBackend(firebaseUser, requestId, getSignalFn, isStaleFn) {
         try {
@@ -379,13 +398,37 @@ export function AuthProvider({ children }) {
             return { ok: false, aborted: false, stale: true };
           }
 
-          // Real error - log but don't throw (non-blocking)
-          logAuthError('[Auth] Backend token sync failed', err);
+          // P0 FIX 3: Check error status to determine if retryable vs auth failure
+          const status = err?.response?.status;
+          const isGatewayError = status === 502 || status === 503 || status === 504;
+          const isAuthFailure = status === 401 || status === 403;
+
+          if (isGatewayError) {
+            // Gateway errors: backend is waking up, don't degrade auth
+            console.warn('[Auth] Token sync hit gateway error (backend waking up)', { status });
+            return { ok: false, aborted: false, retryable: true, error: err };
+          }
+
+          if (isAuthFailure) {
+            // Auth failures: token is invalid, must degrade
+            logAuthError('[Auth] Token sync auth failure - will degrade to guest', err, { status });
+            return { ok: false, aborted: false, authFailure: true, error: err };
+          }
+
+          // Other errors (network, etc.) - log but don't throw
+          logAuthError('[Auth] Backend token sync failed', err, { status });
           return { ok: false, aborted: false, error: err };
         }
       }
 
-      return () => unsubscribe();
+      return () => {
+        unsubscribe();
+        // P0 Fix 1: Reset for React Strict Mode (simulates unmount/remount in dev)
+        // Without this, the double-mount logs misleading "registered more than once" error
+        if (process.env.NODE_ENV !== 'production') {
+          authListenerRegisteredRef.current = false;
+        }
+      };
     } catch (err) {
       logAuthError('Failed to initialize Firebase auth', err);
       setLoading(false);
@@ -604,20 +647,31 @@ export function AuthProvider({ children }) {
         return { ok: false, tokenStored: false, reason: 'stale_request' };
       }
 
-      const reason = isTimeoutError(err) ? 'timeout'
-        : err.response?.status === 401 ? '401_unauthorized'
-        : err.response?.status === 500 ? '500_server_error'
+      // P0 FIX 3: Classify error type
+      const status = err?.response?.status;
+      const isGatewayError = status === 502 || status === 503 || status === 504;
+      const isAuthFailure = status === 401 || status === 403;
+      const isTimeout = isTimeoutError(err);
+
+      const reason = isTimeout ? 'timeout'
+        : isAuthFailure ? `${status}_auth_failure`
+        : isGatewayError ? `${status}_gateway_error`
         : err.message?.includes('Network') ? 'network_error'
         : 'unknown_error';
 
-      logAuthError('[Auth] Token refresh failed', err, { reason });
+      logAuthError('[Auth] Token refresh failed', err, { reason, status });
 
-      // Non-abort error (including timeout) → enter guest mode
-      // AUTH INVARIANT: ERROR sets user=null (monotonic guest transition)
-      // CRITICAL: Must also resolve subscription to 'free' to unblock boot gate
-      setTokenStatus(TokenStatus.ERROR);
-      setUser(null); // Force guest mode
-      clearSubscription(); // Resolve subscription as free to unblock boot
+      // P0 FIX 3: Only degrade to guest on auth failures or timeout
+      if (isAuthFailure || isTimeout) {
+        console.warn('[Auth] Token refresh auth failure/timeout, entering guest mode', { reason });
+        setTokenStatus(TokenStatus.ERROR);
+        setUser(null); // Force guest mode
+        clearSubscription(); // Resolve subscription as free to unblock boot
+      } else {
+        // Gateway errors or network errors - keep PRESENT (Firebase auth valid)
+        console.warn('[Auth] Token refresh retryable error, keeping user authenticated', { reason });
+        setTokenStatus(TokenStatus.PRESENT);
+      }
       return { ok: false, tokenStored: false, reason };
     }
   }, [user, tokenRefreshGuard, tokenStatus, clearSubscription]);
@@ -684,15 +738,30 @@ export function AuthProvider({ children }) {
         return { ok: false, reason: 'stale_request' };
       }
 
-      const reason = isTimeoutError(err) ? 'timeout' : 'error';
-      logAuthError('[Auth] Token sync retry failed', err, { reason });
+      // P0 FIX 3: Classify error type
+      const status = err?.response?.status;
+      const isGatewayError = status === 502 || status === 503 || status === 504;
+      const isAuthFailure = status === 401 || status === 403;
+      const isTimeout = isTimeoutError(err);
 
-      // Non-abort error (including timeout) → enter guest mode
-      // AUTH INVARIANT: ERROR sets user=null (monotonic guest transition)
-      // CRITICAL: Must also resolve subscription to 'free' to unblock boot gate
-      setTokenStatus(TokenStatus.ERROR);
-      setUser(null); // Force guest mode
-      clearSubscription(); // Resolve subscription as free to unblock boot
+      const reason = isTimeout ? 'timeout'
+        : isAuthFailure ? `${status}_auth_failure`
+        : isGatewayError ? `${status}_gateway_error`
+        : 'error';
+
+      logAuthError('[Auth] Token sync retry failed', err, { reason, status });
+
+      // P0 FIX 3: Only degrade to guest on auth failures or timeout
+      if (isAuthFailure || isTimeout) {
+        console.warn('[Auth] Token sync retry auth failure/timeout, entering guest mode', { reason });
+        setTokenStatus(TokenStatus.ERROR);
+        setUser(null); // Force guest mode
+        clearSubscription(); // Resolve subscription as free to unblock boot
+      } else {
+        // Gateway errors or network errors - keep PRESENT (Firebase auth valid)
+        console.warn('[Auth] Token sync retry retryable error, keeping user authenticated', { reason });
+        setTokenStatus(TokenStatus.PRESENT);
+      }
       return { ok: false, reason };
     }
   }, [user, tokenRefreshGuard, tokenStatus, clearSubscription]);
