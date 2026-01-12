@@ -28,6 +28,9 @@ DATASETS = {
     "unemployment": "d_b0da22a41f952764376a2b7b5b0f2533",  # Unemployment Quarterly
     "gdp": "d_a5ff719648a0e6d4b4c623ee383ab686",  # GDP Growth Quarterly
     "hdb_rpi": "d_14f63e595975691e7c24a27ae4c07c79",  # HDB Resale Price Index
+    "individual_income": "d_52760e82e8786bac11cca40eb29d1a93",  # Gross Monthly Income (Annual)
+    "household_income": "d_a3beab3d771a17e67cb726a0d4499e10",  # Household Income Percentiles (Annual)
+    "household_indicators": "d_6d878eb9c5a47f54fee7ce496f681e8d",  # Key Household Income Indicators
 }
 
 # File paths
@@ -219,11 +222,115 @@ def fetch_hdb_rpi_data() -> Optional[Dict]:
     }
 
 
+def fetch_income_data() -> Optional[Dict]:
+    """
+    Fetch income data: individual median and household income by percentiles.
+
+    Returns dict with individual_median, household_median, percentiles, etc.
+    """
+    income_data = {}
+
+    # 1. Fetch individual income (has 2025 data)
+    result = fetch_dataset(DATASETS["individual_income"], limit=10)
+    if result and result.get("records"):
+        fields = result.get("fields", [])
+        records = result.get("records", [])
+
+        # Find latest year column
+        year_cols = [f["id"] for f in fields if f["id"].isdigit()]
+        latest_year = max(year_cols) if year_cols else None
+        prev_year = str(int(latest_year) - 1) if latest_year else None
+
+        # Find median row
+        median_row = next((r for r in records if "Median" in str(r.get("DataSeries", ""))
+                          and "Male" not in str(r.get("DataSeries", ""))
+                          and "Female" not in str(r.get("DataSeries", ""))), None)
+
+        if median_row and latest_year:
+            latest_val = median_row.get(latest_year)
+            prev_val = median_row.get(prev_year) if prev_year else None
+
+            if latest_val and latest_val != "na":
+                income_data["individual_median"] = float(latest_val)
+                income_data["individual_year"] = latest_year
+                if prev_val and prev_val != "na":
+                    yoy = ((float(latest_val) - float(prev_val)) / float(prev_val)) * 100
+                    income_data["individual_yoy"] = yoy
+
+    # 2. Fetch household income percentiles (has 2024 data)
+    result = fetch_dataset(DATASETS["household_income"], limit=15)
+    if result and result.get("records"):
+        fields = result.get("fields", [])
+        records = result.get("records", [])
+
+        # Find latest year column
+        year_cols = [f["id"] for f in fields if f["id"].isdigit()]
+        latest_year = max(year_cols) if year_cols else None
+        prev_year = str(int(latest_year) - 1) if latest_year else None
+
+        if latest_year:
+            income_data["household_year"] = latest_year
+            income_data["percentiles"] = {}
+
+            for rec in records:
+                pct_label = rec.get("Dollar", "")
+                val = rec.get(latest_year)
+                prev_val = rec.get(prev_year) if prev_year else None
+
+                if val and str(val).replace(".", "").isdigit():
+                    val = float(val)
+                    # Map percentile labels
+                    if "10th" in pct_label:
+                        income_data["percentiles"]["p10"] = val
+                    elif "20th" in pct_label:
+                        income_data["percentiles"]["p20"] = val
+                    elif "30th" in pct_label:
+                        income_data["percentiles"]["p30"] = val
+                    elif "40th" in pct_label:
+                        income_data["percentiles"]["p40"] = val
+                    elif "50th" in pct_label or "Median" in pct_label:
+                        income_data["household_median"] = val
+                        income_data["percentiles"]["p50"] = val
+                        if prev_val and str(prev_val).replace(".", "").isdigit():
+                            yoy = ((val - float(prev_val)) / float(prev_val)) * 100
+                            income_data["household_yoy"] = yoy
+                    elif "60th" in pct_label:
+                        income_data["percentiles"]["p60"] = val
+                    elif "70th" in pct_label:
+                        income_data["percentiles"]["p70"] = val
+                    elif "80th" in pct_label:
+                        income_data["percentiles"]["p80"] = val
+                    elif "90th" in pct_label:
+                        income_data["percentiles"]["p90"] = val
+
+    # 3. Calculate affordability metrics
+    if income_data.get("household_median"):
+        median = income_data["household_median"]
+        # Estimate take-home (remove ~17% employer CPF)
+        income_data["household_takehome"] = median / 1.17
+        # TDSR 55% of take-home
+        tdsr_limit = (median / 1.17) * 0.55
+        income_data["tdsr_limit"] = tdsr_limit
+        # Max loan at 2% rate, 30yr tenure
+        # Monthly payment = loan * (r(1+r)^n) / ((1+r)^n - 1)
+        # Solving for loan: loan = payment / ((r(1+r)^n) / ((1+r)^n - 1))
+        r = 0.02 / 12  # monthly rate
+        n = 360  # 30 years
+        factor = (r * (1 + r)**n) / ((1 + r)**n - 1)
+        max_loan = tdsr_limit / factor
+        income_data["max_loan"] = max_loan
+        # With 25% down, max property
+        income_data["max_property"] = max_loan / 0.75
+
+    return income_data if income_data else None
+
+
 def generate_indicators_markdown(
     cpi: Optional[Dict],
     unemployment: Optional[Dict],
     gdp: Optional[Dict],
-    hdb_rpi: Optional[Dict]
+    hdb_rpi: Optional[Dict],
+    income: Optional[Dict] = None
 ) -> str:
     """Generate the economic-indicators.md content."""
     today = datetime.now().strftime("%Y-%m-%d")
@@ -294,6 +401,61 @@ def generate_indicators_markdown(
 
 **Recent Trend**: {fmt_trend(hdb_rpi['trend'])}"""
 
+    # Income section
+    income_section = "Data unavailable"
+    if income:
+        # Format currency
+        def fmt_currency(val):
+            if val is None:
+                return "N/A"
+            if val >= 1_000_000:
+                return f"${val/1_000_000:.2f}M"
+            elif val >= 1_000:
+                return f"${val/1_000:.1f}K"
+            return f"${val:,.0f}"
+
+        ind_median = income.get("individual_median")
+        ind_year = income.get("individual_year", "")
+        ind_yoy = income.get("individual_yoy")
+
+        hh_median = income.get("household_median")
+        hh_year = income.get("household_year", "")
+        hh_yoy = income.get("household_yoy")
+        hh_takehome = income.get("household_takehome")
+
+        percentiles = income.get("percentiles", {})
+        tdsr_limit = income.get("tdsr_limit")
+        max_property = income.get("max_property")
+
+        income_section = f"""### Median Income
+
+| Category | Monthly Income | Year | YoY Change |
+|----------|----------------|------|------------|
+| **Individual** | ${ind_median:,.0f} | {ind_year} | {fmt_pct(ind_yoy) if ind_yoy else 'N/A'} |
+| **Household (incl. CPF)** | ${hh_median:,.0f} | {hh_year} | {fmt_pct(hh_yoy) if hh_yoy else 'N/A'} |
+| **Household (take-home est.)** | ${hh_takehome:,.0f} | {hh_year} | - |
+
+### Household Income by Percentile ({hh_year})
+
+| Percentile | Monthly Income | Property Segment |
+|------------|----------------|------------------|
+| 10th | {fmt_currency(percentiles.get('p10'))} | Below market |
+| 20th | {fmt_currency(percentiles.get('p20'))} | HDB upgraders |
+| 30th | {fmt_currency(percentiles.get('p30'))} | Entry OCR |
+| **50th (Median)** | **{fmt_currency(percentiles.get('p50'))}** | **Mass market OCR/RCR** |
+| 70th | {fmt_currency(percentiles.get('p70'))} | Mid-tier RCR |
+| 80th | {fmt_currency(percentiles.get('p80'))} | Upper RCR |
+| 90th | {fmt_currency(percentiles.get('p90'))} | CCR entry |
+
+### Affordability Benchmark (Median Household)
+
+| Metric | Value | Notes |
+|--------|-------|-------|
+| Take-home Income | ${hh_takehome:,.0f}/month | Excl. employer CPF |
+| TDSR Limit (55%) | ${tdsr_limit:,.0f}/month | Max mortgage payment |
+| Max Loan (2%, 30yr) | {fmt_currency(income.get('max_loan'))} | At current rates |
+| **Max Property** | **{fmt_currency(max_property)}** | With 25% down payment |""" if ind_median and hh_median else "Data unavailable"
+
     markdown = f"""# Economic Indicators
 
 **Last Updated**: {today}
@@ -346,6 +508,18 @@ def generate_indicators_markdown(
 
 ---
 
+## Income & Affordability - Annual
+
+{income_section}
+
+### What It Means for Property
+- Median household can afford ~$1.9M property (mass market OCR/RCR)
+- 70th percentile ($17K) needed for mid-tier RCR ($2.5M+)
+- 90th percentile ($29K) needed for CCR entry ($4M+)
+- Income growth (+3-5% YoY) supports price appreciation
+
+---
+
 ## Economic Context Summary
 
 | Indicator | Current | Interpretation |
@@ -354,6 +528,7 @@ def generate_indicators_markdown(
 | Unemployment | {unemployment['rates'].get('total', 'N/A'):.1f}% | {'Low - strong demand' if unemployment and unemployment['rates'].get('total', 5) < 3 else 'Moderate' if unemployment else 'N/A'} |
 | GDP Growth | {fmt_pct(gdp['latest_growth']) if gdp else 'N/A'} | {'Growing - positive sentiment' if gdp and gdp['latest_growth'] > 0 else 'Contracting - caution' if gdp else 'N/A'} |
 | HDB Index | {hdb_rpi['index']:.0f} | {'Rising - upgrader pipeline active' if hdb_rpi and hdb_rpi['yoy_change'] and hdb_rpi['yoy_change'] > 0 else 'Stable/Falling' if hdb_rpi else 'N/A'} |
+| Median HH Income | ${income['household_median']:,.0f} | {'Growing - supports prices' if income and income.get('household_yoy', 0) > 0 else 'Stagnant' if income else 'N/A'} |
 
 ---
 
@@ -382,7 +557,7 @@ def update_manifest():
                         "https://data.gov.sg/datasets/d_a5ff719648a0e6d4b4c623ee383ab686/view",
                         "https://data.gov.sg/datasets/d_14f63e595975691e7c24a27ae4c07c79/view"
                     ],
-                    "description": "Key economic indicators: CPI, unemployment, GDP, HDB price index",
+                    "description": "Key economic indicators: CPI, unemployment, GDP, HDB price index, income",
                     "injection": "conditional",
                     "injection_triggers": [
                         "economy",
@@ -393,9 +568,13 @@ def update_manifest():
                         "GDP",
                         "HDB price",
                         "market conditions",
-                        "macro"
+                        "macro",
+                        "income",
+                        "salary",
+                        "affordability",
+                        "TDSR"
                     ],
-                    "notes": "Inject for macroeconomic context and market condition discussions."
+                    "notes": "Inject for macroeconomic context, market conditions, and affordability discussions."
                 }
             else:
                 manifest["files"]["snapshot/economic-indicators.md"]["updated_at"] = today
@@ -432,13 +611,16 @@ def refresh_economic_indicators() -> bool:
     hdb_rpi = fetch_hdb_rpi_data()
     logger.info(f"HDB RPI: {'OK' if hdb_rpi else 'FAILED'}")
 
+    income = fetch_income_data()
+    logger.info(f"Income: {'OK' if income else 'FAILED'}")
+
     # Generate markdown even if some failed
-    if not any([cpi, unemployment, gdp, hdb_rpi]):
+    if not any([cpi, unemployment, gdp, hdb_rpi, income]):
         logger.error("All economic indicator fetches failed")
         return False
 
     logger.info("Generating economic indicators markdown...")
-    markdown = generate_indicators_markdown(cpi, unemployment, gdp, hdb_rpi)
+    markdown = generate_indicators_markdown(cpi, unemployment, gdp, hdb_rpi, income)
 
     try:
         INDICATORS_FILE.parent.mkdir(parents=True, exist_ok=True)

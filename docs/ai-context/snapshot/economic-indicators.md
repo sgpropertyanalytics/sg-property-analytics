@@ -73,6 +73,45 @@
 
 ---
 
+## Income & Affordability - Annual
+
+### Median Income
+
+| Category | Monthly Income | Year | YoY Change |
+|----------|----------------|------|------------|
+| **Individual** | $5,775 | 2025 | +5.0% |
+| **Household (incl. CPF)** | $11,297 | 2024 | +3.9% |
+| **Household (take-home est.)** | $9,656 | 2024 | - |
+
+### Household Income by Percentile (2024)
+
+| Percentile | Monthly Income | Property Segment |
+|------------|----------------|------------------|
+| 10th | $2.8K | Below market |
+| 20th | $4.9K | HDB upgraders |
+| 30th | $7.0K | Entry OCR |
+| **50th (Median)** | **$11.3K** | **Mass market OCR/RCR** |
+| 70th | $17.1K | Mid-tier RCR |
+| 80th | $21.5K | Upper RCR |
+| 90th | $29.1K | CCR entry |
+
+### Affordability Benchmark (Median Household)
+
+| Metric | Value | Notes |
+|--------|-------|-------|
+| Take-home Income | $9,656/month | Excl. employer CPF |
+| TDSR Limit (55%) | $5,311/month | Max mortgage payment |
+| Max Loan (2%, 30yr) | $1.44M | At current rates |
+| **Max Property** | **$1.92M** | With 25% down payment |
+
+### What It Means for Property
+- Median household can afford ~$1.9M property (mass market OCR/RCR)
+- 70th percentile ($17K) needed for mid-tier RCR ($2.5M+)
+- 90th percentile ($29K) needed for CCR entry ($4M+)
+- Income growth (+3-5% YoY) supports price appreciation
+
+---
+
 ## Economic Context Summary
 
 | Indicator | Current | Interpretation |
@@ -81,6 +120,7 @@
 | Unemployment | 1.9% | Low - strong demand |
 | GDP Growth | +1.6% | Growing - positive sentiment |
 | HDB Index | 204 | Rising - upgrader pipeline active |
+| Median HH Income | $11,297 | Growing - supports prices |
 
 ---
 
