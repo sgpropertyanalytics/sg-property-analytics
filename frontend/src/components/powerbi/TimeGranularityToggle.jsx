@@ -14,8 +14,11 @@ import { useZustandFilters } from '../../stores';
  * - Persists user preference to localStorage
  * - One-time helper tooltip (auto-dismisses after 5s)
  * - Controls all time-series charts simultaneously
+ *
+ * Props:
+ * - disabled: When true, shows blueprint hatch pattern (inactive state)
  */
-export function TimeGranularityToggle({ className = '', layout = 'default' }) {
+export function TimeGranularityToggle({ className = '', layout = 'default', disabled = false }) {
   // Phase 3.3: Now writing to Zustand store
   const { timeGrouping, setTimeGrouping } = useZustandFilters();
   const [showHelper, setShowHelper] = useState(false);
@@ -56,26 +59,29 @@ export function TimeGranularityToggle({ className = '', layout = 'default' }) {
   // Horizontal layout: Industrial Wireframe segmented control
   if (layout === 'horizontal') {
     return (
-      <div className={`segmented-control flex-shrink-0 ${className}`}>
-        {options.map(opt => (
-          <button
-            key={opt.value}
-            type="button"
-            onClick={() => handleChange(opt.value)}
-            className={`segmented-btn ${timeGrouping === opt.value ? 'active' : ''}`}
-          >
-            {opt.label}
-          </button>
-        ))}
+      <div className={`${disabled ? 'filter-group-disabled' : ''} ${className}`}>
+        <div className="segmented-control flex-shrink-0">
+          {options.map(opt => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => !disabled && handleChange(opt.value)}
+              disabled={disabled}
+              className={`segmented-btn ${!disabled && timeGrouping === opt.value ? 'active' : ''}`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
       </div>
     );
   }
 
   // Default layout: with label above
   return (
-    <div className={`relative ${className}`}>
+    <div className={`relative ${disabled ? 'filter-group-disabled' : ''} ${className}`}>
       {/* Label above - matches FilterGroup pattern */}
-      <label className="block text-sm font-mono uppercase tracking-wider text-brand-blue mb-1.5">
+      <label className="block text-sm font-mono uppercase tracking-wider mb-1.5 text-brand-blue">
         Group by
       </label>
 
@@ -85,9 +91,10 @@ export function TimeGranularityToggle({ className = '', layout = 'default' }) {
           <button
             key={opt.value}
             type="button"
-            onClick={() => handleChange(opt.value)}
+            onClick={() => !disabled && handleChange(opt.value)}
+            disabled={disabled}
             className={`min-h-[44px] px-3 py-2 text-sm rounded-none border transition-none ${
-              timeGrouping === opt.value
+              !disabled && timeGrouping === opt.value
                 ? 'bg-mono-dark text-white border-mono-dark'
                 : 'bg-white text-brand-navy border-brand-sky hover:border-mono-dark'
             }`}

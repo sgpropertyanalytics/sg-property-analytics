@@ -38,8 +38,9 @@ export function DistrictDeepDiveContent() {
   return (
     <PageCanvas>
       {/* Filter Bar - Contained in sticky ribbon (same as Market Overview) */}
+      {/* Y/Q/M toggle disabled - District Overview uses fixed aggregation */}
       <ControlRibbon>
-        <FilterBar />
+        <FilterBar disabledFilters={{ timeGrouping: true }} />
       </ControlRibbon>
 
       {/* Main Content */}

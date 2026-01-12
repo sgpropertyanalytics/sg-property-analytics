@@ -12,10 +12,22 @@ import { PowerBIFilterSidebar } from './PowerBIFilterSidebar';
  *
  * Usage:
  *   <FilterBar />
+ *   <FilterBar disabledFilters={{ timeGrouping: true }} />
+ *
+ * Props:
+ * - disabledFilters: Object with filter section keys to disable
+ *   {
+ *     regions: boolean,      // CCR/RCR/OCR buttons
+ *     districts: boolean,    // District dropdown
+ *     bedrooms: boolean,     // 1BR-5BR buttons
+ *     timePresets: boolean,  // All/3M/6M/1Y/3Y/5Y buttons
+ *     timeGrouping: boolean, // Y/Q/M toggle
+ *   }
+ *   Default: all enabled (empty object or undefined)
  *
  * A change here affects ALL pages automatically.
  */
-export function FilterBar() {
+export function FilterBar({ disabledFilters = {} }) {
   const { activeFilterCount } = useZustandFilters();
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
@@ -61,7 +73,7 @@ export function FilterBar() {
     <>
       {/* Desktop: Horizontal bar - sticky handled by parent ControlRibbon */}
       <div className="hidden lg:block">
-        <PowerBIFilterSidebar layout="horizontal" />
+        <PowerBIFilterSidebar layout="horizontal" disabledFilters={disabledFilters} />
       </div>
 
       {/* Mobile/Tablet: Filter button + drawer */}
@@ -94,6 +106,7 @@ export function FilterBar() {
               <PowerBIFilterSidebar
                 layout="drawer"
                 onClose={() => setMobileFilterOpen(false)}
+                disabledFilters={disabledFilters}
               />
             </div>
           </div>

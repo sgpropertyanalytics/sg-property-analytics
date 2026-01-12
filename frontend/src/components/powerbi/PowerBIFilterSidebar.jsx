@@ -21,8 +21,13 @@ import { TimeGranularityToggle } from './TimeGranularityToggle';
  * - sidebar (default): Original vertical sidebar
  * - horizontal: Horizontal control bar for desktop
  * - drawer: Full-screen drawer for mobile
+ *
+ * Props:
+ * - disabledFilters: Object with filter section keys to disable (blueprint hatch pattern)
+ *   { regions, districts, bedrooms, timePresets, timeGrouping }
+ *   Default: all enabled
  */
-export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, layout = 'sidebar', onClose }) {
+export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, layout = 'sidebar', onClose, disabledFilters = {} }) {
   // Phase 3.3: Now writing to Zustand store (actions update Zustand state)
   const {
     filters,
@@ -119,13 +124,13 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
   // Single row layout: Property filters | Time Duration | Granularity | Reset
   if (layout === 'horizontal') {
     return (
-      <div className="py-3">
+      <div className="py-3 overflow-visible">
         {/* Frame - full width, frosted glass */}
-        <div className="w-full bg-white/70 border border-slate-200/80 py-3 shadow-sm">
+        <div className="w-full bg-white/70 border border-slate-200/80 py-3 shadow-sm overflow-visible">
           {/* Centered content container */}
-          <div className="mx-auto max-w-[1400px] px-6">
+          <div className="mx-auto max-w-[1400px] px-6 overflow-visible">
             {/* One row, no scroll, always fit */}
-            <div className="flex items-center justify-center flex-nowrap gap-3 whitespace-nowrap">
+            <div className="flex items-center justify-center flex-nowrap gap-3 whitespace-nowrap overflow-visible">
 
               {/* Region Segmented Control */}
               <div className="segmented-control shrink-0">
@@ -149,8 +154,8 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                 ))}
               </div>
 
-              {/* District Dropdown - fixed width */}
-              <div className="shrink-0 w-[160px]">
+              {/* District Dropdown */}
+              <div className="shrink-0 w-[140px] overflow-visible">
                 <MultiSelectDropdown
                   options={(filterOptions.districtsRaw || []).map(d => {
                     const areaName = DISTRICT_NAMES[d];
@@ -163,7 +168,6 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                   selected={filters.districts}
                   onChange={setDistricts}
                   placeholder="Districts"
-                  searchable
                   compact
                   segmentedStyle
                 />
@@ -223,7 +227,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
 
               {/* Time Granularity Toggle */}
               <div className="shrink-0">
-                <TimeGranularityToggle layout="horizontal" />
+                <TimeGranularityToggle layout="horizontal" disabled={disabledFilters.timeGrouping} />
               </div>
 
             </div>
@@ -464,7 +468,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
           <div className="px-4 py-3 border-b border-brand-sky/50">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-brand-navy">Group by</span>
-              <TimeGranularityToggle className="flex-shrink-0" />
+              <TimeGranularityToggle className="flex-shrink-0" disabled={disabledFilters.timeGrouping} />
             </div>
           </div>
         </div>
@@ -865,13 +869,14 @@ function MultiSelectDropdown({ options, selected, onChange, placeholder, searcha
   }, [isOpen]);
 
   // Styles differ based on segmentedStyle prop - Industrial Wireframe aesthetic
+  // segmentedStyle matches .segmented-control styling (gray-900 border, 32px height)
   const buttonClasses = segmentedStyle
-    ? `${compact ? 'min-w-[140px]' : 'w-full'} min-w-0 px-4 py-2 min-h-[36px] font-mono text-xs uppercase tracking-wide border border-stone-400 bg-transparent text-stone-600 text-left flex items-center justify-between focus:outline-none focus:border-orange-500 hover:border-stone-600`
-    : `${compact ? 'min-w-[140px]' : 'w-full'} min-w-0 px-3 py-2.5 min-h-[44px] text-sm border border-stone-400 bg-transparent text-left flex items-center justify-between focus:outline-none focus:border-orange-500`;
+    ? `w-full min-w-0 px-4 h-[32px] font-mono text-[0.6875rem] uppercase tracking-[0.05em] border border-gray-900 bg-white text-gray-600 text-left flex items-center justify-between focus:outline-none hover:bg-black/[0.04]`
+    : `${compact ? 'min-w-[140px]' : 'w-full'} min-w-0 px-3 py-2.5 min-h-[44px] text-sm border border-stone-400 bg-transparent text-left flex items-center justify-between focus:outline-none focus:border-gray-900`;
 
   const dropdownClasses = segmentedStyle
-    ? `absolute z-50 ${compact ? 'w-64' : 'w-full'} mt-1 bg-white border border-stone-400 max-h-60 overflow-hidden`
-    : `absolute z-50 ${compact ? 'w-64' : 'w-full'} mt-1 bg-white border border-stone-400 max-h-60 overflow-hidden`;
+    ? `absolute z-[100] w-64 mt-1 bg-white border border-gray-900 shadow-lg`
+    : `absolute z-[100] ${compact ? 'w-64' : 'w-full'} mt-1 bg-white border border-gray-900 shadow-lg`;
 
   return (
     <div className={`relative multi-select-dropdown ${compact ? '' : 'w-full'}`}>
@@ -902,36 +907,40 @@ function MultiSelectDropdown({ options, selected, onChange, placeholder, searcha
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search..."
-                className="w-full px-2 py-1 text-xs font-mono uppercase border border-stone-400 bg-transparent focus:outline-none focus:border-[#FF4F00]"
+                className="w-full px-2 py-1 text-xs font-mono uppercase border border-stone-400 bg-transparent focus:outline-none focus:border-gray-900"
                 onClick={(e) => e.stopPropagation()}
               />
             </div>
           )}
-          <div className="max-h-48 overflow-y-auto">
+          <div className="max-h-48 min-h-[40px] overflow-y-auto">
             {selected.length > 0 && (
               <button
                 type="button"
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); onChange([]); }}
-                className="w-full px-3 py-2 text-xs font-mono uppercase text-left text-[#FF4F00] hover:bg-stone-200/50 border-b border-stone-400"
+                className="w-full px-3 py-2 text-xs font-mono uppercase text-left text-gray-900 hover:bg-stone-200/50 border-b border-stone-400"
               >
                 Clear selection
               </button>
             )}
-            {filteredOptions.map(opt => (
-              <label
-                key={opt.value}
-                className="flex items-center px-3 py-2 hover:bg-stone-200/50 cursor-pointer"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <input
-                  type="checkbox"
-                  checked={selected.includes(opt.value)}
-                  onChange={(e) => handleToggle(opt.value, e)}
-                  className="mr-2 border-stone-400 text-stone-900 focus:ring-stone-400 accent-stone-900"
-                />
-                <span className="text-xs font-mono text-stone-700">{opt.label}</span>
-              </label>
-            ))}
+            {filteredOptions.length === 0 ? (
+              <div className="px-3 py-2 text-xs font-mono text-stone-500">Loading...</div>
+            ) : (
+              filteredOptions.map(opt => (
+                <label
+                  key={opt.value}
+                  className="flex items-center px-3 py-2 hover:bg-stone-200/50 cursor-pointer"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selected.includes(opt.value)}
+                    onChange={(e) => handleToggle(opt.value, e)}
+                    className="mr-2 border-stone-400 text-stone-900 focus:ring-stone-400 accent-stone-900"
+                  />
+                  <span className="text-xs font-mono text-stone-700">{opt.label}</span>
+                </label>
+              ))
+            )}
           </div>
         </div>
       )}

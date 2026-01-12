@@ -69,15 +69,24 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
-    # Initialize CORS - allow all origins
+    # Initialize CORS - allow credentials for auth cookies
     # Note: Flask-CORS handles all CORS headers automatically, no after_request needed
+    # For credentials to work, we must specify exact origins (not wildcard)
+    allowed_origins = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
+        "https://sgpropertytrend.vercel.app",
+        "https://www.sgpropertyanalytics.com",
+        "https://sgpropertyanalytics.com",
+    ]
     CORS(app,
-         resources={r"/api/*": {"origins": "*"}},
+         resources={r"/api/*": {"origins": allowed_origins}},
          methods=["GET", "POST", "OPTIONS", "PUT", "DELETE"],
          allow_headers=["Content-Type", "Authorization", "X-Request-ID"],
          expose_headers=["X-Request-ID", "X-DB-Time-Ms", "X-Query-Count"],
-         supports_credentials=False,
-         send_wildcard=True)  # Always send '*' instead of echoing Origin header
+         supports_credentials=True)
 
     # === API CONTRACT MIDDLEWARE ===
     # Request ID injection for request correlation and debugging
