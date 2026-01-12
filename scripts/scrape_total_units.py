@@ -446,20 +446,16 @@ def load_existing_csv() -> dict[str, dict]:
 
 def get_hot_missing_projects(min_txns: int = 15) -> list[tuple[str, int]]:
     """Get projects with >min_txns transactions that are missing total_units."""
-    import os
-    from sqlalchemy import create_engine, text
+    import sys
+    from sqlalchemy import text
 
-    database_url = os.environ.get("DATABASE_URL")
-    if not database_url:
-        try:
-            import sys
-            sys.path.insert(0, str(BACKEND_DIR))
-            from config import Config
-            database_url = Config.SQLALCHEMY_DATABASE_URI
-        except Exception as exc:
-            raise RuntimeError("DATABASE_URL not set") from exc
+    # Add backend to path for imports
+    if str(BACKEND_DIR) not in sys.path:
+        sys.path.insert(0, str(BACKEND_DIR))
 
-    engine = create_engine(database_url)
+    from db.engine import get_engine
+
+    engine = get_engine("job")
     with engine.connect() as conn:
         result = conn.execute(text("""
             SELECT project_name, COUNT(*) as txn_count
@@ -489,20 +485,16 @@ def get_hot_missing_projects(min_txns: int = 15) -> list[tuple[str, int]]:
 
 def get_all_missing_projects() -> list[str]:
     """Get all projects missing from CSV."""
-    import os
-    from sqlalchemy import create_engine, text
+    import sys
+    from sqlalchemy import text
 
-    database_url = os.environ.get("DATABASE_URL")
-    if not database_url:
-        try:
-            import sys
-            sys.path.insert(0, str(BACKEND_DIR))
-            from config import Config
-            database_url = Config.SQLALCHEMY_DATABASE_URI
-        except Exception as exc:
-            raise RuntimeError("DATABASE_URL not set") from exc
+    # Add backend to path for imports
+    if str(BACKEND_DIR) not in sys.path:
+        sys.path.insert(0, str(BACKEND_DIR))
 
-    engine = create_engine(database_url)
+    from db.engine import get_engine
+
+    engine = get_engine("job")
     with engine.connect() as conn:
         result = conn.execute(text("""
             SELECT DISTINCT project_name

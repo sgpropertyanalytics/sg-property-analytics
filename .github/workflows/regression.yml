@@ -58,3 +58,18 @@ jobs:
             echo "::error::Contract drift detected! Run 'python backend/scripts/generate_contracts.py' locally and commit."
             exit 1
           }
+
+  engine-policy:
+    name: Engine Factory Policy
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Check engine factory policy
+        run: python scripts/guard_no_create_engine.py

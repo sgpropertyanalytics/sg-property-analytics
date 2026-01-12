@@ -35,7 +35,7 @@ from datetime import datetime, date, timedelta, UTC
 from typing import Optional, Dict, Any, List, Tuple
 from dataclasses import dataclass, field, asdict
 
-from sqlalchemy import create_engine, text, bindparam
+from sqlalchemy import text, bindparam
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import scoped_session, sessionmaker
 
@@ -94,20 +94,15 @@ class SyncResult:
 
 def get_database_engine():
     """
-    Create a database engine from DATABASE_URL.
+    Get database engine for URA sync (cron job).
 
-    Uses config.get_database_url() which handles:
-    - postgres:// → postgresql:// fix for SQLAlchemy 2.0
-    - SSL settings added to URL for non-localhost
+    Uses the canonical engine factory from db.engine which:
+    - Uses NullPool for job contexts (better for PgBouncer transaction mode)
+    - Includes warmup with retry (handles Supabase cold starts)
+    - Respects Config.SQLALCHEMY_ENGINE_OPTIONS (connect_timeout, etc.)
     """
-    from config import get_database_url
-    database_url = get_database_url()
-
-    return create_engine(
-        database_url,
-        pool_pre_ping=True,
-        pool_recycle=300
-    )
+    from db.engine import get_engine
+    return get_engine("job")
 
 
 def get_git_sha() -> Optional[str]:
