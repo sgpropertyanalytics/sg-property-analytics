@@ -30,7 +30,7 @@ const REGION_HEADER_TEXT = {
  * - Bars: Total Transaction Value (grey, 30% opacity)
  * - Independent Y-axes for visual impact
  */
-export const DistrictMicroChart = React.memo(function DistrictMicroChart({ district, data, onClick }) {
+export const DistrictMicroChart = React.memo(function DistrictMicroChart({ district, data, onClick, muted = false }) {
   const chartRef = useRef(null);
 
   // Determine region for header styling
@@ -219,7 +219,7 @@ export const DistrictMicroChart = React.memo(function DistrictMicroChart({ distr
       : (isDarkHeader ? 'text-[#fca5a5]' : 'text-red-500');     // Bright coral red on dark
 
   return (
-    <div className="h-full flex flex-col bg-white rounded-sm border border-slate-200 overflow-hidden hover:border-slate-400 transition-colors">
+    <div className={`h-full flex flex-col bg-white rounded-sm border border-slate-200 overflow-hidden hover:border-slate-400 transition-all ${muted ? 'opacity-30' : 'opacity-100'}`}>
       {/* Header with district code and growth KPI - shaded by region */}
       <div className={`px-2 py-1.5 border-b border-slate-200 shrink-0 flex items-center justify-between gap-1 ${headerBg}`}>
         <span className={`text-xs font-semibold truncate ${headerText}`} title={DISTRICT_NAMES[district]}>

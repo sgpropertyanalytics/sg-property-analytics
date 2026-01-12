@@ -57,7 +57,8 @@ function TimeTrendChartBase({ height = 380, saleType = null, staggerIndex = 0, v
 
   // Extract filter values directly (simple, explicit)
   const timeframe = filters.timeFilter?.type === 'preset' ? filters.timeFilter.value : 'Y1';
-  // bedroom and districts now filtered client-side (not passed to API)
+  const districts = filters.districts?.join(',') || '';
+  // bedroom filtered client-side; districts passed to API for server-side filtering
   const { isFreeResolved } = useSubscription();
 
   const chartRef = useRef(null);
@@ -70,12 +71,12 @@ function TimeTrendChartBase({ height = 380, saleType = null, staggerIndex = 0, v
   const { data: safeData, status, error, refetch } = useTimeSeriesQuery({
     queryFn: async (signal) => {
       // Multi-dim params - fetch all bedroom/region combinations
-      // No bedroom/district filter - we filter client-side for instant toggle
+      // Bedroom filtered client-side; districts filtered server-side
       const params = {
         group_by: 'month,region,bedroom',
         metrics: 'count,total_value,total_sqft',
         timeframe,
-        // bedroom/district excluded - filtered client-side
+        ...(districts && { districts }),
         ...(saleType && { sale_type: saleType }),
       };
 
@@ -102,8 +103,8 @@ function TimeTrendChartBase({ height = 380, saleType = null, staggerIndex = 0, v
         throw err;
       }
     },
-    // Query key excludes bedroom/districts (filtered client-side, no refetch on toggle)
-    deps: ['time-trend', timeframe, saleType],
+    // Query key: bedroom filtered client-side; districts trigger refetch
+    deps: ['time-trend', timeframe, saleType, districts],
     // Enable client-side bedroom/region filtering
     filterDimensions: true,
     chartName: 'TimeTrendChart',

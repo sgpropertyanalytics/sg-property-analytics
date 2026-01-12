@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 // Phase 2: Using TanStack Query via useAppQuery wrapper
 import { useAppQuery } from '../../hooks';
 // Phase 3.4: Using standardized Zustand filters (same as Market Overview)
 import { useZustandFilters } from '../../stores';
 import { getAggregate } from '../../api/client';
-import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS } from '../../constants';
+import { CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS, getRegionForDistrict } from '../../constants';
 import { DistrictMicroChart } from './DistrictMicroChart';
 import { isSaleType, getAggField, AggField, SaleType } from '../../schemas/apiContract';
 import { assertKnownVersion } from '../../adapters';
@@ -92,6 +92,18 @@ export function MarketMomentumGrid({ saleType = SaleType.RESALE }) {
   // Default fallback for when data is null (initial load) - matches PriceDistributionChart pattern
   const safeData = data ?? {};
 
+  // Compute active regions based on selected districts for highlighting effect
+  const activeRegions = useMemo(() => {
+    const selectedDistricts = filters.districts || [];
+    if (selectedDistricts.length === 0) return null; // No filtering = all regions active
+    const regions = new Set();
+    selectedDistricts.forEach(d => {
+      const region = getRegionForDistrict(d);
+      if (region) regions.add(region);
+    });
+    return regions;
+  }, [filters.districts]);
+
   // Handle district click - no cross-filter since we're not using PowerBIFilterContext
   // This is a visual-only interaction for now (could add onClick prop in future)
   const handleDistrictClick = (_district) => {
@@ -141,15 +153,20 @@ export function MarketMomentumGrid({ saleType = SaleType.RESALE }) {
       {/* Grid of micro-charts */}
       <div className="p-3 lg:p-4">
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2 lg:gap-3">
-          {ALL_DISTRICTS.map((district) => (
-            <div key={district} className="aspect-[4/3]">
-              <DistrictMicroChart
-                district={district}
-                data={safeData[district] || []}
-                onClick={handleDistrictClick}
-              />
-            </div>
-          ))}
+          {ALL_DISTRICTS.map((district) => {
+            const region = getRegionForDistrict(district);
+            const isMuted = activeRegions !== null && !activeRegions.has(region);
+            return (
+              <div key={district} className="aspect-[4/3]">
+                <DistrictMicroChart
+                  district={district}
+                  data={safeData[district] || []}
+                  onClick={handleDistrictClick}
+                  muted={isMuted}
+                />
+              </div>
+            );
+          })}
         </div>
       </div>
 
