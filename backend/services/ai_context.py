@@ -54,20 +54,41 @@ class PropertyContext:
     """
 
     # Chart type to static document mapping
+    # All chart types get definitions.md + reasoning-guide.md at minimum
     STATIC_MAPPINGS = {
-        "absolute_psf": ["definitions.md", "district-mapping.md"],
+        # Time series
+        "absolute_psf": ["definitions.md", "district-mapping.md", "reasoning-guide.md"],
+        "time_trend": ["definitions.md", "reasoning-guide.md"],
+        # Distribution & scatter
         "price_distribution": ["definitions.md", "reasoning-guide.md"],
         "beads": ["definitions.md", "reasoning-guide.md"],
-        "time_trend": ["definitions.md", "reasoning-guide.md"],
-        "price_compression": ["definitions.md", "district-mapping.md"],
-        "market_oscillator": ["definitions.md", "market-cycles.md"],
-        "supply_waterfall": ["definitions.md"],
+        # Comparison
+        "district_comparison": ["definitions.md", "district-mapping.md", "reasoning-guide.md"],
+        "new_vs_resale": ["definitions.md", "reasoning-guide.md"],
+        # Heatmaps
+        "budget_heatmap": ["definitions.md", "reasoning-guide.md"],
+        "floor_liquidity": ["definitions.md", "reasoning-guide.md"],
+        # Dumbbell
+        "growth_dumbbell": ["definitions.md", "district-mapping.md", "reasoning-guide.md"],
+        # Price analysis
+        "price_band": ["definitions.md", "reasoning-guide.md"],
+        "price_compression": ["definitions.md", "district-mapping.md", "reasoning-guide.md"],
+        "price_growth": ["definitions.md", "reasoning-guide.md"],
+        # Supply & market
+        "supply_waterfall": ["definitions.md", "reasoning-guide.md"],
+        "market_oscillator": ["definitions.md", "market-cycles.md", "reasoning-guide.md"],
+        "new_launch_timeline": ["definitions.md", "reasoning-guide.md"],
+        # Matrix/Grid
+        "price_range_matrix": ["definitions.md", "reasoning-guide.md"],
+        "market_momentum": ["definitions.md", "district-mapping.md", "reasoning-guide.md"],
     }
 
     # Chart types that need policy context (involve pricing/affordability)
     NEEDS_POLICY = {
-        "absolute_psf", "price_distribution", "beads",
-        "time_trend", "price_compression", "market_oscillator"
+        "absolute_psf", "price_distribution", "beads", "time_trend",
+        "price_compression", "market_oscillator", "price_band",
+        "price_growth", "price_range_matrix", "new_vs_resale",
+        "budget_heatmap", "growth_dumbbell"
     }
 
     def __init__(self, context_dir: Optional[Path] = None):
@@ -165,13 +186,34 @@ class PropertyContext:
                     snippets.append(f"# {file_name} (summary)\n" + "\n".join(lines))
 
             elif injection_rule == "relevant_section":
-                # Load section matching chart type
+                # Load section matching chart type from reasoning-guide.md
                 section_map = {
+                    # Time series
                     "time_trend": "## Time Series Charts",
+                    "absolute_psf": "## Time Series Charts",
+                    # Distribution
                     "price_distribution": "## Distribution Charts",
+                    # Scatter
                     "beads": "## Beads Charts",
-                    "absolute_psf": "## Comparison Charts",
-                    "price_compression": "## Comparison Charts",
+                    # Comparison
+                    "district_comparison": "## Comparison Charts",
+                    "new_vs_resale": "## Comparison Charts",
+                    # Heatmaps
+                    "budget_heatmap": "## Heatmap Charts",
+                    "floor_liquidity": "## Heatmap Charts",
+                    # Dumbbell
+                    "growth_dumbbell": "## Dumbbell Charts",
+                    # Price analysis
+                    "price_band": "## Price Band Charts",
+                    "price_compression": "## Price Compression Charts",
+                    "price_growth": "## Growth Charts",
+                    # Supply & market
+                    "supply_waterfall": "## Waterfall Charts",
+                    "market_oscillator": "## Oscillator Charts",
+                    "new_launch_timeline": "## Timeline Charts",
+                    # Matrix/Grid
+                    "price_range_matrix": "## Matrix/Grid Charts",
+                    "market_momentum": "## Matrix/Grid Charts",
                 }
                 section = section_map.get(chart_type)
                 content = self._load_section(file_path, section)
