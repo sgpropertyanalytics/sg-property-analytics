@@ -57,6 +57,7 @@ from services.ura_sync_config import (
     ALLOWED_PROPERTY_TYPES_DISPLAY,
 )
 from services.ura_shadow_comparator import URAShadowComparator, ComparisonReport
+from services.ai_snapshot_service import refresh_market_snapshot
 
 logger = logging.getLogger(__name__)
 
@@ -243,6 +244,9 @@ class URASyncEngine:
 
                 # 7. Mark success
                 self._mark_succeeded(comparison_report)
+
+                # 8. Refresh AI market snapshot with new data
+                refresh_market_snapshot(self.engine)
 
                 duration = (datetime.now(UTC) - start_time).total_seconds()
 

@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_modified": "2026-01-10",
+  "last_modified": "2026-01-12",
   "files": {
     "static/definitions.md": {
       "updated_at": "2026-01-10",
@@ -11,7 +11,7 @@
     "static/district-mapping.md": {
       "updated_at": "2026-01-10",
       "last_verified_at": "2026-01-10",
-      "description": "District to region mapping (D01-D28 → CCR/RCR/OCR)",
+      "description": "District to region mapping (D01-D28 \u2192 CCR/RCR/OCR)",
       "injection": "always_trimmed",
       "notes": "Inject summary table only, not full descriptions"
     },
@@ -30,8 +30,8 @@
       "notes": "Inject only the section matching the chart type"
     },
     "snapshot/market-snapshot.md": {
-      "updated_at": "2026-01-10",
-      "last_verified_at": "2026-01-10",
+      "updated_at": "2026-01-12",
+      "last_verified_at": "2026-01-12",
       "refresh_frequency": "weekly",
       "source_urls": [
         "https://www.ura.gov.sg/reis/dataSalesMarket"
@@ -79,10 +79,21 @@
     }
   },
   "injection_rules": {
-    "always": ["static/definitions.md"],
-    "always_trimmed": ["static/district-mapping.md"],
-    "always_header": ["snapshot/market-snapshot.md"],
-    "conditional": ["snapshot/policy-measures.md", "static/market-cycles.md"],
-    "relevant_section": ["static/reasoning-guide.md"]
+    "always": [
+      "static/definitions.md"
+    ],
+    "always_trimmed": [
+      "static/district-mapping.md"
+    ],
+    "always_header": [
+      "snapshot/market-snapshot.md"
+    ],
+    "conditional": [
+      "snapshot/policy-measures.md",
+      "static/market-cycles.md"
+    ],
+    "relevant_section": [
+      "static/reasoning-guide.md"
+    ]
   }
 }
