@@ -105,6 +105,13 @@ class PropertyContext:
         "market_oscillator", "new_vs_resale"
     }
 
+    # Chart types that need economic indicators (market-wide trends)
+    NEEDS_ECONOMIC_INDICATORS = {
+        "time_trend", "market_oscillator", "price_growth",
+        "supply_waterfall", "market_momentum", "new_vs_resale",
+        "growth_dumbbell", "new_launch_timeline"
+    }
+
     def __init__(self, context_dir: Optional[Path] = None):
         self.context_dir = context_dir or AI_CONTEXT_DIR
         self._manifest = None
@@ -270,6 +277,12 @@ class PropertyContext:
             interest_rates = self._load_file("snapshot/interest-rates.md")
             if interest_rates:
                 snippets.append("# Interest Rates & Affordability\n" + interest_rates)
+
+        # Include economic indicators for market-wide trend charts
+        if chart_type in self.NEEDS_ECONOMIC_INDICATORS:
+            economic = self._load_file("snapshot/economic-indicators.md")
+            if economic:
+                snippets.append("# Economic Indicators\n" + economic)
 
         return snippets
 

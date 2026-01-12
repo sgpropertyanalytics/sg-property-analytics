@@ -115,6 +115,30 @@
         "financing"
       ],
       "notes": "Inject for affordability and financing discussions."
+    },
+    "snapshot/economic-indicators.md": {
+      "updated_at": "2026-01-12",
+      "last_verified_at": "2026-01-12",
+      "source_urls": [
+        "https://data.gov.sg/datasets/d_bdaff844e3ef89d39fceb962ff8f0791/view",
+        "https://data.gov.sg/datasets/d_b0da22a41f952764376a2b7b5b0f2533/view",
+        "https://data.gov.sg/datasets/d_a5ff719648a0e6d4b4c623ee383ab686/view",
+        "https://data.gov.sg/datasets/d_14f63e595975691e7c24a27ae4c07c79/view"
+      ],
+      "description": "Key economic indicators: CPI, unemployment, GDP, HDB price index",
+      "injection": "conditional",
+      "injection_triggers": [
+        "economy",
+        "economic",
+        "inflation",
+        "CPI",
+        "unemployment",
+        "GDP",
+        "HDB price",
+        "market conditions",
+        "macro"
+      ],
+      "notes": "Inject for macroeconomic context and market condition discussions."
     }
   },
   "injection_rules": {
