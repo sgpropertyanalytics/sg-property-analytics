@@ -147,28 +147,21 @@ def run_background_scrape(year: int = 2025, force_reset: bool = False, app=None)
         try:
             from models.gls_tender import GLSTender
             from services.gls_scraper import scrape_gls_tenders
-            from sqlalchemy import text, create_engine
+            from sqlalchemy import text
             from sqlalchemy.orm import scoped_session, sessionmaker
-            import os
+            from db.engine import get_engine
 
             print(f"Starting background GLS scrape for {year}...")
 
             # Need app context for database operations
             with flask_app.app_context():
-                # Create a NEW database engine for this thread to avoid SSL issues
-                # Background threads can't share SSL connections with main thread
-                from config import get_database_url
+                # Use canonical engine factory (handles retries, timeouts, NullPool)
                 try:
-                    database_url = get_database_url()  # Handles postgres://, adds SSL to URL
+                    engine = get_engine("job")
                 except RuntimeError:
-                    database_url = None
+                    engine = None
 
-                if database_url:
-                    engine = create_engine(
-                        database_url,
-                        pool_pre_ping=True,
-                        pool_recycle=300
-                    )
+                if engine:
 
                     # Create a new session for this thread
                     Session = scoped_session(sessionmaker(bind=engine))
@@ -271,27 +264,22 @@ def cron_refresh(year: int = 2025) -> Dict[str, Any]:
     """
     from models.gls_tender import GLSTender
     from services.gls_scraper import scrape_gls_tenders
-    from sqlalchemy import text, create_engine
+    from sqlalchemy import text
     from sqlalchemy.orm import scoped_session, sessionmaker
+    from db.engine import get_engine
 
     global _last_scrape_time, _last_scrape_result
 
     try:
         print(f"Cron GLS refresh starting for {year}...")
 
-        # Create a FRESH database connection to avoid SSL stale connection issues
-        from config import get_database_url
+        # Use canonical engine factory (handles retries, timeouts, NullPool)
         try:
-            database_url = get_database_url()  # Handles postgres://, adds SSL to URL
+            engine = get_engine("job")
         except RuntimeError:
-            database_url = None
+            engine = None
 
-        if database_url:
-            engine = create_engine(
-                database_url,
-                pool_pre_ping=True,
-                pool_recycle=300
-            )
+        if engine:
 
             # Create a new session for this operation
             Session = scoped_session(sessionmaker(bind=engine))

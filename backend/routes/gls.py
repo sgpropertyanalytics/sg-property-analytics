@@ -235,23 +235,18 @@ def reset_and_rescrape():
     try:
         from models.gls_tender import GLSTender
         from services.gls_scraper import scrape_gls_tenders
-        from sqlalchemy import text, create_engine
+        from sqlalchemy import text
         from sqlalchemy.orm import scoped_session, sessionmaker
+        from db.engine import get_engine
 
-        # Create a FRESH database connection to avoid SSL stale connection issues
-        # This is critical on Render where connections can go stale
-        from config import get_database_url
+        # Use "job" mode intentionally: this is a rare admin endpoint doing DDL
+        # (DROP TABLE), so fresh connection is preferred over pooled.
         try:
-            database_url = get_database_url()  # Handles postgres://, adds SSL to URL
+            engine = get_engine("job")
         except RuntimeError:
-            database_url = None
+            engine = None
 
-        if database_url:
-            engine = create_engine(
-                database_url,
-                pool_pre_ping=True,
-                pool_recycle=300
-            )
+        if engine:
 
             # Create a new session for this operation
             Session = scoped_session(sessionmaker(bind=engine))
