@@ -2,7 +2,8 @@
 Admin, Health, and Debug Endpoints
 
 Endpoints:
-- /health - Health check
+- /health - Health check (exempt from rate limiting)
+- /ping - Simple ping (exempt from rate limiting)
 - /debug/data-status - Data integrity diagnostics
 - /admin/update-metadata - Manual metadata update
 - /admin/filter-outliers - Outlier management
@@ -13,10 +14,15 @@ import time
 import os
 from functools import wraps
 from datetime import timedelta
-from flask import request, jsonify
+from flask import request, jsonify, current_app
 from routes.analytics import analytics_bp, reader
 from constants import SALE_TYPE_NEW, SALE_TYPE_RESALE
 from config import Config
+
+
+def _get_limiter():
+    """Get the rate limiter instance from the current app."""
+    return getattr(current_app, 'limiter', None)
 
 
 def require_admin_secret(fn):
