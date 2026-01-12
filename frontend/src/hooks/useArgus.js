@@ -1,7 +1,9 @@
 /**
- * useChartInterpret - SSE consumer hook for AI chart interpretation
+ * useArgus - SSE consumer hook for AI-powered analysis
  *
- * Connects to the backend AI endpoint and streams the interpretation response.
+ * Connects to the backend AI endpoint and streams the analysis response.
+ * Supports both chart interpretation and Argus project analysis.
+ *
  * Handles:
  * - SSE connection management
  * - Token accumulation into full response
@@ -10,17 +12,17 @@
  *
  * Usage:
  * ```jsx
- * const {
- *   interpret,
- *   response,
- *   isStreaming,
- *   isDone,
- *   error,
- *   versions,
- *   reset,
- * } = useChartInterpret();
+ * const { interpret, response, isStreaming } = useArgus();
  *
- * // Trigger interpretation
+ * // Argus project analysis
+ * interpret({
+ *   chartType: 'argus',
+ *   chartTitle: 'Marina One Residences',
+ *   data: { subject: {...}, evidence: {...} },
+ *   filters: currentFilters,
+ * });
+ *
+ * // Chart interpretation (legacy)
  * interpret({
  *   chartType: 'absolute_psf',
  *   chartTitle: 'Absolute PSF by Region',
@@ -52,11 +54,11 @@ export const InterpretStatus = {
 };
 
 /**
- * Hook for AI-powered chart interpretation via SSE streaming
+ * Hook for AI-powered analysis via SSE streaming
  *
- * @returns {Object} Interpretation state and controls
+ * @returns {Object} Analysis state and controls
  */
-export function useChartInterpret() {
+export function useArgus() {
   const [status, setStatus] = useState(InterpretStatus.IDLE);
   const [response, setResponse] = useState('');
   const [error, setError] = useState(null);
@@ -238,4 +240,7 @@ export function useChartInterpret() {
   };
 }
 
-export default useChartInterpret;
+// Alias for backward compatibility
+export const useChartInterpret = useArgus;
+
+export default useArgus;

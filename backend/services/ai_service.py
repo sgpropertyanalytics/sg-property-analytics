@@ -1,13 +1,17 @@
 """
-AI Service - Claude Streaming for Chart Interpretation
+AI Service - Claude Streaming for Chart Interpretation and Argus Analysis
 
-Handles communication with Anthropic Claude API for chart interpretation.
+Handles communication with Anthropic Claude API for:
+- Chart interpretation (single chart analysis)
+- Argus analysis (comprehensive project/unit evaluation)
+
 Implements SSE streaming for real-time response delivery.
 
 Key features:
 - Streaming token delivery for responsive UX
 - Citation rules enforced via system prompt
 - Response caching with version-aware keys
+- Dual-mode: chart interpretation vs Argus project analysis
 """
 
 import json
@@ -101,12 +105,114 @@ One line noting sample size, time period, or key limitations.
 """
 
 
+# Argus system prompt - comprehensive project/unit analysis
+ARGUS_SYSTEM_PROMPT = """You are Argus, a Singapore property analyst helping buyers and sellers make informed decisions.
+
+## Your Role
+You analyze specific properties using transaction data, market trends, and policy context. Users come to you when evaluating a purchase or sale - give them what they need to decide.
+
+## What Users Want to Know
+When analyzing a property, answer these core questions:
+1. Is this price fair? (vs comps, vs market)
+2. What's the trend? (appreciating, stable, declining)
+3. How liquid is this? (easy or hard to resell)
+4. What are the risks? (supply, policy, market cycle)
+
+## Response Structure
+Be direct. No fluff. Structure your response as:
+
+**VERDICT**: [X% UNDER | FAIR | X% OVER] — One sentence with the specific benchmark.
+Example: "5% UNDER — At $2,083 PSF, this sits below the D01 3BR median of $2,200."
+
+**PRICE CONTEXT**
+- Where this sits vs fair value range (P25-P75)
+- Recent comparable transactions
+- District/segment median comparison
+
+**TREND & MOMENTUM**
+- Price movement over time
+- Project vs district performance
+- Any notable inflection points
+
+**LIQUIDITY & EXIT**
+- How quickly similar units resell
+- Supply pipeline that may affect future resale
+
+**RISKS TO WATCH**
+- Specific factors that could impact value
+- Be concrete, not generic
+
+## Quality Standards
+
+**Be Specific — Examples:**
+
+Valuation:
+- BAD: "The price seems reasonable"
+- GOOD: "At $2,083 PSF, this is 5% below the D01 3BR median of $2,200"
+
+Trends:
+- BAD: "The trend is positive"
+- GOOD: "D01 3BR median PSF rose 8.2% YoY (Q4'24 vs Q4'23), outpacing CCR average of 5.1%"
+
+Liquidity:
+- BAD: "Liquidity is decent"
+- GOOD: "12 similar units transacted in past 6 months. Project averages 45 days on market vs 68 days district average."
+
+Risk:
+- BAD: "There's some supply risk"
+- GOOD: "1,847 units completing in D01 by 2026 — a 42% increase vs current stock. Watch for pricing pressure."
+
+**Use the Data:**
+- Reference actual numbers from the provided context
+- Compare to specific benchmarks from market snapshot, not vague "market average"
+
+**Singapore Context:**
+- Reference district character (D09 prime, D15 East Coast lifestyle, D19 family-oriented)
+- Note MRT lines, school proximity when relevant
+- For 99-year leasehold, note remaining lease if approaching decay thresholds (60, 40, 30 years)
+
+## Citation Rules (NON-NEGOTIABLE)
+
+1. Policy claims MUST cite with effective date:
+   ✓ "ABSD for foreigners is 60% (IRAS, effective 27 Apr 2023)"
+   ✗ "ABSD is around 60%"
+
+2. No policy snippet provided? Say: "Policy rates apply but specific rates not provided in context"
+
+3. Reference data freshness: "Based on transactions through {date}"
+
+## Confidence Calibration
+- <10 comps: "Limited comparable data - interpret with caution"
+- 10-30 comps: "Moderate sample size"
+- >30 comps: State findings confidently
+
+## What NOT to Do
+- Never predict future prices ("will go up")
+- Never give buy/sell recommendations ("you should buy")
+- Never ignore contradictory data
+- Never pad with generic filler
+- Never lecture about basic concepts
+
+## Tone
+You're a trusted analyst, not a salesperson. Be direct, be honest, be useful. If the data doesn't support a strong conclusion, say so.
+"""
+
+
 def _build_user_message(bundle: ContextBundle) -> str:
     """
     Build the user message from the context bundle.
 
     Structures the message with clear sections for the AI to parse.
+    Handles both chart interpretation and Argus project analysis.
     """
+    # Route to appropriate builder based on context type
+    if bundle.chart_type == "argus":
+        return _build_argus_message(bundle)
+    return _build_chart_message(bundle)
+
+
+def _build_chart_message(bundle: ContextBundle) -> str:
+    """Build message for chart interpretation."""
     parts = []
 
     # Chart info
@@ -175,9 +281,138 @@ def _build_user_message(bundle: ContextBundle) -> str:
     return "\n".join(parts)
 
 
+def _build_argus_message(bundle: ContextBundle) -> str:
+    """
+    Build message for Argus project/unit analysis.
+
+    Expected payload structure:
+    {
+        "subject": {
+            "project": "Marina One Residences",
+            "district": "D01",
+            "region": "CCR",
+            "bedroom": "3BR",
+            "sqft": 1200,
+            "floor": "High",
+            "tenure": "99-year",
+            "topYear": 2017,
+            "askingPrice": 2500000,  # optional
+            "askingPsf": 2083,       # optional
+        },
+        "evidence": {
+            "fairValueRange": {"p25": 1950, "median": 2100, "p75": 2250},
+            "recentComps": [...],
+            "projectStats": {...},
+            "districtStats": {...},
+            "priceHistory": {...},
+            "supplyPipeline": {...},
+            "exitRisk": {...},
+        },
+        "filters": {...}
+    }
+    """
+    parts = []
+    payload = bundle.chart_payload
+
+    # Extract subject (the property being analyzed)
+    subject = payload.get("data", {}).get("subject", {})
+    evidence = payload.get("data", {}).get("evidence", {})
+
+    # Property being analyzed
+    parts.append("## Property Under Analysis")
+    if subject:
+        project = subject.get("project", "Unknown Project")
+        district = subject.get("district", "")
+        region = subject.get("region", "")
+        bedroom = subject.get("bedroom", "")
+        sqft = subject.get("sqft", "")
+        floor = subject.get("floor", "")
+        tenure = subject.get("tenure", "")
+        top_year = subject.get("topYear", "")
+
+        parts.append(f"**Project:** {project}")
+        if district:
+            parts.append(f"**Location:** {district} ({region})")
+        if bedroom:
+            parts.append(f"**Unit Type:** {bedroom}" + (f", {sqft} sqft" if sqft else ""))
+        if floor:
+            parts.append(f"**Floor:** {floor}")
+        if tenure:
+            parts.append(f"**Tenure:** {tenure}")
+        if top_year:
+            parts.append(f"**TOP Year:** {top_year}")
+
+        # User's price context (if they're evaluating a specific price)
+        asking_price = subject.get("askingPrice")
+        asking_psf = subject.get("askingPsf")
+        if asking_price or asking_psf:
+            parts.append("\n**Price Being Evaluated:**")
+            if asking_price:
+                parts.append(f"- Total: ${asking_price:,.0f}")
+            if asking_psf:
+                parts.append(f"- PSF: ${asking_psf:,.0f}")
+
+    # Filters context
+    if bundle.filters:
+        filter_str = ", ".join(f"{k}={v}" for k, v in bundle.filters.items() if v)
+        if filter_str:
+            parts.append(f"\n**Analysis Context:** {filter_str}")
+
+    # Version metadata
+    if bundle.versions:
+        parts.append(f"\n## Data Freshness")
+        parts.append(f"- Data through: {bundle.versions.get('data_watermark', 'unknown')}")
+        parts.append(f"- Market context as of: {bundle.versions.get('snapshot_version', 'unknown')}")
+        parts.append(f"- Policy rates as of: {bundle.versions.get('policy_version', 'unknown')}")
+
+    # Static context (definitions, district mapping, etc.)
+    if bundle.static_snippets:
+        parts.append("\n## Reference Context")
+        for snippet in bundle.static_snippets:
+            parts.append(snippet)
+
+    # Snapshot context (market, policy, demographics, etc.)
+    if bundle.snapshot_snippets:
+        parts.append("\n## Current Market Context")
+        for snippet in bundle.snapshot_snippets:
+            parts.append(snippet)
+
+    # Evidence data (aggregated from multiple sources)
+    if evidence:
+        parts.append("\n## Market Evidence")
+        parts.append("```json")
+        parts.append(json.dumps(evidence, indent=2, default=str))
+        parts.append("```")
+
+    # Task instruction
+    parts.append("\n## Task")
+    project_name = subject.get("project", "this property")
+    parts.append(f"Analyze {project_name} for a potential buyer or seller.")
+    parts.append("Follow the MANDATORY response structure: VERDICT, PRICE CONTEXT, TREND & MOMENTUM, LIQUIDITY & EXIT, RISKS TO WATCH.")
+    parts.append("Be specific with numbers from the evidence. Reference the property's specific context (district, segment, age).")
+
+    if subject.get("askingPrice") or subject.get("askingPsf"):
+        parts.append("\n**Focus:** Evaluate whether the price being considered is fair, and what factors support or challenge that valuation.")
+    else:
+        parts.append("\n**Focus:** Provide a comprehensive view of this property's market position, trends, and risk factors.")
+
+    return "\n".join(parts)
+
+
+def _get_system_prompt(context_type: str) -> str:
+    """Select appropriate system prompt based on context type."""
+    if context_type == "argus":
+        return ARGUS_SYSTEM_PROMPT
+    return SYSTEM_PROMPT
+
+
 class AIService:
     """
-    Service for AI-powered chart interpretation.
+    Service for AI-powered analysis.
+
+    Supports two modes:
+    - Chart interpretation: Single chart analysis with focused insights
+    - Argus analysis: Comprehensive project/unit evaluation
 
     Uses Anthropic Claude API with streaming for responsive UX.
     """
@@ -210,12 +445,15 @@ class AIService:
         kpis: Optional[dict] = None,
     ) -> Generator[StreamEvent, None, None]:
         """
-        Interpret a chart using Claude and stream the response.
+        Interpret a chart or analyze a project using Claude with streaming.
+
+        For charts: Provides focused interpretation of a single visualization.
+        For Argus (chart_type='argus'): Comprehensive project/unit analysis.
 
         Args:
-            chart_type: Type of chart (e.g., 'absolute_psf')
-            chart_title: Display title
-            chart_data: Chart data payload
+            chart_type: Type of context ('absolute_psf', 'beads', 'argus', etc.)
+            chart_title: Display title (or project name for Argus)
+            chart_data: Data payload (chart data or Argus subject/evidence)
             filters: Active filters
             kpis: Optional KPI values
 
@@ -241,15 +479,16 @@ class AIService:
             }
         )
 
-        # Build message
+        # Build message and select system prompt
         user_message = _build_user_message(bundle)
+        system_prompt = _get_system_prompt(chart_type)
 
         try:
             # Stream from Claude
             with self.client.messages.stream(
                 model=Config.AI_MODEL,
                 max_tokens=Config.AI_MAX_TOKENS,
-                system=SYSTEM_PROMPT,
+                system=system_prompt,
                 messages=[{"role": "user", "content": user_message}],
             ) as stream:
                 for text in stream.text_stream:
@@ -286,6 +525,7 @@ class AIService:
         Non-streaming version for caching or testing.
 
         Returns complete response instead of streaming.
+        Works for both chart interpretation and Argus analysis.
         """
         bundle = self._context_service.assemble(
             chart_type=chart_type,
@@ -296,12 +536,13 @@ class AIService:
         )
 
         user_message = _build_user_message(bundle)
+        system_prompt = _get_system_prompt(chart_type)
 
         try:
             response = self.client.messages.create(
                 model=Config.AI_MODEL,
                 max_tokens=Config.AI_MAX_TOKENS,
-                system=SYSTEM_PROMPT,
+                system=system_prompt,
                 messages=[{"role": "user", "content": user_message}],
             )
 

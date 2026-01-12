@@ -1,13 +1,18 @@
 """
 AI Context Assembly Service
 
-Assembles structured context for the AI agent based on chart type.
+Assembles structured context for the AI agent based on context type.
+Supports both chart-specific interpretation and Argus project analysis.
 Implements chunked retrieval to avoid token bloat.
 
 Design principles:
 1. Conceptual knowledge (static) != Volatile data (snapshot)
-2. Select relevant sections per chart type
+2. Select relevant sections per context type
 3. Include version metadata for caching and freshness display
+
+Context types:
+- Chart types (absolute_psf, beads, etc.): Single chart interpretation
+- Argus: Comprehensive project/unit analysis using all relevant context
 """
 
 import json
@@ -53,63 +58,76 @@ class PropertyContext:
     Loads and assembles relevant context documents based on chart type.
     """
 
-    # Chart type to static document mapping
-    # All chart types get definitions.md + reasoning-guide.md at minimum
+    # Context type to static document mapping
+    # All context types get definitions.md at minimum
     STATIC_MAPPINGS = {
-        # Time series
+        # Time series charts
         "absolute_psf": ["definitions.md", "district-mapping.md", "reasoning-guide.md"],
         "time_trend": ["definitions.md", "reasoning-guide.md"],
-        # Distribution & scatter
+        # Distribution & scatter charts
         "price_distribution": ["definitions.md", "reasoning-guide.md"],
         "beads": ["definitions.md", "reasoning-guide.md"],
-        # Comparison
+        # Comparison charts
         "district_comparison": ["definitions.md", "district-mapping.md", "reasoning-guide.md"],
         "new_vs_resale": ["definitions.md", "reasoning-guide.md"],
-        # Heatmaps
+        # Heatmap charts
         "budget_heatmap": ["definitions.md", "reasoning-guide.md"],
         "floor_liquidity": ["definitions.md", "reasoning-guide.md"],
-        # Dumbbell
+        # Dumbbell charts
         "growth_dumbbell": ["definitions.md", "district-mapping.md", "reasoning-guide.md"],
-        # Price analysis
+        # Price analysis charts
         "price_band": ["definitions.md", "reasoning-guide.md"],
         "price_compression": ["definitions.md", "district-mapping.md", "reasoning-guide.md"],
         "price_growth": ["definitions.md", "reasoning-guide.md"],
-        # Supply & market
+        # Supply & market charts
         "supply_waterfall": ["definitions.md", "reasoning-guide.md"],
         "market_oscillator": ["definitions.md", "market-cycles.md", "reasoning-guide.md"],
         "new_launch_timeline": ["definitions.md", "reasoning-guide.md"],
-        # Matrix/Grid
+        # Matrix/Grid charts
         "price_range_matrix": ["definitions.md", "reasoning-guide.md"],
         "market_momentum": ["definitions.md", "district-mapping.md", "reasoning-guide.md"],
+
+        # Argus - comprehensive project/unit analysis
+        # Gets ALL static docs for full context
+        "argus": [
+            "definitions.md",
+            "district-mapping.md",
+            "market-cycles.md",
+            "reasoning-guide.md",
+        ],
     }
 
-    # Chart types that need policy context (involve pricing/affordability)
+    # Context types that need policy context (involve pricing/affordability)
     NEEDS_POLICY = {
         "absolute_psf", "price_distribution", "beads", "time_trend",
         "price_compression", "market_oscillator", "price_band",
         "price_growth", "price_range_matrix", "new_vs_resale",
-        "budget_heatmap", "growth_dumbbell"
+        "budget_heatmap", "growth_dumbbell",
+        "argus",  # Argus needs full policy context for unit analysis
     }
 
-    # Chart types that need demographics context (involve buyer profiles/demand)
+    # Context types that need demographics context (involve buyer profiles/demand)
     NEEDS_DEMOGRAPHICS = {
         "budget_heatmap", "district_comparison", "new_vs_resale",
         "market_momentum", "new_launch_timeline", "supply_waterfall",
-        "price_compression", "growth_dumbbell"
+        "price_compression", "growth_dumbbell",
+        "argus",  # Argus needs demographics for buyer pool assessment
     }
 
-    # Chart types that need interest rate context (involve affordability/financing)
+    # Context types that need interest rate context (involve affordability/financing)
     NEEDS_INTEREST_RATES = {
         "absolute_psf", "time_trend", "price_distribution",
         "price_band", "price_range_matrix", "budget_heatmap",
-        "market_oscillator", "new_vs_resale"
+        "market_oscillator", "new_vs_resale",
+        "argus",  # Argus needs rates for affordability analysis
     }
 
-    # Chart types that need economic indicators (market-wide trends)
+    # Context types that need economic indicators (market-wide trends)
     NEEDS_ECONOMIC_INDICATORS = {
         "time_trend", "market_oscillator", "price_growth",
         "supply_waterfall", "market_momentum", "new_vs_resale",
-        "growth_dumbbell", "new_launch_timeline"
+        "growth_dumbbell", "new_launch_timeline",
+        "argus",  # Argus needs economic context for market positioning
     }
 
     def __init__(self, context_dir: Optional[Path] = None):
@@ -176,24 +194,28 @@ class PropertyContext:
 
         return "\n".join(section_lines) if section_lines else None
 
-    def get_relevant_static(self, chart_type: str) -> list:
+    def get_relevant_static(self, context_type: str) -> list:
         """
-        Get relevant static context snippets for a chart type.
+        Get relevant static context snippets for a context type.
 
-        Returns only the sections relevant to the specific chart,
-        not the entire document corpus.
+        For chart types: Returns only the sections relevant to the specific chart.
+        For Argus: Returns full documents for comprehensive analysis.
         """
         snippets = []
 
-        # Get mapped files for this chart type
-        static_files = self.STATIC_MAPPINGS.get(chart_type, ["definitions.md"])
+        # Get mapped files for this context type
+        static_files = self.STATIC_MAPPINGS.get(context_type, ["definitions.md"])
+
+        # Argus gets full documents for comprehensive analysis
+        is_argus = context_type == "argus"
 
         for file_name in static_files:
             file_path = f"static/{file_name}"
             file_meta = self.manifest.get("files", {}).get(file_path, {})
             injection_rule = file_meta.get("injection", "always")
 
-            if injection_rule == "always":
+            # Argus always loads full documents
+            if is_argus or injection_rule == "always":
                 content = self._load_file(file_path)
                 if content:
                     snippets.append(f"# {file_name}\n{content}")
@@ -236,50 +258,62 @@ class PropertyContext:
                     "price_range_matrix": "## Matrix/Grid Charts",
                     "market_momentum": "## Matrix/Grid Charts",
                 }
-                section = section_map.get(chart_type)
+                section = section_map.get(context_type)
                 content = self._load_section(file_path, section)
                 if content:
                     snippets.append(content)
 
         return snippets
 
-    def get_relevant_snapshot(self, chart_type: str) -> list:
+    def get_relevant_snapshot(self, context_type: str) -> list:
         """
         Get relevant snapshot (volatile) context with freshness metadata.
 
         Always includes market snapshot header.
-        Includes policy only when chart involves pricing.
-        Includes demographics only when chart involves buyer profiles.
+        Conditionally includes based on context type:
+        - Policy: when context involves pricing/affordability
+        - Demographics: when context involves buyer profiles/demand
+        - Interest rates: when context involves financing
+        - Economic indicators: when context involves market trends
+
+        For Argus: includes ALL snapshot context for comprehensive analysis.
         """
         snippets = []
 
-        # Always include market snapshot header
+        # Argus gets full market snapshot, charts get header only
+        is_argus = context_type == "argus"
+
+        # Include market snapshot
         market_snapshot = self._load_file("snapshot/market-snapshot.md")
         if market_snapshot:
-            # Extract header section (first 30 lines typically)
-            lines = market_snapshot.split("\n")[:30]
-            snippets.append("# Market Context\n" + "\n".join(lines))
+            if is_argus:
+                # Argus gets full market snapshot
+                snippets.append("# Market Context\n" + market_snapshot)
+            else:
+                # Charts get header section only (first 30 lines)
+                lines = market_snapshot.split("\n")[:30]
+                snippets.append("# Market Context\n" + "\n".join(lines))
 
-        # Include policy measures only for pricing-related charts
-        if chart_type in self.NEEDS_POLICY:
+        # Include policy measures for pricing-related contexts
+        if context_type in self.NEEDS_POLICY:
             policy = self._load_file("snapshot/policy-measures.md")
             if policy:
                 snippets.append("# Policy Measures\n" + policy)
 
-        # Include demographics only for buyer-profile-related charts
-        if chart_type in self.NEEDS_DEMOGRAPHICS:
+        # Include demographics for buyer-profile-related contexts
+        if context_type in self.NEEDS_DEMOGRAPHICS:
             demographics = self._load_file("snapshot/demographics.md")
             if demographics:
                 snippets.append("# Demographics & Buyer Profiles\n" + demographics)
 
-        # Include interest rate context for affordability-related charts
-        if chart_type in self.NEEDS_INTEREST_RATES:
+        # Include interest rate context for affordability-related contexts
+        if context_type in self.NEEDS_INTEREST_RATES:
             interest_rates = self._load_file("snapshot/interest-rates.md")
             if interest_rates:
                 snippets.append("# Interest Rates & Affordability\n" + interest_rates)
 
-        # Include economic indicators for market-wide trend charts
-        if chart_type in self.NEEDS_ECONOMIC_INDICATORS:
+        # Include economic indicators for market-wide trend contexts
+        if context_type in self.NEEDS_ECONOMIC_INDICATORS:
             economic = self._load_file("snapshot/economic-indicators.md")
             if economic:
                 snippets.append("# Economic Indicators\n" + economic)

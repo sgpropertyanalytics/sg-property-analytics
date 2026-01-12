@@ -4,7 +4,7 @@ import { useDebounce } from 'use-debounce';
 // Phase 2: Using TanStack Query via useAppQuery wrapper
 import { useAppQuery } from '../../hooks/useAppQuery';
 // AI chart interpretation hook
-import { useChartInterpret } from '../../hooks/useChartInterpret';
+import { useArgus } from '../../hooks/useArgus';
 import { ChartFrame } from '../common/ChartFrame';
 // Chart.js components registered globally in chartSetup.js
 import { Line } from 'react-chartjs-2';
@@ -90,7 +90,7 @@ function AbsolutePsfChartBase({ height = 380, saleType = null, sharedData = null
     versions,
     isCached,
     reset: resetAi,
-  } = useChartInterpret();
+  } = useArgus();
 
   // Skip internal fetch if parent provides sharedData (eliminates duplicate API call)
   // Use loose equality to catch both null AND undefined (common when data hasn't arrived)
