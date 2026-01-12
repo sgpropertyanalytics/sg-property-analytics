@@ -10,6 +10,7 @@ from models.upcoming_launch import UpcomingLaunch
 from models.popular_school import PopularSchool
 from models.project_location import ProjectLocation
 from models.processed_webhook import ProcessedWebhook
+from models.project_units import ProjectUnits
 
 __all__ = [
     'db',
@@ -20,5 +21,6 @@ __all__ = [
     'UpcomingLaunch',
     'PopularSchool',
     'ProjectLocation',
-    'ProcessedWebhook'
+    'ProcessedWebhook',
+    'ProjectUnits',
 ]

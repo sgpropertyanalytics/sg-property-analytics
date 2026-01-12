@@ -3,15 +3,16 @@ New Launch Units Service - Verified Unit Lookup
 
 Provides total_units data from verified sources ONLY with confidence labeling:
 
-1. CSV file (backend/data/new_launch_units.csv) - Authoritative for completed projects
-2. upcoming_launches database table - For future/upcoming projects
+1. project_units registry (database) - Primary source, single truth
+2. CSV file (backend/data/new_launch_units.csv) - Fallback for legacy
+3. upcoming_launches database table - For future/upcoming projects
 
 IMPORTANT: No estimation algorithms. All data must be from verified sources.
 This ensures data integrity - if a project's unit count is unknown, it stays unknown.
 
 Each response includes:
 - total_units: The unit count (or None if unavailable)
-- unit_source: 'csv', 'database', or None
+- unit_source: 'registry', 'csv', 'database', or None
 - confidence: 'high', 'medium', or None
 - note: Human-readable explanation of data source
 
@@ -22,9 +23,9 @@ Usage:
     result = get_project_units("D'LEEDON")
     # Returns: {
     #     "total_units": 1715,
-    #     "unit_source": "csv",
+    #     "unit_source": "registry",
     #     "confidence": "high",
-    #     "note": "Official data from CSV"
+    #     "note": "Verified in project_units registry"
     # }
 
 Legacy functions still available:
@@ -242,9 +243,49 @@ def get_new_launch_projects() -> List[Dict[str, Any]]:
 # =============================================================================
 
 # Confidence levels for unit data sources
-CONFIDENCE_HIGH = 'high'      # Official sources (CSV, verified database)
+CONFIDENCE_HIGH = 'high'      # Official sources (registry, CSV, verified database)
 CONFIDENCE_MEDIUM = 'medium'  # Database source with data provenance
 
+
+def _lookup_project_registry(project_name: str) -> Optional[Dict[str, Any]]:
+    """
+    Look up project in the project_units registry table.
+
+    This is the primary source of truth for unit counts.
+
+    Args:
+        project_name: Project name to look up
+
+    Returns:
+        Dict with unit data if found and verified, None otherwise
+    """
+    try:
+        from data_health.core import project_key, get_project
+        from models.project_units import UNITS_STATUS_VERIFIED
+
+        # Generate normalized key
+        key = project_key(project_name)
+
+        # Look up in registry (returns a dict)
+        project = get_project(key)
+
+        # Check if project exists, is verified, and has units
+        if (project and
+            project.get('units_status') == UNITS_STATUS_VERIFIED and
+            project.get('total_units')):
+            return {
+                "total_units": project['total_units'],
+                "district": project.get('district'),
+                "developer": project.get('developer'),
+                "tenure": project.get('tenure'),
+                "top_year": project.get('top_year'),
+                "data_source": project.get('data_source'),
+                "confidence_score": float(project['confidence_score']) if project.get('confidence_score') else 0.9,
+            }
+    except Exception as e:
+        logger.debug(f"Registry lookup failed for {project_name}: {e}")
+
+    return None
 
 
 def get_project_units(project_name: str) -> Dict[str, Any]:
@@ -252,10 +293,11 @@ def get_project_units(project_name: str) -> Dict[str, Any]:
     Get total units for a project using verified data sources only.
 
     Lookup hierarchy:
-    1. CSV file (authoritative for completed projects) - HIGH confidence
-    2. upcoming_launches database table (future projects) - from data_confidence column
+    1. project_units registry (primary source of truth) - HIGH confidence
+    2. CSV file (legacy fallback) - HIGH confidence
+    3. upcoming_launches database table (future projects) - MEDIUM confidence
 
-    NOTE: No estimation fallback. If project not in CSV or upcoming_launches,
+    NOTE: No estimation fallback. If project not in registry, CSV, or upcoming_launches,
     returns None for total_units. This ensures data integrity.
 
     Args:
@@ -264,7 +306,7 @@ def get_project_units(project_name: str) -> Dict[str, Any]:
     Returns:
         Dict with:
         - total_units: int or None
-        - unit_source: 'csv', 'database', or None
+        - unit_source: 'registry', 'csv', 'database', or None
         - confidence: 'high', 'medium', or None
         - note: Human-readable explanation
         - top: TOP year if available
@@ -288,7 +330,25 @@ def get_project_units(project_name: str) -> Dict[str, Any]:
     }
 
     # -------------------------------------------------------------------------
-    # Source 1: CSV file (highest priority for new launches)
+    # Source 1: project_units registry (PRIMARY - single source of truth)
+    # -------------------------------------------------------------------------
+    registry_result = _lookup_project_registry(project_name)
+    if registry_result and registry_result.get('total_units'):
+        result.update({
+            "total_units": registry_result['total_units'],
+            "unit_source": "registry",
+            "confidence": CONFIDENCE_HIGH,
+            "note": f"Verified in project_units registry (source: {registry_result.get('data_source', 'registry')})",
+            "top": registry_result.get('top_year'),
+            "developer": registry_result.get('developer'),
+            "district": registry_result.get('district'),
+            "tenure": registry_result.get('tenure'),
+        })
+        logger.debug(f"Found {project_name} in registry: {registry_result['total_units']} units")
+        return result
+
+    # -------------------------------------------------------------------------
+    # Source 2: CSV file (fallback for legacy data)
     # -------------------------------------------------------------------------
     csv_data = _load_data()
     if normalized in csv_data:
@@ -308,7 +368,7 @@ def get_project_units(project_name: str) -> Dict[str, Any]:
             return result
 
     # -------------------------------------------------------------------------
-    # Source 2: upcoming_launches database table
+    # Source 3: upcoming_launches database table
     # -------------------------------------------------------------------------
     db_result = _lookup_upcoming_launches(normalized)
     if db_result and db_result.get('total_units'):
@@ -327,7 +387,7 @@ def get_project_units(project_name: str) -> Dict[str, Any]:
         return result
 
     # No data available from verified sources
-    result["note"] = "No unit data available from verified sources (CSV or database)"
+    result["note"] = "No unit data available from verified sources (registry, CSV, or database)"
     return result
 
 
@@ -377,21 +437,60 @@ def get_project_units_batch(project_names: List[str]) -> Dict[str, Dict[str, Any
 # DISTRICT-LEVEL AGGREGATION FOR RESALE METRICS
 # =============================================================================
 
+def _load_registry_units_map() -> Dict[str, Dict[str, Any]]:
+    """
+    Load all verified unit counts from project_units registry.
+
+    Returns:
+        Dict mapping normalized project name to {total_units, district}
+    """
+    try:
+        from models.project_units import ProjectUnits, UNITS_STATUS_VERIFIED
+        from data_health.core import normalize_name
+
+        # Query all verified projects
+        verified = ProjectUnits.query.filter_by(units_status=UNITS_STATUS_VERIFIED).all()
+
+        result = {}
+        for p in verified:
+            if p.total_units:
+                # Use both the canonical name and original name for lookups
+                key = p.project_name_canonical.upper()
+                result[key] = {
+                    'total_units': p.total_units,
+                    'district': p.district,
+                }
+                # Also add raw name variant
+                raw_key = p.project_name_raw.upper()
+                if raw_key != key:
+                    result[raw_key] = {
+                        'total_units': p.total_units,
+                        'district': p.district,
+                    }
+
+        return result
+    except Exception as e:
+        logger.warning(f"Failed to load registry units map: {e}")
+        return {}
+
+
 def get_district_units_for_resale(
     db_session,
     date_from: Optional['date'] = None,
     date_to: Optional['date'] = None,
+    use_registry: bool = True,
 ) -> Dict[str, Dict[str, Any]]:
     """
     Calculate total units per district from projects with resale transactions.
 
-    Uses CSV data ONLY (no upcoming_launches, no estimation) to ensure
-    data integrity for resale turnover calculations.
+    Primary source: project_units registry (if use_registry=True)
+    Fallback: CSV data
 
     Args:
         db_session: SQLAlchemy database session
         date_from: Optional start date filter (inclusive)
         date_to: Optional end date filter (exclusive)
+        use_registry: If True, use project_units table as primary source
 
     Returns:
         Dict mapping district to unit data:
@@ -401,6 +500,7 @@ def get_district_units_for_resale(
                 "project_count": 15,
                 "projects_with_units": 12,
                 "coverage_pct": 80.0,
+                "data_source": "registry",  # or "csv"
             },
             ...
         }
@@ -409,7 +509,15 @@ def get_district_units_for_resale(
     from db.sql import OUTLIER_FILTER
     from constants import SALE_TYPE_RESALE
 
-    # Load CSV data (source of truth for unit counts)
+    # Load unit data sources
+    if use_registry:
+        registry_data = _load_registry_units_map()
+        data_source = "registry" if registry_data else "csv"
+    else:
+        registry_data = {}
+        data_source = "csv"
+
+    # Fallback to CSV if registry is empty
     csv_data = _load_data()
 
     # Build date filter clause
@@ -452,18 +560,27 @@ def get_district_units_for_resale(
                 "project_count": 0,
                 "projects_with_units": 0,
                 "projects_without_units": [],
+                "data_source": data_source,
             }
 
         district_data[district]["project_count"] += 1
 
-        # Look up units from CSV only
-        if project_name in csv_data:
+        # Look up units: registry first, then CSV fallback
+        units = None
+
+        # Try registry first
+        if registry_data and project_name in registry_data:
+            units = registry_data[project_name].get("total_units")
+
+        # Fallback to CSV
+        if not units and project_name in csv_data:
             units = csv_data[project_name].get("total_units")
             if units:
-                district_data[district]["total_units"] += units
-                district_data[district]["projects_with_units"] += 1
-            else:
-                district_data[district]["projects_without_units"].append(project_name)
+                district_data[district]["data_source"] = "csv"  # Mark as CSV fallback
+
+        if units:
+            district_data[district]["total_units"] += units
+            district_data[district]["projects_with_units"] += 1
         else:
             district_data[district]["projects_without_units"].append(project_name)
 
