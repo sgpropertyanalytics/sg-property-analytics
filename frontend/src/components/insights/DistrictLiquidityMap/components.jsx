@@ -51,21 +51,21 @@ export function DistrictLabel({ district, data, zoom, onHover, onLeave, isHovere
   const hasData = data?.has_data;
   const metrics = data?.liquidity_metrics || {};
   const turnoverRate = metrics.turnover_rate ?? metrics.monthly_velocity ?? 0;
-  const tier = metrics.liquidity_tier;
+  const tier = metrics.score_tier;
   const isCompact = zoom < 11.2;
 
-  // Color based on liquidity tier - using slate palette
+  // Color based on liquidity score tier - using slate palette
   const getLabelStyle = () => {
     if (!hasData) return 'bg-slate-100 text-slate-400 border-slate-300';
     switch (tier) {
-      case 'Very High':
+      case 'Excellent':
         return 'bg-slate-800 text-white border-slate-800';
-      case 'High':
+      case 'Good':
         return 'bg-slate-600 text-white border-slate-600';
-      case 'Neutral':
+      case 'Average':
         return 'bg-slate-300 text-slate-800 border-slate-400';
-      case 'Low':
-      case 'Very Low':
+      case 'Below Average':
+      case 'Poor':
         return 'bg-slate-100 text-slate-500 border-slate-300';
       default:
         return 'bg-white text-slate-800 border-slate-300';
@@ -123,15 +123,15 @@ export function DistrictLabel({ district, data, zoom, onHover, onLeave, isHovere
 }
 
 // =============================================================================
-// LIQUIDITY TIER COLORS (for header styling)
+// LIQUIDITY SCORE TIER COLORS (for header styling)
 // =============================================================================
 
 const TIER_HEADER_COLORS = {
-  'Very High': { bg: 'bg-slate-800', text: 'text-white', border: '#213448' },
-  'High': { bg: 'bg-slate-600', text: 'text-white', border: '#547792' },
-  'Neutral': { bg: 'bg-slate-300', text: 'text-slate-800', border: '#94B4C1' },
-  'Low': { bg: 'bg-amber-100', text: 'text-amber-800', border: '#EAE0CF' },
-  'Very Low': { bg: 'bg-amber-200', text: 'text-amber-900', border: '#d4c4a8' },
+  'Excellent': { bg: 'bg-slate-800', text: 'text-white', border: '#213448' },
+  'Good': { bg: 'bg-slate-600', text: 'text-white', border: '#547792' },
+  'Average': { bg: 'bg-slate-300', text: 'text-slate-800', border: '#94B4C1' },
+  'Below Average': { bg: 'bg-amber-100', text: 'text-amber-800', border: '#EAE0CF' },
+  'Poor': { bg: 'bg-amber-200', text: 'text-amber-900', border: '#d4c4a8' },
   default: { bg: 'bg-slate-100', text: 'text-slate-600', border: '#cbd5e1' },
 };
 
@@ -283,8 +283,8 @@ export function HoverCard({ district, data, position }) {
   const metrics = data.liquidity_metrics || {};
   const bedroom = data.bedroom_breakdown || {};
 
-  // Get tier-based header colors
-  const tier = metrics.liquidity_tier || 'default';
+  // Get tier-based header colors (using score_tier)
+  const tier = metrics.score_tier || 'default';
   const headerColors = TIER_HEADER_COLORS[tier] || TIER_HEADER_COLORS.default;
 
   return (
@@ -357,9 +357,25 @@ export function HoverCard({ district, data, position }) {
             {metrics.total_units > 0 && (
               <div className="flex justify-between items-center">
                 <span className="text-xs text-slate-500">Housing Stock</span>
-                <span className="font-semibold text-slate-800 text-xs">
-                  {metrics.total_units?.toLocaleString()} units
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-semibold text-slate-800 text-xs">
+                    {metrics.total_units?.toLocaleString()} units
+                  </span>
+                  {metrics.units_coverage_pct !== undefined && (
+                    <span
+                      className={`text-[9px] px-1 py-0.5 rounded ${
+                        metrics.units_coverage_pct >= 80
+                          ? 'bg-emerald-100 text-emerald-700'
+                          : metrics.units_coverage_pct >= 50
+                            ? 'bg-amber-100 text-amber-700'
+                            : 'bg-rose-100 text-rose-700'
+                      }`}
+                      title={`${metrics.units_coverage_pct}% of projects have unit data`}
+                    >
+                      {metrics.units_coverage_pct?.toFixed(0)}%
+                    </span>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -640,7 +656,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
       ) {
         aVal = a.liquidity_metrics?.[col];
         bVal = b.liquidity_metrics?.[col];
-      } else if (col === 'liquidity_tier' || col === 'fragility_label') {
+      } else if (col === 'score_tier' || col === 'fragility_label') {
         aVal = a.liquidity_metrics?.[col] || '';
         bVal = b.liquidity_metrics?.[col] || '';
       } else {
@@ -742,7 +758,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                 <div className="bg-emerald-50/50 rounded p-1.5">
                   <div className="text-[10px] text-slate-500">Tier</div>
                   <div className="text-[10px] text-slate-800">
-                    {m.liquidity_tier || '-'}
+                    {m.score_tier || '-'}
                   </div>
                 </div>
                 <div className="bg-slate-50 rounded p-1.5">
@@ -853,11 +869,11 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
               </th>
               <th
                 className="px-3 py-3 min-h-[44px] text-center font-semibold text-slate-800 whitespace-nowrap bg-emerald-50/50 cursor-pointer hover:bg-emerald-100/50 active:bg-emerald-200/50 select-none"
-                onClick={() => handleSort('liquidity_tier')}
+                onClick={() => handleSort('score_tier')}
               >
                 <span className="inline-flex items-center justify-center gap-1">
                   Tier
-                  <SortIcon column="liquidity_tier" />
+                  <SortIcon column="score_tier" />
                 </span>
               </th>
               <th
@@ -998,12 +1014,12 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                     </div>
                   </td>
 
-                  {/* Exit Safety Group - Liquidity Tier (Resale-only) */}
+                  {/* Exit Safety Group - Score Tier */}
                   <td className="px-3 py-2 text-center bg-emerald-50/40">
                     <span
-                      className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap ${getTierBadgeStyle(m.liquidity_tier)}`}
+                      className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap ${getTierBadgeStyle(m.score_tier)}`}
                     >
-                      {m.liquidity_tier || '-'}
+                      {m.score_tier || '-'}
                     </span>
                   </td>
 
