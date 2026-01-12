@@ -150,9 +150,9 @@ function DistrictLiquidityMapBase({
         expr.push(['==', ['get', 'district'], d.district_id]);
         // If hovering, dim non-hovered districts (spotlight effect)
         if (hoveredId && d.district_id !== hoveredId) {
-          expr.push(getLiquidityFillDimmed(d.liquidity_metrics?.z_score));
+          expr.push(getLiquidityFillDimmed(d.liquidity_metrics?.liquidity_score));
         } else {
-          expr.push(getLiquidityFill(d.liquidity_metrics?.z_score));
+          expr.push(getLiquidityFill(d.liquidity_metrics?.liquidity_score));
         }
       }
     });
@@ -221,16 +221,16 @@ function DistrictLiquidityMapBase({
     };
   }, [hoveredDistrict, viewState]);
 
-  // Get border color for leader line based on liquidity tier
-  const leaderLineColor = useMemo(() => {
-    if (!hoveredDistrict?.data?.liquidity_metrics?.liquidity_tier) return '#334155';
-    const tier = hoveredDistrict.data.liquidity_metrics.liquidity_tier;
+  // Get border color for leader line based on score tier
+  const _leaderLineColor = useMemo(() => {
+    if (!hoveredDistrict?.data?.liquidity_metrics?.score_tier) return '#334155';
+    const tier = hoveredDistrict.data.liquidity_metrics.score_tier;
     switch (tier) {
-      case 'Very High': return '#213448';
-      case 'High': return '#547792';
-      case 'Neutral': return '#94B4C1';
-      case 'Low': return '#d4c4a8';
-      case 'Very Low': return '#c4b498';
+      case 'Excellent': return '#213448';
+      case 'Good': return '#547792';
+      case 'Average': return '#94B4C1';
+      case 'Below Average': return '#d4c4a8';
+      case 'Poor': return '#c4b498';
       default: return '#334155';
     }
   }, [hoveredDistrict]);
@@ -436,13 +436,13 @@ function DistrictLiquidityMapBase({
           )}
         </AnimatePresence>
 
-        {/* Legend - Liquidity Tiers (top-left) - smaller on mobile */}
+        {/* Legend - Liquidity Score (top-left) - smaller on mobile */}
         <div className="absolute top-2 left-2 sm:top-4 sm:left-4 z-20">
           <div className="bg-white/95 backdrop-blur-sm rounded-sm border border-slate-300 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.05)] p-2 sm:p-2.5 w-[140px] sm:w-[220px]">
             {/* Header with methodology tooltip */}
             <div className="flex items-center justify-between mb-2">
               <p className="text-[9px] text-slate-500 uppercase tracking-wider font-semibold">
-                Liquidity Tier
+                Liquidity Score
               </p>
               <div className="group relative">
                 <div className="w-4 h-4 rounded-full bg-slate-100 flex items-center justify-center cursor-help hover:bg-slate-200 transition-colors">
@@ -462,31 +462,20 @@ function DistrictLiquidityMapBase({
                 </div>
                 {/* Tooltip */}
                 <div className="absolute left-0 top-full mt-1 w-56 p-2.5 bg-slate-800 text-white text-[10px] rounded-sm shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                  <p className="font-semibold text-slate-200 mb-1.5">Methodology</p>
+                  <p className="font-semibold text-slate-200 mb-1.5">Composite Score (0-100)</p>
                   <div className="space-y-1.5 text-slate-300">
                     <p>
-                      <span className="text-emerald-300 font-medium">Exit Safety</span> (Tier,
-                      Velocity, Z-Score): Calculated on <span className="text-white">resale only</span>{' '}
-                      to reflect organic demand.
+                      <span className="text-emerald-300 font-medium">Exit Safety 60%</span>: Velocity
+                      (35%), Breadth (15%), Concentration (10%) - resale only.
                     </p>
                     <p>
-                      <span className="text-rose-300 font-medium">Concentration</span> (Gini,
-                      Fragility): Calculated on <span className="text-white">resale only</span> to
-                      avoid developer release distortion.
-                    </p>
-                    <p>
-                      <span className="text-slate-200 font-medium">Market Structure</span> (Tx,
-                      Projects): Includes <span className="text-white">all sale types</span>.
+                      <span className="text-amber-300 font-medium">Market Health 40%</span>: Volume
+                      (18%), Diversity (9%), Stability (8%), Organic (5%).
                     </p>
                   </div>
                   <div className="absolute -top-1 left-3 w-2 h-2 bg-slate-800 rotate-45" />
                 </div>
               </div>
-            </div>
-
-            {/* Resale-only badge - hidden on mobile */}
-            <div className="hidden sm:block mb-2 px-1.5 py-0.5 bg-slate-50 border border-slate-200 rounded-sm text-[8px] text-slate-600 text-center font-mono">
-              Based on resale transactions
             </div>
 
             <div className="space-y-1 sm:space-y-1.5">
@@ -496,8 +485,8 @@ function DistrictLiquidityMapBase({
                   style={{ backgroundColor: LIQUIDITY_FILLS.veryHigh }}
                 />
                 <span className="text-[9px] sm:text-[10px] text-slate-800">
-                  <span className="sm:hidden">V.High</span>
-                  <span className="hidden sm:inline">Very High (&gt;1.5σ)</span>
+                  <span className="sm:hidden">80+</span>
+                  <span className="hidden sm:inline">Excellent (≥80)</span>
                 </span>
               </div>
               <div className="flex items-center gap-1.5 sm:gap-2">
@@ -506,8 +495,8 @@ function DistrictLiquidityMapBase({
                   style={{ backgroundColor: LIQUIDITY_FILLS.high }}
                 />
                 <span className="text-[9px] sm:text-[10px] text-slate-800">
-                  <span className="sm:hidden">High</span>
-                  <span className="hidden sm:inline">High (0.5 to 1.5σ)</span>
+                  <span className="sm:hidden">60-79</span>
+                  <span className="hidden sm:inline">Good (60-79)</span>
                 </span>
               </div>
               <div className="flex items-center gap-1.5 sm:gap-2">
@@ -516,8 +505,8 @@ function DistrictLiquidityMapBase({
                   style={{ backgroundColor: LIQUIDITY_FILLS.neutral }}
                 />
                 <span className="text-[9px] sm:text-[10px] text-slate-800">
-                  <span className="sm:hidden">Neutral</span>
-                  <span className="hidden sm:inline">Neutral (-0.5 to 0.5σ)</span>
+                  <span className="sm:hidden">40-59</span>
+                  <span className="hidden sm:inline">Average (40-59)</span>
                 </span>
               </div>
               <div className="flex items-center gap-1.5 sm:gap-2">
@@ -526,8 +515,8 @@ function DistrictLiquidityMapBase({
                   style={{ backgroundColor: LIQUIDITY_FILLS.low }}
                 />
                 <span className="text-[9px] sm:text-[10px] text-slate-800">
-                  <span className="sm:hidden">Low</span>
-                  <span className="hidden sm:inline">Low (-1.5 to -0.5σ)</span>
+                  <span className="sm:hidden">20-39</span>
+                  <span className="hidden sm:inline">Below Avg (20-39)</span>
                 </span>
               </div>
               <div className="flex items-center gap-1.5 sm:gap-2">
@@ -536,8 +525,8 @@ function DistrictLiquidityMapBase({
                   style={{ backgroundColor: LIQUIDITY_FILLS.veryLow }}
                 />
                 <span className="text-[9px] sm:text-[10px] text-slate-800">
-                  <span className="sm:hidden">V.Low</span>
-                  <span className="hidden sm:inline">Very Low (&lt;-1.5σ)</span>
+                  <span className="sm:hidden">&lt;20</span>
+                  <span className="hidden sm:inline">Poor (&lt;20)</span>
                 </span>
               </div>
             </div>

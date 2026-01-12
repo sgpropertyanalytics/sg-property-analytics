@@ -40,13 +40,13 @@ export const COLORS = {
   sand: '#EAE0CF',
 };
 
-// Liquidity tier colors (based on Z-score)
+// Liquidity colors (based on composite liquidity score 0-100)
 export const LIQUIDITY_FILLS = {
-  veryHigh: 'rgba(33, 52, 72, 0.60)',    // Deep Navy - Z > 1.5
-  high: 'rgba(84, 119, 146, 0.50)',      // Ocean Blue - 0.5 < Z <= 1.5
-  neutral: 'rgba(148, 180, 193, 0.35)',  // Sky Blue - -0.5 <= Z <= 0.5
-  low: 'rgba(234, 224, 207, 0.50)',      // Sand - -1.5 <= Z < -0.5
-  veryLow: 'rgba(234, 224, 207, 0.70)',  // Sand stronger - Z < -1.5
+  veryHigh: 'rgba(33, 52, 72, 0.60)',    // Deep Navy - Score >= 80 (Excellent)
+  high: 'rgba(84, 119, 146, 0.50)',      // Ocean Blue - Score >= 60 (Good)
+  neutral: 'rgba(148, 180, 193, 0.35)',  // Sky Blue - Score >= 40 (Average)
+  low: 'rgba(234, 224, 207, 0.50)',      // Sand - Score >= 20 (Below Avg)
+  veryLow: 'rgba(234, 224, 207, 0.70)',  // Sand stronger - Score < 20 (Poor)
   noData: 'rgba(200, 200, 200, 0.15)',   // Gray - no data
 };
 

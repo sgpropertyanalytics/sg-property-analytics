@@ -48,40 +48,41 @@ export function polylabel(polygon) {
 // =============================================================================
 
 /**
- * Get fill color based on Z-score.
+ * Get fill color based on composite liquidity score (0-100).
+ * Score tiers: Excellent (>=80), Good (>=60), Average (>=40), Below Avg (>=20), Poor (<20)
  */
-export function getLiquidityFill(zScore) {
-  if (zScore === null || zScore === undefined) return LIQUIDITY_FILLS.noData;
-  if (zScore >= 1.5) return LIQUIDITY_FILLS.veryHigh;
-  if (zScore >= 0.5) return LIQUIDITY_FILLS.high;
-  if (zScore >= -0.5) return LIQUIDITY_FILLS.neutral;
-  if (zScore >= -1.5) return LIQUIDITY_FILLS.low;
-  return LIQUIDITY_FILLS.veryLow;
+export function getLiquidityFill(score) {
+  if (score === null || score === undefined) return LIQUIDITY_FILLS.noData;
+  if (score >= 80) return LIQUIDITY_FILLS.veryHigh;   // Excellent
+  if (score >= 60) return LIQUIDITY_FILLS.high;       // Good
+  if (score >= 40) return LIQUIDITY_FILLS.neutral;    // Average
+  if (score >= 20) return LIQUIDITY_FILLS.low;        // Below Average
+  return LIQUIDITY_FILLS.veryLow;                     // Poor
 }
 
 /**
  * Get dimmed fill color for spotlight effect (non-hovered districts).
  * Reduces opacity significantly for the "cinematic" dimming effect.
  */
-export function getLiquidityFillDimmed(_zScore) {
+export function getLiquidityFillDimmed(_score) {
   // Return very faded gray for all non-hovered districts
   return 'rgba(180, 180, 180, 0.25)';
 }
 
 /**
- * Get the border color for a liquidity tier (for tethered callout).
+ * Get the border color for a score tier (for tethered callout).
  */
 export function getTierBorderColor(tier) {
   switch (tier) {
-    case 'Very High':
+    case 'Excellent':
       return '#213448'; // Deep Navy
-    case 'High':
+    case 'Good':
       return '#547792'; // Ocean Blue
-    case 'Neutral':
+    case 'Average':
       return '#94B4C1'; // Sky Blue
-    case 'Low':
+    case 'Below Average':
       return '#EAE0CF'; // Sand
-    case 'Very Low':
+    case 'Poor':
       return '#d4c4a8'; // Darker Sand
     default:
       return '#cbd5e1'; // Slate-300
@@ -153,19 +154,19 @@ export function getFragilityBadge(fragility) {
 }
 
 /**
- * Get CSS classes for tier badge (table version).
+ * Get CSS classes for score tier badge (table version).
  */
 export function getTierBadgeStyle(tier) {
   switch (tier) {
-    case 'Very High':
+    case 'Excellent':
       return 'bg-brand-navy text-white';
-    case 'High':
+    case 'Good':
       return 'bg-brand-blue text-white';
-    case 'Neutral':
+    case 'Average':
       return 'bg-brand-sky text-brand-navy';
-    case 'Low':
+    case 'Below Average':
       return 'bg-brand-sand text-brand-blue';
-    case 'Very Low':
+    case 'Poor':
       return 'bg-brand-sand text-brand-sky';
     default:
       return 'bg-gray-100 text-gray-500';
