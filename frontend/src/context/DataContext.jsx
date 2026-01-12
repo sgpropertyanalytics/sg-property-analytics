@@ -12,7 +12,7 @@
  * MIGRATION: Phase 2 - Uses useAppQuery instead of useEffect+useState (CLAUDE.md Rule 9)
  */
 import { createContext, useContext, useMemo } from 'react';
-import { useAppQuery } from '../hooks';
+import { useQuery } from '@tanstack/react-query';
 import { getFilterOptions, getMetadata } from '../api/client';
 import { normalizeFilterOptions } from '../schemas/apiContract';
 
@@ -35,17 +35,18 @@ const DEFAULT_FILTER_OPTIONS = {
 };
 
 export function DataProvider({ children }) {
-  // Fetch static data once using TanStack Query (CLAUDE.md Rule 9)
-  // staleTime: Infinity ensures this only fetches once
-  const { data, status, error } = useAppQuery(
-    async (signal) => {
-      // Fetch filter options and metadata in parallel
+  // Fetch static data using TanStack Query directly (no boot gating)
+  // Filter options are app metadata - must load immediately, not wait for auth
+  // NOTE: Don't use useAppQuery here - it gates on publicReady which creates circular dependency
+  const { data, status, error } = useQuery({
+    queryKey: ['staticData'],
+    queryFn: async () => {
+      // Don't pass signal - prevents abort during React StrictMode double-render
       const [filterOptionsRes, metadataRes] = await Promise.all([
-        getFilterOptions({ signal, priority: 'high' }).catch(() => ({ data: {} })),
-        getMetadata({ signal, priority: 'high' }).catch(() => ({ data: null }))
+        getFilterOptions({ priority: 'high' }),
+        getMetadata({ priority: 'high' }).catch(() => ({ data: null }))
       ]);
 
-      // Normalize filter options using shared adapter
       const normalized = normalizeFilterOptions(filterOptionsRes.data);
 
       return {
@@ -66,9 +67,9 @@ export function DataProvider({ children }) {
         apiMetadata: metadataRes.data,
       };
     },
-    ['staticData'], // Stable key for app-wide static data
-    { chartName: 'DataContext', staleTime: Infinity, gcTime: Infinity }
-  );
+    staleTime: Infinity,
+    gcTime: Infinity,
+  });
 
   // Derive values from query result
   const filterOptions = data?.filterOptions ?? DEFAULT_FILTER_OPTIONS;
