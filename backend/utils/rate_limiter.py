@@ -59,6 +59,18 @@ RATE_LIMITS = {
 DEFAULT_LIMITS = ["1000 per day", "300 per hour"]
 
 
+def is_health_check():
+    """
+    Check if the current request is a health check.
+
+    Exempt health check endpoints from rate limiting to prevent
+    Render (and other orchestration platforms) from marking
+    the instance as unhealthy due to 429 errors.
+    """
+    health_paths = {'/api/health', '/api/ping', '/health', '/ping'}
+    return request.path in health_paths
+
+
 def init_limiter(app):
     """
     Initialize Flask-Limiter with the app.
@@ -81,6 +93,8 @@ def init_limiter(app):
         key_prefix="rate_limit",
         # Return 429 with retry-after header
         headers_enabled=True,
+        # Exempt health check endpoints from rate limiting
+        default_limits_exempt_when=is_health_check,
     )
 
     # Custom error handler for rate limit exceeded
