@@ -14,7 +14,7 @@
  */
 export function ControlRibbon({ children }) {
   return (
-    <div className="sticky top-[80px] z-30 mb-4 bg-[#F5F3EE]/90 backdrop-blur-xl">
+    <div className="sticky top-[80px] z-30 mb-4 bg-[#F5F3EE]/90 backdrop-blur-xl overflow-visible">
       {children}
     </div>
   );

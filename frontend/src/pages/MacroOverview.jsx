@@ -166,21 +166,21 @@ export function MacroOverviewContent() {
     [compressionRaw]
   );
 
-  // Shared dashboard panels for histogram + beads (reduces request fanout)
-  // These panels respect global sidebar filters but exclude location drill
+  // Shared dashboard panels for histogram (respects bedroom filter)
+  // BeadsChart fetches its own data without bedroom/region filters
   const { data: dashboardPanels, status: dashboardStatus, isBootPending: dashboardBootPending } = useAppQuery(
     async (signal) => {
       // Phase 4: Inline params - no buildApiParams abstraction
       const params = {
-        panels: 'price_histogram,beads_chart',
+        panels: 'price_histogram',
         timeframe,
         bedroom,
-        // Note: location drill excluded - these panels show global distribution
+        // Note: location drill excluded - histogram shows global distribution
         sale_type: SALE_TYPE,
       };
 
       const response = await getDashboard(params, { signal, priority: 'medium' });
-      // axios interceptor already unwraps envelope: response.data = { price_histogram, beads_chart }
+      // axios interceptor already unwraps envelope: response.data = { price_histogram }
       return response.data || {};
     },
     // Explicit query key - TanStack handles cache deduplication
@@ -401,11 +401,10 @@ export function MacroOverviewContent() {
                 <ChartPanel className="lg:col-span-2">
                   <ErrorBoundary name="Price by Region & Bedroom" compact>
                     <ChartWatermark>
+                      {/* BeadsChart fetches its own data - ignores bedroom/region filters */}
                       <BeadsChart
                         height={chartHeight}
                         saleType={SALE_TYPE}
-                        sharedData={dashboardPanels?.beads_chart}
-                        sharedStatus={panelsInView ? dashboardStatus : 'pending'}
                         staggerIndex={5}
                         variant="dashboard"
                       />
