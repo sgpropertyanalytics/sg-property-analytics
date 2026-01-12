@@ -1,6 +1,25 @@
 #!/usr/bin/env python3
 """
-verify_units.py - Verify project unit counts against multiple sources.
+================================================================================
+DEPRECATED - Use check_data_health.py instead
+================================================================================
+
+This script is deprecated and will be removed in a future PR.
+
+Replacement:
+    python scripts/check_data_health.py --check plausibility  # sold <= total
+    python scripts/check_data_health.py                       # All checks
+
+The new system uses the project_units database table and provides:
+- Completeness checks (all projects in registry)
+- Plausibility checks (sold <= total)
+- Coverage checks (% by district)
+
+See: backend/data_health/ for the new implementation.
+
+================================================================================
+
+verify_units.py - Verify project unit counts against multiple sources. (DEPRECATED)
 
 Sources:
 1. Internal: Transaction count must be <= total units
@@ -12,6 +31,19 @@ Usage:
     python scripts/verify_units.py --dry-run          # Preview without DB update
     python scripts/verify_units.py --limit 10         # Verify first 10 projects
 """
+
+import warnings
+warnings.warn(
+    "\n\n"
+    "=" * 70 + "\n"
+    "DEPRECATED: backend/scripts/verify_units.py\n"
+    "=" * 70 + "\n"
+    "Use instead: python scripts/check_data_health.py\n"
+    "This script will be removed in a future PR.\n"
+    "=" * 70 + "\n",
+    DeprecationWarning,
+    stacklevel=2
+)
 
 import argparse
 import re

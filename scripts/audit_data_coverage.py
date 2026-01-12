@@ -1,6 +1,22 @@
 #!/usr/bin/env python3
 """
-audit_data_coverage.py - P0 Data Quality Audit
+================================================================================
+DEPRECATED - Use check_data_health.py instead
+================================================================================
+
+This script is deprecated and will be removed in a future PR.
+
+Replacement:
+    python scripts/check_data_health.py              # Run all checks
+    python scripts/check_data_health.py --district D10  # Focus on district
+    python scripts/check_data_health.py --verbose    # Show all issues
+
+The new system uses the project_units database table instead of CSV lookups.
+See: backend/data_health/ for the new implementation.
+
+================================================================================
+
+audit_data_coverage.py - P0 Data Quality Audit (DEPRECATED)
 
 This script identifies gaps between the transactions database and the CSV
 unit data file. Missing unit data leads to inflated turnover rates and
@@ -21,6 +37,19 @@ Usage:
 
 Run from project root with DATABASE_URL set.
 """
+
+import warnings
+warnings.warn(
+    "\n\n"
+    "=" * 70 + "\n"
+    "DEPRECATED: audit_data_coverage.py\n"
+    "=" * 70 + "\n"
+    "Use instead: python scripts/check_data_health.py\n"
+    "This script will be removed in a future PR.\n"
+    "=" * 70 + "\n",
+    DeprecationWarning,
+    stacklevel=2
+)
 
 import os
 import sys

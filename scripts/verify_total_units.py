@@ -1,5 +1,20 @@
 #!/usr/bin/env python3
 """
+================================================================================
+DEPRECATED - Will be consolidated into backend/data_health/external.py
+================================================================================
+
+This script is deprecated and will be removed in a future PR.
+
+The scraper functions will be moved to:
+    backend/data_health/external.py
+
+For now, this script still works but will print a deprecation warning.
+After migration, use:
+    python scripts/check_data_health.py --verify-external  (Phase 2)
+
+================================================================================
+
 verify_total_units.py - Multi-source verification for project total units.
 
 Uses tier-ranked sources:
@@ -18,6 +33,19 @@ Usage:
     python scripts/verify_total_units.py --project "NORMANTON PARK"
     python scripts/verify_total_units.py --all
 """
+
+import warnings
+warnings.warn(
+    "\n\n"
+    "=" * 70 + "\n"
+    "DEPRECATED: verify_total_units.py\n"
+    "=" * 70 + "\n"
+    "Will be consolidated into backend/data_health/external.py\n"
+    "This script will be removed in a future PR.\n"
+    "=" * 70 + "\n",
+    DeprecationWarning,
+    stacklevel=2
+)
 
 import csv
 import re
