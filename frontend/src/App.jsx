@@ -29,6 +29,7 @@ import { DashboardLayout } from './components/layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PageHeader } from './components/ui';
 import { BootStuckBanner } from './components/common/BootStuckBanner';
+import { Toaster } from 'sonner';
 
 // ===== Lazy Loading with Chunk Error Recovery =====
 // Auto-reloads once on chunk-load failure (common after deployments).
@@ -238,6 +239,8 @@ function App() {
         <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-left" />
       </Suspense>
     )}
+    {/* Global toast notifications */}
+    <Toaster richColors closeButton position="top-center" />
     </QueryClientProvider>
   );
 }

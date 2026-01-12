@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Lock, Mail, Eye, EyeOff } from 'lucide-react';
-import { useAuth, TokenStatus } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
+import { toast } from 'sonner';
 
 /**
  * Login Page - Swiss International + Technical Brutalist
@@ -12,6 +13,11 @@ import { useAuth, TokenStatus } from '../context/AuthContext';
  * - Micro-interactions on buttons
  * - Blinking terminal cursor on headline
  * - Mobile-first responsive image
+ *
+ * AUTH FLOW (P0 Fix 3):
+ * 1. If user is already authenticated on page load → redirect immediately
+ * 2. If user clicks sign-in → wait for popup to complete AND fresh user before navigating
+ *    (This prevents premature navigation when user has cached Firebase session)
  */
 
 // Data atmosphere - coordinates for mobile view
@@ -20,7 +26,7 @@ const DATA_COORDS = ['01.3521°N', '103.8198°E', '0x7F3A', 'SGP_001', '01.2894�
 function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { signInWithGoogle, error: authError, authUiLoading, isConfigured, tokenStatus, isAuthenticated } = useAuth();
+  const { signInWithGoogle, error: authError, authUiLoading, isConfigured, isAuthenticated, initialized, user } = useAuth();
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [email, setEmail] = useState('');
@@ -31,7 +37,23 @@ function Login() {
   // P0 Fix 2: Track if sign-in was initiated (to gate navigation)
   const signInInitiatedRef = useRef(false);
 
+  // P0 Fix 3: Track user UID when sign-in was initiated
+  // Navigate only when user.uid differs from this OR this was null and user becomes set
+  const uidAtInitRef = useRef(null);
+
+  // P0 Fix 3: Track when popup flow actually completes (signInWithGoogle resolves)
+  const popupCompletedRef = useRef(false);
+
   const from = location.state?.from?.pathname || '/market-overview';
+
+  // P0 Fix 3: Auto-redirect already authenticated users
+  // Standard pattern: if you're already logged in, no need to see login page
+  useEffect(() => {
+    if (initialized && isAuthenticated && !signInInitiatedRef.current) {
+      console.warn('[Login] Already authenticated, redirecting to:', from);
+      navigate(from, { replace: true });
+    }
+  }, [initialized, isAuthenticated, from, navigate]);
 
   // Blinking cursor effect
   useEffect(() => {
@@ -41,44 +63,60 @@ function Login() {
     return () => clearInterval(interval);
   }, []);
 
-  // P0 Fix 2: Navigate only when tokenStatus resolves after sign-in
+  // P0 Fix 2 + 3: Navigate only when popup completes with fresh user
   // Don't wait for subscription - that's handled by dashboard boot gate
   useEffect(() => {
     if (!signInInitiatedRef.current) return;
 
-    const tokenResolved =
-      tokenStatus === TokenStatus.PRESENT ||
-      tokenStatus === TokenStatus.ERROR;
+    // P0 Fix 3: Check if this is a FRESH sign-in (user changed)
+    const currentUid = user?.uid || null;
+    const isFreshSignIn =
+      (uidAtInitRef.current === null && currentUid !== null) || // Was not authenticated, now is
+      (uidAtInitRef.current !== null && currentUid !== null && currentUid !== uidAtInitRef.current); // Different user
 
-    if (tokenResolved) {
+    // Navigate when: authenticated with valid UID AND (fresh sign-in OR popup completed)
+    const shouldNavigate = isAuthenticated && currentUid && (isFreshSignIn || popupCompletedRef.current);
+
+    if (shouldNavigate) {
+      console.warn('[Login] Fresh sign-in detected, navigating to:', from);
+      // Reset all refs
       signInInitiatedRef.current = false;
+      uidAtInitRef.current = null;
+      popupCompletedRef.current = false;
       setIsSigningIn(false);
-
-      // Only navigate if user is actually authenticated
-      if (isAuthenticated) {
-        console.warn('[Login] Auth stable, navigating to:', from);
-        navigate(from, { replace: true });
-      } else {
-        // Token sync failed → user forced to guest mode
-        console.warn('[Login] Auth resolved but not authenticated (guest mode)');
-      }
+      navigate(from, { replace: true });
     }
-  }, [tokenStatus, isAuthenticated, from, navigate]);
+  }, [user, isAuthenticated, from, navigate]);
 
   const handleGoogleSignIn = async () => {
     if (!isConfigured) return;
 
     setIsSigningIn(true);
     signInInitiatedRef.current = true;
+    // P0 Fix 3: Capture current user UID at initiation time
+    uidAtInitRef.current = user?.uid || null;
+    popupCompletedRef.current = false;
 
     try {
       await signInWithGoogle();
-      // P0 Fix 2: Don't navigate here - let the useEffect handle it
-      // Navigation happens when tokenStatus resolves to PRESENT or ERROR
+      // P0 Fix 3: Mark popup as completed - the effect will handle navigation
+      popupCompletedRef.current = true;
     } catch (err) {
-      console.error('Sign-in failed:', err);
+      // Reset all refs on error/cancel
       signInInitiatedRef.current = false;
+      uidAtInitRef.current = null;
+      popupCompletedRef.current = false;
       setIsSigningIn(false);
+
+      // P0 Fix 3: Show friendly message if user cancelled while already authenticated
+      // (They'll be auto-redirected to dashboard by the effect)
+      const isCancelled = err?.code === 'auth/popup-closed-by-user' ||
+                          err?.code === 'auth/cancelled-popup-request';
+      if (isCancelled && isAuthenticated) {
+        toast.info('Sign-in cancelled — staying on your current session.');
+      } else if (!isCancelled) {
+        console.error('Sign-in failed:', err);
+      }
     }
   };
 
