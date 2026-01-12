@@ -1,0 +1,114 @@
+# AI Context Data Refresh - Auto-update external data sources
+#
+# Refreshes AI context files from Data.gov.sg and other sources:
+# - Economic indicators: CPI, GDP, unemployment, HDB index, income
+# - Demographics: Population, buyer profiles
+# - Interest rates: SORA
+#
+# Schedule:
+# - Weekly (Sunday 2am SGT): Full refresh of all data
+# - Data.gov.sg updates: CPI monthly, GDP/unemployment quarterly, income annually
+# - SORA: Daily rates but weekly refresh is sufficient
+#
+# The workflow commits updated markdown files back to the repo.
+
+name: Refresh AI Context Data
+
+on:
+  schedule:
+    # Every Sunday at 2am SGT (Saturday 6pm UTC)
+    # SGT = UTC+8, so 2am SGT = 6pm UTC previous day
+    - cron: '0 18 * * 6'
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Which data to refresh'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - economic
+          - demographics
+          - sora
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install requests beautifulsoup4
+
+      - name: Run refresh script
+        id: refresh
+        working-directory: backend
+        run: |
+          TARGET="${{ github.event.inputs.target || 'all' }}"
+          echo "Refreshing: $TARGET"
+
+          python -m scripts.refresh_ai_context --only "$TARGET"
+
+          # Check if any files changed
+          cd ..
+          if git diff --quiet docs/ai-context/snapshot/; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "No changes detected"
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "Changes detected in snapshot files"
+            git diff --stat docs/ai-context/snapshot/
+          fi
+
+      - name: Commit and push changes
+        if: steps.refresh.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add docs/ai-context/snapshot/*.md
+          git add docs/ai-context/manifest.json
+
+          # Create commit message with summary
+          COMMIT_MSG="chore(ai-context): auto-refresh data $(date -u +%Y-%m-%d)
+
+          Automated refresh of AI context data from Data.gov.sg:
+          - Economic indicators (CPI, GDP, unemployment, HDB, income)
+          - Demographics (population)
+          - Interest rates (SORA)
+
+          Triggered by: ${{ github.event_name }}"
+
+          git commit -m "$COMMIT_MSG"
+          git push
+
+      - name: Summary
+        run: |
+          echo "## AI Context Refresh Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Date:** $(date -u +%Y-%m-%d)" >> $GITHUB_STEP_SUMMARY
+          echo "**Target:** ${{ github.event.inputs.target || 'all' }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Changes:** ${{ steps.refresh.outputs.changed }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Data Sources" >> $GITHUB_STEP_SUMMARY
+          echo "| Source | Frequency | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| CPI/Inflation | Monthly | ✓ |" >> $GITHUB_STEP_SUMMARY
+          echo "| Unemployment | Quarterly | ✓ |" >> $GITHUB_STEP_SUMMARY
+          echo "| GDP Growth | Quarterly | ✓ |" >> $GITHUB_STEP_SUMMARY
+          echo "| HDB Price Index | Quarterly | ✓ |" >> $GITHUB_STEP_SUMMARY
+          echo "| Income Data | Annual | ✓ |" >> $GITHUB_STEP_SUMMARY
+          echo "| Population | Annual | ✓ |" >> $GITHUB_STEP_SUMMARY
+          echo "| SORA Rates | Weekly | ✓ |" >> $GITHUB_STEP_SUMMARY

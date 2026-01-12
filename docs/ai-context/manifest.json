@@ -41,12 +41,13 @@
       "notes": "Always include header with freshness date; full content on demand"
     },
     "snapshot/policy-measures.md": {
-      "updated_at": "2026-01-10",
-      "last_verified_at": "2026-01-10",
+      "updated_at": "2026-01-12",
+      "last_verified_at": "2026-01-12",
       "effective_from": {
         "ABSD": "2023-04-27",
-        "LTV": "2021-12-16",
-        "SSD": "2017-03-11",
+        "LTV_private": "2021-12-16",
+        "LTV_HDB": "2024-08-20",
+        "SSD": "2025-07-03",
         "BSD": "2023-02-15",
         "TDSR": "2021-12-16"
       },
@@ -65,17 +66,79 @@
         "cooling measures",
         "affordability",
         "mortgage",
-        "financing",
-        "foreigner",
-        "buyer profile"
+        "financing"
       ],
       "notes": "Token-heavy. Only inject when query involves policy impact or buyer costs."
+    },
+    "snapshot/demographics.md": {
+      "updated_at": "2026-01-12",
+      "last_verified_at": "2026-01-12",
+      "source_urls": [
+        "https://www.population.gov.sg/files/media-centre/publications/Population_in_Brief_2025.pdf",
+        "https://www.singstat.gov.sg/publications/population/population-trends"
+      ],
+      "description": "Population trends, buyer nationality breakdown, PR/foreigner patterns",
+      "injection": "conditional",
+      "injection_triggers": [
+        "foreigner",
+        "PR",
+        "permanent resident",
+        "buyer profile",
+        "nationality",
+        "population",
+        "demographics",
+        "demand"
+      ],
+      "notes": "Inject for charts involving buyer segmentation or demand analysis."
     },
     "sources.md": {
       "updated_at": "2026-01-10",
       "description": "Allowed sources and citation rules",
       "injection": "never",
       "notes": "Reference doc for maintainers, not injected into prompts"
+    },
+    "snapshot/interest-rates.md": {
+      "updated_at": "2026-01-12",
+      "last_verified_at": "2026-01-12",
+      "source_urls": [
+        "https://www.mas.gov.sg/monetary-policy/sora",
+        "https://housingloansg.com/hl/charts/sibor-sor-daily-chart"
+      ],
+      "description": "Current SORA interest rates and mortgage context",
+      "injection": "conditional",
+      "injection_triggers": [
+        "interest rate",
+        "SORA",
+        "mortgage",
+        "loan",
+        "affordability",
+        "financing"
+      ],
+      "notes": "Inject for affordability and financing discussions."
+    },
+    "snapshot/economic-indicators.md": {
+      "updated_at": "2026-01-12",
+      "last_verified_at": "2026-01-12",
+      "source_urls": [
+        "https://data.gov.sg/datasets/d_bdaff844e3ef89d39fceb962ff8f0791/view",
+        "https://data.gov.sg/datasets/d_b0da22a41f952764376a2b7b5b0f2533/view",
+        "https://data.gov.sg/datasets/d_a5ff719648a0e6d4b4c623ee383ab686/view",
+        "https://data.gov.sg/datasets/d_14f63e595975691e7c24a27ae4c07c79/view"
+      ],
+      "description": "Key economic indicators: CPI, unemployment, GDP, HDB price index",
+      "injection": "conditional",
+      "injection_triggers": [
+        "economy",
+        "economic",
+        "inflation",
+        "CPI",
+        "unemployment",
+        "GDP",
+        "HDB price",
+        "market conditions",
+        "macro"
+      ],
+      "notes": "Inject for macroeconomic context and market condition discussions."
     }
   },
   "injection_rules": {

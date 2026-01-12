@@ -1,6 +1,6 @@
 # Policy Rates
 
-**Last Updated**: 2026-01-10
+**Last Updated**: 2026-01-12
 **Source**: IRAS, MAS
 **Effective Date**: As noted per section
 
@@ -27,9 +27,10 @@
 
 ## LTV (Loan-to-Value) Limits
 
-**Effective**: 16 December 2021
-**Source**: MAS
+**Effective**: 20 August 2024 (HDB update), 16 December 2021 (private)
+**Source**: MAS, HDB
 
+### Private Property (Bank Loans)
 | Loan | LTV Limit | Conditions |
 |------|-----------|------------|
 | 1st housing loan | 75% | Standard |
@@ -38,7 +39,13 @@
 | 2nd housing loan | 25% | If loan tenure >30 years OR extends past age 65 |
 | 3rd+ housing loan | 35% | Standard |
 
+### HDB Flats (HDB Loans)
+| Loan Type | LTV Limit | Notes |
+|-----------|-----------|-------|
+| HDB concessionary loan | 75% | Reduced from 80% in Aug 2024 |
+
 **Notes**:
+- Aug 2024: HDB LTV lowered from 80% to 75% to align with bank loans
 - LTV applies to lower of purchase price or valuation
 - Cash downpayment requirements apply beyond LTV
 - CPF can be used up to Valuation Limit (VL)
@@ -47,17 +54,20 @@
 
 ## SSD (Seller's Stamp Duty)
 
-**Effective**: 11 March 2017
+**Effective**: 3 July 2025
 **Source**: IRAS
 
 | Holding Period | SSD Rate |
 |----------------|----------|
-| Up to 1 year | 12% |
-| >1 year to 2 years | 8% |
-| >2 years to 3 years | 4% |
-| More than 3 years | 0% |
+| Up to 1 year | 16% |
+| >1 year to 2 years | 12% |
+| >2 years to 3 years | 8% |
+| >3 years to 4 years | 4% |
+| More than 4 years | 0% |
 
 **Notes**:
+- Holding period extended from 3 to 4 years (July 2025 update)
+- Rates increased by 4 percentage points per tier to curb flipping
 - Holding period starts from date of purchase (not completion)
 - Applies to sale price or market value, whichever is higher
 - Exemptions exist for specific circumstances (e.g., death, bankruptcy)
