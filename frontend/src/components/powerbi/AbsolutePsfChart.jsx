@@ -29,8 +29,7 @@ import {
   AgentFooter,
 } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS, CHART_TOOLTIP } from '../../constants/chartOptions';
-import { CHART_COLORS } from '../../constants/colors';
-import { REGION } from '../../constants/colors';
+import { CHART_COLORS, REGION, alpha } from '../../constants/colors';
 import {
   transformCompressionSeries,
   logFetchDebug,
@@ -208,22 +207,16 @@ function AbsolutePsfChartBase({ height = 380, saleType = null, sharedData = null
     }
   }, [isAgentOpen, isPremium, data, latestData, prevData, timeframe, debouncedBedroom, timeGrouping, saleType, ccrChange, rcrChange, ocrChange, interpret, resetAi]);
 
-  // Helper to apply muted opacity to hex color
-  const applyOpacity = (hexColor, isMuted) => {
-    if (!isMuted) return hexColor;
-    // Convert hex to rgba with 30% opacity for muted state
-    const hex = hexColor.replace('#', '');
-    const r = parseInt(hex.substring(0, 2), 16);
-    const g = parseInt(hex.substring(2, 4), 16);
-    const b = parseInt(hex.substring(4, 6), 16);
-    return `rgba(${r}, ${g}, ${b}, 0.3)`;
-  };
-
-  // Chart data with region highlighting
+  // Chart data with region highlighting (uses alpha from colors.js - Rule 4: Reuse-First)
   const chartData = useMemo(() => {
     const isCcrMuted = activeRegions !== null && !activeRegions.has('CCR');
     const isRcrMuted = activeRegions !== null && !activeRegions.has('RCR');
     const isOcrMuted = activeRegions !== null && !activeRegions.has('OCR');
+
+    // Apply 30% opacity for muted regions using centralized alpha helper
+    const ccrColor = isCcrMuted ? alpha(REGION_COLORS.CCR, 0.3) : REGION_COLORS.CCR;
+    const rcrColor = isRcrMuted ? alpha(REGION_COLORS.RCR, 0.3) : REGION_COLORS.RCR;
+    const ocrColor = isOcrMuted ? alpha(REGION_COLORS.OCR, 0.3) : REGION_COLORS.OCR;
 
     return {
       labels: data.map(d => d.period),
@@ -231,8 +224,8 @@ function AbsolutePsfChartBase({ height = 380, saleType = null, sharedData = null
         {
           label: 'CCR (Core Central)',
           data: data.map(d => d.ccr),
-          borderColor: applyOpacity(REGION_COLORS.CCR, isCcrMuted),
-          backgroundColor: applyOpacity(REGION_COLORS.CCR, isCcrMuted),
+          borderColor: ccrColor,
+          backgroundColor: ccrColor,
           borderWidth: isCcrMuted ? 1 : 2,
           pointRadius: 0,
           pointHoverRadius: 5,
@@ -246,8 +239,8 @@ function AbsolutePsfChartBase({ height = 380, saleType = null, sharedData = null
         {
           label: 'RCR (Rest of Central)',
           data: data.map(d => d.rcr),
-          borderColor: applyOpacity(REGION_COLORS.RCR, isRcrMuted),
-          backgroundColor: applyOpacity(REGION_COLORS.RCR, isRcrMuted),
+          borderColor: rcrColor,
+          backgroundColor: rcrColor,
           borderWidth: isRcrMuted ? 1 : 2,
           pointRadius: 0,
           pointHoverRadius: 5,
@@ -261,8 +254,8 @@ function AbsolutePsfChartBase({ height = 380, saleType = null, sharedData = null
         {
           label: 'OCR (Outside Central)',
           data: data.map(d => d.ocr),
-          borderColor: applyOpacity(REGION_COLORS.OCR, isOcrMuted),
-          backgroundColor: applyOpacity(REGION_COLORS.OCR, isOcrMuted),
+          borderColor: ocrColor,
+          backgroundColor: ocrColor,
           borderWidth: isOcrMuted ? 1 : 2,
           pointRadius: 0,
           pointHoverRadius: 5,
