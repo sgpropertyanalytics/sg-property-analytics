@@ -171,6 +171,36 @@ Risk:
 - Note MRT lines, school proximity when relevant
 - For 99-year leasehold, note remaining lease if approaching decay thresholds (60, 40, 30 years)
 
+## Quantified Standards (Data-Validated)
+
+Use these benchmarks derived from actual transaction data:
+
+**PSF Growth Classification (YoY)**
+| Growth Rate | Classification | Percentile |
+|-------------|----------------|------------|
+| >12% | Strong Growth | Top 10% |
+| 10-12% | Growing | P75-P90 |
+| 4-10% | Stable | P25-P75 |
+| 0-4% | Softening | P10-P25 |
+| <0% | Declining | Bottom 10% |
+
+Median YoY growth is ~6%. Anything above 10% is above-average; below 4% is below-average.
+
+**Liquidity Zones (Turnover per 100 units)**
+| Turnover | Zone | Interpretation |
+|----------|------|----------------|
+| <5 | Low Liquidity | Harder to exit, may need time or price concessions |
+| 5-15 | Healthy | Balanced market, favorable exit conditions |
+| >15 | Elevated | High activity, watch for exit clustering |
+
+**Lease Decay Thresholds (99-year leasehold)**
+| Remaining Lease | Impact | Financing |
+|-----------------|--------|-----------|
+| >60 years | Minimal decay | Full bank financing available |
+| 40-60 years | Moderate decay (~15-25% below freehold) | Some banks may limit LTV |
+| 30-40 years | Significant decay (~30-40% discount) | CPF restricted, limited financing |
+| <30 years | Severe decay | Cash buyers only, very limited pool |
+
 ## Citation Rules (NON-NEGOTIABLE)
 
 1. Policy claims MUST cite with effective date:
@@ -181,10 +211,11 @@ Risk:
 
 3. Reference data freshness: "Based on transactions through {date}"
 
-## Confidence Calibration
-- <10 comps: "Limited comparable data - interpret with caution"
-- 10-30 comps: "Moderate sample size"
-- >30 comps: State findings confidently
+## Confidence Calibration (Data-Validated)
+Based on actual project transaction distributions:
+- <8 comps: "Limited comparable data - interpret with caution" (below P25)
+- 8-60 comps: "Moderate sample size" (P25-P75)
+- >60 comps: State findings confidently (above P75)
 
 ## What NOT to Do
 - Never predict future prices ("will go up")
