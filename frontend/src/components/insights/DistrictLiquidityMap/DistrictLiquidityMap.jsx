@@ -9,7 +9,7 @@
  * - Region summary bar
  */
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Map, { Source, Layer, Marker } from 'react-map-gl/maplibre';
 import { BarChart3, DollarSign } from 'lucide-react';
@@ -31,10 +31,11 @@ import {
   MAP_STYLE,
   LIQUIDITY_FILLS,
 } from './constants';
-import { getLiquidityFill } from './utils';
+import { getLiquidityFill, getLiquidityFillDimmed } from './utils';
 import {
   DistrictLabel,
   HoverCard,
+  LeaderLine,
   RegionSummaryBar,
   LiquidityRankingTable,
 } from './components';
@@ -135,27 +136,101 @@ function DistrictLiquidityMapBase({
   // Use precomputed district centroids (calculated at module load time)
   const districtCentroids = DISTRICT_CENTROIDS;
 
-  // Dynamic fill color expression based on liquidity
+  // Refs for map container and map instance (for position calculations)
+  const mapContainerRef = useRef(null);
+  const mapRef = useRef(null);
+
+  // Dynamic fill color expression based on liquidity (with spotlight dimming)
   const fillColorExpression = useMemo(() => {
+    const hoveredId = hoveredDistrict?.district?.district;
     const expr = ['case'];
 
     districtData.forEach((d) => {
       if (d.has_data) {
         expr.push(['==', ['get', 'district'], d.district_id]);
-        expr.push(getLiquidityFill(d.liquidity_metrics?.z_score));
+        // If hovering, dim non-hovered districts (spotlight effect)
+        if (hoveredId && d.district_id !== hoveredId) {
+          expr.push(getLiquidityFillDimmed(d.liquidity_metrics?.z_score));
+        } else {
+          expr.push(getLiquidityFill(d.liquidity_metrics?.z_score));
+        }
       }
     });
 
     // If no conditions were added, return literal color (not malformed case expression)
     // MapLibre 'case' requires at least 3 arguments: ['case', condition, result, fallback]
     if (expr.length === 1) {
-      return LIQUIDITY_FILLS.noData;
+      return hoveredId ? getLiquidityFillDimmed(null) : LIQUIDITY_FILLS.noData;
     }
 
     // Default for districts with no data
-    expr.push(LIQUIDITY_FILLS.noData);
+    expr.push(hoveredId ? getLiquidityFillDimmed(null) : LIQUIDITY_FILLS.noData);
     return expr;
-  }, [districtData]);
+  }, [districtData, hoveredDistrict]);
+
+  // Calculate screen position of hovered district for tethered callout
+  // Card is fixed below the legend, only the leader line moves
+  const { cardPosition, lineCoords } = useMemo(() => {
+    if (!hoveredDistrict?.district || !mapContainerRef.current) {
+      return { cardPosition: null, lineCoords: null };
+    }
+
+    const centroid = hoveredDistrict.district.centroid;
+    if (!centroid) return { cardPosition: null, lineCoords: null };
+
+    // Get map container bounds
+    const containerRect = mapContainerRef.current.getBoundingClientRect();
+    const mapWidth = containerRect.width;
+    const mapHeight = containerRect.height;
+
+    // Use map's project method for accurate screen coordinates
+    let districtX, districtY;
+    if (mapRef.current) {
+      const projected = mapRef.current.project([centroid.lng, centroid.lat]);
+      districtX = projected.x;
+      districtY = projected.y;
+    } else {
+      // Fallback calculation
+      const scale = Math.pow(2, viewState.zoom) * 256 / 360;
+      districtX = mapWidth / 2 + (centroid.lng - viewState.longitude) * scale * Math.cos(viewState.latitude * Math.PI / 180);
+      districtY = mapHeight / 2 - (centroid.lat - viewState.latitude) * scale;
+    }
+
+    // Fixed card position: below the legend (same left padding as legend: left-2 sm:left-4)
+    // Card uses CSS classes for responsive positioning, we use sm breakpoint (16px) for line calc
+    const cardWidth = 220;
+    const cardLeft = 16; // Matches sm:left-4 (16px)
+    const cardTop = 290; // Just below the legend
+
+    // Leader line: connect district to the right edge of the card
+    // Using orthogonal (right-angle) path for technical look
+    const lineEndX = cardLeft + cardWidth; // Right edge of card (236px)
+    const lineEndY = cardTop + 40; // Near the top of the card (header area)
+
+    return {
+      cardPosition: null, // Card uses CSS classes now
+      lineCoords: {
+        startX: districtX,
+        startY: districtY,
+        endX: lineEndX,
+        endY: lineEndY,
+      },
+    };
+  }, [hoveredDistrict, viewState]);
+
+  // Get border color for leader line based on liquidity tier
+  const leaderLineColor = useMemo(() => {
+    if (!hoveredDistrict?.data?.liquidity_metrics?.liquidity_tier) return '#334155';
+    const tier = hoveredDistrict.data.liquidity_metrics.liquidity_tier;
+    switch (tier) {
+      case 'Very High': return '#213448';
+      case 'High': return '#547792';
+      case 'Neutral': return '#94B4C1';
+      case 'Low': return '#d4c4a8';
+      case 'Very Low': return '#c4b498';
+      default: return '#334155';
+    }
+  }, [hoveredDistrict]);
 
   const handleLeave = useCallback(() => {
     setHoveredDistrict(null);
@@ -223,7 +298,7 @@ function DistrictLiquidityMapBase({
       </div>
 
       {/* Map container */}
-      <div className="relative h-[50vh] min-h-[400px] md:h-[60vh] md:min-h-[500px] lg:h-[65vh] lg:min-h-[550px]">
+      <div ref={mapContainerRef} className="relative h-[50vh] min-h-[400px] md:h-[60vh] md:min-h-[500px] lg:h-[65vh] lg:min-h-[550px]">
         {/* Blur overlay for free users */}
         {isFreeResolved && !loading && (
           <div
@@ -265,6 +340,7 @@ function DistrictLiquidityMapBase({
 
         {/* MapLibre GL Map */}
         <Map
+          ref={mapRef}
           {...viewState}
           onMove={(evt) => setViewState(evt.viewState)}
           mapStyle={MAP_STYLE}
@@ -334,16 +410,33 @@ function DistrictLiquidityMapBase({
             })}
         </Map>
 
-        {/* Hover card */}
+        {/* Leader line (tethered callout connector) */}
+        <AnimatePresence>
+          {hoveredDistrict && lineCoords && (
+            <LeaderLine
+              startX={lineCoords.startX}
+              startY={lineCoords.startY}
+              endX={lineCoords.endX}
+              endY={lineCoords.endY}
+              color={leaderLineColor}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* Hover card (tethered callout) */}
         <AnimatePresence>
           {hoveredDistrict && (
-            <HoverCard district={hoveredDistrict.district} data={hoveredDistrict.data} />
+            <HoverCard
+              district={hoveredDistrict.district}
+              data={hoveredDistrict.data}
+              position={cardPosition}
+            />
           )}
         </AnimatePresence>
 
         {/* Legend - Liquidity Tiers (top-left) - smaller on mobile */}
         <div className="absolute top-2 left-2 sm:top-4 sm:left-4 z-20">
-          <div className="bg-white/95 backdrop-blur-sm rounded-sm border border-slate-300 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.05)] p-2 sm:p-2.5 w-[140px] sm:w-[180px]">
+          <div className="bg-white/95 backdrop-blur-sm rounded-sm border border-slate-300 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.05)] p-2 sm:p-2.5 w-[140px] sm:w-[220px]">
             {/* Header with methodology tooltip */}
             <div className="flex items-center justify-between mb-2">
               <p className="text-[9px] text-slate-500 uppercase tracking-wider font-semibold">
@@ -459,8 +552,8 @@ function DistrictLiquidityMapBase({
                     </span>
                   </div>
                   <div className="flex justify-between text-[10px]">
-                    <span className="text-slate-500">Avg Turnover</span>
-                    <span className="font-semibold text-slate-800 font-mono">
+                    <span className="text-slate-500 whitespace-nowrap">Avg Turnover</span>
+                    <span className="font-semibold text-slate-800 font-mono whitespace-nowrap">
                       {meta.mean_turnover_rate?.toFixed(1) ?? meta.mean_velocity?.toFixed(1)} per 100 units
                     </span>
                   </div>

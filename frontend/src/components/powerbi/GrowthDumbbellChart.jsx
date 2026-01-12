@@ -202,7 +202,7 @@ function GrowthDumbbellChartBase({ saleType = SaleType.RESALE, enabled = true })
       onRetry={refetch}
       empty={!sortedData || sortedData.length === 0}
       skeleton="bar"
-      height={400}
+      height={1200}
     >
     <div className="bg-white rounded-sm border border-slate-300 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.05)] overflow-hidden">
       {/* Header with title */}
@@ -234,7 +234,7 @@ function GrowthDumbbellChartBase({ saleType = SaleType.RESALE, enabled = true })
       <div className="px-3 md:px-4 py-2 bg-slate-50 border-b border-slate-200">
         <div
           className="grid items-center gap-x-3 text-[10px] md:text-xs font-medium text-slate-600"
-          style={{ gridTemplateColumns: 'minmax(180px, 280px) 1fr 90px 90px 70px 55px' }}
+          style={{ gridTemplateColumns: 'minmax(200px, 320px) 1fr 120px 110px 75px 60px' }}
         >
           <div
             className="cursor-pointer hover:text-slate-800 select-none"
@@ -279,8 +279,8 @@ function GrowthDumbbellChartBase({ saleType = SaleType.RESALE, enabled = true })
         </div>
       </div>
 
-      {/* Dumbbell Rows */}
-      <div className="divide-y divide-slate-100 max-h-[500px] overflow-y-auto">
+      {/* Dumbbell Rows - no max height, show all districts */}
+      <div className="divide-y divide-slate-100">
         {sortedData.map((item, index) => {
           // Left-aligned dumbbell: baseline at 0%, latest position based on growth
           // Scale: 0% growth = 10%, 100% growth = 100%
@@ -307,7 +307,7 @@ function GrowthDumbbellChartBase({ saleType = SaleType.RESALE, enabled = true })
               {/* CSS Grid row - matches header */}
               <div
                 className="grid items-center gap-x-3"
-                style={{ gridTemplateColumns: 'minmax(180px, 280px) 1fr 90px 90px 70px 55px' }}
+                style={{ gridTemplateColumns: 'minmax(200px, 320px) 1fr 120px 110px 75px 60px' }}
               >
                 {/* Column 1: District - full name, wider column */}
                 <div className="flex items-center gap-2 overflow-hidden">

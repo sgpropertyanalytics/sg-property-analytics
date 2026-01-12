@@ -123,179 +123,280 @@ export function DistrictLabel({ district, data, zoom, onHover, onLeave, isHovere
 }
 
 // =============================================================================
-// HOVER CARD
+// LIQUIDITY TIER COLORS (for header styling)
 // =============================================================================
 
-export function HoverCard({ district, data }) {
+const TIER_HEADER_COLORS = {
+  'Very High': { bg: 'bg-slate-800', text: 'text-white', border: '#213448' },
+  'High': { bg: 'bg-slate-600', text: 'text-white', border: '#547792' },
+  'Neutral': { bg: 'bg-slate-300', text: 'text-slate-800', border: '#94B4C1' },
+  'Low': { bg: 'bg-amber-100', text: 'text-amber-800', border: '#EAE0CF' },
+  'Very Low': { bg: 'bg-amber-200', text: 'text-amber-900', border: '#d4c4a8' },
+  default: { bg: 'bg-slate-100', text: 'text-slate-600', border: '#cbd5e1' },
+};
+
+// =============================================================================
+// LEADER LINE (SVG connector from district to card)
+// Orthogonal (right-angle) design for technical/industrial look
+// =============================================================================
+
+export function LeaderLine({ startX, startY, endX, endY, color = '#334155' }) {
+  // Create orthogonal path with right-angle turns
+  // Pattern: horizontal from district -> vertical drop -> horizontal to card
+  const midX = endX + 30; // Vertical segment position (near the card)
+  const midY = startY; // First turn at district's Y level
+
+  // Path: start -> horizontal to midX -> vertical to endY -> horizontal to card
+  const pathD = `M ${startX} ${startY} L ${midX} ${midY} L ${midX} ${endY} L ${endX} ${endY}`;
+
+  return (
+    <motion.svg
+      className="absolute inset-0 pointer-events-none z-40 overflow-visible"
+      style={{ width: '100%', height: '100%' }}
+    >
+      {/* Subtle glow/shadow for depth */}
+      <motion.path
+        d={pathD}
+        stroke={color}
+        strokeWidth="4"
+        strokeOpacity="0.1"
+        fill="none"
+        strokeLinejoin="round"
+        initial={{ pathLength: 0, opacity: 0 }}
+        animate={{ pathLength: 1, opacity: 1 }}
+        exit={{ pathLength: 0, opacity: 0 }}
+        transition={{ duration: 0.3, ease: 'easeOut' }}
+      />
+      {/* Main orthogonal line */}
+      <motion.path
+        d={pathD}
+        stroke={color}
+        strokeWidth="1.5"
+        fill="none"
+        strokeLinejoin="round"
+        initial={{ pathLength: 0, opacity: 0 }}
+        animate={{ pathLength: 1, opacity: 1 }}
+        exit={{ pathLength: 0, opacity: 0 }}
+        transition={{ duration: 0.3, ease: 'easeOut' }}
+      />
+      {/* Corner squares at the turns for technical look */}
+      <motion.rect
+        x={midX - 3}
+        y={midY - 3}
+        width="6"
+        height="6"
+        fill={color}
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0, opacity: 0 }}
+        transition={{ duration: 0.15, delay: 0.1 }}
+      />
+      <motion.rect
+        x={midX - 3}
+        y={endY - 3}
+        width="6"
+        height="6"
+        fill={color}
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0, opacity: 0 }}
+        transition={{ duration: 0.15, delay: 0.15 }}
+      />
+      {/* Anchor square at district center */}
+      <motion.rect
+        x={startX - 4}
+        y={startY - 4}
+        width="8"
+        height="8"
+        fill={color}
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0, opacity: 0 }}
+        transition={{ duration: 0.15 }}
+      />
+      {/* Inner white square for contrast */}
+      <motion.rect
+        x={startX - 2}
+        y={startY - 2}
+        width="4"
+        height="4"
+        fill="white"
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0, opacity: 0 }}
+        transition={{ duration: 0.15, delay: 0.05 }}
+      />
+      {/* Terminal square at card connection */}
+      <motion.rect
+        x={endX - 3}
+        y={endY - 3}
+        width="6"
+        height="6"
+        fill={color}
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0, opacity: 0 }}
+        transition={{ duration: 0.15, delay: 0.2 }}
+      />
+    </motion.svg>
+  );
+}
+
+// =============================================================================
+// HOVER CARD (Tethered Callout Style)
+// =============================================================================
+
+export function HoverCard({ district, data, position }) {
   if (!district || !data) return null;
 
   const metrics = data.liquidity_metrics || {};
   const bedroom = data.bedroom_breakdown || {};
 
+  // Get tier-based header colors
+  const tier = metrics.liquidity_tier || 'default';
+  const headerColors = TIER_HEADER_COLORS[tier] || TIER_HEADER_COLORS.default;
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      transition={{ duration: 0.15 }}
-      className="absolute z-50 pointer-events-none top-[200px] left-4"
+      initial={{ opacity: 0, scale: 0.95, y: 10 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95, y: 10 }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
+      className="absolute z-50 pointer-events-none top-[290px] left-2 sm:left-4"
     >
-      <div className="bg-white rounded-none shadow-[2px_2px_0px_0px_rgba(0,0,0,0.05)] border border-mono-muted p-3 w-[180px]">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-2">
-          <span className="font-bold text-slate-800 text-sm">{district.district}</span>
-          {/* Liquidity Score Badge */}
-          <div className="flex items-center gap-1">
-            <span
-              className={`px-2 py-0.5 rounded text-sm font-bold ${getScoreBadgeStyle(metrics.liquidity_score)}`}
-            >
-              {metrics.liquidity_score?.toFixed(0) || '-'}
-            </span>
+      {/* Technical card with tier-colored border */}
+      <div
+        className="bg-white/95 backdrop-blur-sm rounded-none w-[220px] overflow-hidden"
+        style={{
+          border: `1.5px solid ${headerColors.border}`,
+        }}
+      >
+        {/* Tier-colored header */}
+        <div className={`px-3 py-2 ${headerColors.bg} ${headerColors.text} flex items-center justify-between`}>
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-sm tracking-wide">{district.district}</span>
+            <span className="text-[10px] opacity-80">{tier}</span>
           </div>
-        </div>
-
-        {/* District name */}
-        <p className="text-xs text-slate-500 mb-2 leading-tight">{district.name}</p>
-
-        {/* Score tier label */}
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-[10px] text-slate-500">Liquidity Score</span>
-          <span className="text-[10px] font-semibold text-slate-800">
-            {getScoreLabel(metrics.liquidity_score)}
+          {/* Liquidity Score Badge */}
+          <span className="px-2 py-0.5 bg-white/20 rounded text-sm font-bold">
+            {metrics.liquidity_score?.toFixed(0) || '-'}
           </span>
         </div>
 
-        <div className="h-px bg-slate-200 mb-2" />
+        {/* Card body */}
+        <div className="p-3">
+          {/* District name */}
+          <p className="text-xs text-slate-600 mb-2 leading-tight font-medium">{district.name}</p>
 
-        {/* Stats */}
-        <div className="space-y-1.5">
-          {/* Turnover Rate (normalized by housing stock) */}
-          <div className="flex justify-between items-center">
-            <span className="text-xs text-slate-500">Turnover Rate</span>
-            <div className="flex items-center gap-1">
-              <span className="font-bold text-slate-800 text-sm">
-                {metrics.turnover_rate?.toFixed(1) ?? metrics.monthly_velocity?.toFixed(1) ?? 0}
-              </span>
-              <span className="text-[9px] text-slate-500">per 100</span>
-              {metrics.low_units_confidence && (
-                <span className="text-amber-500 text-[10px]" title="Low data coverage">⚠</span>
-              )}
-            </div>
-          </div>
+          <div className="h-px bg-slate-200 mb-2" />
 
-          <div className="flex justify-between items-center">
-            <span className="text-xs text-slate-500">Observations</span>
-            <span className="font-semibold text-slate-800 text-xs">
-              {metrics.tx_count?.toLocaleString() || 0}
-            </span>
-          </div>
-
-          <div className="flex justify-between items-center">
-            <span className="text-xs text-slate-500">Z-Score</span>
-            <span
-              className={`font-bold text-xs ${(metrics.z_score || 0) >= 0 ? 'text-emerald-600' : 'text-amber-600'}`}
-            >
-              {metrics.z_score !== null ? metrics.z_score?.toFixed(2) : '-'}
-            </span>
-          </div>
-
-          {/* Housing Stock Coverage */}
-          {metrics.total_units > 0 && (
+          {/* Stats */}
+          <div className="space-y-1.5">
+            {/* Turnover Rate (normalized by housing stock) */}
             <div className="flex justify-between items-center">
-              <span className="text-xs text-slate-500">Housing Stock</span>
+              <span className="text-xs text-slate-500">Turnover Rate</span>
+              <div className="flex items-center gap-1">
+                <span className="font-bold text-slate-800 text-sm">
+                  {metrics.turnover_rate?.toFixed(1) ?? metrics.monthly_velocity?.toFixed(1) ?? 0}
+                </span>
+                <span className="text-[9px] text-slate-500">per 100</span>
+                {metrics.low_units_confidence && (
+                  <span className="text-amber-500 text-[10px]" title="Low data coverage">⚠</span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-slate-500">Observations</span>
               <span className="font-semibold text-slate-800 text-xs">
-                {metrics.total_units?.toLocaleString()} units
+                {metrics.tx_count?.toLocaleString() || 0}
               </span>
             </div>
+
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-slate-500">Z-Score</span>
+              <span
+                className={`font-bold text-xs ${(metrics.z_score || 0) >= 0 ? 'text-emerald-600' : 'text-amber-600'}`}
+              >
+                {metrics.z_score !== null ? metrics.z_score?.toFixed(2) : '-'}
+              </span>
+            </div>
+
+            {/* Housing Stock Coverage */}
+            {metrics.total_units > 0 && (
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-slate-500">Housing Stock</span>
+                <span className="font-semibold text-slate-800 text-xs">
+                  {metrics.total_units?.toLocaleString()} units
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Concentration / Fragility (Resale Only) */}
+          {metrics.fragility_label && (
+            <>
+              <div className="h-px bg-slate-200 my-2" />
+              <div className="space-y-1">
+                <p className="text-[9px] text-slate-500 uppercase tracking-wider font-semibold">
+                  Concentration Risk <span className="text-rose-400 font-normal">(resale)</span>
+                </p>
+                <div className="flex items-center justify-between">
+                  <span
+                    className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                      metrics.fragility_label === 'Robust'
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : metrics.fragility_label === 'Moderate'
+                          ? 'bg-amber-100 text-amber-700'
+                          : 'bg-rose-100 text-rose-700'
+                    }`}
+                  >
+                    {metrics.fragility_label}
+                  </span>
+                  <span className="text-[10px] text-slate-500">
+                    {metrics.resale_project_count || metrics.project_count || 0} resale projects
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-[10px]">
+                  <span className="text-slate-500">Gini Index</span>
+                  <span className="font-semibold text-slate-800">
+                    {metrics.concentration_gini?.toFixed(2) || '-'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-[10px]">
+                  <span className="text-slate-500">Top Project Share</span>
+                  <span className="font-semibold text-slate-800">
+                    {metrics.top_project_share?.toFixed(0) || 0}%
+                  </span>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Bedroom breakdown if available */}
+          {Object.keys(bedroom).length > 0 && (
+            <>
+              <div className="h-px bg-slate-200 my-2" />
+              <div className="space-y-1">
+                <p className="text-[9px] text-slate-500 uppercase tracking-wider font-semibold">
+                  By Bedroom
+                </p>
+                <div className="flex flex-wrap gap-1">
+                  {Object.entries(bedroom)
+                    .sort(([a], [b]) => Number(a) - Number(b))
+                    .map(([br, count]) => (
+                      <span
+                        key={br}
+                        className="text-[9px] px-1.5 py-0.5 bg-slate-100 rounded text-slate-800"
+                      >
+                        {br}BR: {count}
+                      </span>
+                    ))}
+                </div>
+              </div>
+            </>
           )}
         </div>
-
-        <div className="h-px bg-slate-200 my-2" />
-
-        {/* Sale Type Mix */}
-        <div className="space-y-1">
-          <p className="text-[9px] text-slate-500 uppercase tracking-wider font-semibold">
-            Sale Type Mix
-          </p>
-          <div className="flex gap-2">
-            <div className="flex-1 bg-slate-50 rounded px-2 py-1 text-center">
-              <div className="text-[10px] text-slate-500">New</div>
-              <div className="text-xs font-semibold text-slate-800">
-                {metrics.new_sale_pct?.toFixed(0) || 0}%
-              </div>
-            </div>
-            <div className="flex-1 bg-slate-50 rounded px-2 py-1 text-center">
-              <div className="text-[10px] text-slate-500">Resale</div>
-              <div className="text-xs font-semibold text-slate-800">
-                {metrics.resale_pct?.toFixed(0) || 0}%
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Concentration / Fragility (Resale Only) */}
-        {metrics.fragility_label && (
-          <>
-            <div className="h-px bg-slate-200 my-2" />
-            <div className="space-y-1">
-              <p className="text-[9px] text-slate-500 uppercase tracking-wider font-semibold">
-                Concentration Risk <span className="text-rose-400 font-normal">(resale)</span>
-              </p>
-              <div className="flex items-center justify-between">
-                <span
-                  className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
-                    metrics.fragility_label === 'Robust'
-                      ? 'bg-emerald-100 text-emerald-700'
-                      : metrics.fragility_label === 'Moderate'
-                        ? 'bg-amber-100 text-amber-700'
-                        : 'bg-rose-100 text-rose-700'
-                  }`}
-                >
-                  {metrics.fragility_label}
-                </span>
-                <span className="text-[10px] text-slate-500">
-                  {metrics.resale_project_count || metrics.project_count || 0} resale projects
-                </span>
-              </div>
-              <div className="flex justify-between items-center text-[10px]">
-                <span className="text-slate-500">Gini Index</span>
-                <span className="font-semibold text-slate-800">
-                  {metrics.concentration_gini?.toFixed(2) || '-'}
-                </span>
-              </div>
-              <div className="flex justify-between items-center text-[10px]">
-                <span className="text-slate-500">Top Project Share</span>
-                <span className="font-semibold text-slate-800">
-                  {metrics.top_project_share?.toFixed(0) || 0}%
-                </span>
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* Bedroom breakdown if available */}
-        {Object.keys(bedroom).length > 0 && (
-          <>
-            <div className="h-px bg-slate-200 my-2" />
-            <div className="space-y-1">
-              <p className="text-[9px] text-slate-500 uppercase tracking-wider font-semibold">
-                By Bedroom
-              </p>
-              <div className="flex flex-wrap gap-1">
-                {Object.entries(bedroom)
-                  .sort(([a], [b]) => Number(a) - Number(b))
-                  .map(([br, count]) => (
-                    <span
-                      key={br}
-                      className="text-[9px] px-1.5 py-0.5 bg-slate-100 rounded text-slate-800"
-                    >
-                      {br}BR: {count}
-                    </span>
-                  ))}
-              </div>
-            </div>
-          </>
-        )}
       </div>
     </motion.div>
   );
