@@ -66,11 +66,30 @@
         "cooling measures",
         "affordability",
         "mortgage",
-        "financing",
-        "foreigner",
-        "buyer profile"
+        "financing"
       ],
       "notes": "Token-heavy. Only inject when query involves policy impact or buyer costs."
+    },
+    "snapshot/demographics.md": {
+      "updated_at": "2026-01-12",
+      "last_verified_at": "2026-01-12",
+      "source_urls": [
+        "https://www.population.gov.sg/files/media-centre/publications/Population_in_Brief_2025.pdf",
+        "https://www.singstat.gov.sg/publications/population/population-trends"
+      ],
+      "description": "Population trends, buyer nationality breakdown, PR/foreigner patterns",
+      "injection": "conditional",
+      "injection_triggers": [
+        "foreigner",
+        "PR",
+        "permanent resident",
+        "buyer profile",
+        "nationality",
+        "population",
+        "demographics",
+        "demand"
+      ],
+      "notes": "Inject for charts involving buyer segmentation or demand analysis."
     },
     "sources.md": {
       "updated_at": "2026-01-10",

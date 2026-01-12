@@ -91,6 +91,13 @@ class PropertyContext:
         "budget_heatmap", "growth_dumbbell"
     }
 
+    # Chart types that need demographics context (involve buyer profiles/demand)
+    NEEDS_DEMOGRAPHICS = {
+        "budget_heatmap", "district_comparison", "new_vs_resale",
+        "market_momentum", "new_launch_timeline", "supply_waterfall",
+        "price_compression", "growth_dumbbell"
+    }
+
     def __init__(self, context_dir: Optional[Path] = None):
         self.context_dir = context_dir or AI_CONTEXT_DIR
         self._manifest = None
@@ -228,6 +235,7 @@ class PropertyContext:
 
         Always includes market snapshot header.
         Includes policy only when chart involves pricing.
+        Includes demographics only when chart involves buyer profiles.
         """
         snippets = []
 
@@ -243,6 +251,12 @@ class PropertyContext:
             policy = self._load_file("snapshot/policy-measures.md")
             if policy:
                 snippets.append("# Policy Measures\n" + policy)
+
+        # Include demographics only for buyer-profile-related charts
+        if chart_type in self.NEEDS_DEMOGRAPHICS:
+            demographics = self._load_file("snapshot/demographics.md")
+            if demographics:
+                snippets.append("# Demographics & Buyer Profiles\n" + demographics)
 
         return snippets
 
