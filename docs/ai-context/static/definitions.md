@@ -47,32 +47,68 @@ Lease Age = Transaction Year - Lease Start Year
 Official certificate allowing residents to move in. Marks when a development is considered "completed" for occupancy purposes.
 
 ### Property Age Buckets
-- **New Sale**: Project with no resale transactions yet (market state, not age-based)
-- **Recently TOP (4-7 years)**: First resales becoming available
-- **Young Resale (8-14 years)**: Established resale track record
-- **Resale (15-24 years)**: Mature resale market
-- **Mature Resale (25+ years)**: Approaching lease decay concerns for 99-year
+
+Properties are classified into buckets based on age or market state:
+
+| Bucket | Age Range | Description |
+|--------|-----------|-------------|
+| New Sale | N/A | Project with no resale transactions yet (market state, not age-based) |
+| Recently TOP | 4-7 years | First resales becoming available |
+| Young Resale | 8-14 years | Established resale track record |
+| Resale | 15-24 years | Mature resale market |
+| Mature Resale | 25+ years | Approaching lease decay concerns for 99-year |
+| Freehold | N/A | Freehold properties (tenure-based, not age-based) |
 
 ## Floor Level Classification
 
-Properties are classified by floor level:
-- **Low**: Ground floor to ~5th floor
-- **Mid-Low**: ~6th to 10th floor
-- **Mid**: ~11th to 15th floor
-- **Mid-High**: ~16th to 20th floor
-- **High**: ~21st to 30th floor
-- **Luxury**: 31st floor and above
+Properties are classified by floor level based on the lower floor of the range:
 
-Higher floors typically command premium pricing due to views and reduced noise.
+| Floor Range | Classification |
+|-------------|----------------|
+| 01 - 05 | Low |
+| 06 - 10 | Mid-Low |
+| 11 - 20 | Mid |
+| 21 - 30 | Mid-High |
+| 31 - 40 | High |
+| 41+ | Luxury |
+
+Higher floors typically command premium pricing due to views and reduced noise. Basement levels are excluded from classification.
 
 ## Bedroom Classification
 
-Unit size (sqft) determines bedroom classification. Thresholds vary by:
-1. Sale type (New Sale vs Resale)
-2. Transaction date (pre/post June 2023 harmonization)
+Unit size (sqft) determines bedroom classification. URA data doesn't include bedroom count directly, so we use area-based heuristics. Thresholds vary by sale type and transaction date:
 
-This accounts for:
-- New launches having smaller unit sizes than older projects
-- Recent regulations standardizing minimum unit sizes
+### Tier 1: New Sale (Post-Harmonization, ≥ June 2023)
+After AC ledge removal rules, developers build more compact units.
+
+| Bedroom | Area Range |
+|---------|------------|
+| 1BR | < 580 sqft |
+| 2BR | 580 - 779 sqft |
+| 3BR | 780 - 1149 sqft |
+| 4BR | 1150 - 1449 sqft |
+| 5BR+ | ≥ 1450 sqft |
+
+### Tier 2: New Sale (Pre-Harmonization, < June 2023)
+Modern units but with AC ledges still counted in floor area.
+
+| Bedroom | Area Range |
+|---------|------------|
+| 1BR | < 600 sqft |
+| 2BR | 600 - 849 sqft |
+| 3BR | 850 - 1199 sqft |
+| 4BR | 1200 - 1499 sqft |
+| 5BR+ | ≥ 1500 sqft |
+
+### Tier 3: Resale (Any Date)
+Older properties with larger typical unit sizes.
+
+| Bedroom | Area Range |
+|---------|------------|
+| 1BR | < 600 sqft |
+| 2BR | 600 - 949 sqft |
+| 3BR | 950 - 1349 sqft |
+| 4BR | 1350 - 1649 sqft |
+| 5BR+ | ≥ 1650 sqft |
 
 When discussing bedroom counts, note that classification is derived from area, not declared bedroom count.

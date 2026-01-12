@@ -345,10 +345,11 @@ function RegionSummaryBar({ districtData, selectedPeriod }) {
         0
       ) / (totalTx || 1);
 
-      // Average YoY
-      const districtsWithYoY = districts.filter(d => d.yoy_pct !== null);
-      const avgYoY = districtsWithYoY.length > 0
-        ? districtsWithYoY.reduce((sum, d) => sum + d.yoy_pct, 0) / districtsWithYoY.length
+      // Weighted average YoY (consistent with PSF weighting)
+      const districtsWithYoY = districts.filter(d => d.yoy_pct !== null && d.tx_count > 0);
+      const totalTxWithYoY = districtsWithYoY.reduce((sum, d) => sum + (d.tx_count || 0), 0);
+      const avgYoY = totalTxWithYoY > 0
+        ? districtsWithYoY.reduce((sum, d) => sum + d.yoy_pct * (d.tx_count || 0), 0) / totalTxWithYoY
         : null;
 
       // District breakdown for tooltip (sorted by tx count descending)

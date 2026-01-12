@@ -35,7 +35,7 @@ from datetime import datetime, date, timedelta, UTC
 from typing import Optional, Dict, Any, List, Tuple
 from dataclasses import dataclass, field, asdict
 
-from sqlalchemy import text, bindparam
+from sqlalchemy import create_engine, text, bindparam
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import scoped_session, sessionmaker
 
@@ -57,6 +57,7 @@ from services.ura_sync_config import (
     ALLOWED_PROPERTY_TYPES_DISPLAY,
 )
 from services.ura_shadow_comparator import URAShadowComparator, ComparisonReport
+from services.ai_snapshot_service import refresh_market_snapshot
 
 logger = logging.getLogger(__name__)
 
@@ -94,15 +95,20 @@ class SyncResult:
 
 def get_database_engine():
     """
-    Get database engine for URA sync (cron job).
+    Create a database engine from DATABASE_URL.
 
-    Uses the canonical engine factory from db.engine which:
-    - Uses NullPool for job contexts (better for PgBouncer transaction mode)
-    - Includes warmup with retry (handles Supabase cold starts)
-    - Respects Config.SQLALCHEMY_ENGINE_OPTIONS (connect_timeout, etc.)
+    Uses config.get_database_url() which handles:
+    - postgres:// → postgresql:// fix for SQLAlchemy 2.0
+    - SSL settings added to URL for non-localhost
     """
-    from db.engine import get_engine
-    return get_engine("job")
+    from config import get_database_url
+    database_url = get_database_url()
+
+    return create_engine(
+        database_url,
+        pool_pre_ping=True,
+        pool_recycle=300
+    )
 
 
 def get_git_sha() -> Optional[str]:
@@ -238,6 +244,9 @@ class URASyncEngine:
 
                 # 7. Mark success
                 self._mark_succeeded(comparison_report)
+
+                # 8. Refresh AI market snapshot with new data
+                refresh_market_snapshot(self.engine)
 
                 duration = (datetime.now(UTC) - start_time).total_seconds()
 
