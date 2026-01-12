@@ -41,12 +41,13 @@
       "notes": "Always include header with freshness date; full content on demand"
     },
     "snapshot/policy-measures.md": {
-      "updated_at": "2026-01-10",
-      "last_verified_at": "2026-01-10",
+      "updated_at": "2026-01-12",
+      "last_verified_at": "2026-01-12",
       "effective_from": {
         "ABSD": "2023-04-27",
-        "LTV": "2021-12-16",
-        "SSD": "2017-03-11",
+        "LTV_private": "2021-12-16",
+        "LTV_HDB": "2024-08-20",
+        "SSD": "2025-07-03",
         "BSD": "2023-02-15",
         "TDSR": "2021-12-16"
       },
