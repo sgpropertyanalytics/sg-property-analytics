@@ -7,18 +7,18 @@ import { CHART_COLORS } from '../../constants/colors';
 // Singleton registration - ensures Chart.js components are registered once
 import '../../lib/chartjs-registry';
 
-// Region-based header colors (more prominent for clarity)
+// Region-based header colors (slate palette)
 const REGION_HEADER_BG = {
-  CCR: 'bg-brand-navy', // Deep Navy - solid
-  RCR: 'bg-brand-blue', // Ocean Blue - solid
-  OCR: 'bg-brand-sky', // Sky Blue - solid
+  CCR: 'bg-slate-800', // Dark slate - CCR
+  RCR: 'bg-slate-600', // Mid slate - RCR
+  OCR: 'bg-slate-200', // Light slate - OCR
 };
 
 // Region-based text colors for headers
 const REGION_HEADER_TEXT = {
   CCR: 'text-white',
   RCR: 'text-white',
-  OCR: 'text-brand-navy',
+  OCR: 'text-slate-800',
 };
 
 
@@ -199,11 +199,11 @@ export const DistrictMicroChart = React.memo(function DistrictMicroChart({ distr
   // Handle empty data state
   if (!data || data.length === 0) {
     return (
-      <div className="h-full flex flex-col bg-white rounded border border-brand-sky/50 overflow-hidden">
-        <div className={`px-2 py-1.5 border-b border-brand-sky/30 shrink-0 flex items-center justify-between ${headerBg}`}>
+      <div className="h-full flex flex-col bg-white rounded-sm border border-slate-200 overflow-hidden">
+        <div className={`px-2 py-1.5 border-b border-slate-200 shrink-0 flex items-center justify-between ${headerBg}`}>
           <span className={`text-xs font-semibold truncate ${headerText}`}>{district}</span>
         </div>
-        <div className="flex-1 flex items-center justify-center text-xs text-brand-sky">
+        <div className="flex-1 flex items-center justify-center text-xs text-slate-400">
           No data
         </div>
       </div>
@@ -213,15 +213,15 @@ export const DistrictMicroChart = React.memo(function DistrictMicroChart({ distr
   // Determine growth color for text - use high contrast colors on dark backgrounds
   const isDarkHeader = isRegionDark(region);
   const growthTextColor = growthPercent === null
-    ? (isDarkHeader ? 'text-white/70' : 'text-brand-sky')
+    ? (isDarkHeader ? 'text-white/70' : 'text-slate-400')
     : growthPercent >= 0
       ? (isDarkHeader ? 'text-[#86efac]' : 'text-emerald-600')  // Bright mint green on dark
       : (isDarkHeader ? 'text-[#fca5a5]' : 'text-red-500');     // Bright coral red on dark
 
   return (
-    <div className="h-full flex flex-col bg-white rounded border border-brand-sky/50 overflow-hidden hover:border-brand-blue transition-colors">
+    <div className="h-full flex flex-col bg-white rounded-sm border border-slate-200 overflow-hidden hover:border-slate-400 transition-colors">
       {/* Header with district code and growth KPI - shaded by region */}
-      <div className={`px-2 py-1.5 border-b border-brand-sky/30 shrink-0 flex items-center justify-between gap-1 ${headerBg}`}>
+      <div className={`px-2 py-1.5 border-b border-slate-200 shrink-0 flex items-center justify-between gap-1 ${headerBg}`}>
         <span className={`text-xs font-semibold truncate ${headerText}`} title={DISTRICT_NAMES[district]}>
           {district}
         </span>
@@ -239,14 +239,14 @@ export const DistrictMicroChart = React.memo(function DistrictMicroChart({ distr
       </div>
 
       {/* Footer with current PSF and area names */}
-      <div className="px-1.5 sm:px-2 py-0.5 bg-brand-sand/20 shrink-0 flex items-center justify-between gap-1">
+      <div className="px-1.5 sm:px-2 py-0.5 bg-slate-50 shrink-0 flex items-center justify-between gap-1">
         {/* Area names - hidden on very small screens */}
-        <span className="hidden sm:block text-[9px] text-brand-blue truncate flex-1" title={DISTRICT_NAMES[district]}>
+        <span className="hidden sm:block text-[9px] text-slate-500 truncate flex-1" title={DISTRICT_NAMES[district]}>
           {areaNames}
         </span>
         {/* On mobile, just show the PSF centered */}
         {latestPsf && (
-          <span className="text-[9px] font-medium text-brand-blue whitespace-nowrap sm:flex-none flex-1 text-center sm:text-right">
+          <span className="text-[9px] font-medium text-slate-600 whitespace-nowrap sm:flex-none flex-1 text-center sm:text-right">
             {formatPrice(latestPsf)}
           </span>
         )}

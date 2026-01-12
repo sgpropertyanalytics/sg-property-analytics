@@ -162,13 +162,13 @@ function DistrictLiquidityMapBase({
   }, []);
 
   return (
-    <div className="bg-card rounded-xl border border-brand-sky/50 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-sm border border-slate-300 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.05)] overflow-hidden">
       {/* Header with filters */}
-      <div className="px-3 sm:px-4 py-2 sm:py-3 border-b border-brand-sky/30">
+      <div className="px-4 py-3 border-b border-slate-200">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 sm:gap-3">
           <div>
-            <h2 className="text-base sm:text-lg font-bold text-brand-navy">Volume/Liquidity Analysis by District</h2>
-            <p className="text-[10px] sm:text-xs text-brand-blue">
+            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Volume/Liquidity Analysis by District</h2>
+            <p className="text-[10px] text-slate-500 font-mono">
               <span className="hidden sm:inline">
                 Transaction velocity by postal district (Z-score normalized)
               </span>
@@ -181,17 +181,17 @@ function DistrictLiquidityMapBase({
             {/* Volume/Price Mode Toggle - kept for view switching */}
             {/* Filters (Bedroom, Time, Region) are now in the page-level FilterBar */}
             {onModeChange && (
-              <div className="flex items-center gap-0.5 sm:gap-1 bg-brand-sand/50 rounded-lg p-0.5 sm:p-1">
+              <div className="flex items-center gap-0.5 sm:gap-1 bg-slate-100 rounded-sm p-0.5 sm:p-1">
                 <button
                   onClick={() => onModeChange('volume')}
-                  className={`relative flex items-center justify-center gap-1 min-h-[44px] px-3 sm:px-4 py-2 text-[10px] sm:text-xs font-medium rounded-md transition-all z-10 touch-manipulation ${
-                    mapMode === 'volume' ? 'text-white' : 'text-brand-blue hover:text-brand-navy'
+                  className={`relative flex items-center justify-center gap-1 min-h-[44px] px-3 sm:px-4 py-2 text-[10px] sm:text-xs font-medium rounded-sm transition-all z-10 touch-manipulation ${
+                    mapMode === 'volume' ? 'text-white' : 'text-slate-500 hover:text-slate-800'
                   }`}
                 >
                   {mapMode === 'volume' && (
                     <motion.div
                       layoutId="liquidity-map-toggle"
-                      className="absolute inset-0 bg-brand-navy rounded-md -z-10 shadow-sm"
+                      className="absolute inset-0 bg-slate-800 rounded-sm -z-10 shadow-sm"
                       transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
                     />
                   )}
@@ -201,14 +201,14 @@ function DistrictLiquidityMapBase({
                 </button>
                 <button
                   onClick={() => onModeChange('price')}
-                  className={`relative flex items-center justify-center gap-1 min-h-[44px] px-3 sm:px-4 py-2 text-[10px] sm:text-xs font-medium rounded-md transition-all z-10 touch-manipulation ${
-                    mapMode === 'price' ? 'text-white' : 'text-brand-blue hover:text-brand-navy'
+                  className={`relative flex items-center justify-center gap-1 min-h-[44px] px-3 sm:px-4 py-2 text-[10px] sm:text-xs font-medium rounded-sm transition-all z-10 touch-manipulation ${
+                    mapMode === 'price' ? 'text-white' : 'text-slate-500 hover:text-slate-800'
                   }`}
                 >
                   {mapMode === 'price' && (
                     <motion.div
                       layoutId="liquidity-map-toggle"
-                      className="absolute inset-0 bg-[#9A3412] rounded-md -z-10 shadow-sm"
+                      className="absolute inset-0 bg-slate-800 rounded-sm -z-10 shadow-sm"
                       transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
                     />
                   )}
@@ -241,8 +241,8 @@ function DistrictLiquidityMapBase({
           {loading && (
             <div className="absolute inset-0 bg-white/90 z-30 flex items-center justify-center">
               <div className="flex flex-col items-center gap-3">
-                <div className="w-8 h-8 border-3 border-brand-blue border-t-transparent rounded-full animate-spin" />
-                <span className="text-sm text-brand-blue">Loading map...</span>
+                <div className="w-8 h-8 border-2 border-slate-600 border-t-transparent rounded-full animate-spin" />
+                <span className="text-sm text-slate-600">Loading map...</span>
               </div>
             </div>
           )}
@@ -252,10 +252,10 @@ function DistrictLiquidityMapBase({
         {error && !loading && (
           <div className="absolute inset-0 flex items-center justify-center bg-white z-30">
             <div className="text-center">
-              <p className="text-brand-blue mb-3">Failed to load data</p>
+              <p className="text-slate-600 mb-3">Failed to load data</p>
               <button
                 onClick={refetch}
-                className="px-4 py-2 bg-brand-blue text-white text-sm font-medium rounded-lg hover:bg-brand-navy transition-colors"
+                className="px-4 py-2 bg-slate-800 text-white text-sm font-medium rounded-sm hover:bg-slate-700 transition-colors"
               >
                 Try again
               </button>
@@ -343,16 +343,16 @@ function DistrictLiquidityMapBase({
 
         {/* Legend - Liquidity Tiers (top-left) - smaller on mobile */}
         <div className="absolute top-2 left-2 sm:top-4 sm:left-4 z-20">
-          <div className="bg-white/95 backdrop-blur-sm rounded-none border border-mono-muted shadow-weapon p-2 sm:p-2.5 w-[140px] sm:w-[180px]">
+          <div className="bg-white/95 backdrop-blur-sm rounded-sm border border-slate-300 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.05)] p-2 sm:p-2.5 w-[140px] sm:w-[180px]">
             {/* Header with methodology tooltip */}
             <div className="flex items-center justify-between mb-2">
-              <p className="text-[9px] text-brand-blue uppercase tracking-wider font-semibold">
+              <p className="text-[9px] text-slate-500 uppercase tracking-wider font-semibold">
                 Liquidity Tier
               </p>
               <div className="group relative">
-                <div className="w-4 h-4 rounded-full bg-brand-sand/50 flex items-center justify-center cursor-help hover:bg-brand-sky/30 transition-colors">
+                <div className="w-4 h-4 rounded-full bg-slate-100 flex items-center justify-center cursor-help hover:bg-slate-200 transition-colors">
                   <svg
-                    className="w-2.5 h-2.5 text-brand-blue"
+                    className="w-2.5 h-2.5 text-slate-500"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -366,9 +366,9 @@ function DistrictLiquidityMapBase({
                   </svg>
                 </div>
                 {/* Tooltip */}
-                <div className="absolute left-0 top-full mt-1 w-56 p-2.5 bg-brand-navy text-white text-[10px] rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                  <p className="font-semibold text-brand-sand mb-1.5">Methodology</p>
-                  <div className="space-y-1.5 text-brand-sky">
+                <div className="absolute left-0 top-full mt-1 w-56 p-2.5 bg-slate-800 text-white text-[10px] rounded-sm shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  <p className="font-semibold text-slate-200 mb-1.5">Methodology</p>
+                  <div className="space-y-1.5 text-slate-300">
                     <p>
                       <span className="text-emerald-300 font-medium">Exit Safety</span> (Tier,
                       Velocity, Z-Score): Calculated on <span className="text-white">resale only</span>{' '}
@@ -380,67 +380,67 @@ function DistrictLiquidityMapBase({
                       avoid developer release distortion.
                     </p>
                     <p>
-                      <span className="text-brand-sand font-medium">Market Structure</span> (Tx,
+                      <span className="text-slate-200 font-medium">Market Structure</span> (Tx,
                       Projects): Includes <span className="text-white">all sale types</span>.
                     </p>
                   </div>
-                  <div className="absolute -top-1 left-3 w-2 h-2 bg-brand-navy rotate-45" />
+                  <div className="absolute -top-1 left-3 w-2 h-2 bg-slate-800 rotate-45" />
                 </div>
               </div>
             </div>
 
             {/* Resale-only badge - hidden on mobile */}
-            <div className="hidden sm:block mb-2 px-1.5 py-0.5 bg-emerald-50 border border-emerald-200 rounded text-[8px] text-emerald-700 text-center">
+            <div className="hidden sm:block mb-2 px-1.5 py-0.5 bg-slate-50 border border-slate-200 rounded-sm text-[8px] text-slate-600 text-center font-mono">
               Based on resale transactions
             </div>
 
             <div className="space-y-1 sm:space-y-1.5">
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <div
-                  className="w-3 h-2 sm:w-4 sm:h-3 rounded shrink-0"
+                  className="w-3 h-2 sm:w-4 sm:h-3 rounded-sm shrink-0"
                   style={{ backgroundColor: LIQUIDITY_FILLS.veryHigh }}
                 />
-                <span className="text-[9px] sm:text-[10px] text-brand-navy">
+                <span className="text-[9px] sm:text-[10px] text-slate-800">
                   <span className="sm:hidden">V.High</span>
                   <span className="hidden sm:inline">Very High (&gt;1.5σ)</span>
                 </span>
               </div>
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <div
-                  className="w-3 h-2 sm:w-4 sm:h-3 rounded shrink-0"
+                  className="w-3 h-2 sm:w-4 sm:h-3 rounded-sm shrink-0"
                   style={{ backgroundColor: LIQUIDITY_FILLS.high }}
                 />
-                <span className="text-[9px] sm:text-[10px] text-brand-navy">
+                <span className="text-[9px] sm:text-[10px] text-slate-800">
                   <span className="sm:hidden">High</span>
                   <span className="hidden sm:inline">High (0.5 to 1.5σ)</span>
                 </span>
               </div>
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <div
-                  className="w-3 h-2 sm:w-4 sm:h-3 rounded shrink-0"
+                  className="w-3 h-2 sm:w-4 sm:h-3 rounded-sm shrink-0"
                   style={{ backgroundColor: LIQUIDITY_FILLS.neutral }}
                 />
-                <span className="text-[9px] sm:text-[10px] text-brand-navy">
+                <span className="text-[9px] sm:text-[10px] text-slate-800">
                   <span className="sm:hidden">Neutral</span>
                   <span className="hidden sm:inline">Neutral (-0.5 to 0.5σ)</span>
                 </span>
               </div>
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <div
-                  className="w-3 h-2 sm:w-4 sm:h-3 rounded shrink-0"
+                  className="w-3 h-2 sm:w-4 sm:h-3 rounded-sm shrink-0"
                   style={{ backgroundColor: LIQUIDITY_FILLS.low }}
                 />
-                <span className="text-[9px] sm:text-[10px] text-brand-navy">
+                <span className="text-[9px] sm:text-[10px] text-slate-800">
                   <span className="sm:hidden">Low</span>
                   <span className="hidden sm:inline">Low (-1.5 to -0.5σ)</span>
                 </span>
               </div>
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <div
-                  className="w-3 h-2 sm:w-4 sm:h-3 rounded shrink-0"
+                  className="w-3 h-2 sm:w-4 sm:h-3 rounded-sm shrink-0"
                   style={{ backgroundColor: LIQUIDITY_FILLS.veryLow }}
                 />
-                <span className="text-[9px] sm:text-[10px] text-brand-navy">
+                <span className="text-[9px] sm:text-[10px] text-slate-800">
                   <span className="sm:hidden">V.Low</span>
                   <span className="hidden sm:inline">Very Low (&lt;-1.5σ)</span>
                 </span>
@@ -450,17 +450,17 @@ function DistrictLiquidityMapBase({
             {/* Stats summary - hidden on mobile */}
             {meta.total_transactions > 0 && (
               <div className="hidden sm:block">
-                <div className="h-px bg-brand-sky/30 my-2" />
+                <div className="h-px bg-slate-200 my-2" />
                 <div className="space-y-1">
                   <div className="flex justify-between text-[10px]">
-                    <span className="text-brand-blue">Total Tx</span>
-                    <span className="font-semibold text-brand-navy">
+                    <span className="text-slate-500">Total Tx</span>
+                    <span className="font-semibold text-slate-800 font-mono">
                       {meta.total_transactions?.toLocaleString()}
                     </span>
                   </div>
                   <div className="flex justify-between text-[10px]">
-                    <span className="text-brand-blue">Avg Turnover</span>
-                    <span className="font-semibold text-brand-navy">
+                    <span className="text-slate-500">Avg Turnover</span>
+                    <span className="font-semibold text-slate-800 font-mono">
                       {meta.mean_turnover_rate?.toFixed(1) ?? meta.mean_velocity?.toFixed(1)} per 100 units
                     </span>
                   </div>

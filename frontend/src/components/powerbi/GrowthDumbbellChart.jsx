@@ -10,17 +10,17 @@ import { SaleType } from '../../schemas/apiContract';
 import { transformGrowthDumbbellSeries, logFetchDebug } from '../../adapters';
 
 
-// Region header colors (matching micro-charts)
+// Region header colors (slate palette)
 const REGION_HEADER_BG = {
-  CCR: 'bg-brand-navy',
-  RCR: 'bg-brand-blue',
-  OCR: 'bg-brand-sky',
+  CCR: 'bg-slate-800',
+  RCR: 'bg-slate-600',
+  OCR: 'bg-slate-200',
 };
 
 const REGION_HEADER_TEXT = {
   CCR: 'text-white',
   RCR: 'text-white',
-  OCR: 'text-brand-navy',
+  OCR: 'text-slate-800',
 };
 
 
@@ -204,15 +204,15 @@ function GrowthDumbbellChartBase({ saleType = SaleType.RESALE, enabled = true })
       skeleton="bar"
       height={400}
     >
-    <div className="weapon-card hud-corner weapon-shadow overflow-hidden">
+    <div className="bg-white rounded-sm border border-slate-300 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.05)] overflow-hidden">
       {/* Header with title */}
-      <div className="px-4 py-3 border-b border-mono-muted">
+      <div className="px-4 py-3 border-b border-slate-200">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>
-            <h3 className="text-sm font-semibold text-brand-navy">
+            <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">
               Dumbbell Chart of Median PSF Growth %
             </h3>
-            <p className="text-xs text-brand-blue mt-0.5">
+            <p className="text-[10px] text-slate-500 font-mono mt-0.5">
               Comparing {startQuarter} (earliest) → {endQuarter} (latest) • Click headers to sort
             </p>
           </div>
@@ -220,11 +220,11 @@ function GrowthDumbbellChartBase({ saleType = SaleType.RESALE, enabled = true })
           <div className="flex items-center gap-4 text-xs">
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-3 rounded-full bg-slate-300 border border-white shadow-sm" />
-              <span className="text-brand-blue">Earliest Quarter</span>
+              <span className="text-slate-500">Earliest Quarter</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3.5 h-3.5 rounded-full bg-emerald-500 border border-white shadow-sm" />
-              <span className="text-brand-blue">Latest Quarter</span>
+              <span className="text-slate-500">Latest Quarter</span>
             </div>
           </div>
         </div>

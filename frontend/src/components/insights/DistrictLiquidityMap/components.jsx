@@ -30,12 +30,12 @@ export function InfoTooltip({ text, color = '#64748B' }) {  // slate-500
         i
       </span>
       {/* Tooltip - positioned ABOVE icon to avoid clipping by overflow-x-auto containers */}
-      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-xs text-brand-navy bg-white border border-brand-sky/40 rounded-lg shadow-lg whitespace-normal w-52 text-left opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-toast">
+      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-xs text-slate-800 bg-white border border-slate-300 rounded-sm shadow-lg whitespace-normal w-52 text-left opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-toast">
         {text}
         {/* Arrow pointing down */}
         <span className="absolute top-full left-1/2 -translate-x-1/2 border-[6px] border-transparent border-t-white"></span>
         <span
-          className="absolute top-full left-1/2 -translate-x-1/2 border-[7px] border-transparent border-t-brand-sky/40"
+          className="absolute top-full left-1/2 -translate-x-1/2 border-[7px] border-transparent border-t-slate-300"
           style={{ marginTop: '1px' }}
         ></span>
       </span>
@@ -54,21 +54,21 @@ export function DistrictLabel({ district, data, zoom, onHover, onLeave, isHovere
   const tier = metrics.liquidity_tier;
   const isCompact = zoom < 11.2;
 
-  // Color based on liquidity tier
+  // Color based on liquidity tier - using slate palette
   const getLabelStyle = () => {
-    if (!hasData) return 'bg-brand-sand text-brand-sky border-brand-sky/30';
+    if (!hasData) return 'bg-slate-100 text-slate-400 border-slate-300';
     switch (tier) {
       case 'Very High':
-        return 'bg-brand-navy text-white border-brand-navy';
+        return 'bg-slate-800 text-white border-slate-800';
       case 'High':
-        return 'bg-brand-blue text-white border-brand-blue';
+        return 'bg-slate-600 text-white border-slate-600';
       case 'Neutral':
-        return 'bg-brand-sky text-brand-navy border-brand-sky';
+        return 'bg-slate-300 text-slate-800 border-slate-400';
       case 'Low':
       case 'Very Low':
-        return 'bg-brand-sand text-brand-blue border-brand-sky';
+        return 'bg-slate-100 text-slate-500 border-slate-300';
       default:
-        return 'bg-white text-brand-navy border-brand-sky';
+        return 'bg-white text-slate-800 border-slate-300';
     }
   };
 
@@ -104,15 +104,15 @@ export function DistrictLabel({ district, data, zoom, onHover, onLeave, isHovere
       <div
         className={`
           mt-0.5 px-1.5 py-0.5 rounded bg-white/90 backdrop-blur-sm
-          shadow-sm border border-brand-sky/30
+          shadow-sm border border-slate-200
           transition-all duration-200
           ${isHovered ? 'bg-white shadow-md' : ''}
         `}
       >
         <div className="flex flex-col items-center">
-          <span className="text-[9px] font-semibold text-brand-navy">{district.district}</span>
+          <span className="text-[9px] font-semibold text-slate-800">{district.district}</span>
           {!isCompact && (
-            <span className="text-[7px] text-brand-blue leading-tight text-center max-w-[60px] truncate">
+            <span className="text-[7px] text-slate-500 leading-tight text-center max-w-[60px] truncate">
               {getShortName(district.name)}
             </span>
           )}
@@ -140,10 +140,10 @@ export function HoverCard({ district, data }) {
       transition={{ duration: 0.15 }}
       className="absolute z-50 pointer-events-none top-[200px] left-4"
     >
-      <div className="bg-white rounded-none shadow-weapon border border-mono-muted p-3 w-[180px]">
+      <div className="bg-white rounded-none shadow-[2px_2px_0px_0px_rgba(0,0,0,0.05)] border border-mono-muted p-3 w-[180px]">
         {/* Header */}
         <div className="flex items-center justify-between mb-2">
-          <span className="font-bold text-brand-navy text-sm">{district.district}</span>
+          <span className="font-bold text-slate-800 text-sm">{district.district}</span>
           {/* Liquidity Score Badge */}
           <div className="flex items-center gap-1">
             <span
@@ -155,28 +155,28 @@ export function HoverCard({ district, data }) {
         </div>
 
         {/* District name */}
-        <p className="text-xs text-brand-blue mb-2 leading-tight">{district.name}</p>
+        <p className="text-xs text-slate-500 mb-2 leading-tight">{district.name}</p>
 
         {/* Score tier label */}
         <div className="flex items-center justify-between mb-2">
-          <span className="text-[10px] text-brand-blue">Liquidity Score</span>
-          <span className="text-[10px] font-semibold text-brand-navy">
+          <span className="text-[10px] text-slate-500">Liquidity Score</span>
+          <span className="text-[10px] font-semibold text-slate-800">
             {getScoreLabel(metrics.liquidity_score)}
           </span>
         </div>
 
-        <div className="h-px bg-brand-sky/30 mb-2" />
+        <div className="h-px bg-slate-200 mb-2" />
 
         {/* Stats */}
         <div className="space-y-1.5">
           {/* Turnover Rate (normalized by housing stock) */}
           <div className="flex justify-between items-center">
-            <span className="text-xs text-brand-blue">Turnover Rate</span>
+            <span className="text-xs text-slate-500">Turnover Rate</span>
             <div className="flex items-center gap-1">
-              <span className="font-bold text-brand-navy text-sm">
+              <span className="font-bold text-slate-800 text-sm">
                 {metrics.turnover_rate?.toFixed(1) ?? metrics.monthly_velocity?.toFixed(1) ?? 0}
               </span>
-              <span className="text-[9px] text-brand-blue">per 100</span>
+              <span className="text-[9px] text-slate-500">per 100</span>
               {metrics.low_units_confidence && (
                 <span className="text-amber-500 text-[10px]" title="Low data coverage">⚠</span>
               )}
@@ -184,14 +184,14 @@ export function HoverCard({ district, data }) {
           </div>
 
           <div className="flex justify-between items-center">
-            <span className="text-xs text-brand-blue">Observations</span>
-            <span className="font-semibold text-brand-navy text-xs">
+            <span className="text-xs text-slate-500">Observations</span>
+            <span className="font-semibold text-slate-800 text-xs">
               {metrics.tx_count?.toLocaleString() || 0}
             </span>
           </div>
 
           <div className="flex justify-between items-center">
-            <span className="text-xs text-brand-blue">Z-Score</span>
+            <span className="text-xs text-slate-500">Z-Score</span>
             <span
               className={`font-bold text-xs ${(metrics.z_score || 0) >= 0 ? 'text-emerald-600' : 'text-amber-600'}`}
             >
@@ -202,31 +202,31 @@ export function HoverCard({ district, data }) {
           {/* Housing Stock Coverage */}
           {metrics.total_units > 0 && (
             <div className="flex justify-between items-center">
-              <span className="text-xs text-brand-blue">Housing Stock</span>
-              <span className="font-semibold text-brand-navy text-xs">
+              <span className="text-xs text-slate-500">Housing Stock</span>
+              <span className="font-semibold text-slate-800 text-xs">
                 {metrics.total_units?.toLocaleString()} units
               </span>
             </div>
           )}
         </div>
 
-        <div className="h-px bg-brand-sky/30 my-2" />
+        <div className="h-px bg-slate-200 my-2" />
 
         {/* Sale Type Mix */}
         <div className="space-y-1">
-          <p className="text-[9px] text-brand-blue uppercase tracking-wider font-semibold">
+          <p className="text-[9px] text-slate-500 uppercase tracking-wider font-semibold">
             Sale Type Mix
           </p>
           <div className="flex gap-2">
-            <div className="flex-1 bg-brand-sand/30 rounded px-2 py-1 text-center">
-              <div className="text-[10px] text-brand-blue">New</div>
-              <div className="text-xs font-semibold text-brand-navy">
+            <div className="flex-1 bg-slate-50 rounded px-2 py-1 text-center">
+              <div className="text-[10px] text-slate-500">New</div>
+              <div className="text-xs font-semibold text-slate-800">
                 {metrics.new_sale_pct?.toFixed(0) || 0}%
               </div>
             </div>
-            <div className="flex-1 bg-brand-sand/30 rounded px-2 py-1 text-center">
-              <div className="text-[10px] text-brand-blue">Resale</div>
-              <div className="text-xs font-semibold text-brand-navy">
+            <div className="flex-1 bg-slate-50 rounded px-2 py-1 text-center">
+              <div className="text-[10px] text-slate-500">Resale</div>
+              <div className="text-xs font-semibold text-slate-800">
                 {metrics.resale_pct?.toFixed(0) || 0}%
               </div>
             </div>
@@ -236,9 +236,9 @@ export function HoverCard({ district, data }) {
         {/* Concentration / Fragility (Resale Only) */}
         {metrics.fragility_label && (
           <>
-            <div className="h-px bg-brand-sky/30 my-2" />
+            <div className="h-px bg-slate-200 my-2" />
             <div className="space-y-1">
-              <p className="text-[9px] text-brand-blue uppercase tracking-wider font-semibold">
+              <p className="text-[9px] text-slate-500 uppercase tracking-wider font-semibold">
                 Concentration Risk <span className="text-rose-400 font-normal">(resale)</span>
               </p>
               <div className="flex items-center justify-between">
@@ -253,19 +253,19 @@ export function HoverCard({ district, data }) {
                 >
                   {metrics.fragility_label}
                 </span>
-                <span className="text-[10px] text-brand-blue">
+                <span className="text-[10px] text-slate-500">
                   {metrics.resale_project_count || metrics.project_count || 0} resale projects
                 </span>
               </div>
               <div className="flex justify-between items-center text-[10px]">
-                <span className="text-brand-blue">Gini Index</span>
-                <span className="font-semibold text-brand-navy">
+                <span className="text-slate-500">Gini Index</span>
+                <span className="font-semibold text-slate-800">
                   {metrics.concentration_gini?.toFixed(2) || '-'}
                 </span>
               </div>
               <div className="flex justify-between items-center text-[10px]">
-                <span className="text-brand-blue">Top Project Share</span>
-                <span className="font-semibold text-brand-navy">
+                <span className="text-slate-500">Top Project Share</span>
+                <span className="font-semibold text-slate-800">
                   {metrics.top_project_share?.toFixed(0) || 0}%
                 </span>
               </div>
@@ -276,9 +276,9 @@ export function HoverCard({ district, data }) {
         {/* Bedroom breakdown if available */}
         {Object.keys(bedroom).length > 0 && (
           <>
-            <div className="h-px bg-brand-sky/30 my-2" />
+            <div className="h-px bg-slate-200 my-2" />
             <div className="space-y-1">
-              <p className="text-[9px] text-brand-blue uppercase tracking-wider font-semibold">
+              <p className="text-[9px] text-slate-500 uppercase tracking-wider font-semibold">
                 By Bedroom
               </p>
               <div className="flex flex-wrap gap-1">
@@ -287,7 +287,7 @@ export function HoverCard({ district, data }) {
                   .map(([br, count]) => (
                     <span
                       key={br}
-                      className="text-[9px] px-1.5 py-0.5 bg-brand-sand/50 rounded text-brand-navy"
+                      className="text-[9px] px-1.5 py-0.5 bg-slate-100 rounded text-slate-800"
                     >
                       {br}BR: {count}
                     </span>
@@ -363,20 +363,20 @@ export function RegionSummaryBar({ districtData, meta }) {
   };
 
   const regionStyles = {
-    CCR: 'border-brand-navy/20 bg-brand-navy/5',
-    RCR: 'border-brand-blue/20 bg-brand-blue/5',
-    OCR: 'border-brand-sky/20 bg-brand-sky/5',
+    CCR: 'border-slate-400 bg-slate-100',
+    RCR: 'border-slate-300 bg-slate-50',
+    OCR: 'border-slate-200 bg-white',
   };
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 bg-brand-sand/30 border-t border-brand-sky/30">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 bg-slate-50 border-t border-slate-200">
       {regionStats.map((stat) => (
-        <div key={stat.region} className={`rounded-lg border p-2 sm:p-3 ${regionStyles[stat.region]}`}>
+        <div key={stat.region} className={`rounded-sm border p-2 sm:p-3 ${regionStyles[stat.region]}`}>
           {/* Mobile: horizontal layout, Desktop: vertical */}
           <div className="flex sm:flex-col items-center sm:items-stretch gap-2 sm:gap-0">
             {/* Region name and Z-score */}
             <div className="flex items-center justify-between sm:mb-1 min-w-[100px] sm:min-w-0">
-              <span className="font-semibold text-brand-navy text-sm">{stat.region} Turnover %</span>
+              <span className="font-semibold text-slate-800 text-sm">{stat.region} Turnover %</span>
               {stat.avgZScore !== null && (
                 <span
                   className={`text-xs font-bold ml-2 sm:ml-0 ${stat.avgZScore >= 0 ? 'text-emerald-600' : 'text-amber-600'}`}
@@ -386,16 +386,16 @@ export function RegionSummaryBar({ districtData, meta }) {
               )}
             </div>
             {/* Description - hidden on mobile */}
-            <p className="hidden sm:block text-[10px] text-brand-blue mb-2">
+            <p className="hidden sm:block text-[10px] text-slate-500 mb-2">
               {regionLabels[stat.region].desc}
             </p>
             {/* Stats */}
             <div className="flex flex-col gap-1 flex-1 sm:flex-none">
               <div className="flex items-baseline gap-2 sm:justify-between">
-                <span className="text-base sm:text-lg font-bold text-brand-navy">
+                <span className="text-base sm:text-lg font-bold text-slate-800">
                   {stat.avgTurnover?.toFixed(1) ?? '-'}%
                 </span>
-                <span className="text-[10px] sm:text-xs text-brand-blue">
+                <span className="text-[10px] sm:text-xs text-slate-500">
                   {stat.resalesPerMonth !== null ? `${Math.round(stat.resalesPerMonth)} resale txs/month` : '-'}
                 </span>
               </div>
@@ -533,18 +533,18 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
   }, [districtData, sortConfig]);
 
   return (
-    <div className="border-t border-brand-sky/30">
+    <div className="border-t border-slate-200">
       {/* Table Header */}
-      <div className="px-3 sm:px-4 py-2 sm:py-3 bg-brand-sand/20">
-        <h3 className="text-base sm:text-lg font-bold text-brand-navy">District Liquidity Ranking</h3>
-        <p className="text-[10px] sm:text-xs text-brand-blue">
+      <div className="px-3 sm:px-4 py-2 sm:py-3 bg-slate-50">
+        <h3 className="text-base sm:text-lg font-bold text-slate-800">District Liquidity Ranking</h3>
+        <p className="text-[10px] sm:text-xs text-slate-500">
           <span className="hidden sm:inline">
             Click column headers to sort - Default: composite liquidity score (highest first)
           </span>
           <span className="sm:hidden">Sorted by liquidity score</span>
         </p>
         {activeFilters && (
-          <p className="text-[10px] sm:text-xs text-brand-blue mt-1">
+          <p className="text-[10px] sm:text-xs text-slate-500 mt-1">
             <span className="font-medium">Filtered by:</span> {activeFilters}
           </p>
         )}
@@ -558,14 +558,14 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
           return (
             <div
               key={district.district_id}
-              className={`p-3 bg-white rounded-lg border border-brand-sky/30 ${index < 3 ? 'ring-1 ring-brand-sand' : ''}`}
+              className={`p-3 bg-white rounded-sm border border-slate-200 ${index < 3 ? 'ring-1 ring-slate-200' : ''}`}
             >
               {/* Header: Rank + District + Region + Score */}
               <div className="flex items-center gap-2 mb-2">
-                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold bg-brand-sand/50 text-brand-blue">
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold bg-slate-100 text-slate-500">
                   {index + 1}
                 </span>
-                <span className="font-semibold text-brand-navy">{district.district_id}</span>
+                <span className="font-semibold text-slate-800">{district.district_id}</span>
                 <span
                   className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${getRegionBadge(district.region)}`}
                 >
@@ -578,51 +578,51 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                   >
                     {m.liquidity_score?.toFixed(0) || '-'}
                   </span>
-                  <span className="text-[8px] text-brand-blue">{getScoreLabel(m.liquidity_score)}</span>
+                  <span className="text-[8px] text-slate-500">{getScoreLabel(m.liquidity_score)}</span>
                 </div>
               </div>
 
               {/* Area name */}
-              <div className="text-xs text-brand-navy mb-2 truncate">{district.full_name}</div>
+              <div className="text-xs text-slate-800 mb-2 truncate">{district.full_name}</div>
 
               {/* Key Metrics Grid - 4 columns with Score first */}
               <div className="grid grid-cols-4 gap-1.5 text-center">
                 <div className="bg-sky-50/50 rounded p-1.5">
-                  <div className="text-[10px] text-brand-blue">Turnover</div>
-                  <div className="text-sm text-brand-navy">
+                  <div className="text-[10px] text-slate-500">Turnover</div>
+                  <div className="text-sm text-slate-800">
                     {m.turnover_rate?.toFixed(1) ?? m.monthly_velocity?.toFixed(1) ?? '0'}
                   </div>
                 </div>
-                <div className="bg-brand-sand/30 rounded p-1.5">
-                  <div className="text-[10px] text-brand-blue mb-1">Tx</div>
+                <div className="bg-slate-50 rounded p-1.5">
+                  <div className="text-[10px] text-slate-500 mb-1">Tx</div>
                   <div className="flex items-center gap-1">
-                    <div className="flex-1 h-2 bg-brand-sand/50 rounded-full overflow-hidden">
+                    <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-brand-blue rounded-full"
+                        className="h-full bg-slate-600 rounded-full"
                         style={{ width: `${((m.tx_count || 0) / maxTxCount) * 100}%` }}
                       />
                     </div>
-                    <span className="text-xs text-brand-navy min-w-[32px] text-right">
+                    <span className="text-xs text-slate-800 min-w-[32px] text-right">
                       {m.tx_count?.toLocaleString() || '0'}
                     </span>
                   </div>
                 </div>
                 <div className="bg-emerald-50/50 rounded p-1.5">
-                  <div className="text-[10px] text-brand-blue">Tier</div>
-                  <div className="text-[10px] text-brand-navy">
+                  <div className="text-[10px] text-slate-500">Tier</div>
+                  <div className="text-[10px] text-slate-800">
                     {m.liquidity_tier || '-'}
                   </div>
                 </div>
-                <div className="bg-brand-sand/30 rounded p-1.5">
-                  <div className="text-[10px] text-brand-blue">Spread</div>
-                  <div className="text-[10px] text-brand-navy">
+                <div className="bg-slate-50 rounded p-1.5">
+                  <div className="text-[10px] text-slate-500">Spread</div>
+                  <div className="text-[10px] text-slate-800">
                     {getSpreadLabel(m.fragility_label)}
                   </div>
                 </div>
               </div>
 
               {/* Secondary row: Z-score */}
-              <div className="flex justify-start mt-2 text-[10px] text-brand-navy">
+              <div className="flex justify-start mt-2 text-[10px] text-slate-800">
                 <span>
                   Z:{' '}
                   <span
@@ -644,8 +644,8 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
         <table className="w-full text-xs">
           <thead>
             {/* Group Header Row - Exit Safety + Concentration (only shown on xl+ when all columns visible) */}
-            <tr className="hidden xl:table-row bg-brand-sand/20">
-              <th colSpan={6} className="border-b border-brand-sky/20"></th>
+            <tr className="hidden xl:table-row bg-slate-50">
+              <th colSpan={6} className="border-b border-slate-200"></th>
               <th
                 colSpan={3}
                 className="px-3 py-1.5 text-center text-[10px] font-bold text-emerald-700 uppercase tracking-wider bg-emerald-100/70"
@@ -664,12 +664,12 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
               </th>
             </tr>
             {/* Column Header Row */}
-            <tr className="bg-brand-sand/30 border-b border-brand-sky/30">
-              <th className="px-3 py-2 text-left font-semibold text-brand-navy whitespace-nowrap">
+            <tr className="bg-slate-50 border-b border-slate-200">
+              <th className="px-3 py-2 text-left font-semibold text-slate-800 whitespace-nowrap">
                 Rank
               </th>
               <th
-                className="px-3 py-3 min-h-[44px] text-center font-semibold text-brand-navy whitespace-nowrap cursor-pointer hover:bg-slate-100 active:bg-slate-200 select-none"
+                className="px-3 py-3 min-h-[44px] text-center font-semibold text-slate-800 whitespace-nowrap cursor-pointer hover:bg-slate-100 active:bg-slate-200 select-none"
                 onClick={() => handleSort('liquidity_score')}
               >
                 <span className="inline-flex items-center justify-center gap-1">
@@ -682,7 +682,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                 </span>
               </th>
               <th
-                className="px-3 py-3 min-h-[44px] text-left font-semibold text-brand-navy whitespace-nowrap cursor-pointer hover:bg-slate-100 active:bg-slate-200 select-none"
+                className="px-3 py-3 min-h-[44px] text-left font-semibold text-slate-800 whitespace-nowrap cursor-pointer hover:bg-slate-100 active:bg-slate-200 select-none"
                 onClick={() => handleSort('district_id')}
               >
                 <span className="inline-flex items-center gap-1">
@@ -691,7 +691,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                 </span>
               </th>
               <th
-                className="px-3 py-3 min-h-[44px] text-center font-semibold text-brand-navy whitespace-nowrap cursor-pointer hover:bg-slate-100 active:bg-slate-200 select-none"
+                className="px-3 py-3 min-h-[44px] text-center font-semibold text-slate-800 whitespace-nowrap cursor-pointer hover:bg-slate-100 active:bg-slate-200 select-none"
                 onClick={() => handleSort('region')}
               >
                 <span className="inline-flex items-center justify-center gap-1">
@@ -700,7 +700,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                 </span>
               </th>
               <th
-                className="hidden xl:table-cell px-3 py-3 min-h-[44px] text-right font-semibold text-brand-navy whitespace-nowrap cursor-pointer hover:bg-slate-100 active:bg-slate-200 select-none"
+                className="hidden xl:table-cell px-3 py-3 min-h-[44px] text-right font-semibold text-slate-800 whitespace-nowrap cursor-pointer hover:bg-slate-100 active:bg-slate-200 select-none"
                 onClick={() => handleSort('project_count')}
               >
                 <span className="inline-flex items-center justify-end gap-1">
@@ -710,7 +710,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                 </span>
               </th>
               <th
-                className="px-3 py-3 min-h-[44px] text-right font-semibold text-brand-navy whitespace-nowrap cursor-pointer hover:bg-slate-100 active:bg-slate-200 select-none"
+                className="px-3 py-3 min-h-[44px] text-right font-semibold text-slate-800 whitespace-nowrap cursor-pointer hover:bg-slate-100 active:bg-slate-200 select-none"
                 onClick={() => handleSort('tx_count')}
               >
                 <span className="inline-flex items-center justify-end gap-1">
@@ -720,7 +720,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                 </span>
               </th>
               <th
-                className="px-3 py-3 min-h-[44px] text-center font-semibold text-brand-navy whitespace-nowrap bg-emerald-50/50 cursor-pointer hover:bg-emerald-100/50 active:bg-emerald-200/50 select-none"
+                className="px-3 py-3 min-h-[44px] text-center font-semibold text-slate-800 whitespace-nowrap bg-emerald-50/50 cursor-pointer hover:bg-emerald-100/50 active:bg-emerald-200/50 select-none"
                 onClick={() => handleSort('liquidity_tier')}
               >
                 <span className="inline-flex items-center justify-center gap-1">
@@ -729,7 +729,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                 </span>
               </th>
               <th
-                className="px-3 py-3 min-h-[44px] text-right font-semibold text-brand-navy whitespace-nowrap bg-emerald-50/50 cursor-pointer hover:bg-emerald-100/50 active:bg-emerald-200/50 select-none"
+                className="px-3 py-3 min-h-[44px] text-right font-semibold text-slate-800 whitespace-nowrap bg-emerald-50/50 cursor-pointer hover:bg-emerald-100/50 active:bg-emerald-200/50 select-none"
                 onClick={() => handleSort('turnover_rate')}
               >
                 <span className="inline-flex items-center justify-end gap-1">
@@ -742,7 +742,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                 </span>
               </th>
               <th
-                className="px-3 py-3 min-h-[44px] text-right font-semibold text-brand-navy whitespace-nowrap bg-emerald-50/50 cursor-pointer hover:bg-emerald-100/50 active:bg-emerald-200/50 select-none"
+                className="px-3 py-3 min-h-[44px] text-right font-semibold text-slate-800 whitespace-nowrap bg-emerald-50/50 cursor-pointer hover:bg-emerald-100/50 active:bg-emerald-200/50 select-none"
                 onClick={() => handleSort('z_score')}
               >
                 <span className="inline-flex items-center justify-end gap-1">
@@ -755,7 +755,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                 </span>
               </th>
               <th
-                className="px-3 py-3 min-h-[44px] text-center font-semibold text-brand-navy whitespace-nowrap bg-rose-50/50 cursor-pointer hover:bg-rose-100/50 active:bg-rose-200/50 select-none"
+                className="px-3 py-3 min-h-[44px] text-center font-semibold text-slate-800 whitespace-nowrap bg-rose-50/50 cursor-pointer hover:bg-rose-100/50 active:bg-rose-200/50 select-none"
                 onClick={() => handleSort('fragility_label')}
               >
                 <span className="inline-flex items-center justify-center gap-1">
@@ -768,7 +768,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                 </span>
               </th>
               <th
-                className="hidden xl:table-cell px-3 py-3 min-h-[44px] text-right font-semibold text-brand-navy whitespace-nowrap bg-rose-50/50 cursor-pointer hover:bg-rose-100/50 active:bg-rose-200/50 select-none"
+                className="hidden xl:table-cell px-3 py-3 min-h-[44px] text-right font-semibold text-slate-800 whitespace-nowrap bg-rose-50/50 cursor-pointer hover:bg-rose-100/50 active:bg-rose-200/50 select-none"
                 onClick={() => handleSort('concentration_gini')}
               >
                 <span className="inline-flex items-center justify-end gap-1">
@@ -781,7 +781,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                 </span>
               </th>
               <th
-                className="hidden xl:table-cell px-3 py-3 min-h-[44px] text-right font-semibold text-brand-navy whitespace-nowrap bg-rose-50/50 cursor-pointer hover:bg-rose-100/50 active:bg-rose-200/50 select-none"
+                className="hidden xl:table-cell px-3 py-3 min-h-[44px] text-right font-semibold text-slate-800 whitespace-nowrap bg-rose-50/50 cursor-pointer hover:bg-rose-100/50 active:bg-rose-200/50 select-none"
                 onClick={() => handleSort('top_project_share')}
               >
                 <span className="inline-flex items-center justify-end gap-1">
@@ -801,11 +801,11 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
               return (
                 <tr
                   key={district.district_id}
-                  className={`border-b border-brand-sky/20 hover:bg-brand-sand/20 transition-colors ${index < 3 ? 'bg-brand-sand/10' : ''}`}
+                  className={`border-b border-slate-200 hover:bg-slate-50 transition-colors ${index < 3 ? 'bg-slate-50' : ''}`}
                 >
                   {/* Rank */}
                   <td className="px-3 py-2 text-center">
-                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold bg-brand-sand/50 text-brand-blue">
+                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold bg-slate-100 text-slate-500">
                       {index + 1}
                     </span>
                   </td>
@@ -820,7 +820,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                           ? m.liquidity_score.toFixed(0)
                           : '-'}
                       </span>
-                      <span className="text-[8px] text-brand-blue">
+                      <span className="text-[8px] text-slate-500">
                         {getScoreLabel(m.liquidity_score)}
                       </span>
                     </div>
@@ -828,12 +828,12 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
 
                   {/* District (ID + Area Name combined) - truncated to prevent overflow */}
                   <td
-                    className="px-3 py-2 text-brand-navy max-w-[200px]"
+                    className="px-3 py-2 text-slate-800 max-w-[200px]"
                     title={`${district.district_id} - ${district.full_name}`}
                   >
                     <div className="flex items-baseline gap-1 min-w-0">
                       <span className="font-semibold flex-shrink-0">{district.district_id}</span>
-                      <span className="truncate text-brand-blue">- {district.full_name}</span>
+                      <span className="truncate text-slate-500">- {district.full_name}</span>
                     </div>
                   </td>
 
@@ -847,15 +847,15 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                   </td>
 
                   {/* Project Count (Market Structure - Combined) - hidden on lg, shown on xl+ */}
-                  <td className="hidden xl:table-cell px-3 py-2 text-right text-brand-navy font-mono tabular-nums">{m.project_count || 0}</td>
+                  <td className="hidden xl:table-cell px-3 py-2 text-right text-slate-800 font-mono tabular-nums">{m.project_count || 0}</td>
 
                   {/* Transaction Count (Market Structure - Combined) with inline bar */}
-                  <td className="px-3 py-2 text-brand-navy">
+                  <td className="px-3 py-2 text-slate-800">
                     <div className="flex items-center gap-2">
                       {/* Proportional volume bar */}
-                      <div className="flex-1 h-3.5 bg-brand-sand/40 rounded-full overflow-hidden">
+                      <div className="flex-1 h-3.5 bg-slate-100 rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-brand-blue rounded-full"
+                          className="h-full bg-slate-600 rounded-full"
                           style={{ width: `${((m.tx_count || 0) / maxTxCount) * 100}%` }}
                         />
                       </div>
@@ -876,7 +876,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                   </td>
 
                   {/* Exit Safety Group - Turnover Rate (Normalized, Resale-only) */}
-                  <td className="px-3 py-2 text-right text-brand-navy bg-emerald-50/40 font-mono tabular-nums">
+                  <td className="px-3 py-2 text-right text-slate-800 bg-emerald-50/40 font-mono tabular-nums">
                     <span className="inline-flex items-center gap-1">
                       {m.turnover_rate?.toFixed(1) ?? m.monthly_velocity?.toFixed(1) ?? '0'}
                       {m.low_units_confidence && (
@@ -886,7 +886,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                   </td>
 
                   {/* Exit Safety Group - Z-Score (Resale-only) */}
-                  <td className="px-3 py-2 text-right text-brand-navy bg-emerald-50/40 font-mono tabular-nums">
+                  <td className="px-3 py-2 text-right text-slate-800 bg-emerald-50/40 font-mono tabular-nums">
                     <span
                       className={
                         (m.z_score || 0) >= 0.5
@@ -901,17 +901,17 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                   </td>
 
                   {/* Concentration Risks Group - Spread (Resale-only) */}
-                  <td className="px-3 py-2 text-center text-brand-navy bg-rose-50/40">
+                  <td className="px-3 py-2 text-center text-slate-800 bg-rose-50/40">
                     {getSpreadLabel(m.fragility_label)}
                   </td>
 
                   {/* Concentration Risks Group - Gini Index (Resale-only) - hidden on lg, shown on xl+ */}
-                  <td className="hidden xl:table-cell px-3 py-2 text-right text-brand-navy bg-rose-50/40 font-mono tabular-nums">
+                  <td className="hidden xl:table-cell px-3 py-2 text-right text-slate-800 bg-rose-50/40 font-mono tabular-nums">
                     {m.concentration_gini?.toFixed(2) || '-'}
                   </td>
 
                   {/* Concentration Risks Group - Top Project Share (Resale-only) - hidden on lg, shown on xl+ */}
-                  <td className="hidden xl:table-cell px-3 py-2 text-right text-brand-navy bg-rose-50/40 font-mono tabular-nums">
+                  <td className="hidden xl:table-cell px-3 py-2 text-right text-slate-800 bg-rose-50/40 font-mono tabular-nums">
                     {m.top_project_share?.toFixed(0) || '0'}%
                   </td>
                 </tr>
@@ -922,7 +922,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
       </div>
 
       {/* Table Footer */}
-      <div className="px-3 sm:px-4 py-2 bg-brand-sand/20 border-t border-brand-sky/30 text-[10px] sm:text-xs text-brand-blue">
+      <div className="px-3 sm:px-4 py-2 bg-slate-50 border-t border-slate-200 text-[10px] sm:text-xs text-slate-500">
         {sortedData.length} districts with data
       </div>
     </div>

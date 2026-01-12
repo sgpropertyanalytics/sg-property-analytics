@@ -2,22 +2,71 @@
 District Growth Service
 
 Calculates median PSF growth % per district by comparing the earliest
-completed quarter to the latest completed quarter.
+3-month period to the latest 3 completed months (rolling).
 
 Used by the Dumbbell Chart on District Deep Dive page.
 """
 
 import logging
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
 from datetime import date
+from dateutil.relativedelta import relativedelta
 
-from sqlalchemy import func, and_, cast, Integer, literal
+from sqlalchemy import func, and_, cast, Integer
 from sqlalchemy.sql import extract
 
 from models.transaction import Transaction
 from models.database import db
 
 logger = logging.getLogger('district_growth')
+
+
+def get_current_month() -> str:
+    """Get the current month string (e.g., '2026-01')."""
+    today = date.today()
+    return f"{today.year}-{today.month:02d}"
+
+
+def get_last_n_completed_months(n: int = 3) -> List[str]:
+    """
+    Get the last N completed months as YYYY-MM strings.
+
+    Example: If today is Jan 12, 2026, returns ['2025-10', '2025-11', '2025-12']
+    """
+    today = date.today()
+    # Start from last month (current month is incomplete)
+    last_complete = date(today.year, today.month, 1) - relativedelta(months=1)
+
+    months = []
+    for i in range(n):
+        month_date = last_complete - relativedelta(months=(n - 1 - i))
+        months.append(f"{month_date.year}-{month_date.month:02d}")
+
+    return months
+
+
+def format_period_label(months: List[str]) -> str:
+    """
+    Format a list of months into a readable period label.
+
+    Example: ['2025-10', '2025-11', '2025-12'] -> 'Oct-Dec 2025'
+    """
+    if not months:
+        return ''
+
+    month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+    first = months[0]
+    last = months[-1]
+
+    first_year, first_month = int(first[:4]), int(first[5:])
+    last_year, last_month = int(last[:4]), int(last[5:])
+
+    if first_year == last_year:
+        return f"{month_names[first_month-1]}-{month_names[last_month-1]} {last_year}"
+    else:
+        return f"{month_names[first_month-1]} {first_year}-{month_names[last_month-1]} {last_year}"
 
 
 def get_district_growth(
@@ -28,8 +77,8 @@ def get_district_growth(
     """
     Calculate median PSF growth % per district.
 
-    Compares the single earliest completed quarter to the single latest
-    completed quarter across all districts.
+    Compares the earliest 3-month period to the latest 3 completed months
+    (rolling window).
 
     Args:
         sale_type: Filter by sale type (e.g., 'Resale', 'New Sale')
@@ -41,8 +90,8 @@ def get_district_growth(
             "data": [
                 {
                     "district": "D01",
-                    "startQuarter": "2020-Q4",
-                    "endQuarter": "2024-Q4",
+                    "startPeriod": "Oct-Dec 2020",
+                    "endPeriod": "Oct-Dec 2025",
                     "startPsf": 1234.56,
                     "endPsf": 1567.89,
                     "growthPercent": 27.02
@@ -50,8 +99,10 @@ def get_district_growth(
                 ...
             ],
             "meta": {
-                "startQuarter": "2020-Q4",
-                "endQuarter": "2024-Q4",
+                "startPeriod": "Oct-Dec 2020",
+                "endPeriod": "Oct-Dec 2025",
+                "startMonths": ["2020-10", "2020-11", "2020-12"],
+                "endMonths": ["2025-10", "2025-11", "2025-12"],
                 "excludedDistricts": [{"district": "D27", "reason": "..."}]
             }
         }
@@ -68,18 +119,20 @@ def get_district_growth(
     if districts:
         conditions.append(Transaction.district.in_(districts))
 
-    # Build quarter expression: "YYYY-QN"
+    # Build month expression: "YYYY-MM"
     year_expr = cast(extract('year', Transaction.transaction_date), Integer)
-    quarter_expr = cast(
-        func.floor((extract('month', Transaction.transaction_date) - 1) / 3) + 1,
-        Integer
+    month_expr = cast(extract('month', Transaction.transaction_date), Integer)
+    # Use concat with lpad for proper zero-padding
+    period_expr = func.concat(
+        year_expr,
+        '-',
+        func.lpad(cast(month_expr, db.String), 2, '0')
     )
-    period_expr = func.concat(year_expr, literal('-Q'), quarter_expr)
 
-    # Query: Get median PSF per district per quarter
+    # Query: Get median PSF per district per month
     query = db.session.query(
         Transaction.district.label('district'),
-        period_expr.label('quarter'),
+        period_expr.label('month'),
         func.percentile_cont(0.5).within_group(Transaction.psf).label('median_psf'),
         func.count(Transaction.id).label('txn_count')
     ).filter(
@@ -97,75 +150,99 @@ def get_district_growth(
         return {
             "data": [],
             "meta": {
-                "startQuarter": None,
-                "endQuarter": None,
+                "startPeriod": None,
+                "endPeriod": None,
+                "startMonths": [],
+                "endMonths": [],
                 "excludedDistricts": []
             }
         }
 
-    # Build district -> quarter -> median_psf map
-    district_quarter_map: Dict[str, Dict[str, float]] = {}
-    all_quarters = set()
+    # Build district -> month -> median_psf map
+    district_month_map: Dict[str, Dict[str, float]] = {}
+    all_months = set()
 
     for row in results:
         district = row.district
-        quarter = row.quarter
+        month = row.month
         median_psf = float(row.median_psf) if row.median_psf else 0
 
         if median_psf > 0:
-            if district not in district_quarter_map:
-                district_quarter_map[district] = {}
-            district_quarter_map[district][quarter] = median_psf
-            all_quarters.add(quarter)
+            if district not in district_month_map:
+                district_month_map[district] = {}
+            district_month_map[district][month] = median_psf
+            all_months.add(month)
 
-    # Sort quarters chronologically
-    sorted_quarters = sorted(all_quarters)
+    # Sort months chronologically
+    sorted_months = sorted(all_months)
 
-    if len(sorted_quarters) < 2:
-        logger.warning("Need at least 2 quarters for growth comparison")
+    # Exclude current incomplete month
+    current_month = get_current_month()
+    completed_months = [m for m in sorted_months if m != current_month]
+
+    if len(completed_months) < 6:
+        # Need at least 6 months (3 for start + 3 for end, non-overlapping)
+        logger.warning("Need at least 6 completed months for growth comparison")
         return {
             "data": [],
             "meta": {
-                "startQuarter": None,
-                "endQuarter": None,
+                "startPeriod": None,
+                "endPeriod": None,
+                "startMonths": [],
+                "endMonths": [],
                 "excludedDistricts": []
             }
         }
 
-    # Take single earliest and single latest quarter
-    start_quarter = sorted_quarters[0]
-    end_quarter = sorted_quarters[-1]
+    # Start period: first 3 months with data
+    start_months = completed_months[:3]
+
+    # End period: last 3 completed months (rolling)
+    end_months = get_last_n_completed_months(3)
+
+    # Ensure end months exist in data, otherwise use last 3 from completed_months
+    if not all(m in all_months for m in end_months):
+        end_months = completed_months[-3:]
+
+    start_period_label = format_period_label(start_months)
+    end_period_label = format_period_label(end_months)
 
     # Calculate growth for each district
     data = []
     excluded_districts = []
 
-    for district, quarter_data in district_quarter_map.items():
-        start_psf = quarter_data.get(start_quarter)
-        end_psf = quarter_data.get(end_quarter)
+    for district, month_data in district_month_map.items():
+        # Calculate median PSF for start period (average of medians across 3 months)
+        start_psfs = [month_data.get(m) for m in start_months if month_data.get(m)]
+        end_psfs = [month_data.get(m) for m in end_months if month_data.get(m)]
 
-        if start_psf and start_psf > 0 and end_psf and end_psf > 0:
+        # Require at least 2 months of data in each period for reliability
+        has_start = len(start_psfs) >= 2
+        has_end = len(end_psfs) >= 2
+
+        if has_start and has_end:
+            # Use median of medians for each period
+            start_psf = sorted(start_psfs)[len(start_psfs) // 2]
+            end_psf = sorted(end_psfs)[len(end_psfs) // 2]
+
             growth_percent = ((end_psf - start_psf) / start_psf) * 100
 
             data.append({
                 "district": district,
-                "startQuarter": start_quarter,
-                "endQuarter": end_quarter,
+                "startPeriod": start_period_label,
+                "endPeriod": end_period_label,
                 "startPsf": round(start_psf, 2),
                 "endPsf": round(end_psf, 2),
                 "growthPercent": round(growth_percent, 2)
             })
         else:
             # Track excluded districts
-            missing_start = not start_psf or start_psf <= 0
-            missing_end = not end_psf or end_psf <= 0
-
-            if missing_start and missing_end:
-                reason = f"No data for {start_quarter} or {end_quarter}"
-            elif missing_start:
-                reason = f"No data for {start_quarter}"
+            if not has_start and not has_end:
+                reason = f"Insufficient data for both periods"
+            elif not has_start:
+                reason = f"Insufficient data for {start_period_label}"
             else:
-                reason = f"No data for {end_quarter}"
+                reason = f"Insufficient data for {end_period_label}"
 
             excluded_districts.append({
                 "district": district,
@@ -179,8 +256,13 @@ def get_district_growth(
     return {
         "data": data,
         "meta": {
-            "startQuarter": start_quarter,
-            "endQuarter": end_quarter,
+            "startPeriod": start_period_label,
+            "endPeriod": end_period_label,
+            "startMonths": start_months,
+            "endMonths": end_months,
+            # Keep legacy field names for backwards compatibility
+            "startQuarter": start_period_label,
+            "endQuarter": end_period_label,
             "excludedDistricts": excluded_districts
         }
     }
