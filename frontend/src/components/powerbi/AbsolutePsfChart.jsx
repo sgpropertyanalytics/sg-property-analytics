@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useMemo } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { useDebounce } from 'use-debounce';
 // Phase 2: Using TanStack Query via useAppQuery wrapper
@@ -13,6 +13,7 @@ import { getAggregate } from '../../api/client';
 import { useZustandFilters } from '../../stores/filterStore';
 import { TIME_GROUP_BY } from '../../context/PowerBIFilter';
 import { useSubscription } from '../../context/SubscriptionContext';
+import { getRegionForDistrict } from '../../constants';
 import {
   PreviewChartOverlay,
   DataCard,
@@ -71,12 +72,24 @@ function AbsolutePsfChartBase({ height = 380, saleType = null, sharedData = null
   // Extract filter values directly (simple, explicit)
   const timeframe = filters.timeFilter?.type === 'preset' ? filters.timeFilter.value : 'Y1';
   const bedroom = filters.bedroomTypes?.join(',') || '';
+  const districts = filters.districts?.join(',') || '';
 
   // Debounce filter values for smoother UX (prevents rapid API calls during filter changes)
   // 300ms debounce with keepPreviousData gives instant visual feedback
   const [debouncedBedroom] = useDebounce(bedroom, 300);
+  const [debouncedDistricts] = useDebounce(districts, 300);
 
-  // district excluded - shows all regions for comparison
+  // Compute active regions based on selected districts for highlighting effect
+  const activeRegions = useMemo(() => {
+    const selectedDistricts = filters.districts || [];
+    if (selectedDistricts.length === 0) return null; // No filtering = all regions active
+    const regions = new Set();
+    selectedDistricts.forEach(d => {
+      const region = getRegionForDistrict(d);
+      if (region) regions.add(region);
+    });
+    return regions;
+  }, [filters.districts]);
   const { isFreeResolved, isPremium } = useSubscription();
   const chartRef = useRef(null);
   const [isAgentOpen, setIsAgentOpen] = useState(false);
@@ -106,13 +119,13 @@ function AbsolutePsfChartBase({ height = 380, saleType = null, sharedData = null
   const { data: internalData, status: internalStatus, error, refetch } = useAppQuery(
     async (signal) => {
       // Phase 4: Inline params - no buildApiParams abstraction
-      // Note: This chart always shows all regions for comparison (no segment/district filter)
+      // Note: Shows all regions for comparison; districts filter pre-aggregation
       const params = {
         group_by: `${TIME_GROUP_BY[timeGrouping]},region`,
         metrics: 'median_psf,count',
         timeframe,
         bedroom: debouncedBedroom,  // Use debounced value for smoother UX
-        // segment excluded - shows all regions for comparison
+        ...(debouncedDistricts && { districts: debouncedDistricts }),
         ...(saleType && { sale_type: saleType }),
       };
 
@@ -133,8 +146,8 @@ function AbsolutePsfChartBase({ height = 380, saleType = null, sharedData = null
       // Transform is grain-agnostic - trusts data's own periodGrain
       return transformCompressionSeries(rawData);
     },
-    // Explicit query key - uses debounced bedroom for stable cache key
-    ['absolute-psf', timeframe, debouncedBedroom, timeGrouping, saleType],
+    // Explicit query key - uses debounced values for stable cache key
+    ['absolute-psf', timeframe, debouncedBedroom, debouncedDistricts, timeGrouping, saleType],
     { chartName: 'AbsolutePsfChart', initialData: null, enabled: inView && !useSharedData, keepPreviousData: true }
   );
 
@@ -195,57 +208,74 @@ function AbsolutePsfChartBase({ height = 380, saleType = null, sharedData = null
     }
   }, [isAgentOpen, isPremium, data, latestData, prevData, timeframe, debouncedBedroom, timeGrouping, saleType, ccrChange, rcrChange, ocrChange, interpret, resetAi]);
 
-  // Chart data
-  const chartData = {
-    labels: data.map(d => d.period),
-    datasets: [
-      {
-        label: 'CCR (Core Central)',
-        data: data.map(d => d.ccr),
-        borderColor: REGION_COLORS.CCR,
-        backgroundColor: REGION_COLORS.CCR,
-        borderWidth: 2,
-        pointRadius: 0,
-        pointHoverRadius: 5,
-        pointHoverBackgroundColor: REGION_COLORS.CCR,
-        pointHoverBorderColor: CHART_COLORS.white,
-        pointHoverBorderWidth: 2,
-        tension: 0.3,
-        spanGaps: true,
-        fill: false,
-      },
-      {
-        label: 'RCR (Rest of Central)',
-        data: data.map(d => d.rcr),
-        borderColor: REGION_COLORS.RCR,
-        backgroundColor: REGION_COLORS.RCR,
-        borderWidth: 2,
-        pointRadius: 0,
-        pointHoverRadius: 5,
-        pointHoverBackgroundColor: REGION_COLORS.RCR,
-        pointHoverBorderColor: CHART_COLORS.white,
-        pointHoverBorderWidth: 2,
-        tension: 0.3,
-        spanGaps: true,
-        fill: false,
-      },
-      {
-        label: 'OCR (Outside Central)',
-        data: data.map(d => d.ocr),
-        borderColor: REGION_COLORS.OCR,
-        backgroundColor: REGION_COLORS.OCR,
-        borderWidth: 2,
-        pointRadius: 0,
-        pointHoverRadius: 5,
-        pointHoverBackgroundColor: REGION_COLORS.OCR,
-        pointHoverBorderColor: CHART_COLORS.white,
-        pointHoverBorderWidth: 2,
-        tension: 0.3,
-        spanGaps: true,
-        fill: false,
-      },
-    ],
+  // Helper to apply muted opacity to hex color
+  const applyOpacity = (hexColor, isMuted) => {
+    if (!isMuted) return hexColor;
+    // Convert hex to rgba with 30% opacity for muted state
+    const hex = hexColor.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, 0.3)`;
   };
+
+  // Chart data with region highlighting
+  const chartData = useMemo(() => {
+    const isCcrMuted = activeRegions !== null && !activeRegions.has('CCR');
+    const isRcrMuted = activeRegions !== null && !activeRegions.has('RCR');
+    const isOcrMuted = activeRegions !== null && !activeRegions.has('OCR');
+
+    return {
+      labels: data.map(d => d.period),
+      datasets: [
+        {
+          label: 'CCR (Core Central)',
+          data: data.map(d => d.ccr),
+          borderColor: applyOpacity(REGION_COLORS.CCR, isCcrMuted),
+          backgroundColor: applyOpacity(REGION_COLORS.CCR, isCcrMuted),
+          borderWidth: isCcrMuted ? 1 : 2,
+          pointRadius: 0,
+          pointHoverRadius: 5,
+          pointHoverBackgroundColor: REGION_COLORS.CCR,
+          pointHoverBorderColor: CHART_COLORS.white,
+          pointHoverBorderWidth: 2,
+          tension: 0.3,
+          spanGaps: true,
+          fill: false,
+        },
+        {
+          label: 'RCR (Rest of Central)',
+          data: data.map(d => d.rcr),
+          borderColor: applyOpacity(REGION_COLORS.RCR, isRcrMuted),
+          backgroundColor: applyOpacity(REGION_COLORS.RCR, isRcrMuted),
+          borderWidth: isRcrMuted ? 1 : 2,
+          pointRadius: 0,
+          pointHoverRadius: 5,
+          pointHoverBackgroundColor: REGION_COLORS.RCR,
+          pointHoverBorderColor: CHART_COLORS.white,
+          pointHoverBorderWidth: 2,
+          tension: 0.3,
+          spanGaps: true,
+          fill: false,
+        },
+        {
+          label: 'OCR (Outside Central)',
+          data: data.map(d => d.ocr),
+          borderColor: applyOpacity(REGION_COLORS.OCR, isOcrMuted),
+          backgroundColor: applyOpacity(REGION_COLORS.OCR, isOcrMuted),
+          borderWidth: isOcrMuted ? 1 : 2,
+          pointRadius: 0,
+          pointHoverRadius: 5,
+          pointHoverBackgroundColor: REGION_COLORS.OCR,
+          pointHoverBorderColor: CHART_COLORS.white,
+          pointHoverBorderWidth: 2,
+          tension: 0.3,
+          spanGaps: true,
+          fill: false,
+        },
+      ],
+    };
+  }, [data, activeRegions]);
 
   // Chart options
   const chartOptions = {

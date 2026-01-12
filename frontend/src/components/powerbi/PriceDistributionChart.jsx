@@ -73,11 +73,11 @@ function PriceDistributionChartBase({
   // Extract filter values directly (simple, explicit)
   const timeframe = filters.timeFilter?.type === 'preset' ? filters.timeFilter.value : 'Y1';
   const bedroom = filters.bedroomTypes?.join(',') || '';
+  const districts = filters.districts?.join(',') || '';
 
   // Debounce filter values for smoother UX (prevents rapid API calls during filter changes)
   const [debouncedBedroom] = useDebounce(bedroom, 300);
-
-  // district excluded - histogram shows overall distribution (not location-filtered)
+  const [debouncedDistricts] = useDebounce(districts, 300);
 
   const [showFullRange, setShowFullRange] = useState(false);
   const chartRef = useRef(null);
@@ -88,13 +88,12 @@ function PriceDistributionChartBase({
   const { data: histogramData, status, error, refetch } = useAppQuery(
     async (signal) => {
       // Inline params - no buildApiParams abstraction
-      // Note: This chart doesn't filter by location drill (visual-local)
       const params = {
         panels: 'price_histogram',
         histogram_bins: numBins,
         timeframe,
         bedroom: debouncedBedroom,  // Use debounced value for smoother UX
-        // district excluded - histogram shows overall distribution
+        ...(debouncedDistricts && { districts: debouncedDistricts }),
         ...(saleType && { sale_type: saleType }),
         // Only send show_full_range when true (backend defaults to false)
         ...(showFullRange && { show_full_range: 'true' }),
@@ -120,8 +119,8 @@ function PriceDistributionChartBase({
       // Use adapter for transformation - handles legacy vs new format
       return transformDistributionSeries(apiData.price_histogram);
     },
-    // Explicit query key - uses debounced bedroom for stable cache key
-    ['price-distribution', timeframe, debouncedBedroom, numBins, showFullRange, saleType],
+    // Explicit query key - uses debounced values for stable cache key
+    ['price-distribution', timeframe, debouncedBedroom, debouncedDistricts, numBins, showFullRange, saleType],
     { chartName: 'PriceDistributionChart', initialData: null, enabled: !useShared, keepPreviousData: true }
   );
 

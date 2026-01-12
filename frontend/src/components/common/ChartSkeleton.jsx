@@ -1,448 +1,239 @@
 /**
- * ChartSkeleton - Creative loading skeletons for different chart types
+ * ChartSkeleton - Structural Fidelity Loading States
  *
- * Matches actual chart card structure:
- * - Header with title placeholder
- * - Chart area with type-specific skeleton
- * - Footer with data info placeholder
- *
- * Features shimmer animation (3.5s - slow, smooth):
- * - bar: Vertical bars of varying heights
- * - line: Wavy line pattern with area fill
- * - pie: Circular donut segments
- * - grid: Grid of cards (for heatmaps/grids)
- * - table: Table rows with columns
- * - map: Singapore outline with district markers
+ * Design Philosophy: Clean, Consistent, No Animation
+ * - Static structural lines only (no shimmer, no scan)
+ * - Consistent background prevents white flash
+ * - All types share same visual weight
+ * - Matches chart.js axis/grid styling
  */
 
-// Shimmer styles are in index.css
+import React from 'react';
 
-export function ChartSkeleton({ type = 'default', height = 300, className = '' }) {
-  const baseClass = `chart-skeleton bg-card rounded-lg border border-brand-sky/50 overflow-hidden ${className}`;
+// --- DESIGN TOKENS (Consistent across all types) ---
+const STROKE = '#E5E7EB'; // Gray-200 - matches chart grid lines
+const BLOCK = '#F3F4F6';  // Gray-100 - text placeholders
+const BG = '#FAFAFA';     // Very light grey - prevents white flash
 
-  switch (type) {
-    case 'bar':
-      return <BarSkeleton height={height} className={baseClass} />;
-    case 'line':
-      return <LineSkeleton height={height} className={baseClass} />;
-    case 'pie':
-      return <PieSkeleton height={height} className={baseClass} />;
-    case 'grid':
-      return <GridSkeleton height={height} className={baseClass} />;
-    case 'table':
-      return <TableSkeleton height={height} className={baseClass} />;
-    case 'map':
-      return <MapSkeleton height={height} className={baseClass} />;
-    default:
-      return <DefaultSkeleton height={height} className={baseClass} />;
-  }
-}
-
-// Shared header skeleton
-function SkeletonHeader({ hasSubtitle = true }) {
+// ============================================
+// SHARED: Chart Frame (Axes + Grid)
+// ============================================
+function ChartAxes() {
   return (
-    <div className="px-4 py-3 border-b border-skeleton-border/25 shrink-0">
-      <div className="skeleton-shimmer h-5 w-48 rounded" />
-      {hasSubtitle && (
-        <div className="skeleton-shimmer h-3 w-32 rounded mt-2" />
-      )}
-    </div>
+    <>
+      {/* Y-Axis */}
+      <line x1="40" y1="15" x2="40" y2="180" stroke={STROKE} strokeWidth="1" />
+      {/* X-Axis */}
+      <line x1="40" y1="180" x2="390" y2="180" stroke={STROKE} strokeWidth="1" />
+      {/* Horizontal grid lines */}
+      <line x1="40" y1="60" x2="390" y2="60" stroke={STROKE} strokeWidth="1" strokeDasharray="4 4" opacity="0.5" />
+      <line x1="40" y1="100" x2="390" y2="100" stroke={STROKE} strokeWidth="1" strokeDasharray="4 4" opacity="0.5" />
+      <line x1="40" y1="140" x2="390" y2="140" stroke={STROKE} strokeWidth="1" strokeDasharray="4 4" opacity="0.5" />
+      {/* Y-axis label placeholders */}
+      <rect x="8" y="55" width="24" height="10" rx="2" fill={BLOCK} />
+      <rect x="8" y="95" width="24" height="10" rx="2" fill={BLOCK} />
+      <rect x="8" y="135" width="24" height="10" rx="2" fill={BLOCK} />
+    </>
   );
 }
 
-// Shared footer skeleton
-function SkeletonFooter() {
+// ============================================
+// LINE CHART
+// ============================================
+function LineSkeleton() {
   return (
-    <div className="shrink-0 h-11 px-4 bg-skeleton-bg/40 border-t border-skeleton-border/30 flex items-center justify-between">
-      <div className="skeleton-shimmer h-3 w-24 rounded" />
-      <div className="skeleton-shimmer h-3 w-32 rounded" />
-    </div>
+    <svg viewBox="0 0 400 200" className="w-full h-full" fill="none">
+      <ChartAxes />
+      {/* X-axis ticks */}
+      {[100, 160, 220, 280, 340].map((x) => (
+        <line key={x} x1={x} y1="180" x2={x} y2="186" stroke={STROKE} strokeWidth="1" />
+      ))}
+    </svg>
   );
 }
 
-// Bar chart skeleton - varying height bars with axis
-function BarSkeleton({ height, className }) {
-  const barHeights = [55, 75, 40, 85, 50, 70, 45, 80, 60, 65, 48, 90];
-
+// ============================================
+// BAR CHART
+// ============================================
+function BarSkeleton() {
   return (
-    <div className={className} style={{ height }}>
-      <SkeletonHeader />
+    <svg viewBox="0 0 400 200" className="w-full h-full" fill="none">
+      <ChartAxes />
+      {/* Bar slots */}
+      {[60, 110, 160, 210, 260, 310, 360].map((x, i) => (
+        <rect
+          key={x}
+          x={x}
+          y={60 + (i % 3) * 30}
+          width="28"
+          height={120 - (i % 3) * 30}
+          stroke={STROKE}
+          strokeWidth="1"
+          strokeDasharray="3 3"
+          fill="none"
+        />
+      ))}
+    </svg>
+  );
+}
 
-      {/* Chart area */}
-      <div className="flex-1 px-4 pb-3 relative" style={{ height: height - 100 }}>
-        {/* Y-axis labels */}
-        <div className="absolute left-4 top-2 bottom-8 w-10 flex flex-col justify-between">
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="skeleton-shimmer h-2 w-8 rounded" style={{ animationDelay: `${i * 0.2}s` }} />
+// ============================================
+// PIE CHART
+// ============================================
+function PieSkeleton() {
+  return (
+    <svg viewBox="0 0 400 200" className="w-full h-full" fill="none">
+      {/* Outer circle */}
+      <circle cx="140" cy="100" r="70" stroke={STROKE} strokeWidth="1" />
+      {/* Sector lines */}
+      <line x1="140" y1="100" x2="140" y2="30" stroke={STROKE} strokeWidth="1" />
+      <line x1="140" y1="100" x2="200" y2="135" stroke={STROKE} strokeWidth="1" />
+      <line x1="140" y1="100" x2="80" y2="135" stroke={STROKE} strokeWidth="1" />
+      {/* Center hole */}
+      <circle cx="140" cy="100" r="28" stroke={STROKE} strokeWidth="1" strokeDasharray="4 4" />
+      {/* Legend */}
+      <rect x="260" y="45" width="10" height="10" rx="2" fill={BLOCK} />
+      <rect x="276" y="47" width="50" height="6" rx="1" fill={BLOCK} />
+      <rect x="260" y="70" width="10" height="10" rx="2" fill={BLOCK} />
+      <rect x="276" y="72" width="40" height="6" rx="1" fill={BLOCK} />
+      <rect x="260" y="95" width="10" height="10" rx="2" fill={BLOCK} />
+      <rect x="276" y="97" width="45" height="6" rx="1" fill={BLOCK} />
+      <rect x="260" y="120" width="10" height="10" rx="2" fill={BLOCK} />
+      <rect x="276" y="122" width="35" height="6" rx="1" fill={BLOCK} />
+    </svg>
+  );
+}
+
+// ============================================
+// MAP
+// ============================================
+function MapSkeleton() {
+  return (
+    <svg viewBox="0 0 400 200" className="w-full h-full" fill="none">
+      {/* Border */}
+      <rect x="1" y="1" width="398" height="198" stroke={STROKE} strokeWidth="1" />
+      {/* Dot grid pattern */}
+      <defs>
+        <pattern id="mapDots" x="0" y="0" width="16" height="16" patternUnits="userSpaceOnUse">
+          <circle cx="2" cy="2" r="1" fill={STROKE} />
+        </pattern>
+      </defs>
+      <rect x="1" y="1" width="398" height="198" fill="url(#mapDots)" />
+      {/* Crosshairs */}
+      <line x1="200" y1="1" x2="200" y2="199" stroke={STROKE} strokeWidth="1" strokeDasharray="6 6" opacity="0.6" />
+      <line x1="1" y1="100" x2="399" y2="100" stroke={STROKE} strokeWidth="1" strokeDasharray="6 6" opacity="0.6" />
+    </svg>
+  );
+}
+
+// ============================================
+// BEAD CHART (Timeline)
+// ============================================
+function BeadSkeleton() {
+  return (
+    <svg viewBox="0 0 400 200" className="w-full h-full" fill="none">
+      {/* Tracks */}
+      {[45, 85, 125, 165].map((y) => (
+        <g key={y}>
+          <rect x="5" y={y - 5} width="28" height="10" rx="2" fill={BLOCK} />
+          <line x1="40" y1={y} x2="395" y2={y} stroke={STROKE} strokeWidth="1" />
+          {/* Ticks */}
+          {[40, 140, 240, 340, 395].map((x) => (
+            <line key={x} x1={x} y1={y - 4} x2={x} y2={y + 4} stroke={STROKE} strokeWidth="1" />
           ))}
-        </div>
-
-        {/* Bars area */}
-        <div className="ml-12 h-full flex items-end justify-around gap-1 pb-6">
-          {barHeights.map((h, i) => (
-            <div
-              key={i}
-              className="skeleton-shimmer rounded-t flex-1 max-w-[32px]"
-              style={{
-                height: `${h}%`,
-                animationDelay: `${i * 0.1}s`
-              }}
-            />
-          ))}
-        </div>
-
-        {/* X-axis line */}
-        <div className="absolute bottom-3 left-12 right-4 h-px bg-skeleton-border/30" />
-
-        {/* X-axis labels */}
-        <div className="absolute bottom-0 left-12 right-4 flex justify-around">
-          {[0, 1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="skeleton-shimmer h-2 w-6 rounded" style={{ animationDelay: `${i * 0.15}s` }} />
-          ))}
-        </div>
-      </div>
-
-      <SkeletonFooter />
-    </div>
+        </g>
+      ))}
+    </svg>
   );
 }
 
-// Line chart skeleton - wavy SVG line with gradient area
-function LineSkeleton({ height, className }) {
+// ============================================
+// GRID (Heatmap)
+// ============================================
+function GridSkeleton() {
   return (
-    <div className={className} style={{ height }}>
-      <SkeletonHeader />
-
-      {/* Chart area */}
-      <div className="flex-1 px-4 pb-3 relative" style={{ height: height - 100 }}>
-        {/* Y-axis labels */}
-        <div className="absolute left-0 top-2 bottom-8 w-12 flex flex-col justify-between">
-          {[0, 1, 2, 3, 4].map((i) => (
-            <div key={i} className="skeleton-shimmer h-2 w-10 rounded" style={{ animationDelay: `${i * 0.2}s` }} />
-          ))}
-        </div>
-
-        {/* SVG chart area */}
-        <div className="ml-12 h-full">
-          <svg className="w-full h-full" viewBox="0 0 400 180" preserveAspectRatio="none">
-            {/* Horizontal grid lines */}
-            {[0, 1, 2, 3, 4].map((i) => (
-              <line
-                key={i}
-                x1="0"
-                y1={i * 45}
-                x2="400"
-                y2={i * 45}
-                stroke="#d4d0c8"
-                strokeOpacity="0.2"
-                strokeDasharray="4 4"
-              />
-            ))}
-
-            {/* Area under main line */}
-            <path
-              d="M 0 140 Q 40 120 80 125 T 160 100 T 240 85 T 320 70 T 400 55 L 400 180 L 0 180 Z"
-              fill="url(#areaGradientSkeleton)"
-              className="skeleton-area"
-            />
-
-            {/* Main trend line */}
-            <path
-              d="M 0 140 Q 40 120 80 125 T 160 100 T 240 85 T 320 70 T 400 55"
-              fill="none"
-              stroke="url(#lineGradientSkeleton)"
-              strokeWidth="3"
-              strokeLinecap="round"
-              className="skeleton-line"
-            />
-
-            {/* Secondary line (like CCR/RCR/OCR) */}
-            <path
-              d="M 0 120 Q 50 110 100 115 T 200 95 T 300 80 T 400 70"
-              fill="none"
-              stroke="#d4d0c8"
-              strokeWidth="2"
-              strokeOpacity="0.35"
-              strokeDasharray="6 3"
-            />
-
-            <defs>
-              <linearGradient id="lineGradientSkeleton" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#94A3B8" stopOpacity="0.35">
-                  <animate attributeName="stop-opacity" values="0.2;0.5;0.2" dur="3.5s" repeatCount="indefinite" />
-                </stop>
-                <stop offset="50%" stopColor="#334155" stopOpacity="0.45">
-                  <animate attributeName="stop-opacity" values="0.3;0.6;0.3" dur="3.5s" repeatCount="indefinite" />
-                </stop>
-                <stop offset="100%" stopColor="#94A3B8" stopOpacity="0.35">
-                  <animate attributeName="stop-opacity" values="0.2;0.5;0.2" dur="3.5s" repeatCount="indefinite" />
-                </stop>
-              </linearGradient>
-              <linearGradient id="areaGradientSkeleton" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#94A3B8" stopOpacity="0.08" />
-                <stop offset="100%" stopColor="#94A3B8" stopOpacity="0.01" />
-              </linearGradient>
-            </defs>
-          </svg>
-        </div>
-      </div>
-
-      <SkeletonFooter />
-    </div>
-  );
-}
-
-// Pie chart skeleton - donut chart with segments
-function PieSkeleton({ height, className }) {
-  const size = Math.min(height - 120, 180);
-
-  return (
-    <div className={className} style={{ height }}>
-      <SkeletonHeader />
-
-      {/* Chart area */}
-      <div className="flex-1 flex items-center justify-center px-4 pb-3">
-        <div className="flex items-center gap-8">
-          {/* Donut chart */}
-          <div
-            className="skeleton-shimmer rounded-full relative"
-            style={{ width: size, height: size }}
-          >
-            {/* Inner hole */}
-            <div
-              className="absolute rounded-full bg-white"
-              style={{
-                width: size * 0.55,
-                height: size * 0.55,
-                top: '22.5%',
-                left: '22.5%'
-              }}
-            />
-            {/* Segment dividers */}
-            <svg className="absolute inset-0" viewBox="0 0 100 100">
-              <line x1="50" y1="50" x2="50" y2="5" stroke="white" strokeWidth="3" />
-              <line x1="50" y1="50" x2="90" y2="30" stroke="white" strokeWidth="3" />
-              <line x1="50" y1="50" x2="85" y2="75" stroke="white" strokeWidth="3" />
-              <line x1="50" y1="50" x2="15" y2="70" stroke="white" strokeWidth="3" />
-            </svg>
-          </div>
-
-          {/* Legend */}
-          <div className="flex flex-col gap-3">
-            {[0, 1, 2, 3].map((i) => (
-              <div key={i} className="flex items-center gap-2">
-                <div className="skeleton-shimmer w-3 h-3 rounded" style={{ animationDelay: `${i * 0.2}s` }} />
-                <div className="skeleton-shimmer h-3 w-16 rounded" style={{ animationDelay: `${i * 0.2}s` }} />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <SkeletonFooter />
-    </div>
-  );
-}
-
-// Grid skeleton - for heatmaps and momentum grid
-function GridSkeleton({ height, className }) {
-  const rows = 4;
-  const cols = 7;
-
-  return (
-    <div className={className} style={{ height }}>
-      <SkeletonHeader hasSubtitle={true} />
-
-      {/* Grid area */}
-      <div className="flex-1 p-4" style={{ height: height - 100 }}>
-        <div
-          className="grid gap-2 h-full"
-          style={{
-            gridTemplateRows: `repeat(${rows}, 1fr)`,
-            gridTemplateColumns: `repeat(${cols}, 1fr)`
-          }}
-        >
-          {Array.from({ length: rows * cols }).map((_, i) => (
-            <div
-              key={i}
-              className="skeleton-shimmer rounded border border-skeleton-border/15"
-              style={{ animationDelay: `${(i % cols) * 0.12 + Math.floor(i / cols) * 0.08}s` }}
-            />
-          ))}
-        </div>
-      </div>
-
-      <SkeletonFooter />
-    </div>
-  );
-}
-
-// Table skeleton - rows with varying column widths
-function TableSkeleton({ height, className }) {
-  const rows = 7;
-
-  return (
-    <div className={className} style={{ height }}>
-      <SkeletonHeader />
-
-      {/* Table area */}
-      <div className="flex-1 overflow-hidden">
-        {/* Table header */}
-        <div className="flex gap-4 px-4 py-2.5 bg-skeleton-bg/30 border-b border-skeleton-border/25">
-          <div className="skeleton-shimmer h-3.5 w-20 rounded" />
-          <div className="skeleton-shimmer h-3.5 w-32 rounded flex-1" />
-          <div className="skeleton-shimmer h-3.5 w-16 rounded" />
-          <div className="skeleton-shimmer h-3.5 w-20 rounded" />
-          <div className="skeleton-shimmer h-3.5 w-16 rounded" />
-        </div>
-
-        {/* Table rows */}
-        <div className="px-4">
-          {Array.from({ length: rows }).map((_, rowIdx) => (
-            <div
-              key={rowIdx}
-              className="flex gap-4 py-2.5 border-b border-skeleton-border/12"
-            >
-              <div className="skeleton-shimmer h-3.5 w-20 rounded" style={{ animationDelay: `${rowIdx * 0.1}s` }} />
-              <div className="skeleton-shimmer h-3.5 w-32 rounded flex-1" style={{ animationDelay: `${rowIdx * 0.1 + 0.05}s` }} />
-              <div className="skeleton-shimmer h-3.5 w-16 rounded" style={{ animationDelay: `${rowIdx * 0.1 + 0.1}s` }} />
-              <div className="skeleton-shimmer h-3.5 w-20 rounded" style={{ animationDelay: `${rowIdx * 0.1 + 0.15}s` }} />
-              <div className="skeleton-shimmer h-3.5 w-16 rounded" style={{ animationDelay: `${rowIdx * 0.1 + 0.2}s` }} />
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <SkeletonFooter />
-    </div>
-  );
-}
-
-// Map skeleton - Singapore outline with district markers
-function MapSkeleton({ height, className }) {
-  return (
-    <div className={className} style={{ height }}>
-      {/* Map header with filter placeholders */}
-      <div className="px-4 py-3 border-b border-skeleton-border/25 shrink-0">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="skeleton-shimmer h-5 w-40 rounded" />
-            <div className="skeleton-shimmer h-3 w-28 rounded mt-2" />
-          </div>
-          <div className="flex gap-2">
-            <div className="skeleton-shimmer h-8 w-20 rounded" />
-            <div className="skeleton-shimmer h-8 w-20 rounded" />
-            <div className="skeleton-shimmer h-8 w-20 rounded" />
-          </div>
-        </div>
-      </div>
-
-      {/* Map area */}
-      <div className="flex-1 relative bg-white" style={{ height: height - 100 }}>
-        <svg
-          className="w-full h-full p-6"
-          viewBox="0 0 400 280"
-          preserveAspectRatio="xMidYMid meet"
-        >
-          {/* Singapore island shape */}
-          <path
-            d="M 80 140
-               Q 90 100 130 85
-               Q 180 70 230 75
-               Q 280 80 320 95
-               Q 350 115 355 145
-               Q 350 175 320 195
-               Q 280 215 230 220
-               Q 180 225 130 215
-               Q 90 200 80 170
-               Q 75 155 80 140"
-            fill="url(#mapGradientSkeleton)"
-            stroke="#d4d0c8"
-            strokeWidth="1.5"
-            className="skeleton-map-shape"
-          />
-
-          {/* District region outlines */}
-          <path
-            d="M 180 90 L 180 200 M 260 85 L 260 210"
-            stroke="#d4d0c8"
+    <svg viewBox="0 0 400 200" className="w-full h-full" fill="none">
+      {/* Row labels */}
+      {[30, 70, 110, 150].map((y) => (
+        <rect key={y} x="5" y={y} width="28" height="10" rx="2" fill={BLOCK} />
+      ))}
+      {/* Grid cells */}
+      {[0, 1, 2, 3].map((row) =>
+        [0, 1, 2, 3, 4, 5, 6].map((col) => (
+          <rect
+            key={`${row}-${col}`}
+            x={42 + col * 50}
+            y={20 + row * 42}
+            width="46"
+            height="38"
+            stroke={STROKE}
             strokeWidth="1"
-            strokeOpacity="0.25"
-            strokeDasharray="4 4"
+            fill="none"
           />
+        ))
+      )}
+    </svg>
+  );
+}
 
-          {/* District markers */}
-          {[
-            [120, 145], [150, 120], [180, 130], [210, 115],
-            [240, 125], [270, 135], [300, 150], [150, 165],
-            [200, 155], [250, 160], [290, 175], [180, 185]
-          ].map(([x, y], i) => (
-            <g key={i}>
-              <circle
-                cx={x}
-                cy={y}
-                r="14"
-                className="skeleton-shimmer"
-                style={{ animationDelay: `${i * 0.12}s` }}
-              />
-              <rect
-                x={x - 6}
-                y={y - 4}
-                width="12"
-                height="8"
-                rx="2"
-                fill="white"
-                fillOpacity="0.6"
-              />
-            </g>
-          ))}
-
-          <defs>
-            <linearGradient id="mapGradientSkeleton" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#f0ebe3" stopOpacity="0.5">
-                <animate attributeName="stop-opacity" values="0.3;0.6;0.3" dur="3.5s" repeatCount="indefinite" />
-              </stop>
-              <stop offset="50%" stopColor="#e8e2d8" stopOpacity="0.4">
-                <animate attributeName="stop-opacity" values="0.25;0.5;0.25" dur="3.5s" repeatCount="indefinite" />
-              </stop>
-              <stop offset="100%" stopColor="#d4d0c8" stopOpacity="0.3">
-                <animate attributeName="stop-opacity" values="0.15;0.4;0.15" dur="3.5s" repeatCount="indefinite" />
-              </stop>
-            </linearGradient>
-          </defs>
-        </svg>
-
-        {/* Legend placeholder */}
-        <div className="absolute bottom-4 right-4 bg-white/90 rounded-lg p-3 border border-skeleton-border/20">
-          <div className="skeleton-shimmer h-3 w-16 rounded mb-2" />
-          <div className="flex items-center gap-1">
-            {[0, 1, 2, 3, 4].map((i) => (
-              <div
-                key={i}
-                className="skeleton-shimmer h-3 w-6 rounded"
-                style={{ animationDelay: `${i * 0.1}s` }}
-              />
-            ))}
-          </div>
-        </div>
+// ============================================
+// TABLE
+// ============================================
+function TableSkeleton() {
+  return (
+    <div className="w-full h-full flex flex-col border border-gray-200 overflow-hidden">
+      {/* Header */}
+      <div className="h-10 bg-gray-50 border-b border-gray-200 flex items-center px-4 gap-6 shrink-0">
+        <div className="h-3 w-16 bg-gray-200 rounded" />
+        <div className="h-3 w-24 bg-gray-200 rounded" />
+        <div className="h-3 flex-1 bg-gray-100 rounded" />
       </div>
-
-      <SkeletonFooter />
+      {/* Rows */}
+      <div className="flex-1 flex flex-col">
+        {[0, 1, 2, 3, 4].map((i) => (
+          <div key={i} className="flex-1 border-b border-gray-100 flex items-center px-4 gap-6 last:border-0">
+            <div className="h-2 w-16 bg-gray-100 rounded" />
+            <div className="h-2 w-24 bg-gray-100 rounded" />
+            <div className="h-2 flex-1 bg-gray-50 rounded" />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
 
-// Default skeleton - simple card with content area
-function DefaultSkeleton({ height, className }) {
+// ============================================
+// MAIN COMPONENT
+// ============================================
+export function ChartSkeleton({ type = 'default', skeleton, height = 300, className = '' }) {
+  const skeletonType = type || skeleton || 'default';
+
+  const SkeletonMap = {
+    line: LineSkeleton,
+    bar: BarSkeleton,
+    histogram: BarSkeleton,
+    pie: PieSkeleton,
+    bead: BeadSkeleton,
+    map: MapSkeleton,
+    grid: GridSkeleton,
+    table: TableSkeleton,
+    default: LineSkeleton,
+  };
+
+  const SkeletonComponent = SkeletonMap[skeletonType] || LineSkeleton;
+
   return (
-    <div className={className} style={{ height }}>
-      <SkeletonHeader />
-
-      <div className="flex-1 p-4 flex items-center justify-center">
-        <div className="skeleton-shimmer w-3/4 h-3/4 rounded-lg" />
-      </div>
-
-      <SkeletonFooter />
+    <div
+      className={`w-full ${className}`}
+      style={{
+        height,
+        minHeight: 150,
+        backgroundColor: BG, // Prevents white flash
+      }}
+      role="status"
+      aria-label="Loading"
+    >
+      <SkeletonComponent />
     </div>
   );
 }

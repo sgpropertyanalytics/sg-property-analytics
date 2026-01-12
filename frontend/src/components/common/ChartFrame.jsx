@@ -1,24 +1,25 @@
 import React from 'react';
 import { ChartSkeleton } from './ChartSkeleton';
 import { ErrorState } from './ErrorState';
-import { FrostOverlay } from './loading';
+import { TechOverlay } from './loading';
 import { getQueryErrorMessage } from './QueryState';
 import { useAppReadyOptional } from '../../context/AppReadyContext';
 
 /**
- * ChartFrame - Unified wrapper for chart loading states with Frost Overlay pattern
+ * ChartFrame - Unified wrapper for chart loading states with Schematic pattern
  *
- * Uses glassmorphism frost overlay for loading states instead of skeleton placeholders.
- * Provides smooth de-blur transitions when data arrives.
+ * Design Philosophy: "Wireframe & Scan" (Analyst Aesthetic)
+ * - Initial load: Schematic wireframe skeleton with scanner animation
+ * - Refreshing: Tech overlay with calibration bars (data visible underneath)
  *
  * Status-based rendering:
  * - idle: Placeholder (user disabled query)
- * - pending/loading: Frost overlay with spinner (initial load)
- * - refreshing: Light frost with progress bar (has prior data)
+ * - pending/loading: Schematic skeleton (wireframe blueprint)
+ * - refreshing: Tech overlay with progress bar (has prior data)
  * - success: Chart content (or empty state if data is empty)
  * - error: Error state
  *
- * Boot gating: isBootPending takes priority (frost overlay during app boot)
+ * Boot gating: isBootPending takes priority (schematic skeleton during app boot)
  *
  * @param {string} status - Query status from useQuery: 'idle'|'pending'|'loading'|'refreshing'|'success'|'error'
  * @param {boolean} loading - Legacy: True on initial data load (fallback if status not provided)
@@ -29,8 +30,7 @@ import { useAppReadyOptional } from '../../context/AppReadyContext';
  * @param {Error} error - Error object if request failed
  * @param {Function} onRetry - Callback for retry button
  * @param {boolean} empty - True if data is empty after successful load
- * @param {string} skeleton - Skeleton type (kept for backward compat, ignored in frost mode)
- * @param {boolean} useSkeleton - Force legacy skeleton mode instead of frost overlay
+ * @param {string} skeleton - Skeleton type: 'bar'|'line'|'pie'|'grid'|'table'|'map'|'default'
  * @param {number} height - Fixed height for overlay and chart container
  * @param {number} staggerIndex - Cascade delay index for waterfall reveal (0=first, 1=+50ms, etc.)
  * @param {React.ReactNode} children - Chart content to render
@@ -45,8 +45,7 @@ export const ChartFrame = React.memo(function ChartFrame({
   error,
   onRetry,
   empty,
-  skeleton,
-  useSkeleton = false, // Set to true to use legacy skeleton mode
+  skeleton = 'default', // Schematic skeleton type
   height = 300,
   staggerIndex = 0, // Cascade delay index for waterfall reveal
   children,
@@ -59,12 +58,9 @@ export const ChartFrame = React.memo(function ChartFrame({
   // Boot pending if explicit prop OR context says boot isn't complete
   const isBootPending = isBootPendingProp || !publicReady;
 
-  // === BOOT PENDING: Show frost overlay (or skeleton if useSkeleton) ===
+  // === BOOT PENDING: Show schematic skeleton ===
   if (isBootPending) {
-    if (useSkeleton && skeleton) {
-      return <ChartSkeleton type={skeleton} height={height} />;
-    }
-    return <FrostOverlay height={height} showSpinner showProgress staggerIndex={staggerIndex} />;
+    return <ChartSkeleton type={skeleton} height={height} />;
   }
 
   // === STATUS-BASED RENDERING (preferred) ===
@@ -74,7 +70,7 @@ export const ChartFrame = React.memo(function ChartFrame({
         // Disabled by user (not boot pending) - show neutral placeholder
         return (
           <div
-            className="flex items-center justify-center text-sm text-brand-blue"
+            className="flex items-center justify-center text-sm text-brand-blue font-mono uppercase tracking-wider"
             style={{ minHeight: height }}
           >
             Select filters to load data.
@@ -83,82 +79,79 @@ export const ChartFrame = React.memo(function ChartFrame({
 
       case 'pending':
       case 'loading':
-        // Show frost overlay during initial load (or skeleton if useSkeleton)
-        if (useSkeleton && skeleton) {
-          return <ChartSkeleton type={skeleton} height={height} />;
-        }
-        return <FrostOverlay height={height} showSpinner showProgress staggerIndex={staggerIndex} />;
+        // Show schematic skeleton during initial load (wireframe blueprint)
+        return <ChartSkeleton type={skeleton} height={height} />;
 
       case 'error':
         return <ErrorState message={getQueryErrorMessage(error)} onRetry={onRetry} />;
 
       case 'refreshing':
-        // Safety check: If somehow refreshing with no data, show frost overlay
+        // Safety check: If somehow refreshing with no data, show skeleton
         if (empty) {
-          if (useSkeleton && skeleton) {
-            return <ChartSkeleton type={skeleton} height={height} />;
-          }
-          return <FrostOverlay height={height} showSpinner showProgress staggerIndex={staggerIndex} />;
+          return <ChartSkeleton type={skeleton} height={height} />;
         }
-        // Has prior data, fetching update - show light frost overlay with content visible
+        // Has prior data, fetching update - show tech overlay with content visible
         return (
-          <FrostOverlay
+          <TechOverlay
             visible
             height={height}
-            showSpinner={false}
+            showSpinner
             showProgress
             isRefreshing
             staggerIndex={staggerIndex}
+            message="UPDATING"
           >
             {children}
-          </FrostOverlay>
+          </TechOverlay>
         );
 
       case 'success':
         // ONLY show empty state when status === 'success' AND data is empty
         if (empty) {
-          // If actively filtering, show light frost overlay on empty state
+          // If actively filtering, show tech overlay on empty state
           if (isFiltering) {
             return (
-              <FrostOverlay
+              <TechOverlay
                 visible
                 height={height}
                 showSpinner={false}
                 showProgress
                 isRefreshing
                 staggerIndex={staggerIndex}
+                message="FILTERING"
               >
                 <div
-                  className="flex items-center justify-center text-sm text-brand-blue"
+                  className="flex items-center justify-center text-sm text-brand-blue font-mono uppercase tracking-wider"
                   style={{ minHeight: height }}
                 >
                   No data for selected filters.
                 </div>
-              </FrostOverlay>
+              </TechOverlay>
             );
           }
           return (
             <div
-              className="flex items-center justify-center text-sm text-brand-blue"
+              className="flex items-center justify-center text-sm text-brand-blue font-mono uppercase tracking-wider"
               style={{ minHeight: height }}
             >
               No data for selected filters.
             </div>
           );
         }
-        // Success with data - render chart (check isFiltering for light frost overlay)
+        // Success with data - render chart (check isFiltering for tech overlay)
         if (isFiltering) {
           return (
-            <FrostOverlay
+            <TechOverlay
               visible
               height={height}
               showSpinner={false}
               showProgress
               isRefreshing
               staggerIndex={staggerIndex}
+              message="FILTERING"
             >
               {children}
-            </FrostOverlay>
+            </TechOverlay>
           );
         }
         return (
@@ -179,18 +172,12 @@ export const ChartFrame = React.memo(function ChartFrame({
 
   // Pending state (from isPending prop)
   if (isPendingProp) {
-    if (useSkeleton && skeleton) {
-      return <ChartSkeleton type={skeleton} height={height} />;
-    }
-    return <FrostOverlay height={height} showSpinner showProgress staggerIndex={staggerIndex} />;
+    return <ChartSkeleton type={skeleton} height={height} />;
   }
 
   // Initial load
   if (loading && !isUpdating) {
-    if (useSkeleton && skeleton) {
-      return <ChartSkeleton type={skeleton} height={height} />;
-    }
-    return <FrostOverlay height={height} showSpinner showProgress staggerIndex={staggerIndex} />;
+    return <ChartSkeleton type={skeleton} height={height} />;
   }
 
   // Error state
@@ -202,7 +189,7 @@ export const ChartFrame = React.memo(function ChartFrame({
   if (empty && !loading && !isUpdating && !isPendingProp) {
     return (
       <div
-        className="flex items-center justify-center text-sm text-brand-blue"
+        className="flex items-center justify-center text-sm text-brand-blue font-mono uppercase tracking-wider"
         style={{ minHeight: height }}
       >
         No data for selected filters.
@@ -210,19 +197,20 @@ export const ChartFrame = React.memo(function ChartFrame({
     );
   }
 
-  // Success state with optional updating overlay (frost style)
+  // Success state with optional updating overlay (tech style)
   if (isUpdating) {
     return (
-      <FrostOverlay
+      <TechOverlay
         visible
         height={height}
         showSpinner={false}
         showProgress
         isRefreshing
         staggerIndex={staggerIndex}
+        message="UPDATING"
       >
         {children}
-      </FrostOverlay>
+      </TechOverlay>
     );
   }
 

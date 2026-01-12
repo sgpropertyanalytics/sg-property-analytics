@@ -159,7 +159,8 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                 <MultiSelectDropdown
                   options={(filterOptions.districtsRaw || []).map(d => {
                     const areaName = DISTRICT_NAMES[d];
-                    const shortName = areaName ? areaName.split(',')[0].substring(0, 12) : d;
+                    // Take first location name (split by " / ")
+                    const shortName = areaName ? areaName.split(' / ')[0] : d;
                     return {
                       value: d,
                       label: areaName ? `${d} (${shortName})` : d
@@ -311,7 +312,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
               <MultiSelectDropdown
                 options={(filterOptions.districtsRaw || []).map(d => {
                   const areaName = DISTRICT_NAMES[d];
-                  const shortName = areaName ? areaName.split(',')[0].substring(0, 18) : d;
+                  const shortName = areaName ? areaName.split(' / ')[0] : d;
                   return {
                     value: d,
                     label: areaName ? `${d} (${shortName})` : d
@@ -591,7 +592,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
             <MultiSelectDropdown
               options={(filterOptions.districtsRaw || []).map(d => {
                 const areaName = DISTRICT_NAMES[d];
-                const shortName = areaName ? areaName.split(',')[0].substring(0, 18) : d;
+                const shortName = areaName ? areaName.split(' / ')[0] : d;
                 return {
                   value: d,
                   label: areaName ? `${d} (${shortName})` : d
@@ -875,8 +876,8 @@ function MultiSelectDropdown({ options, selected, onChange, placeholder, searcha
     : `${compact ? 'min-w-[140px]' : 'w-full'} min-w-0 px-3 py-2.5 min-h-[44px] text-sm border border-stone-400 bg-transparent text-left flex items-center justify-between focus:outline-none focus:border-gray-900`;
 
   const dropdownClasses = segmentedStyle
-    ? `absolute z-[100] w-64 mt-1 bg-white border border-gray-900 shadow-lg`
-    : `absolute z-[100] ${compact ? 'w-64' : 'w-full'} mt-1 bg-white border border-gray-900 shadow-lg`;
+    ? `absolute z-[100] left-0 w-56 mt-1 bg-white border border-gray-900 shadow-lg`
+    : `absolute z-[100] ${compact ? 'w-48' : 'w-full'} mt-1 bg-white border border-gray-900 shadow-lg`;
 
   return (
     <div className={`relative multi-select-dropdown ${compact ? '' : 'w-full'}`}>
