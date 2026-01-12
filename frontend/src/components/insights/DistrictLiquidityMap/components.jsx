@@ -140,103 +140,134 @@ const TIER_HEADER_COLORS = {
 // Orthogonal (right-angle) design for technical/industrial look
 // =============================================================================
 
-export function LeaderLine({ startX, startY, endX, endY, color = '#334155' }) {
-  // Create orthogonal path with right-angle turns
-  // Pattern: horizontal from district -> vertical drop -> horizontal to card
-  const midX = endX + 30; // Vertical segment position (near the card)
-  const midY = startY; // First turn at district's Y level
+export function LeaderLine({ startX, startY, endX, endY }) {
+  // startX/Y = Card header (right edge)
+  // endX/Y = District center (target)
 
-  // Path: start -> horizontal to midX -> vertical to endY -> horizontal to card
-  const pathD = `M ${startX} ${startY} L ${midX} ${midY} L ${midX} ${endY} L ${endX} ${endY}`;
+  // Dark blue color matching the active liquidity tab (slate-800)
+  const color = '#1e293b';
+  const accentColor = '#38bdf8'; // Sky blue for pulse
+
+  // GUTTER ROUTING: Route through a channel immediately next to the card
+  const GUTTER_OFFSET = 40; // How far from card before turning
+  const CORNER_RADIUS = 12; // Rounded corner radius
+
+  // The turn happens in the "gutter" - fixed distance from card edge
+  const turnX = startX + GUTTER_OFFSET;
+
+  // Build path with rounded corners using Q (quadratic bezier)
+  // Pattern: Card Header -> Right to Gutter -> Vertical to District Y -> Right to District
+  const pathD = `
+    M ${startX} ${startY}
+    L ${turnX - CORNER_RADIUS} ${startY}
+    Q ${turnX} ${startY} ${turnX} ${startY < endY ? startY + CORNER_RADIUS : startY - CORNER_RADIUS}
+    L ${turnX} ${endY > startY ? endY - CORNER_RADIUS : endY + CORNER_RADIUS}
+    Q ${turnX} ${endY} ${turnX + CORNER_RADIUS} ${endY}
+    L ${endX} ${endY}
+  `;
 
   return (
     <motion.svg
       className="absolute inset-0 pointer-events-none z-40 overflow-visible"
       style={{ width: '100%', height: '100%' }}
     >
-      {/* Subtle glow/shadow for depth */}
+      <defs>
+        {/* Glow filter */}
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+
+      {/* 1. BASE LINE (Dim, Industrial) */}
       <motion.path
         d={pathD}
-        stroke={color}
-        strokeWidth="4"
-        strokeOpacity="0.1"
         fill="none"
-        strokeLinejoin="round"
-        initial={{ pathLength: 0, opacity: 0 }}
-        animate={{ pathLength: 1, opacity: 1 }}
-        exit={{ pathLength: 0, opacity: 0 }}
-        transition={{ duration: 0.3, ease: 'easeOut' }}
-      />
-      {/* Main orthogonal line */}
-      <motion.path
-        d={pathD}
         stroke={color}
         strokeWidth="1.5"
+        strokeOpacity="0.4"
+        strokeLinecap="round"
+        initial={{ pathLength: 0 }}
+        animate={{ pathLength: 1 }}
+        exit={{ pathLength: 0 }}
+        transition={{ duration: 0.4, ease: 'easeOut' }}
+      />
+
+      {/* 2. TRAVELING DATA PACKET (Bright Pulse) */}
+      <motion.path
+        d={pathD}
         fill="none"
-        strokeLinejoin="round"
-        initial={{ pathLength: 0, opacity: 0 }}
-        animate={{ pathLength: 1, opacity: 1 }}
-        exit={{ pathLength: 0, opacity: 0 }}
-        transition={{ duration: 0.3, ease: 'easeOut' }}
+        stroke={accentColor}
+        strokeWidth="2"
+        strokeLinecap="round"
+        filter="url(#glow)"
+        strokeDasharray="20 1000"
+        initial={{ strokeDashoffset: 0 }}
+        animate={{ strokeDashoffset: -1000 }}
+        transition={{
+          duration: 3,
+          ease: 'linear',
+          repeat: Infinity,
+          repeatDelay: 0.5
+        }}
       />
-      {/* Corner squares at the turns for technical look */}
-      <motion.rect
-        x={midX - 3}
-        y={midY - 3}
-        width="6"
-        height="6"
+
+      {/* 3. MAP ANCHOR (Target Reticle) */}
+      <g>
+        {/* Pulsing outer ring */}
+        <motion.circle
+          cx={startX}
+          cy={startY}
+          r="6"
+          stroke={color}
+          strokeWidth="1"
+          fill="none"
+          initial={{ scale: 1, opacity: 0.6 }}
+          animate={{ scale: [1, 1.8, 1], opacity: [0.6, 0, 0.6] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        />
+        {/* Static outer ring */}
+        <circle
+          cx={startX}
+          cy={startY}
+          r="5"
+          stroke={color}
+          strokeWidth="1.5"
+          fill="none"
+          opacity="0.7"
+        />
+        {/* Inner dot */}
+        <circle
+          cx={startX}
+          cy={startY}
+          r="2"
+          fill={color}
+        />
+      </g>
+
+      {/* 4. CARD ANCHOR (Connection Point) */}
+      <motion.circle
+        cx={endX}
+        cy={endY}
+        r="4"
         fill={color}
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0, opacity: 0 }}
-        transition={{ duration: 0.15, delay: 0.1 }}
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        exit={{ scale: 0 }}
+        transition={{ duration: 0.2, delay: 0.3 }}
       />
-      <motion.rect
-        x={midX - 3}
-        y={endY - 3}
-        width="6"
-        height="6"
-        fill={color}
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0, opacity: 0 }}
-        transition={{ duration: 0.15, delay: 0.15 }}
-      />
-      {/* Anchor square at district center */}
-      <motion.rect
-        x={startX - 4}
-        y={startY - 4}
-        width="8"
-        height="8"
-        fill={color}
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0, opacity: 0 }}
-        transition={{ duration: 0.15 }}
-      />
-      {/* Inner white square for contrast */}
-      <motion.rect
-        x={startX - 2}
-        y={startY - 2}
-        width="4"
-        height="4"
+      <motion.circle
+        cx={endX}
+        cy={endY}
+        r="2"
         fill="white"
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0, opacity: 0 }}
-        transition={{ duration: 0.15, delay: 0.05 }}
-      />
-      {/* Terminal square at card connection */}
-      <motion.rect
-        x={endX - 3}
-        y={endY - 3}
-        width="6"
-        height="6"
-        fill={color}
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0, opacity: 0 }}
-        transition={{ duration: 0.15, delay: 0.2 }}
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        exit={{ scale: 0 }}
+        transition={{ duration: 0.2, delay: 0.35 }}
       />
     </motion.svg>
   );
@@ -262,7 +293,7 @@ export function HoverCard({ district, data, position }) {
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95, y: 10 }}
       transition={{ duration: 0.2, ease: 'easeOut' }}
-      className="absolute z-50 pointer-events-none top-[290px] left-2 sm:left-4"
+      className="absolute z-50 pointer-events-none top-[152px] sm:top-[240px] left-2 sm:left-4"
     >
       {/* Technical card with tier-colored border */}
       <div

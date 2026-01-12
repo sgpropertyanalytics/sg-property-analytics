@@ -196,24 +196,27 @@ function DistrictLiquidityMapBase({
       districtY = mapHeight / 2 - (centroid.lat - viewState.latitude) * scale;
     }
 
-    // Fixed card position: below the legend (same left padding as legend: left-2 sm:left-4)
-    // Card uses CSS classes for responsive positioning, we use sm breakpoint (16px) for line calc
+    // Fixed card position: below the legend with small gap
+    // Card CSS: top-[152px] sm:top-[240px] left-2 sm:left-4
     const cardWidth = 220;
     const cardLeft = 16; // Matches sm:left-4 (16px)
-    const cardTop = 290; // Just below the legend
+    const cardTop = 240; // Matches sm:top-[240px]
+    const headerHeight = 36; // Height of the tier-colored header
 
-    // Leader line: connect district to the right edge of the card
-    // Using orthogonal (right-angle) path for technical look
-    const lineEndX = cardLeft + cardWidth; // Right edge of card (236px)
-    const lineEndY = cardTop + 40; // Near the top of the card (header area)
+    // Leader line: start = card header, end = district
+    // This creates cleaner "master-detail" relationship
+    const cardRightEdge = cardLeft + cardWidth; // Right edge of card (236px)
+    const cardHeaderMiddle = cardTop + headerHeight / 2; // Middle of header (~258px)
 
     return {
       cardPosition: null, // Card uses CSS classes now
       lineCoords: {
-        startX: districtX,
-        startY: districtY,
-        endX: lineEndX,
-        endY: lineEndY,
+        // START = Card header (where line originates)
+        startX: cardRightEdge,
+        startY: cardHeaderMiddle,
+        // END = District center (where line terminates)
+        endX: districtX,
+        endY: districtY,
       },
     };
   }, [hoveredDistrict, viewState]);
@@ -418,7 +421,6 @@ function DistrictLiquidityMapBase({
               startY={lineCoords.startY}
               endX={lineCoords.endX}
               endY={lineCoords.endY}
-              color={leaderLineColor}
             />
           )}
         </AnimatePresence>
