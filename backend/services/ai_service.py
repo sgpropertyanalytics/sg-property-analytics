@@ -201,6 +201,29 @@ Median YoY growth is ~6%. Anything above 10% is above-average; below 4% is below
 | 30-40 years | Significant decay (~30-40% discount) | CPF restricted, limited financing |
 | <30 years | Severe decay | Cash buyers only, very limited pool |
 
+**Segment Spread Benchmarks (Data-Validated)**
+
+CCR-RCR Premium (CCR trades above RCR by):
+| Spread | Interpretation |
+|--------|----------------|
+| <19% | Compressed — CCR losing premium, possible value entry |
+| 19-31% | Normal range (median ~25%) |
+| >31% | Wide — CCR premium elevated, watch for reversion |
+
+RCR-OCR Premium (RCR trades above OCR by):
+| Spread | Interpretation |
+|--------|----------------|
+| <23% | Compressed — unusual, OCR catching up |
+| 23-25% | Normal range (median ~24%, very stable) |
+| >25% | Wide — RCR pulling ahead of OCR |
+
+**Segment Liquidity Profiles**
+| Segment | Typical Activity | Buyer Pool | Key Risk |
+|---------|------------------|------------|----------|
+| CCR | Lower (P50=6/yr) | Smaller, foreign-heavy | ABSD policy, longer holds |
+| RCR | Moderate (P50=5/yr) | Balanced, upgraders | Squeezed by CCR/OCR |
+| OCR | Higher (P50=13/yr) | Largest, HDB upgraders | Supply pipeline |
+
 ## Citation Rules (NON-NEGOTIABLE)
 
 1. Policy claims MUST cite with effective date:
