@@ -104,9 +104,11 @@ cd ../backend && pip install -r requirements.txt
 # Navigate to worktree
 cd ~/worktrees/sg-property-analyzer/[branch-name]
 
-# Start development
-cd backend && flask run --port 5002  # Different port!
-cd frontend && npm run dev -- --port 5174  # Different port!
+# Start backend (source .env for DATABASE_URL, DEBUG=True for localhost cookies)
+cd backend && source ../.env && FLASK_DEBUG=True flask run --port 5002
+
+# Start frontend (in separate terminal)
+cd frontend && npm run dev -- --port 5174
 ```
 
 ### Working with This Worktree
@@ -130,7 +132,10 @@ git worktree list
 | `.env` | DATABASE_URL for backend |
 | `frontend/.env` | Firebase config for Google Sign-In |
 
-If sign-in is greyed out or shows "free" tier, these files may be missing.
+**Troubleshooting:**
+- Sign-in greyed out → Missing `frontend/.env`
+- Shows "free" tier → Missing `.env` (wrong database)
+- 401 errors / "Session expired" → Start backend with `FLASK_DEBUG=True` (enables non-secure cookies for localhost)
 
 ### Port Configuration
 
