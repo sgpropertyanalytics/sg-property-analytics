@@ -25,6 +25,7 @@ import { TimeGranularityToggle } from './TimeGranularityToggle';
  * Props:
  * - disabledFilters: Object with filter section keys to disable (blueprint hatch pattern)
  *   { regions, districts, bedrooms, timePresets, timeGrouping }
+ *   When true, the filter is greyed out and non-interactive.
  *   Default: all enabled
  */
 export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, layout = 'sidebar', onClose, disabledFilters = {} }) {
@@ -171,6 +172,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                   placeholder="Districts"
                   compact
                   segmentedStyle
+                  disabled={disabledFilters.districts}
                 />
               </div>
 
@@ -322,6 +324,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
                 onChange={setDistricts}
                 placeholder="All Districts"
                 searchable
+                disabled={disabledFilters.districts}
               />
             </FilterGroup>
           </FilterSection>
@@ -602,6 +605,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
               onChange={setDistricts}
               placeholder="All Districts"
               searchable
+              disabled={disabledFilters.districts}
             />
           </FilterGroup>
         </FilterSection>
@@ -827,7 +831,7 @@ function FilterGroup({ label, children }) {
   );
 }
 
-function MultiSelectDropdown({ options, selected, onChange, placeholder, searchable, compact = false, segmentedStyle = false }) {
+function MultiSelectDropdown({ options, selected, onChange, placeholder, searchable, compact = false, segmentedStyle = false, disabled = false }) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
 
@@ -880,10 +884,11 @@ function MultiSelectDropdown({ options, selected, onChange, placeholder, searcha
     : `absolute z-[100] ${compact ? 'w-48' : 'w-full'} mt-1 bg-white border border-gray-900 shadow-lg`;
 
   return (
-    <div className={`relative multi-select-dropdown ${compact ? '' : 'w-full'}`}>
+    <div className={`relative multi-select-dropdown ${compact ? '' : 'w-full'} ${disabled ? 'filter-group-disabled' : ''}`}>
       <button
         type="button"
-        onClick={(e) => { e.preventDefault(); setIsOpen(!isOpen); }}
+        onClick={(e) => { e.preventDefault(); if (!disabled) setIsOpen(!isOpen); }}
+        disabled={disabled}
         className={buttonClasses}
       >
         <span className={`${selected.length > 0 ? 'text-stone-900' : 'text-stone-500'} truncate min-w-0 flex-shrink`}>

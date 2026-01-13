@@ -9,7 +9,7 @@
  * - Responsive design matching dashboard aesthetic
  */
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Map, { Source, Layer, Marker } from 'react-map-gl/maplibre';
 import { BarChart3, DollarSign } from 'lucide-react';
@@ -29,6 +29,8 @@ import { useZustandFilters } from '../../stores';
 import { SaleType } from '../../schemas/apiContract';
 import { getPercentile } from '../../utils/statistics';
 import { assertKnownVersion } from '../../adapters';
+// Reuse LeaderLine from liquidity map for tethered hover effect
+import { LeaderLine } from './DistrictLiquidityMap/components';
 
 // =============================================================================
 // CONFIGURATION
@@ -454,6 +456,10 @@ function MarketStrategyMapBase({
   const { isPremium, isFreeResolved } = useSubscription();
   const [hoveredDistrict, setHoveredDistrict] = useState(null);
 
+  // Refs for map container and map instance (for tethered hover position calculations)
+  const mapContainerRef = useRef(null);
+  const mapRef = useRef(null);
+
   // Phase 4: Simplified filter access - read values directly from Zustand
   // No buildApiParams abstraction, no debouncedFilterKey (TanStack handles cache keys)
   const { filters } = useZustandFilters();
@@ -529,6 +535,51 @@ function MarketStrategyMapBase({
 
   // Use precomputed district centroids (calculated at module load time)
   const districtCentroids = DISTRICT_CENTROIDS;
+
+  // Calculate screen position of hovered district for tethered callout (same as liquidity map)
+  const lineCoords = useMemo(() => {
+    if (!hoveredDistrict?.district || !mapContainerRef.current) {
+      return null;
+    }
+
+    const centroid = hoveredDistrict.district.centroid;
+    if (!centroid) return null;
+
+    // Get map container bounds
+    const containerRect = mapContainerRef.current.getBoundingClientRect();
+    const mapWidth = containerRect.width;
+    const mapHeight = containerRect.height;
+
+    // Use map's project method for accurate screen coordinates
+    let districtX, districtY;
+    if (mapRef.current) {
+      const projected = mapRef.current.project([centroid.lng, centroid.lat]);
+      districtX = projected.x;
+      districtY = projected.y;
+    } else {
+      // Fallback calculation
+      const scale = Math.pow(2, viewState.zoom) * 256 / 360;
+      districtX = mapWidth / 2 + (centroid.lng - viewState.longitude) * scale * Math.cos(viewState.latitude * Math.PI / 180);
+      districtY = mapHeight / 2 - (centroid.lat - viewState.latitude) * scale;
+    }
+
+    // Fixed card position: matches HoverCard CSS (top-[180px] sm:top-[280px] left-2 sm:left-4)
+    const cardWidth = 165; // Matches sm:w-[165px]
+    const cardLeft = 16; // Matches sm:left-4
+    const cardTop = 280; // Matches sm:top-[280px]
+    const headerHeight = 40; // Approximate header height
+
+    // Leader line: start = card header, end = district
+    const cardRightEdge = cardLeft + cardWidth;
+    const cardHeaderMiddle = cardTop + headerHeight / 2;
+
+    return {
+      startX: cardRightEdge,
+      startY: cardHeaderMiddle,
+      endX: districtX,
+      endY: districtY,
+    };
+  }, [hoveredDistrict, viewState]);
 
   // Region fill color expression
   const fillColorExpression = useMemo(() => {
@@ -608,7 +659,7 @@ function MarketStrategyMapBase({
       </div>
 
       {/* Map container - responsive height based on viewport */}
-      <div className="relative h-[50vh] min-h-[400px] md:h-[60vh] md:min-h-[500px] lg:h-[65vh] lg:min-h-[550px]">
+      <div ref={mapContainerRef} className="relative h-[50vh] min-h-[400px] md:h-[60vh] md:min-h-[500px] lg:h-[65vh] lg:min-h-[550px]">
         {/* Blur overlay for free users */}
         {isFreeResolved && !loading && (
           <div
@@ -655,6 +706,7 @@ function MarketStrategyMapBase({
 
         {/* MapLibre GL Map */}
         <Map
+          ref={mapRef}
           {...viewState}
           onMove={evt => setViewState(evt.viewState)}
           mapStyle={MAP_STYLE}
@@ -724,6 +776,18 @@ function MarketStrategyMapBase({
             );
           })}
         </Map>
+
+        {/* Leader line (tethered callout connector) - reused from liquidity map */}
+        <AnimatePresence>
+          {hoveredDistrict && lineCoords && (
+            <LeaderLine
+              startX={lineCoords.startX}
+              startY={lineCoords.startY}
+              endX={lineCoords.endX}
+              endY={lineCoords.endY}
+            />
+          )}
+        </AnimatePresence>
 
         {/* Hover card - fixed position next to legend */}
         <AnimatePresence>
