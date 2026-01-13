@@ -4,7 +4,7 @@
  * Pure functions for geometry calculations and styling.
  */
 
-import { LIQUIDITY_FILLS } from './constants';
+import { LIQUIDITY_FILLS, LIQUIDITY_BORDERS } from './constants';
 
 // =============================================================================
 // GEOMETRY UTILITIES
@@ -67,6 +67,19 @@ export function getLiquidityFill(score) {
 export function getLiquidityFillDimmed(_score) {
   // Return very faded gray for all non-hovered districts
   return 'rgba(180, 180, 180, 0.25)';
+}
+
+/**
+ * Get border color based on composite liquidity score (0-100).
+ * Used for district polygon borders to indicate liquidity level.
+ */
+export function getLiquidityBorder(score) {
+  if (score === null || score === undefined) return LIQUIDITY_BORDERS.noData;
+  if (score >= 80) return LIQUIDITY_BORDERS.veryHigh;   // Excellent
+  if (score >= 60) return LIQUIDITY_BORDERS.high;       // Good
+  if (score >= 40) return LIQUIDITY_BORDERS.neutral;    // Average
+  if (score >= 20) return LIQUIDITY_BORDERS.low;        // Below Average
+  return LIQUIDITY_BORDERS.veryLow;                     // Poor
 }
 
 /**
