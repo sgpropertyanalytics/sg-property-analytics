@@ -32,6 +32,7 @@ import {
   LIQUIDITY_FILLS,
 } from './constants';
 import { getLiquidityFill, getLiquidityFillDimmed } from './utils';
+import { getRegionForDistrict, REGIONS } from '../../../constants';
 import {
   DistrictLabel,
   HoverCard,
@@ -71,10 +72,15 @@ function DistrictLiquidityMapBase({
     ? filters.timeFilter.value
     : 'Y1';
   const bedroom = filters.bedroomTypes?.join(',') || '';
+  // Region filter (segments) - used for region-based spotlight effect
+  const segments = filters.segments || [];
 
   // For display in child components
   const selectedBed = bedroom || 'all';
   const selectedPeriod = timeframe;
+
+  // Determine if region filter is active (not empty and not all regions selected)
+  const isRegionFilterActive = segments.length > 0 && segments.length < REGIONS.length;
 
   // Lazy-load GeoJSON to reduce initial bundle size (~100KB savings)
   const [geoJSON, setGeoJSON] = useState(null);
@@ -142,6 +148,7 @@ function DistrictLiquidityMapBase({
   const mapRef = useRef(null);
 
   // Dynamic fill color expression based on liquidity (with spotlight dimming)
+  // Supports both hover-based and region-filter-based highlighting
   const fillColorExpression = useMemo(() => {
     const hoveredId = hoveredDistrict?.district?.district;
     const expr = ['case'];
@@ -149,8 +156,18 @@ function DistrictLiquidityMapBase({
     districtData.forEach((d) => {
       if (d.has_data) {
         expr.push(['==', ['get', 'district'], d.district_id]);
-        // If hovering, dim non-hovered districts (spotlight effect)
-        if (hoveredId && d.district_id !== hoveredId) {
+
+        // Determine if this district should be dimmed
+        const districtRegion = getRegionForDistrict(d.district_id);
+        const isInSelectedRegion = !isRegionFilterActive || segments.includes(districtRegion);
+        const isHoveredDistrict = hoveredId === d.district_id;
+
+        // Dimming logic:
+        // 1. If region filter is active and district is NOT in selected region → dim
+        // 2. If hovering and district is NOT the hovered one → dim (within active region)
+        const shouldDim = !isInSelectedRegion || (hoveredId && !isHoveredDistrict);
+
+        if (shouldDim) {
           expr.push(getLiquidityFillDimmed(d.liquidity_metrics?.liquidity_score));
         } else {
           expr.push(getLiquidityFill(d.liquidity_metrics?.liquidity_score));
@@ -161,13 +178,15 @@ function DistrictLiquidityMapBase({
     // If no conditions were added, return literal color (not malformed case expression)
     // MapLibre 'case' requires at least 3 arguments: ['case', condition, result, fallback]
     if (expr.length === 1) {
-      return hoveredId ? getLiquidityFillDimmed(null) : LIQUIDITY_FILLS.noData;
+      const shouldDimDefault = hoveredId || isRegionFilterActive;
+      return shouldDimDefault ? getLiquidityFillDimmed(null) : LIQUIDITY_FILLS.noData;
     }
 
     // Default for districts with no data
-    expr.push(hoveredId ? getLiquidityFillDimmed(null) : LIQUIDITY_FILLS.noData);
+    const shouldDimDefault = hoveredId || isRegionFilterActive;
+    expr.push(shouldDimDefault ? getLiquidityFillDimmed(null) : LIQUIDITY_FILLS.noData);
     return expr;
-  }, [districtData, hoveredDistrict]);
+  }, [districtData, hoveredDistrict, isRegionFilterActive, segments]);
 
   // Calculate screen position of hovered district for tethered callout
   // Card is fixed below the legend, only the leader line moves

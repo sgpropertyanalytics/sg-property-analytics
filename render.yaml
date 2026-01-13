@@ -9,7 +9,14 @@ services:
     region: singapore
     plan: starter
     buildCommand: pip install -r backend/requirements.txt
-    startCommand: cd backend && python -m scripts.run_migrations && gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 180 --graceful-timeout 30
+    # Run migrations ONCE per deploy, before starting web server
+    # Tracks applied migrations in _migrations table (idempotent)
+    releaseCommand: cd backend && python -m scripts.run_migrations
+    # Gunicorn flags for 512MB Starter plan:
+    # --workers 1    : Single worker fits memory budget
+    # --threads 2    : Light concurrency without memory bloat
+    # --timeout 90   : Under Render's ~100s router timeout to avoid 504s
+    startCommand: cd backend && gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 90
     healthCheckPath: /api/health
     envVars:
       - key: PYTHON_VERSION
