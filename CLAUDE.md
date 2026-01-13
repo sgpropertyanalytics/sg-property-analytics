@@ -314,6 +314,57 @@ Use `/review` for comprehensive pre-merge review.
 | "Option B: Custom code, no dependency" | Dependency fear is outdated |
 | Proposing custom code without LIBRARY CHECK | Auto-reject |
 
+### Anti-Pattern: Accidental Complexity from Patch-Driven Design
+
+Avoid fixing issues by layering additional conditional logic, retries, or guards
+without re-establishing global invariants.
+
+This codebase has previously suffered from:
+- Accidental complexity
+- Patch-driven architecture
+- Implicit state machines
+- Temporal coupling
+- Shotgun surgery
+
+Symptoms:
+- Whack-a-mole bug fixing
+- Non-deterministic behavior
+- Increasing number of local safeguards
+- Global behavior becoming harder to reason about
+
+Correct response:
+- Step back and re-establish structural invariants
+- Make state transitions explicit
+- Consolidate mutation points
+- Prefer architectural fixes over local patches
+
+Reviewer Instruction (MANDATORY):
+
+Claude must NOT blindly apply patch fixes or band-aid solutions.
+
+When Claude detects any of the symptoms above, or when a proposed fix:
+- adds new conditionals, retries, guards, flags, or timeouts
+- introduces additional mutation points for shared state
+- fixes a local symptom without addressing a global invariant
+- increases complexity or coupling across components
+
+Claude MUST:
+1. Pause local patching
+2. Explicitly call out the risk of accidental complexity
+3. Step back to analyze the system at a structural level
+4. Propose a refactoring or architectural simplification that:
+   - reduces the number of mutation points
+   - makes implicit state transitions explicit
+   - restores or enforces global invariants
+   - simplifies reasoning across the entire system
+
+Local patches are acceptable ONLY if:
+- they reduce total complexity, or
+- they are paired with a clear plan to consolidate and simplify afterward.
+
+If a fix increases complexity without reducing mutation points,
+Claude must reject it and propose a cleaner alternative.
+
 ---
 
 ## File Structure

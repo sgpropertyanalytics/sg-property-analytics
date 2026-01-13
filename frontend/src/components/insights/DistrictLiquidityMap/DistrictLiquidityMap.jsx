@@ -417,14 +417,25 @@ function DistrictLiquidityMapBase({
                 'fill-opacity': 1,
               }}
             />
+            {/* District border glow - wider, semi-transparent for glow effect */}
+            <Layer
+              id="district-borders-glow"
+              type="line"
+              paint={{
+                'line-color': borderColorExpression,
+                'line-width': 6,
+                'line-opacity': 0.3,
+                'line-blur': 3,
+              }}
+            />
             {/* District borders - colored by liquidity score */}
             <Layer
               id="district-borders"
               type="line"
               paint={{
                 'line-color': borderColorExpression,
-                'line-width': 2.5,
-                'line-opacity': 1,
+                'line-width': 1.5,
+                'line-opacity': 0.9,
               }}
             />
           </Source>
@@ -514,10 +525,10 @@ function DistrictLiquidityMapBase({
 
             <div className="h-px bg-slate-200 my-1.5 sm:my-2" />
 
-            {/* Liquidity Score (border colors) with methodology tooltip */}
+            {/* Liquidity Score with methodology tooltip */}
             <div className="flex items-center justify-between mb-1 sm:mb-1.5">
               <p className="text-[8px] sm:text-[9px] text-slate-500 uppercase tracking-wider font-semibold">
-                Liquidity (Border)
+                Volume Activity
               </p>
               <div className="group relative">
                 <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-slate-100 flex items-center justify-center cursor-help hover:bg-slate-200 transition-colors">
@@ -552,42 +563,17 @@ function DistrictLiquidityMapBase({
                 </div>
               </div>
             </div>
-            <div className="space-y-1 sm:space-y-1.5">
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <div className="w-3 h-2 sm:w-4 sm:h-3 rounded shrink-0 border-2" style={{ borderColor: LIQUIDITY_BORDERS.veryHigh, backgroundColor: 'transparent' }} />
-                <span className="text-[9px] sm:text-[10px] text-slate-800">
-                  <span className="sm:hidden">80+</span>
-                  <span className="hidden sm:inline">Excellent (≥80)</span>
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <div className="w-3 h-2 sm:w-4 sm:h-3 rounded shrink-0 border-2" style={{ borderColor: LIQUIDITY_BORDERS.high, backgroundColor: 'transparent' }} />
-                <span className="text-[9px] sm:text-[10px] text-slate-800">
-                  <span className="sm:hidden">60-79</span>
-                  <span className="hidden sm:inline">Good (60-79)</span>
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <div className="w-3 h-2 sm:w-4 sm:h-3 rounded shrink-0 border-2" style={{ borderColor: LIQUIDITY_BORDERS.neutral, backgroundColor: 'transparent' }} />
-                <span className="text-[9px] sm:text-[10px] text-slate-800">
-                  <span className="sm:hidden">40-59</span>
-                  <span className="hidden sm:inline">Average (40-59)</span>
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <div className="w-3 h-2 sm:w-4 sm:h-3 rounded shrink-0 border-2" style={{ borderColor: LIQUIDITY_BORDERS.low, backgroundColor: 'transparent' }} />
-                <span className="text-[9px] sm:text-[10px] text-slate-800">
-                  <span className="sm:hidden">20-39</span>
-                  <span className="hidden sm:inline">Below Avg (20-39)</span>
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <div className="w-3 h-2 sm:w-4 sm:h-3 rounded shrink-0 border-2" style={{ borderColor: LIQUIDITY_BORDERS.veryLow, backgroundColor: 'transparent' }} />
-                <span className="text-[9px] sm:text-[10px] text-slate-800">
-                  <span className="sm:hidden">&lt;20</span>
-                  <span className="hidden sm:inline">Poor (&lt;20)</span>
-                </span>
-              </div>
+            {/* Gradient heatbar from High to Low liquidity */}
+            <div
+              className="h-2.5 rounded-sm"
+              style={{
+                background: `linear-gradient(to right, ${LIQUIDITY_BORDERS.veryHigh}, ${LIQUIDITY_BORDERS.high}, ${LIQUIDITY_BORDERS.neutral}, ${LIQUIDITY_BORDERS.low}, ${LIQUIDITY_BORDERS.veryLow})`,
+                width: '100%'
+              }}
+            />
+            <div className="flex justify-between mt-1">
+              <span className="text-[8px] text-slate-500">High</span>
+              <span className="text-[8px] text-slate-500">Low</span>
             </div>
 
             {/* Stats summary - hidden on mobile */}
