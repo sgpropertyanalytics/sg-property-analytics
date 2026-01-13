@@ -1,0 +1,41 @@
+#!/bin/bash
+#
+# Post-merge hook: Warns about merge commits that could cause reverts
+#
+# This hook warns when:
+#   1. You merge main into your feature branch (prefer rebase)
+#
+# Install with: ./scripts/hooks/install.sh
+#
+
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+current_branch=$(git symbolic-ref HEAD 2>/dev/null | sed -e 's,.*/\(.*\),\1,')
+
+# If we're not on main and just merged, warn about potential issues
+if [ "$current_branch" != "main" ]; then
+    # Check if the merge was from main
+    merge_commit=$(git rev-parse HEAD)
+    parents=$(git log -1 --format='%P' "$merge_commit")
+    parent_count=$(echo "$parents" | wc -w | tr -d ' ')
+
+    if [ "$parent_count" -gt 1 ]; then
+        echo ""
+        echo -e "${YELLOW}=================================================${NC}"
+        echo -e "${YELLOW}  WARNING: Merge commit detected${NC}"
+        echo -e "${YELLOW}=================================================${NC}"
+        echo ""
+        echo "  You just created a merge commit on branch '$current_branch'."
+        echo ""
+        echo "  Consider using rebase instead to keep history clean:"
+        echo "    git reset --hard HEAD^"
+        echo "    git fetch origin main"
+        echo "    git rebase origin/main"
+        echo ""
+        echo "  Merge commits can accidentally revert changes from main."
+        echo ""
+    fi
+fi
+
+exit 0

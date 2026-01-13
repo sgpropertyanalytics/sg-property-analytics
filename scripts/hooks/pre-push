@@ -1,0 +1,57 @@
+#!/bin/bash
+#
+# Pre-push hook: Enforces PR-only workflow for main branch
+#
+# This hook blocks:
+#   1. Direct pushes to main (must go through PR)
+#   2. Force pushes to main
+#
+# Install with: ./scripts/hooks/install.sh
+# Bypass with:  git push --no-verify (use with extreme caution!)
+#
+
+set -e
+
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+protected_branch='main'
+current_branch=$(git symbolic-ref HEAD 2>/dev/null | sed -e 's,.*/\(.*\),\1,')
+
+# Block direct pushes to main
+if [ "$current_branch" = "$protected_branch" ]; then
+    echo ""
+    echo -e "${RED}=================================================${NC}"
+    echo -e "${RED}  BLOCKED: Direct push to main not allowed${NC}"
+    echo -e "${RED}=================================================${NC}"
+    echo ""
+    echo "  All changes to main must go through a Pull Request."
+    echo ""
+    echo "  Create a feature branch instead:"
+    echo "    git checkout -b feature/my-change"
+    echo "    git push -u origin feature/my-change"
+    echo "    # Then create PR on GitHub"
+    echo ""
+    exit 1
+fi
+
+# Block force pushes to any branch (extra safety)
+while read local_ref local_sha remote_ref remote_sha; do
+    if [ "$remote_ref" = "refs/heads/main" ]; then
+        # Check if this is a force push (non-fast-forward)
+        if [ "$remote_sha" != "0000000000000000000000000000000000000000" ]; then
+            merge_base=$(git merge-base "$local_sha" "$remote_sha" 2>/dev/null || echo "")
+            if [ "$merge_base" != "$remote_sha" ]; then
+                echo ""
+                echo -e "${RED}=================================================${NC}"
+                echo -e "${RED}  BLOCKED: Force push to main not allowed${NC}"
+                echo -e "${RED}=================================================${NC}"
+                echo ""
+                exit 1
+            fi
+        fi
+    fi
+done
+
+exit 0
