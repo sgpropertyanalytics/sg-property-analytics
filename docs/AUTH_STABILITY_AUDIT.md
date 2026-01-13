@@ -114,49 +114,68 @@ Added `lastFetchSuccessRef` as third layer of protection:
 
 ## Recommended Framework
 
-To prevent future whack-a-mole bugs, implement:
+> **📋 Full Implementation Plan:** [`docs/plans/2026-01-14-auth-single-writer-framework.md`](./plans/2026-01-14-auth-single-writer-framework.md)
 
-### 1. Single-Writer Rule
+To prevent future whack-a-mole bugs, implement 4 invariants:
+
+| # | Invariant | Current Status | Solution |
+|---|-----------|----------------|----------|
+| 1 | **Single-Writer Rule** | ❌ 31 mutation points (token), 24 (subscription) | Replace `useState` with `useReducer` |
+| 2 | **State Machine Table** | ⚠️ Documented, not enforced | Transition validation in reducer |
+| 3 | **Monotonicity Rules** | ⚠️ Comments only | Guard functions in reducer |
+| 4 | **Request Sequencing** | ✅ Implemented | `startRequest()`/`isStale()` |
+
+### The Core Problem
+
 ```
-Only ONE reducer owns each piece of state.
-Everything else emits events, doesn't mutate directly.
+BEFORE: 55 scattered setState() calls, each with own guards
+        └─ Fix A → B breaks → Fix B → C breaks → ...
+
+AFTER:  N event emitters → 1 reducer → state
+        └─ ALL guards in ONE place
+        └─ State machine enforced
+        └─ Monotonicity checked
+        └─ Audit trail automatic
 ```
 
-### 2. State Machine Table (Explicit)
-```
-firebaseUser: null → present
-tokenSync: idle → syncing → established | retrying | failed-auth
-subscription: idle → loading → resolved | degraded
-appReady: depends on above, must have finite path
-```
+### State Machines (To Be Enforced)
 
-### 3. Monotonicity Rules
-```
-- premium cannot be overwritten by unknown
-- timeout fallback to free cannot overwrite resolved server result
-- degraded can only become resolved, not bounce to pending
-```
+**TokenSync:** `IDLE → SYNCING → ESTABLISHED | RETRYING | ERROR`
+- SYNCING must resolve within 8s
+- RETRYING max 2 attempts
+- ERROR is terminal until manual retry
 
-### 4. Request Sequencing
+**Subscription:** `PENDING → LOADING → RESOLVED | DEGRADED`
+- PENDING must resolve within 15s
+- DEGRADED preserves cached tier
+- RESOLVED is stable
+
+### Monotonicity Rules (To Be Enforced)
+
 ```
-Every async operation gets a requestId.
-Only the latest requestId may commit state.
+- premium (server-confirmed) cannot become free via timeout
+- resolved cannot go back to pending
+- degraded can only become resolved, not loading
 ```
 
 ---
 
-## Missing Tests (Anti-Whack-a-Mole)
+## Anti-Whack-a-Mole Tests
 
-These 6 tests would catch future regressions:
+> **✅ COMPLETED (2026-01-14):** Tests added in commit `7c364dd5`
+> **File:** `frontend/src/context/__tests__/authRaceConditions.test.js`
+> **22 test cases total** covering all timing scenarios.
 
-| # | Test Scenario | What It Validates |
-|---|---------------|-------------------|
-| 1 | Retryable 502 during token sync | Must schedule retry, must not deadlock |
-| 2 | Token sync succeeds at t=14.9s, timeout at 15s | Must NOT overwrite premium with free |
-| 3 | Logout/login different user | Backoff/refs reset, new user sync runs |
-| 4 | Two subscription fetches overlap | Only latest applies |
-| 5 | Multi-tab: one tab logs out | Other tab must converge |
-| 6 | Backend down for N seconds | Resolves to free and stays stable |
+These 6 tests catch future regressions:
+
+| # | Test Scenario | What It Validates | Status |
+|---|---------------|-------------------|--------|
+| 1 | Retryable 502 during token sync | Must schedule retry, must not deadlock | ✅ Done |
+| 2 | Token sync succeeds at t=14.9s, timeout at 15s | Must NOT overwrite premium with free | ✅ Done |
+| 3 | Logout/login different user | Backoff/refs reset, new user sync runs | ✅ Done |
+| 4 | Two subscription fetches overlap | Only latest applies | ✅ Done |
+| 5 | Multi-tab: one tab logs out | Other tab must converge | ✅ Done |
+| 6 | Backend down for N seconds | Resolves to free and stays stable | ✅ Done |
 
 ### Test Implementation Notes
 
@@ -231,12 +250,12 @@ window.__AUTH_TIMELINE__.filterBySource('fetch')
 - ✅ Retry not chaining on retryable results
 
 ### Remaining Risks
-| Risk | Severity | Mitigation |
-|------|----------|------------|
-| No race condition tests | High | Add 6 anti-whack-a-mole tests |
-| Scattered mutation points | Medium | Implement single-writer pattern |
-| No monotonicity enforcement | Medium | Add invariant checks |
-| Multi-tab coherency | Low | Add cache versioning |
+| Risk | Severity | Mitigation | Status |
+|------|----------|------------|--------|
+| No race condition tests | High | Add 6 anti-whack-a-mole tests | ✅ Fixed |
+| Scattered mutation points | Medium | Implement single-writer pattern | 🔲 Phase 1 |
+| No monotonicity enforcement | Medium | Add invariant checks | 🔲 Phase 2 |
+| Multi-tab coherency | Low | Add cache versioning | 🔲 Backlog |
 
 ---
 
@@ -248,14 +267,21 @@ window.__AUTH_TIMELINE__.filterBySource('fetch')
 3. Review Auth Timeline output for any races
 
 ### Short-Term
-1. Add the 6 anti-whack-a-mole tests
+1. ~~Add the 6 anti-whack-a-mole tests~~ ✅ Done (2026-01-14)
 2. Document monotonicity rules in STATE_MACHINES.md
 3. Add invariant assertions in dev mode
 
-### Long-Term
-1. Implement single-writer pattern (event-driven)
-2. Create `/auth/state` unified endpoint
-3. Add multi-tab synchronization
+### Long-Term (Framework Implementation)
+
+> **📋 See:** [`docs/plans/2026-01-14-auth-single-writer-framework.md`](./plans/2026-01-14-auth-single-writer-framework.md)
+
+| Phase | Task | Effort | Status |
+|-------|------|--------|--------|
+| 1 | Implement single-writer pattern (useReducer) | 3-4 days | 🔲 Planned |
+| 2 | Add monotonicity guards in reducers | 2 days | 🔲 Planned |
+| 3 | Zustand migration (when E2E exists) | 2-3 weeks | 🔲 Deferred |
+| - | Create `/auth/state` unified endpoint | TBD | 🔲 Backlog |
+| - | Add multi-tab synchronization | TBD | 🔲 Backlog |
 
 ---
 
