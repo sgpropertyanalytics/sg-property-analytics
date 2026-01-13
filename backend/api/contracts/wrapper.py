@@ -170,9 +170,16 @@ def api_contract(endpoint_name: str):
             # 7. Process response
             elapsed_ms = (time.perf_counter() - start_time) * 1000
 
-            # Handle tuple responses (response, status_code)
+            # Capture headers from original Response before rebuilding
+            # This preserves auth cookies and other important headers
+            original_headers = {}  # Headers to restore after rebuild
+            tuple_headers = {}  # Headers from (response, status, headers) tuple
+
+            # Handle tuple responses: (response,), (response, status), (response, status, headers)
             if isinstance(result, tuple):
-                if len(result) >= 2:
+                if len(result) >= 3:
+                    response_data, status_code, tuple_headers = result[0], result[1], result[2] or {}
+                elif len(result) >= 2:
                     response_data, status_code = result[0], result[1]
                 else:
                     response_data, status_code = result[0], 200
@@ -186,6 +193,12 @@ def api_contract(endpoint_name: str):
 
             # 8. Get data as dict if it's a Response
             if isinstance(response_data, Response):
+                # Capture headers using getlist() for proper multi-value semantics
+                # Skip auto-set headers and wrapper-owned headers (set last)
+                skip_headers = {'Content-Length', 'Content-Type', 'X-Request-ID', 'X-API-Contract-Version'}
+                for key in response_data.headers.keys():
+                    if key not in skip_headers:
+                        original_headers[key] = response_data.headers.getlist(key)
                 try:
                     response_data = response_data.get_json()
                 except Exception:
@@ -236,10 +249,25 @@ def api_contract(endpoint_name: str):
                 except Exception as e:
                     logger.warning(f"Serializer failed: {e}")
 
-            # 12. Build response
+            # 12. Build response with correct header precedence:
+            #     1. Restore original headers (from Response object)
+            #     2. Apply tuple headers (override)
+            #     3. Set wrapper headers last (X-Request-ID, X-API-Contract-Version)
             response = jsonify(response_data)
+
+            # Restore headers from original Response (Set-Cookie, Cache-Control, etc.)
+            for key, values in original_headers.items():
+                for v in values:
+                    response.headers.add(key, v)
+
+            # Apply tuple headers (response, status, headers) - override original
+            for key, value in tuple_headers.items():
+                response.headers[key] = value
+
+            # Wrapper headers set last - always controlled by decorator
             response.headers['X-Request-ID'] = request_id
             response.headers['X-API-Contract-Version'] = contract.version
+
             return response, status_code
 
         return wrapper
