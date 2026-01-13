@@ -170,13 +170,16 @@ def api_contract(endpoint_name: str):
             # 7. Process response
             elapsed_ms = (time.perf_counter() - start_time) * 1000
 
-            # Capture Set-Cookie headers from original Response (if any) before rebuilding
-            # This preserves auth cookies set by handlers like /auth/login
-            original_set_cookies = []
+            # Capture headers from original Response before rebuilding
+            # This preserves auth cookies and other important headers
+            original_headers = {}  # Headers to restore after rebuild
+            tuple_headers = {}  # Headers from (response, status, headers) tuple
 
-            # Handle tuple responses (response, status_code)
+            # Handle tuple responses: (response,), (response, status), (response, status, headers)
             if isinstance(result, tuple):
-                if len(result) >= 2:
+                if len(result) >= 3:
+                    response_data, status_code, tuple_headers = result[0], result[1], result[2] or {}
+                elif len(result) >= 2:
                     response_data, status_code = result[0], result[1]
                 else:
                     response_data, status_code = result[0], 200
@@ -190,8 +193,18 @@ def api_contract(endpoint_name: str):
 
             # 8. Get data as dict if it's a Response
             if isinstance(response_data, Response):
-                # Capture Set-Cookie headers before extracting JSON
-                original_set_cookies = response_data.headers.getlist('Set-Cookie')
+                # Capture headers before extracting JSON (exclude auto-set headers)
+                skip_headers = {'Content-Length', 'Content-Type'}
+                for key, value in response_data.headers:
+                    if key not in skip_headers:
+                        if key in original_headers:
+                            # Multi-value header (e.g., Set-Cookie)
+                            if isinstance(original_headers[key], list):
+                                original_headers[key].append(value)
+                            else:
+                                original_headers[key] = [original_headers[key], value]
+                        else:
+                            original_headers[key] = value
                 try:
                     response_data = response_data.get_json()
                 except Exception:
@@ -247,9 +260,17 @@ def api_contract(endpoint_name: str):
             response.headers['X-Request-ID'] = request_id
             response.headers['X-API-Contract-Version'] = contract.version
 
-            # Restore Set-Cookie headers that were on the original Response
-            for cookie in original_set_cookies:
-                response.headers.add('Set-Cookie', cookie)
+            # Restore headers from original Response (preserves Set-Cookie, Cache-Control, etc.)
+            for key, value in original_headers.items():
+                if isinstance(value, list):
+                    for v in value:
+                        response.headers.add(key, v)
+                else:
+                    response.headers[key] = value
+
+            # Apply tuple headers (response, status, headers) - these take precedence
+            for key, value in tuple_headers.items():
+                response.headers[key] = value
 
             return response, status_code
 
