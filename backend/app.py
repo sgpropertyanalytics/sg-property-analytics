@@ -351,29 +351,31 @@ def create_app():
             # Other errors (e.g., can't connect to check schema) - warn but continue
             print(f"   ⚠️  Schema check skipped: {e}")
 
-        # Auto-validate data on startup (self-healing)
+        # Auto-validate data on startup (READ-ONLY, ~100ms)
         # This runs inside create_app() so it works with gunicorn
         _run_startup_validation()
 
-        # GLS data freshness check - refresh if stale or bad data
-        try:
-            from services.gls_scheduler import check_and_refresh_on_startup
-            check_and_refresh_on_startup(app)
-        except Exception as e:
-            print(f"⚠️  GLS startup check skipped: {e}")
+        # =======================================================================
+        # REMOVED FROM WEB BOOT (2024-01 optimization)
+        # =======================================================================
+        # The following were removed because they are USELESS on Render:
+        #
+        # 1. check_and_refresh_on_startup() - GLS freshness check
+        #    Problem: Can spawn background scrape threads, competing with requests
+        #    Solution: Move to dedicated cron job
+        #
+        # 2. warm_cache_for_common_queries() / warm_kpi_cache()
+        #    Problem: Cache is IN-MEMORY (TTLCache). Render instances sleep after
+        #    15 min idle, wiping all cache. Warming takes 20-40s for ZERO benefit.
+        #    Solution: Migrate to DB-backed cache (materialized views or cache table)
+        #    TODO: Implement persistent caching strategy
+        #
+        # 3. data_guard subprocess
+        #    Problem: Spawns separate Python process, adds 1-5s and memory spike
+        #    Solution: Run in CI/CD pipeline or dedicated cron job
+        # =======================================================================
 
-        # Cache warming: Pre-populate dashboard cache for common queries
-        # Prevents cold-start lag on Render (after 15 min idle, cache is empty)
-        try:
-            from services.dashboard_service import warm_cache_for_common_queries, warm_kpi_cache
-            warm_cache_for_common_queries()
-            print("   ✓ Dashboard cache warmed for common queries")
-            warm_kpi_cache()
-            print("   ✓ KPI cache warmed for common queries")
-        except Exception as e:
-            print(f"   ⚠️  Cache warming skipped: {e}")
-
-        # Firebase Admin SDK pre-initialization (non-blocking)
+        # Firebase Admin SDK pre-initialization (~200ms, non-blocking)
         # This prevents 502 timeouts on cold starts by initializing Firebase
         # during app startup instead of on first /auth/firebase-sync request
         try:
@@ -386,25 +388,7 @@ def create_app():
         except Exception as e:
             print(f"   ⚠️  Firebase pre-init skipped: {e}")
 
-        # Data guard: Validate critical CSVs on startup (non-blocking)
-        # This logs warnings if data files have issues but does NOT block startup
-        try:
-            import subprocess
-            result = subprocess.run(
-                ['python3', 'scripts/data_guard.py', '--mode', 'runtime',
-                 '--file', 'backend/data/new_launch_units.csv'],
-                capture_output=True, text=True, timeout=5
-            )
-            if result.returncode != 0:
-                print("   ⚠️  DATA GUARD WARNING: Critical CSV validation failed")
-                for line in result.stdout.strip().split('\n')[-10:]:
-                    print(f"      {line}")
-            else:
-                print("   ✓ Data guard validation passed")
-        except Exception as e:
-            print(f"   ⚠️  Data guard check skipped: {e}")
-
-        # Checksum verification: Detect tampering of tracked CSV files
+        # Checksum verification (~500ms): Detect tampering of tracked CSV files
         # This is a critical data integrity check - logs violations but does NOT block startup
         try:
             from utils.data_checksums import verify_all

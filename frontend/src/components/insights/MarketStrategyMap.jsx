@@ -54,6 +54,9 @@ const REGION_FILLS = {
   OCR: 'rgba(148, 180, 193, 0.35)', // Sky Blue - Suburban
 };
 
+// Dimmed region fill for spotlight effect (same as DistrictLiquidityMap)
+const REGION_FILL_DIMMED = 'rgba(180, 180, 180, 0.25)';
+
 // Volume glow colors (warm palette - only top 30% get glow)
 const VOLUME_GLOW = {
   hot: 'drop-shadow(0 0 12px rgba(239, 68, 68, 0.75))',    // Red - Top 10%
@@ -470,9 +473,14 @@ function MarketStrategyMapBase({
     ? filters.timeFilter.value
     : 'Y1';
   const bedroom = filters.bedroomTypes?.join(',') || '';
+  // Region filter (segments) - used for region-based spotlight effect
+  const segments = filters.segments || [];
 
   // For display in RegionSummaryBar
   const selectedPeriod = timeframe;
+
+  // Determine if region filter is active (not empty and not all regions selected)
+  const isRegionFilterActive = segments.length > 0 && segments.length < REGIONS.length;
 
   // Lazy-load GeoJSON to reduce initial bundle size (~100KB savings)
   const [geoJSON, setGeoJSON] = useState(null);
@@ -582,16 +590,35 @@ function MarketStrategyMapBase({
     };
   }, [hoveredDistrict, viewState]);
 
-  // Region fill color expression
+  // Region fill color expression (with spotlight dimming for hover and region filter)
   const fillColorExpression = useMemo(() => {
+    const hoveredId = hoveredDistrict?.district?.district;
     const expr = ['case'];
+
     [...CCR_DISTRICTS, ...RCR_DISTRICTS, ...OCR_DISTRICTS].forEach(d => {
       expr.push(['==', ['get', 'district'], d]);
-      expr.push(REGION_FILLS[getRegionForDistrict(d)]);
+
+      const districtRegion = getRegionForDistrict(d);
+      const isInSelectedRegion = !isRegionFilterActive || segments.includes(districtRegion);
+      const isHoveredDistrict = hoveredId === d;
+
+      // Dimming logic:
+      // 1. If region filter is active and district is NOT in selected region → dim
+      // 2. If hovering and district is NOT the hovered one → dim
+      const shouldDim = !isInSelectedRegion || (hoveredId && !isHoveredDistrict);
+
+      if (shouldDim) {
+        expr.push(REGION_FILL_DIMMED);
+      } else {
+        expr.push(REGION_FILLS[districtRegion]);
+      }
     });
-    expr.push('rgba(200, 200, 200, 0.05)');
+
+    // Default for any unmatched districts
+    const shouldDimDefault = hoveredId || isRegionFilterActive;
+    expr.push(shouldDimDefault ? REGION_FILL_DIMMED : 'rgba(200, 200, 200, 0.05)');
     return expr;
-  }, []);
+  }, [hoveredDistrict, isRegionFilterActive, segments]);
 
   // Handle hover
   const handleLeave = useCallback(() => {
