@@ -830,15 +830,6 @@
             "required": true,
             "type": "dict"
           },
-          "token": {
-            "allowed_values": null,
-            "default": null,
-            "description": "",
-            "name": "token",
-            "nullable": true,
-            "required": true,
-            "type": "str"
-          },
           "user": {
             "allowed_values": null,
             "default": null,
@@ -908,7 +899,7 @@
       "service_schema": {
         "fields": {}
       },
-      "version": "v3"
+      "version": "v4"
     },
     "auth/login": {
       "compat_map": {
@@ -952,15 +943,6 @@
             "required": true,
             "type": "str"
           },
-          "token": {
-            "allowed_values": null,
-            "default": null,
-            "description": "",
-            "name": "token",
-            "nullable": true,
-            "required": true,
-            "type": "str"
-          },
           "user": {
             "allowed_values": null,
             "default": null,
@@ -1030,7 +1012,7 @@
       "service_schema": {
         "fields": {}
       },
-      "version": "v3"
+      "version": "v4"
     },
     "auth/me": {
       "compat_map": {
@@ -1164,15 +1146,6 @@
             "required": true,
             "type": "str"
           },
-          "token": {
-            "allowed_values": null,
-            "default": null,
-            "description": "",
-            "name": "token",
-            "nullable": true,
-            "required": true,
-            "type": "str"
-          },
           "user": {
             "allowed_values": null,
             "default": null,
@@ -1242,7 +1215,7 @@
       "service_schema": {
         "fields": {}
       },
-      "version": "v3"
+      "version": "v4"
     },
     "auth/subscription": {
       "compat_map": {
@@ -2967,7 +2940,71 @@
         "model_name": "DashboardParams"
       },
       "response_schema": {
-        "data_fields": {},
+        "data_fields": {
+          "beads_chart": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "beads_chart",
+            "nullable": true,
+            "required": false,
+            "type": "list"
+          },
+          "bedroom_mix": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "bedroom_mix",
+            "nullable": true,
+            "required": false,
+            "type": "list"
+          },
+          "price_histogram": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "price_histogram",
+            "nullable": true,
+            "required": false,
+            "type": "dict"
+          },
+          "sale_type_breakdown": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "sale_type_breakdown",
+            "nullable": true,
+            "required": false,
+            "type": "list"
+          },
+          "summary": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "summary",
+            "nullable": true,
+            "required": false,
+            "type": "dict"
+          },
+          "time_series": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "time_series",
+            "nullable": true,
+            "required": false,
+            "type": "list"
+          },
+          "volume_by_location": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "volume_by_location",
+            "nullable": true,
+            "required": false,
+            "type": "list"
+          }
+        },
         "data_is_list": false,
         "meta_fields": {
           "apiContractVersion": {
@@ -3006,11 +3043,11 @@
             "required": true,
             "type": "str"
           },
-          "data_masked": {
+          "dataMasked": {
             "allowed_values": null,
             "default": null,
             "description": "",
-            "name": "data_masked",
+            "name": "dataMasked",
             "nullable": true,
             "required": false,
             "type": "bool"
@@ -3024,6 +3061,15 @@
             "required": true,
             "type": "float"
           },
+          "filterNotes": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "filterNotes",
+            "nullable": true,
+            "required": false,
+            "type": "dict"
+          },
           "filtersApplied": {
             "allowed_values": null,
             "default": null,
@@ -3032,6 +3078,24 @@
             "nullable": true,
             "required": true,
             "type": "dict"
+          },
+          "options": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "options",
+            "nullable": true,
+            "required": false,
+            "type": "dict"
+          },
+          "panelsReturned": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "panelsReturned",
+            "nullable": true,
+            "required": false,
+            "type": "list"
           },
           "requestId": {
             "allowed_values": null,
