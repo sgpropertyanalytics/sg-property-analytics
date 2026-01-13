@@ -7,21 +7,37 @@ let lastTokenExpiredAt = 0;
 const TOKEN_EXPIRED_DEBOUNCE_MS = 1500;
 
 /**
- * Check if URL is an auth endpoint (should not trigger token-expired)
- * Auth endpoints handle their own 401s (e.g., login returns 401 for bad credentials)
+ * Check if URL is a login/auth-flow endpoint (should not trigger token-expired)
+ *
+ * These endpoints handle their own 401s:
+ * - /auth/firebase-sync - Firebase auth flow, 401 = not logged in (expected)
+ * - /auth/login - Login attempt, 401 = bad credentials (expected)
+ * - /auth/register - Registration attempt
+ *
+ * These endpoints SHOULD trigger token-expired on 401:
+ * - /auth/subscription - Data endpoint, 401 = session expired
+ * - /auth/me - User info, 401 = session expired
  */
-function isAuthUrl(url = '') {
-  return url.includes('/api/auth/') || url.includes('/auth/');
+const AUTH_FLOW_ENDPOINTS = [
+  '/auth/firebase-sync',
+  '/auth/login',
+  '/auth/register',
+  '/auth/logout',
+];
+
+function isAuthFlowUrl(url = '') {
+  return AUTH_FLOW_ENDPOINTS.some(endpoint => url.includes(endpoint));
 }
 
 /**
- * Emit token-expired event with debounce and auth endpoint guard
+ * Emit token-expired event with debounce and auth-flow endpoint guard
  * @param {string} url - The URL that returned 401
  */
 function emitTokenExpired(url) {
-  // Guard: Don't fire for auth endpoints (they handle their own 401s)
-  if (isAuthUrl(url)) {
-    console.warn('[Subscription] Skipping token-expired for auth endpoint:', url);
+  // Guard: Don't fire for auth-flow endpoints (login/register/firebase-sync)
+  // DO fire for data endpoints like /auth/subscription
+  if (isAuthFlowUrl(url)) {
+    console.warn('[Subscription] Skipping token-expired for auth-flow endpoint:', url);
     return;
   }
 
