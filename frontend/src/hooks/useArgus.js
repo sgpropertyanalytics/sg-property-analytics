@@ -33,6 +33,7 @@
  */
 
 import { useState, useCallback, useRef } from 'react';
+import { emitTokenExpiredOnce } from '../auth/tokenExpired';
 
 // API base for SSE endpoint
 const getApiBase = () => {
@@ -134,6 +135,7 @@ export function useArgus() {
 
       // Check for auth/premium errors
       if (fetchResponse.status === 401) {
+        emitTokenExpiredOnce(url);
         throw new Error('Authentication required. Please sign in.');
       }
       if (fetchResponse.status === 403) {

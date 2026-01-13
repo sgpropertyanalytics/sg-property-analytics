@@ -151,11 +151,8 @@ export function AuthProvider({ children }) {
   const tokenRefreshGuard = useStaleRequestGuard(); // For refreshToken() calls
 
   // Subscription context methods (SubscriptionProvider wraps AuthProvider)
-  const {
-    bootstrapSubscription,
-    ensureSubscription,
-    clearSubscription,
-  } = useSubscription();
+  const { actions: subscriptionActions } = useSubscription();
+  const { refresh: refreshSubscription, ensure: ensureSubscription, clear: clearSubscription } = subscriptionActions;
 
   // P0 FIX: Ensure auth listener registers exactly once.
   // Use refs so callback always reads latest functions/state without re-registering.
@@ -164,8 +161,8 @@ export function AuthProvider({ children }) {
   authStateGuardRef.current = authStateGuard;
   const ensureSubscriptionRef = useRef(ensureSubscription);
   ensureSubscriptionRef.current = ensureSubscription;
-  const bootstrapSubscriptionRef = useRef(bootstrapSubscription);
-  bootstrapSubscriptionRef.current = bootstrapSubscription;
+  const refreshSubscriptionRef = useRef(refreshSubscription);
+  refreshSubscriptionRef.current = refreshSubscription;
   const tokenStatusRef = useRef(tokenStatus);
   tokenStatusRef.current = tokenStatus;
 
@@ -215,7 +212,10 @@ export function AuthProvider({ children }) {
               if (!authStateGuardRef.current.isStale(requestId)) {
                 // Bootstrap subscription from firebase-sync response
                 if (response.data.subscription) {
-                  bootstrapSubscriptionRef.current(response.data.subscription, result.user.email);
+                  refreshSubscriptionRef.current({
+                    bootstrap: response.data.subscription,
+                    email: result.user.email,
+                  });
                 }
                 setTokenStatus(TokenStatus.PRESENT);
               }
@@ -374,7 +374,10 @@ export function AuthProvider({ children }) {
 
           // Bootstrap subscription from firebase-sync response
           if (response.data.subscription) {
-            bootstrapSubscription(response.data.subscription, firebaseUser.email);
+            refreshSubscription({
+              bootstrap: response.data.subscription,
+              email: firebaseUser.email,
+            });
           }
           return { ok: true, aborted: false };
         } catch (err) {
@@ -465,7 +468,10 @@ export function AuthProvider({ children }) {
 
       // Bootstrap subscription from firebase-sync response
       if (response.data.subscription) {
-        bootstrapSubscription(response.data.subscription, firebaseUser.email);
+        refreshSubscription({
+          bootstrap: response.data.subscription,
+          email: firebaseUser.email,
+        });
       }
 
       return response.data;
@@ -628,7 +634,10 @@ export function AuthProvider({ children }) {
 
       // Bootstrap subscription from firebase-sync response
       if (response.data.subscription) {
-        bootstrapSubscription(response.data.subscription, user.email);
+        refreshSubscription({
+          bootstrap: response.data.subscription,
+          email: user.email,
+        });
       }
       setTokenStatus(TokenStatus.PRESENT);
       return { ok: true, tokenStored: true, reason: null };
@@ -718,7 +727,10 @@ export function AuthProvider({ children }) {
 
       // Bootstrap subscription from firebase-sync response
       if (response.data.subscription) {
-        bootstrapSubscription(response.data.subscription, user.email);
+        refreshSubscription({
+          bootstrap: response.data.subscription,
+          email: user.email,
+        });
       }
       setTokenStatus(TokenStatus.PRESENT);
       console.warn('[Auth] Token sync retry succeeded');

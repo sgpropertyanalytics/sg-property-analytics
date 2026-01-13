@@ -16,7 +16,12 @@ import { useAppQuery } from '../useAppQuery';
 
 // Mock the AppReadyContext
 vi.mock('../../context/AppReadyContext', () => ({
-  useAppReadyOptional: () => ({ appReady: true }),
+  useAppReadyOptional: () => ({
+    publicReady: true,
+    proReady: true,
+    bootStatus: 'ready',
+    banners: {},
+  }),
 }));
 
 // Mock the useChartTiming hook

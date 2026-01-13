@@ -276,10 +276,14 @@ def firebase_sync():
                     display_name = decoded_token.get('name')
                 if not avatar_url:
                     avatar_url = decoded_token.get('picture')
+            elif not Config.DEBUG:
+                return jsonify({"error": "Firebase auth unavailable"}), 503
         except Exception as e:
             print(f"Firebase token verification failed: {e}")
             # In development, allow fallback to email-only sync
             if not email:
+                return jsonify({"error": "Could not verify Firebase token"}), 401
+            if not Config.DEBUG:
                 return jsonify({"error": "Could not verify Firebase token"}), 401
 
         if not email:

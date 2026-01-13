@@ -49,13 +49,13 @@ const UPGRADE_MESSAGES = {
 export function PricingModal({ isOpen, onClose }) {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
-  const { upsellContext } = useSubscription();
+  const { paywall } = useSubscription();
   const [loading, setLoading] = useState(null);
 
   if (!isOpen) return null;
 
   // Get contextual messaging based on trigger source
-  const message = UPGRADE_MESSAGES[upsellContext?.source] || UPGRADE_MESSAGES.default;
+  const message = UPGRADE_MESSAGES[paywall?.upsellContext?.source] || UPGRADE_MESSAGES.default;
 
   const handleSelectPlan = async (planId) => {
     if (!isAuthenticated) {

@@ -87,7 +87,7 @@ def create_app():
     CORS(app,
          resources={r"/api/*": {"origins": allowed_origins}},
          methods=["GET", "POST", "OPTIONS", "PUT", "DELETE"],
-         allow_headers=["Content-Type", "Authorization", "X-Request-ID"],
+         allow_headers=["Content-Type", "Authorization", "X-Request-ID", "X-CSRF-Token"],
          expose_headers=["X-Request-ID", "X-DB-Time-Ms", "X-Query-Count"],
          supports_credentials=True)
 
@@ -134,7 +134,7 @@ def create_app():
             response.headers['Access-Control-Allow-Origin'] = origin
             response.headers['Access-Control-Allow-Credentials'] = 'true'
             response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, PUT, DELETE'
-            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Request-ID'
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Request-ID, X-CSRF-Token'
         # If origin not in allowed list, don't add CORS headers (request will fail CORS check)
 
     @app.errorhandler(HTTPException)

@@ -89,7 +89,8 @@ function AbsolutePsfChartBase({ height = 380, saleType = null, sharedData = null
     });
     return regions;
   }, [filters.districts]);
-  const { isFreeResolved, isPremium } = useSubscription();
+  const { canAccessPremium, tier, tierSource } = useSubscription();
+  const isFreeTier = tierSource !== 'none' && tier === 'free';
   const chartRef = useRef(null);
   const [isAgentOpen, setIsAgentOpen] = useState(false);
 
@@ -177,7 +178,7 @@ function AbsolutePsfChartBase({ height = 380, saleType = null, sharedData = null
     setIsAgentOpen(newIsOpen);
 
     // Trigger AI interpretation when opening (only if premium and has data)
-    if (newIsOpen && isPremium && data.length > 0) {
+    if (newIsOpen && canAccessPremium && data.length > 0) {
       interpret({
         chartType: 'absolute_psf',
         chartTitle: 'Absolute PSF by Region',
@@ -205,7 +206,7 @@ function AbsolutePsfChartBase({ height = 380, saleType = null, sharedData = null
       // Reset AI state when closing
       resetAi();
     }
-  }, [isAgentOpen, isPremium, data, latestData, prevData, timeframe, debouncedBedroom, timeGrouping, saleType, ccrChange, rcrChange, ocrChange, interpret, resetAi]);
+  }, [isAgentOpen, canAccessPremium, data, latestData, prevData, timeframe, debouncedBedroom, timeGrouping, saleType, ccrChange, rcrChange, ocrChange, interpret, resetAi]);
 
   // Chart data with region highlighting (uses alpha from colors.js - Rule 4: Reuse-First)
   const chartData = useMemo(() => {
@@ -352,7 +353,7 @@ OCR = Outside Central (suburban).`}
         />
 
         {/* KPI Strip: h-20 fixed - Pure metrics only */}
-        <DataCardToolbar columns={3} blur={isFreeResolved}>
+        <DataCardToolbar columns={3} blur={isFreeTier}>
           <ToolbarStat
             label="CCR"
             value={latestData.ccr != null ? `$${Math.round(latestData.ccr).toLocaleString()}` : '—'}
@@ -403,7 +404,7 @@ OCR = Outside Central (suburban).`}
           isCached={isCached}
         >
           {/* Show AI response if available, otherwise show static fallback */}
-          {aiResponse || (isPremium ? null : (
+          {aiResponse || (canAccessPremium ? null : (
             // Static fallback for non-premium users or when AI is not available
             ccrChange > 0 && rcrChange > 0 && ocrChange > 0
               ? 'All regions showing positive momentum. Market-wide appreciation detected.'

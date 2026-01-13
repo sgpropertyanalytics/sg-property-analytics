@@ -73,7 +73,8 @@ function MarketValueOscillatorBase({ height = 380, saleType = null, sharedRawDat
   // Extract filter values directly (simple, explicit)
   const timeframe = filters.timeFilter?.type === 'preset' ? filters.timeFilter.value : 'Y1';
   const bedroom = filters.bedroomTypes?.join(',') || '';
-  const { isFreeResolved } = useSubscription();
+  const { tier, tierSource } = useSubscription();
+  const isFreeTier = tierSource !== 'none' && tier === 'free';
 
   const chartRef = useRef(null);
 
@@ -374,7 +375,7 @@ Based on resale transactions only, with outliers excluded.
           />
 
           {/* KPI Row - using standard DataCardToolbar */}
-          <DataCardToolbar columns={3} blur={isFreeResolved}>
+          <DataCardToolbar columns={3} blur={isFreeTier}>
             <ToolbarStat
               label="CCR-RCR Signal"
               value={

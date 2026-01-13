@@ -40,7 +40,8 @@ export function HotProjectsTable({
   onDataLoad = null, // Callback with data count after loading
   excludeSoldOut = false, // When true, exclude projects with 0 unsold units
 }) {
-  const { isPremium, isFreeResolved } = useSubscription();
+  const { tier, tierSource } = useSubscription();
+  const isFreeTier = tierSource !== 'none' && tier === 'free';
   const [sortConfig, setSortConfig] = useState({
     column: 'first_new_sale',  // Default: sort by latest launch date
     order: 'desc',
@@ -324,7 +325,7 @@ export function HotProjectsTable({
                 ))}
               </tr>
             </thead>
-            <tbody className={isFreeResolved ? 'blur-sm grayscale-[40%]' : ''}>
+            <tbody className={isFreeTier ? 'blur-sm grayscale-[40%]' : ''}>
               {isLoading ? (
                 <tr>
                   <td colSpan={columns.length} className="p-0">

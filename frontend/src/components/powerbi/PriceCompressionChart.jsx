@@ -77,7 +77,8 @@ function PriceCompressionChartBase({ height = 380, saleType = null, sharedData =
   const [debouncedBedroom] = useDebounce(bedroom, 300);
 
   // district excluded - shows all regions for comparison
-  const { isFreeResolved } = useSubscription();
+  const { tier, tierSource } = useSubscription();
+  const isFreeTier = tierSource !== 'none' && tier === 'free';
 
   // UI state (not data state - that comes from useAbortableQuery)
   const chartRef = useRef(null);
@@ -290,7 +291,7 @@ Watch for lines dipping below $0 — that's a price inversion anomaly.`}
         />
 
         {/* Toolbar: h-20 fixed - 3 columns for score + spreads */}
-        <DataCardToolbar columns={3} blur={isFreeResolved}>
+        <DataCardToolbar columns={3} blur={isFreeTier}>
           <ToolbarStat
             label="Compression Score"
             value={

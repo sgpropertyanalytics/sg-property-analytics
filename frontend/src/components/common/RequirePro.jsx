@@ -17,11 +17,11 @@ import { Lock, AlertCircle, RefreshCw } from 'lucide-react';
  * This prevents premium API calls from executing before we know the user's tier.
  *
  * UI GATING RULES:
- * - isPending: Show skeleton (NEVER paywall)
+ * - status === 'pending': Show skeleton (NEVER paywall)
  * - !proReady: Show skeleton (boot not complete)
- * - isError: Show retry UI (not paywall, not content)
- * - isFreeResolved: Show paywall (children never mount)
- * - isPremiumResolved: Show content (children mount)
+ * - status === 'error': Show retry UI (not paywall, not content)
+ * - tier === 'free' with tierSource !== 'none': Show paywall (children never mount)
+ * - canAccessPremium: Show content (children mount)
  *
  * Usage:
  * ```jsx
@@ -43,17 +43,17 @@ export function RequirePro({ children, fallback, feature = 'premium content' }) 
   const { proReady } = useAppReady();
   const { isAuthenticated } = useAuth();
   const {
-    isPremiumResolved,
-    isFreeResolved,
-    isError,
-    isPending,
-    showPaywall,
-    ensureSubscription,
+    status,
+    tier,
+    tierSource,
+    canAccessPremium,
+    paywall,
+    actions,
   } = useSubscription();
 
   // SAFETY: Explicit pending check (robust even if proReady is true too early)
   // UI INVARIANT: isPending = loading OR initial; use for safety guards
-  if (isPending) {
+  if (status === 'pending') {
     return fallback ?? <DefaultSkeleton />;
   }
 
@@ -65,28 +65,28 @@ export function RequirePro({ children, fallback, feature = 'premium content' }) 
 
   // Subscription error - show retry UI (not paywall, not content)
   // SUBSCRIPTION INVARIANT: ERROR !== FREE. ERROR = unknown, show retry UI
-  if (isError) {
+  if (status === 'error') {
     return (
       <SubscriptionErrorState
-        onRetry={ensureSubscription}
+        onRetry={actions.refresh}
       />
     );
   }
 
   // Free user - HARD PAYWALL (children never mount, never fetch)
-  if (isFreeResolved) {
+  if (tierSource !== 'none' && tier === 'free') {
     return (
       <Paywall
         isAuthenticated={isAuthenticated}
         feature={feature}
-        onUpgrade={() => showPaywall({ source: 'require-pro', field: feature })}
+        onUpgrade={() => paywall.open({ source: 'require-pro', field: feature })}
         onSignIn={() => navigate('/login')}
       />
     );
   }
 
   // Premium user - mount children (they can now fetch)
-  if (isPremiumResolved) {
+  if (canAccessPremium) {
     return children;
   }
 
