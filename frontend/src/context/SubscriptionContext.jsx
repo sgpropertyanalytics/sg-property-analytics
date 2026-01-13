@@ -265,6 +265,10 @@ export function SubscriptionProvider({ children }) {
   // Track active subscription request to avoid duplicate fetch abort loops
   const activeRequestRef = useRef({ requestId: null, email: null, type: null });
 
+  // P0 FIX: Track when last successful fetch completed
+  // Used by pending timeout to avoid race with React batching
+  const lastFetchSuccessRef = useRef(0);
+
   // Track current user email for per-user cache operations
   const currentUserEmailRef = useRef(null);
 
@@ -333,6 +337,17 @@ export function SubscriptionProvider({ children }) {
       if (activeRequest.requestId !== null) {
         console.warn('[Subscription] Pending timeout fired but fetch in progress, aborting', {
           activeRequest,
+        });
+        return;
+      }
+
+      // P0 FIX: Check if a fetch succeeded recently (within 2s)
+      // This handles the race where fetch completed, activeRequestRef cleared,
+      // but React hasn't committed the state update yet
+      const timeSinceLastSuccess = Date.now() - lastFetchSuccessRef.current;
+      if (timeSinceLastSuccess < 2000) {
+        console.warn('[Subscription] Pending timeout fired but recent fetch success, aborting', {
+          timeSinceLastSuccess,
         });
         return;
       }
@@ -528,6 +543,8 @@ export function SubscriptionProvider({ children }) {
         if (normalizedEmail) {
           cacheSubscription(subData, normalizedEmail);
         }
+        // P0 FIX: Mark success timestamp to prevent timeout race
+        lastFetchSuccessRef.current = Date.now();
         setStatus(SubscriptionStatus.RESOLVED);
         setLoading(false);
       } else {
@@ -791,6 +808,8 @@ export function SubscriptionProvider({ children }) {
         setSubscription(subData);
         setHasCachedSubscription(false);
         cacheSubscription(subData, email);
+        // P0 FIX: Mark success timestamp to prevent timeout race
+        lastFetchSuccessRef.current = Date.now();
         setStatus(SubscriptionStatus.RESOLVED);
       } else {
         logAuthEvent(AuthTimelineEvent.REFRESH_ERR, {
