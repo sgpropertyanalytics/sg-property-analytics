@@ -405,14 +405,16 @@ def scrape_squarefoot(project_name: str) -> tuple[int | None, float]:
     return None, 0
 
 
-def scrape_yahoo(project_name: str) -> tuple[int | None, float, int]:
+def scrape_yahoo(project_name: str) -> tuple[int | None, float, int, list[int]]:
     """
     Search Yahoo for project total units.
-    Requires 3+ search results agreeing to be a valid source.
+    Returns individual snippet votes for cross-validation expansion.
 
-    Returns (units, confidence, num_agreeing).
-    - Only returns a value if 3+ search results agree
-    - num_agreeing tells how many snippets agreed
+    Returns (units, confidence, num_agreeing, agreeing_votes).
+    - units: most common value (or None if <2 agree)
+    - confidence: per-snippet confidence (0.8 for search results)
+    - num_agreeing: how many snippets found the same value
+    - agreeing_votes: list of individual votes matching consensus (for expansion)
     """
     from collections import Counter
 
@@ -422,10 +424,10 @@ def scrape_yahoo(project_name: str) -> tuple[int | None, float, int]:
     try:
         resp = requests.get(url, headers=HEADERS, timeout=15)
         if resp.status_code != 200:
-            return None, 0, 0
+            return None, 0, 0, []
         html = resp.text
     except Exception:
-        return None, 0, 0
+        return None, 0, 0, []
 
     soup = BeautifulSoup(html, "html.parser")
 
@@ -457,32 +459,34 @@ def scrape_yahoo(project_name: str) -> tuple[int | None, float, int]:
                     break
 
     if not votes:
-        return None, 0, 0
+        return None, 0, 0, []
 
     counts = Counter(votes)
     most_common_value, num_agreeing = counts.most_common(1)[0]
 
-    # MUST have 3+ search results agreeing to count as valid
-    if num_agreeing < 3:
-        return None, 0, num_agreeing
+    # Need at least 2 agreeing snippets to be valid
+    if num_agreeing < 2:
+        return None, 0, num_agreeing, []
 
-    # Confidence based on agreement
-    if num_agreeing >= 5:
-        confidence = 0.95
-    else:  # 3-4
-        confidence = 0.85
+    # Return list of agreeing votes for expansion into individual sources
+    agreeing_votes = [v for v in votes if v == most_common_value]
 
-    return most_common_value, confidence, num_agreeing
+    # Per-snippet confidence (search results are less reliable than direct pages)
+    confidence = 0.8
+
+    return most_common_value, confidence, num_agreeing, agreeing_votes
 
 
-def scrape_duckduckgo(project_name: str) -> tuple[int | None, float, int]:
+def scrape_duckduckgo(project_name: str) -> tuple[int | None, float, int, list[int]]:
     """
     Search DuckDuckGo for project total units.
-    Requires 3+ search results agreeing to be a valid source.
+    Returns individual snippet votes for cross-validation expansion.
 
-    Returns (units, confidence, num_agreeing).
-    - Only returns a value if 3+ search results agree
-    - num_agreeing tells how many snippets agreed
+    Returns (units, confidence, num_agreeing, agreeing_votes).
+    - units: most common value (or None if <2 agree)
+    - confidence: per-snippet confidence (0.8 for search results)
+    - num_agreeing: how many snippets found the same value
+    - agreeing_votes: list of individual votes matching consensus (for expansion)
     """
     from collections import Counter
 
@@ -492,10 +496,10 @@ def scrape_duckduckgo(project_name: str) -> tuple[int | None, float, int]:
     try:
         resp = requests.get(url, headers=HEADERS, timeout=15)
         if resp.status_code != 200:
-            return None, 0, 0
+            return None, 0, 0, []
         html = resp.text
     except Exception:
-        return None, 0, 0
+        return None, 0, 0, []
 
     soup = BeautifulSoup(html, "html.parser")
 
@@ -526,22 +530,22 @@ def scrape_duckduckgo(project_name: str) -> tuple[int | None, float, int]:
                     break
 
     if not votes:
-        return None, 0, 0
+        return None, 0, 0, []
 
     counts = Counter(votes)
     most_common_value, num_agreeing = counts.most_common(1)[0]
 
-    # MUST have 3+ search results agreeing to count as valid
-    if num_agreeing < 3:
-        return None, 0, num_agreeing
+    # Need at least 2 agreeing snippets to be valid
+    if num_agreeing < 2:
+        return None, 0, num_agreeing, []
 
-    # Confidence based on agreement
-    if num_agreeing >= 5:
-        confidence = 0.95
-    else:  # 3-4
-        confidence = 0.85
+    # Return list of agreeing votes for expansion into individual sources
+    agreeing_votes = [v for v in votes if v == most_common_value]
 
-    return most_common_value, confidence, num_agreeing
+    # Per-snippet confidence (search results are less reliable than direct pages)
+    confidence = 0.8
+
+    return most_common_value, confidence, num_agreeing, agreeing_votes
 
 
 # =============================================================================
@@ -552,8 +556,9 @@ def cross_validate_sources(results: dict[str, tuple[int | None, float]]) -> dict
     """
     Cross-validate results from multiple sources.
 
-    Thresholds (4 sources max):
-        - 4 sources agree: 98% confidence, status='confirmed'
+    With Yahoo/DDG snippet expansion, we can have many more sources:
+        - 6+ sources agree: 98% confidence, status='confirmed'
+        - 4-5 sources agree: 95% confidence, status='confirmed'
         - 3 sources agree: 90% confidence, status='confirmed'
         - 2 sources agree: 75% confidence, status='likely'
         - 1 source only: ~50% confidence, status='single'
@@ -609,8 +614,8 @@ def cross_validate_sources(results: dict[str, tuple[int | None, float]]) -> dict
     agreeing_sources = [k for k, v in all_values.items()
                         if values_agree(v, most_common_value)]
 
-    if len(agreeing_sources) >= 4:
-        # High confidence - all 4 sources agree
+    if len(agreeing_sources) >= 6:
+        # Very high confidence - 6+ sources agree
         return {
             'units': most_common_value,
             'confidence': 0.98,
@@ -618,8 +623,17 @@ def cross_validate_sources(results: dict[str, tuple[int | None, float]]) -> dict
             'all_values': all_values,
             'status': 'confirmed'
         }
+    elif len(agreeing_sources) >= 4:
+        # High confidence - 4-5 sources agree
+        return {
+            'units': most_common_value,
+            'confidence': 0.95,
+            'sources': agreeing_sources,
+            'all_values': all_values,
+            'status': 'confirmed'
+        }
     elif len(agreeing_sources) >= 3:
-        # Good confidence - 3-4 sources agree
+        # Good confidence - 3 sources agree
         return {
             'units': most_common_value,
             'confidence': 0.90,
@@ -652,11 +666,14 @@ def scrape_project(project_name: str, verbose: bool = True) -> dict:
     """
     Scrape a project from working sources and cross-validate.
 
-    Sources (4 working):
-    1. 99.co - direct page scrape
-    2. StackedHomes - search-based
-    3. Yahoo - search engine
-    4. DuckDuckGo - search engine
+    Sources:
+    1. 99.co - direct page scrape (1 source)
+    2. StackedHomes - search-based (1 source)
+    3. Yahoo - search engine (expands to N sources based on agreeing snippets)
+    4. DuckDuckGo - search engine (expands to N sources based on agreeing snippets)
+
+    Yahoo and DuckDuckGo snippets are expanded into individual sources for
+    cross-validation, giving higher confidence when many search results agree.
 
     Returns dict with units, confidence, sources, status.
     """
@@ -683,30 +700,38 @@ def scrape_project(project_name: str, verbose: bool = True) -> dict:
         print(f"{units or '-'}")
     rate_limit()
 
-    # 3. Yahoo Search (needs 3+ results agreeing)
+    # 3. Yahoo Search - expand individual snippets as separate sources
     if verbose:
         print(f"      Yahoo...", end=" ", flush=True)
-    units, conf, yahoo_votes = scrape_yahoo(project_name)
-    results['Yahoo'] = (units, conf)
+    yahoo_units, yahoo_conf, yahoo_count, yahoo_votes = scrape_yahoo(project_name)
     if verbose:
-        if units:
-            print(f"{units} ({yahoo_votes} results)")
+        if yahoo_units:
+            print(f"{yahoo_units} ({yahoo_count} snippets)")
         else:
-            print(f"- ({yahoo_votes} results, need 3+)")
+            print(f"- ({yahoo_count} snippets, need 2+)")
+
+    # Expand Yahoo snippets into individual sources
+    if yahoo_votes:
+        for i, vote in enumerate(yahoo_votes, 1):
+            results[f'Yahoo:{i}'] = (vote, yahoo_conf)
     rate_limit()
 
-    # 4. DuckDuckGo Search (needs 3+ results agreeing)
+    # 4. DuckDuckGo Search - expand individual snippets as separate sources
     if verbose:
         print(f"      DuckDuckGo...", end=" ", flush=True)
-    units, conf, ddg_votes = scrape_duckduckgo(project_name)
-    results['DuckDuckGo'] = (units, conf)
+    ddg_units, ddg_conf, ddg_count, ddg_votes = scrape_duckduckgo(project_name)
     if verbose:
-        if units:
-            print(f"{units} ({ddg_votes} results)")
+        if ddg_units:
+            print(f"{ddg_units} ({ddg_count} snippets)")
         else:
-            print(f"- ({ddg_votes} results, need 3+)")
+            print(f"- ({ddg_count} snippets, need 2+)")
 
-    # Cross-validate
+    # Expand DuckDuckGo snippets into individual sources
+    if ddg_votes:
+        for i, vote in enumerate(ddg_votes, 1):
+            results[f'DDG:{i}'] = (vote, ddg_conf)
+
+    # Cross-validate all sources (including expanded search results)
     validated = cross_validate_sources(results)
 
     if verbose:
@@ -719,15 +744,37 @@ def scrape_project(project_name: str, verbose: bool = True) -> dict:
         }[validated['status']]
 
         if validated['units']:
-            sources_str = ", ".join(validated['sources'])
+            # Summarize sources for display (collapse Yahoo:1, Yahoo:2 -> Yahoo(2))
+            source_summary = _summarize_sources(validated['sources'])
             print(f"    {status_icon} Result: {validated['units']} units ({validated['confidence']:.0%} confidence)")
-            print(f"      Agreeing: {sources_str}")
+            print(f"      Agreeing: {source_summary} ({len(validated['sources'])} total)")
             if validated['status'] == 'mismatch':
                 print(f"      All values: {validated['all_values']}")
         else:
             print(f"    {status_icon} No data found")
 
     return validated
+
+
+def _summarize_sources(sources: list[str]) -> str:
+    """Summarize expanded sources for display (Yahoo:1, Yahoo:2 -> Yahoo(2))."""
+    from collections import defaultdict
+
+    counts = defaultdict(int)
+    direct = []
+
+    for s in sources:
+        if ':' in s:
+            prefix = s.split(':')[0]
+            counts[prefix] += 1
+        else:
+            direct.append(s)
+
+    parts = direct.copy()
+    for prefix, count in sorted(counts.items()):
+        parts.append(f"{prefix}({count})")
+
+    return ", ".join(parts)
 
 
 # =============================================================================

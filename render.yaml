@@ -9,7 +9,7 @@ services:
     region: singapore
     plan: starter
     buildCommand: pip install -r backend/requirements.txt
-    startCommand: cd backend && gunicorn app:app --bind 0.0.0.0:$PORT
+    startCommand: cd backend && python -m scripts.run_migrations && gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 180 --graceful-timeout 30
     healthCheckPath: /api/health
     envVars:
       - key: PYTHON_VERSION

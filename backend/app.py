@@ -362,16 +362,41 @@ def create_app():
         except Exception as e:
             print(f"⚠️  GLS startup check skipped: {e}")
 
-        # Cache warming: Pre-populate dashboard cache for common queries
+        # Cache warming: Pre-populate caches for common queries
         # Prevents cold-start lag on Render (after 15 min idle, cache is empty)
-        try:
-            from services.dashboard_service import warm_cache_for_common_queries, warm_kpi_cache
-            warm_cache_for_common_queries()
-            print("   ✓ Dashboard cache warmed for common queries")
-            warm_kpi_cache()
-            print("   ✓ KPI cache warmed for common queries")
-        except Exception as e:
-            print(f"   ⚠️  Cache warming skipped: {e}")
+        # Can be disabled via SKIP_CACHE_WARMING=true if causing OOM issues
+        skip_warming = os.environ.get('SKIP_CACHE_WARMING', '').lower() in ('true', '1', 'yes')
+        if skip_warming:
+            print("   ℹ️  Cache warming disabled via SKIP_CACHE_WARMING")
+        else:
+            # Run ALL cache warming in a single background thread to:
+            # 1. Not block app startup (prevents health check timeout)
+            # 2. Run only once (--workers 1 ensures single worker)
+            # 3. Reduce peak memory (sequential, not parallel)
+            import threading
+
+            def _warm_all_caches():
+                """Background thread for all cache warming."""
+                try:
+                    # Dashboard cache (synchronous, fast)
+                    from services.dashboard_service import warm_cache_for_common_queries, warm_kpi_cache
+                    warm_cache_for_common_queries()
+                    print("   ✓ Dashboard cache warmed")
+                    warm_kpi_cache()
+                    print("   ✓ KPI cache warmed")
+                except Exception as e:
+                    print(f"   ⚠️  Dashboard/KPI cache warming failed: {e}")
+
+                try:
+                    # Insights cache (slow queries - district maps)
+                    from routes.insights import warm_insights_cache
+                    warm_insights_cache(app)
+                except Exception as e:
+                    print(f"   ⚠️  Insights cache warming failed: {e}")
+
+            thread = threading.Thread(target=_warm_all_caches, daemon=True)
+            thread.start()
+            print("   → Cache warming started (background thread)")
 
         # Firebase Admin SDK pre-initialization (non-blocking)
         # This prevents 502 timeouts on cold starts by initializing Firebase
