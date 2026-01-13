@@ -60,8 +60,8 @@ WORKTREE_PATH=~/worktrees/$REPO_NAME/[branch-name]
    # Ensure base is up to date
    git fetch origin main
 
-   # Create worktree with new branch
-   git worktree add -b [branch-name] ~/worktrees/sg-property-analyzer/[branch-name] origin/main
+   # Create worktree with new branch (uses $REPO_NAME from Step 2)
+   git worktree add -b [branch-name] ~/worktrees/$REPO_NAME/[branch-name] origin/main
    ```
 
 3. **Verify creation**:
@@ -72,14 +72,24 @@ WORKTREE_PATH=~/worktrees/$REPO_NAME/[branch-name]
 ### Step 4: Setup Worktree Environment
 
 ```bash
-cd ~/worktrees/sg-property-analyzer/[branch-name]
+cd ~/worktrees/$REPO_NAME/[branch-name]
 
 # Copy Claude settings if they exist
 cp -r $REPO_ROOT/.claude/settings.local.json .claude/ 2>/dev/null || true
 
-# Install dependencies
-cd frontend && npm install
-cd ../backend && pip install -r requirements.txt
+# CRITICAL: Copy .env files (not tracked by git)
+# Root .env contains DATABASE_URL for backend
+cp $REPO_ROOT/.env .env 2>/dev/null || echo "Warning: No root .env found"
+
+# Frontend .env contains Firebase config for Google Sign-In
+cp $REPO_ROOT/frontend/.env frontend/.env 2>/dev/null || echo "Warning: No frontend .env found"
+
+# Backend .env (if exists) for backend-specific config
+cp $REPO_ROOT/backend/.env backend/.env 2>/dev/null || true
+
+# Install dependencies (subshells preserve working directory)
+(cd frontend && npm install)
+(cd backend && pip install -r requirements.txt)
 ```
 
 ### Step 5: Present Summary
@@ -87,7 +97,7 @@ cd ../backend && pip install -r requirements.txt
 ```markdown
 ## Worktree Created Successfully
 
-**Location**: `~/worktrees/sg-property-analyzer/[branch-name]`
+**Location**: `~/worktrees/$REPO_NAME/[branch-name]`
 **Branch**: `[branch-name]`
 **Based on**: `origin/main`
 
@@ -95,26 +105,42 @@ cd ../backend && pip install -r requirements.txt
 
 ```bash
 # Navigate to worktree
-cd ~/worktrees/sg-property-analyzer/[branch-name]
+cd ~/worktrees/$REPO_NAME/[branch-name]
 
-# Start development
-cd backend && flask run --port 5002  # Different port!
-cd frontend && npm run dev -- --port 5174  # Different port!
+# Start backend (source .env for DATABASE_URL, DEBUG=True for localhost cookies)
+# Note: ../.env because we cd into backend/ first
+cd backend && source ../.env && FLASK_DEBUG=True flask run --port 5002
+
+# Start frontend (in separate terminal, from worktree root)
+cd frontend && npm run dev -- --port 5174
 ```
 
 ### Working with This Worktree
 
 **Open in new terminal/editor**:
 ```bash
-code ~/worktrees/sg-property-analyzer/[branch-name]
+code ~/worktrees/$REPO_NAME/[branch-name]
 # or
-cd ~/worktrees/sg-property-analyzer/[branch-name] && claude
+cd ~/worktrees/$REPO_NAME/[branch-name] && claude
 ```
 
 **Current worktrees**:
 ```bash
 git worktree list
 ```
+
+### Environment Files (Copied Automatically)
+
+| File | Purpose |
+|------|---------|
+| `.env` | DATABASE_URL for backend |
+| `frontend/.env` | Firebase config for Google Sign-In |
+| `backend/.env` | Backend-specific config (if exists) |
+
+**Troubleshooting:**
+- Sign-in greyed out → Missing `frontend/.env`
+- Shows "free" tier → Missing `.env` (wrong database)
+- 401 errors / "Session expired" → Start backend with `FLASK_DEBUG=True` (enables non-secure cookies for localhost)
 
 ### Port Configuration
 
@@ -127,10 +153,10 @@ To avoid conflicts with main development:
 After merging or abandoning the feature:
 ```bash
 # Remove worktree
-git worktree remove ~/worktrees/sg-property-analyzer/[branch-name]
+git worktree remove ~/worktrees/$REPO_NAME/[branch-name]
 
 # Or force remove if needed
-git worktree remove --force ~/worktrees/sg-property-analyzer/[branch-name]
+git worktree remove --force ~/worktrees/$REPO_NAME/[branch-name]
 
 # Clean up branch if merged
 git branch -d [branch-name]
@@ -140,7 +166,7 @@ git branch -d [branch-name]
 
 If you need to hand off work in this worktree:
 ```bash
-cd ~/worktrees/sg-property-analyzer/[branch-name]
+cd ~/worktrees/$REPO_NAME/[branch-name]
 # Use /create_handoff command
 ```
 ```
@@ -159,7 +185,7 @@ cd ~/worktrees/sg-property-analyzer/[branch-name]
 git worktree list
 
 # Remove a worktree
-git worktree remove ~/worktrees/sg-property-analyzer/[name]
+git worktree remove ~/worktrees/$REPO_NAME/[name]
 
 # Prune stale worktrees
 git worktree prune
@@ -200,7 +226,7 @@ gh pr checkout [PR-number]
 git worktree list
 
 # Remove specific worktree
-git worktree remove ~/worktrees/sg-property-analyzer/[name]
+git worktree remove ~/worktrees/$REPO_NAME/[name]
 
 # Remove all worktrees (careful!)
 git worktree list --porcelain | grep "^worktree" | cut -d' ' -f2 | xargs -I{} git worktree remove {}
