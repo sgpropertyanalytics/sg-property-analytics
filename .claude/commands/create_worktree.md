@@ -77,6 +77,13 @@ cd ~/worktrees/sg-property-analyzer/[branch-name]
 # Copy Claude settings if they exist
 cp -r $REPO_ROOT/.claude/settings.local.json .claude/ 2>/dev/null || true
 
+# CRITICAL: Copy .env files (not tracked by git)
+# Root .env contains DATABASE_URL for backend
+cp $REPO_ROOT/.env .env 2>/dev/null || echo "Warning: No root .env found"
+
+# Frontend .env contains Firebase config for Google Sign-In
+cp $REPO_ROOT/frontend/.env frontend/.env 2>/dev/null || echo "Warning: No frontend .env found"
+
 # Install dependencies
 cd frontend && npm install
 cd ../backend && pip install -r requirements.txt
@@ -115,6 +122,15 @@ cd ~/worktrees/sg-property-analyzer/[branch-name] && claude
 ```bash
 git worktree list
 ```
+
+### Environment Files (Copied Automatically)
+
+| File | Purpose |
+|------|---------|
+| `.env` | DATABASE_URL for backend |
+| `frontend/.env` | Firebase config for Google Sign-In |
+
+If sign-in is greyed out or shows "free" tier, these files may be missing.
 
 ### Port Configuration
 
