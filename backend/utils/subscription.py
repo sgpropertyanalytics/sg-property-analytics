@@ -128,17 +128,36 @@ def require_premium(f):
     """
     Decorator to require premium subscription for an endpoint.
 
-    Returns 403 if user is not premium.
+    Returns:
+        - 200: OPTIONS preflight (CORS bypass)
+        - 401: Not authenticated (triggers token refresh)
+        - 403: Authenticated but not premium (known free tier)
+
     Use for endpoints that should be completely blocked for free users.
     """
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        from flask import jsonify
+
+        # CORS: Let OPTIONS preflight through (browser won't send auth headers)
+        if request.method == "OPTIONS":
+            return f(*args, **kwargs)
+
+        # Step 1: Check authentication first → 401 if not authenticated
+        user = get_user_from_request()
+        if not user:
+            return jsonify({
+                "error": "Authentication required",
+                "code": "AUTH_REQUIRED"
+            }), 401
+
+        # Step 2: Check premium status → 403 if authenticated but not premium
         if not is_premium_user():
-            from flask import jsonify
             return jsonify({
                 "error": "Premium subscription required",
                 "code": "PREMIUM_REQUIRED"
             }), 403
+
         return f(*args, **kwargs)
     return decorated_function
 

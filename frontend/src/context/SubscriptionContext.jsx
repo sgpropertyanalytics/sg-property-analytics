@@ -1,6 +1,41 @@
 import { createContext, useContext, useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import apiClient from '../api/client';
 
+// ===== Token Expired Debounce (shared with client.js pattern) =====
+// Prevents multiple 401s from spamming auth:token-expired during boot
+let lastTokenExpiredAt = 0;
+const TOKEN_EXPIRED_DEBOUNCE_MS = 1500;
+
+/**
+ * Check if URL is an auth endpoint (should not trigger token-expired)
+ * Auth endpoints handle their own 401s (e.g., login returns 401 for bad credentials)
+ */
+function isAuthUrl(url = '') {
+  return url.includes('/api/auth/') || url.includes('/auth/');
+}
+
+/**
+ * Emit token-expired event with debounce and auth endpoint guard
+ * @param {string} url - The URL that returned 401
+ */
+function emitTokenExpired(url) {
+  // Guard: Don't fire for auth endpoints (they handle their own 401s)
+  if (isAuthUrl(url)) {
+    console.warn('[Subscription] Skipping token-expired for auth endpoint:', url);
+    return;
+  }
+
+  // Debounce: Skip if fired recently
+  const now = Date.now();
+  if (now - lastTokenExpiredAt < TOKEN_EXPIRED_DEBOUNCE_MS) {
+    console.warn('[Subscription] Token-expired debounced');
+    return;
+  }
+
+  lastTokenExpiredAt = now;
+  window.dispatchEvent(new CustomEvent('auth:token-expired', { detail: { url } }));
+}
+
 /**
  * Inline stale request guard (previously useStaleRequestGuard hook)
  * Simple abort/stale request protection for subscription fetches.
@@ -451,7 +486,8 @@ export function SubscriptionProvider({ children }) {
         setFetchError(err);
         // Keep cached subscription if any; don't overwrite to free
         setStatus(SubscriptionStatus.ERROR);
-        window.dispatchEvent(new CustomEvent('auth:token-expired', { detail: { url: '/auth/subscription' } }));
+        // Use debounced emitter (will be skipped because /auth/subscription is auth endpoint)
+        emitTokenExpired('/auth/subscription');
         return;
       }
 
@@ -465,9 +501,10 @@ export function SubscriptionProvider({ children }) {
         return;
       }
 
-      // Gateway/backend down: DEGRADED, keep cache, don't flip to free
-      if (kind === 'GATEWAY') {
-        console.warn('[Subscription] Gateway error, entering DEGRADED:', { status: httpStatus });
+      // Gateway/backend down OR network error: DEGRADED, keep cache, don't flip to free
+      // NETWORK errors (no response) should also preserve cached premium
+      if (kind === 'GATEWAY' || kind === 'NETWORK') {
+        console.warn(`[Subscription] ${kind} error, entering DEGRADED:`, { status: httpStatus });
         setFetchError(err);
         // Keep cached subscription if loaded earlier; mark DEGRADED
         // DO NOT overwrite subscription to free here
@@ -618,7 +655,8 @@ export function SubscriptionProvider({ children }) {
         console.warn('[Subscription] 401 during refresh - emit token-expired');
         setFetchError(err);
         setStatus(SubscriptionStatus.ERROR);
-        window.dispatchEvent(new CustomEvent('auth:token-expired', { detail: { url: '/auth/subscription' } }));
+        // Use debounced emitter (will be skipped because /auth/subscription is auth endpoint)
+        emitTokenExpired('/auth/subscription');
         return;
       }
 
@@ -632,9 +670,9 @@ export function SubscriptionProvider({ children }) {
         return;
       }
 
-      // Gateway/backend down: DEGRADED, keep cache
-      if (kind === 'GATEWAY') {
-        console.warn('[Subscription] Gateway error during refresh, DEGRADED:', { status: httpStatus });
+      // Gateway/backend down OR network error: DEGRADED, keep cache
+      if (kind === 'GATEWAY' || kind === 'NETWORK') {
+        console.warn(`[Subscription] ${kind} error during refresh, DEGRADED:`, { status: httpStatus });
         setFetchError(err);
         setStatus(SubscriptionStatus.DEGRADED);
         return;

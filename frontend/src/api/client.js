@@ -117,6 +117,12 @@ const RETRY_CONFIG = {
 
 /**
  * Check if an error is retryable
+ *
+ * STRICT POLICY: Only retry 502/503/504 gateway errors.
+ * - Timeout/network errors → Let SubscriptionContext handle as DEGRADED
+ * - 401/403 → Never retry (auth flow handles these)
+ * - Other 5xx → Don't retry (server errors unlikely to self-resolve)
+ *
  * @param {Error} error - Axios error
  * @param {Object} config - Axios request config
  * @returns {boolean}
@@ -135,27 +141,14 @@ const isRetryableError = (error, config) => {
     return false;
   }
 
-  // Never retry client errors (4xx) - 401 handled separately via events
+  // Never retry client errors (4xx) - 401/403 handled separately via events
   if (error?.response?.status >= 400 && error?.response?.status < 500) {
     return false;
   }
 
-  // Retry timeout errors (cold start scenario)
-  if (error?.code === 'ECONNABORTED' || error?.message?.includes('timeout')) {
-    return true;
-  }
-
-  // Retry network errors
-  if (error?.code === 'ERR_NETWORK' || !error?.response) {
-    return true;
-  }
-
-  // Retry HTML response (Render cold start caused Vercel to return SPA)
-  if (error?.code === 'HTML_RESPONSE') {
-    return true;
-  }
-
-  // Retry specific server errors (gateway issues)
+  // STRICT: Only retry gateway errors (502, 503, 504)
+  // Timeout, network, and HTML errors are NOT retried here
+  // They will be classified as DEGRADED by SubscriptionContext to preserve cache
   if (RETRY_CONFIG.retryableStatuses.includes(error?.response?.status)) {
     return true;
   }

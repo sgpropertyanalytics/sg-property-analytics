@@ -114,6 +114,29 @@ def create_app():
     # Global error handlers to ensure CORS headers are present on error responses
     from werkzeug.exceptions import HTTPException
 
+    def _add_cors_headers_to_response(response):
+        """
+        Add CORS headers that are compatible with credentials.
+
+        CRITICAL: Flask-CORS uses supports_credentials=True, so we MUST:
+        - Echo the request Origin (not '*') if it's in allowed_origins
+        - Add Access-Control-Allow-Credentials: true
+
+        Using '*' with credentials breaks the CORS spec and causes network errors.
+        """
+        # Only add if not already present (Flask-CORS may have added them)
+        if 'Access-Control-Allow-Origin' in response.headers:
+            return
+
+        # Get request origin and check if it's allowed
+        origin = request.headers.get('Origin')
+        if origin and origin in allowed_origins:
+            response.headers['Access-Control-Allow-Origin'] = origin
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
+            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, PUT, DELETE'
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Request-ID'
+        # If origin not in allowed list, don't add CORS headers (request will fail CORS check)
+
     @app.errorhandler(HTTPException)
     def handle_http_exception(error):
         """
@@ -139,9 +162,8 @@ def create_app():
         if request_id:
             response.headers['X-Request-ID'] = request_id
 
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, PUT, DELETE'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Request-ID'
+        # Add CORS headers (credentials-compatible)
+        _add_cors_headers_to_response(response)
         return response
 
     @app.errorhandler(Exception)
@@ -176,9 +198,8 @@ def create_app():
         if request_id:
             response.headers['X-Request-ID'] = request_id
 
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, PUT, DELETE'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Request-ID'
+        # Add CORS headers (credentials-compatible)
+        _add_cors_headers_to_response(response)
         return response
 
     # Ensure CORS headers are present on ALL responses (including errors from routes)
@@ -186,13 +207,8 @@ def create_app():
     def add_cors_headers(response):
         from flask import g
 
-        # Only add if not already present (avoid duplicates)
-        if 'Access-Control-Allow-Origin' not in response.headers:
-            response.headers['Access-Control-Allow-Origin'] = '*'
-        if 'Access-Control-Allow-Methods' not in response.headers:
-            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, PUT, DELETE'
-        if 'Access-Control-Allow-Headers' not in response.headers:
-            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Request-ID'
+        # Add CORS headers if not present (credentials-compatible)
+        _add_cors_headers_to_response(response)
 
         # Ensure X-Request-ID is in response (for correlation)
         if 'X-Request-ID' not in response.headers:
