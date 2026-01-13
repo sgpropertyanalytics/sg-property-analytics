@@ -15,12 +15,52 @@ Usage:
 """
 import os
 import sys
+import time
 from pathlib import Path
 
 # Add backend to path for imports
 backend_dir = Path(__file__).parent.parent
 if str(backend_dir) not in sys.path:
     sys.path.insert(0, str(backend_dir))
+
+
+def connect_with_retry(db_url: str, attempts: int = 4, base_sleep: float = 0.75):
+    """
+    Connect to database with exponential backoff retry.
+
+    Handles Supabase cold starts and transient network issues.
+    Mirrors the retry logic in db/engine.py for consistency.
+
+    Args:
+        db_url: PostgreSQL connection string
+        attempts: Number of retry attempts (default 4)
+        base_sleep: Base sleep time in seconds (doubles each attempt)
+
+    Returns:
+        psycopg2 connection object
+
+    Raises:
+        psycopg2.OperationalError: If all attempts fail
+    """
+    import psycopg2
+
+    last_error = None
+
+    for i in range(attempts):
+        try:
+            conn = psycopg2.connect(db_url, connect_timeout=30)
+            print(f"Database connected (attempt {i + 1}/{attempts})")
+            return conn
+        except psycopg2.OperationalError as e:
+            last_error = e
+            if i < attempts - 1:
+                sleep_s = base_sleep * (2 ** i)
+                print(f"Connection failed (attempt {i + 1}/{attempts}), retrying in {sleep_s:.2f}s...")
+                print(f"  Error: {str(e)[:100]}")
+                time.sleep(sleep_s)
+
+    print(f"All {attempts} connection attempts failed")
+    raise last_error
 
 
 def needs_autocommit(sql_content: str) -> bool:
@@ -35,8 +75,6 @@ def needs_autocommit(sql_content: str) -> bool:
 
 
 def main():
-    import psycopg2
-
     db_url = os.environ.get('DATABASE_URL')
     if not db_url:
         print("ERROR: DATABASE_URL not set")
@@ -48,7 +86,7 @@ def main():
         sys.exit(1)
 
     print("Connecting to database...")
-    conn = psycopg2.connect(db_url)
+    conn = connect_with_retry(db_url)
     cur = conn.cursor()
 
     try:

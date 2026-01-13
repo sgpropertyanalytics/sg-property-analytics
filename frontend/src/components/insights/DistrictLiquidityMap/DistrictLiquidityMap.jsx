@@ -29,9 +29,11 @@ import { assertKnownVersion } from '../../../adapters';
 import {
   MAP_CONFIG,
   MAP_STYLE,
-  LIQUIDITY_FILLS,
+  REGION_FILLS,
+  REGION_FILL_DIMMED,
+  LIQUIDITY_BORDERS,
 } from './constants';
-import { getLiquidityFill, getLiquidityFillDimmed } from './utils';
+import { getLiquidityBorder } from './utils';
 import { getRegionForDistrict, REGIONS } from '../../../constants';
 import {
   DistrictLabel,
@@ -147,7 +149,7 @@ function DistrictLiquidityMapBase({
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
 
-  // Dynamic fill color expression based on liquidity (with spotlight dimming)
+  // Dynamic fill color expression based on REGION (same as Price map)
   // Supports both hover-based and region-filter-based highlighting
   const fillColorExpression = useMemo(() => {
     const hoveredId = hoveredDistrict?.district?.district;
@@ -168,9 +170,10 @@ function DistrictLiquidityMapBase({
         const shouldDim = !isInSelectedRegion || (hoveredId && !isHoveredDistrict);
 
         if (shouldDim) {
-          expr.push(getLiquidityFillDimmed(d.liquidity_metrics?.liquidity_score));
+          expr.push(REGION_FILL_DIMMED);
         } else {
-          expr.push(getLiquidityFill(d.liquidity_metrics?.liquidity_score));
+          // Fill by region (CCR/RCR/OCR) - same as Price map
+          expr.push(REGION_FILLS[districtRegion] || REGION_FILLS.OCR);
         }
       }
     });
@@ -179,14 +182,36 @@ function DistrictLiquidityMapBase({
     // MapLibre 'case' requires at least 3 arguments: ['case', condition, result, fallback]
     if (expr.length === 1) {
       const shouldDimDefault = hoveredId || isRegionFilterActive;
-      return shouldDimDefault ? getLiquidityFillDimmed(null) : LIQUIDITY_FILLS.noData;
+      return shouldDimDefault ? REGION_FILL_DIMMED : 'rgba(200, 200, 200, 0.15)';
     }
 
     // Default for districts with no data
     const shouldDimDefault = hoveredId || isRegionFilterActive;
-    expr.push(shouldDimDefault ? getLiquidityFillDimmed(null) : LIQUIDITY_FILLS.noData);
+    expr.push(shouldDimDefault ? REGION_FILL_DIMMED : 'rgba(200, 200, 200, 0.15)');
     return expr;
   }, [districtData, hoveredDistrict, isRegionFilterActive, segments]);
+
+  // Dynamic border color expression based on LIQUIDITY SCORE
+  // This shows liquidity level while fill shows region
+  const borderColorExpression = useMemo(() => {
+    const expr = ['case'];
+
+    districtData.forEach((d) => {
+      if (d.has_data) {
+        expr.push(['==', ['get', 'district'], d.district_id]);
+        expr.push(getLiquidityBorder(d.liquidity_metrics?.liquidity_score));
+      }
+    });
+
+    // If no conditions were added, return default border color
+    if (expr.length === 1) {
+      return LIQUIDITY_BORDERS.noData;
+    }
+
+    // Default for districts with no data
+    expr.push(LIQUIDITY_BORDERS.noData);
+    return expr;
+  }, [districtData]);
 
   // Calculate screen position of hovered district for tethered callout
   // Card is fixed below the legend, only the leader line moves
@@ -392,14 +417,25 @@ function DistrictLiquidityMapBase({
                 'fill-opacity': 1,
               }}
             />
-            {/* District borders */}
+            {/* District border glow - wider, semi-transparent for glow effect */}
+            <Layer
+              id="district-borders-glow"
+              type="line"
+              paint={{
+                'line-color': borderColorExpression,
+                'line-width': 6,
+                'line-opacity': 0.3,
+                'line-blur': 3,
+              }}
+            />
+            {/* District borders - colored by liquidity score */}
             <Layer
               id="district-borders"
               type="line"
               paint={{
-                'line-color': '#FFFFFF',
+                'line-color': borderColorExpression,
                 'line-width': 1.5,
-                'line-opacity': 0.8,
+                'line-opacity': 0.9,
               }}
             />
           </Source>
@@ -456,18 +492,48 @@ function DistrictLiquidityMapBase({
           )}
         </AnimatePresence>
 
-        {/* Legend - Liquidity Score (top-left) - smaller on mobile */}
+        {/* Legend - Market Segments + Liquidity Score (top-left) - matches Price map structure */}
         <div className="absolute top-2 left-2 sm:top-4 sm:left-4 z-20">
-          <div className="bg-white/95 backdrop-blur-sm rounded-sm border border-slate-300 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.05)] p-2 sm:p-2.5 w-[140px] sm:w-[220px]">
-            {/* Header with methodology tooltip */}
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-[9px] text-slate-500 uppercase tracking-wider font-semibold">
-                Liquidity Score
+          <div className="bg-white/95 backdrop-blur-sm rounded-sm border border-slate-300 shadow-md p-2 sm:p-2.5 w-[130px] sm:w-[165px]">
+            {/* Market Segments (fill colors) - same as Price map */}
+            <p className="text-[8px] sm:text-[9px] text-slate-500 uppercase tracking-wider font-semibold mb-1.5 sm:mb-2">
+              Market Segments
+            </p>
+            <div className="space-y-1 sm:space-y-1.5">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="w-3 h-2 sm:w-4 sm:h-3 rounded shrink-0" style={{ backgroundColor: REGION_FILLS.CCR }} />
+                <span className="text-[9px] sm:text-[10px] text-slate-800">
+                  <span className="sm:hidden">CCR</span>
+                  <span className="hidden sm:inline">CCR (Core Central)</span>
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="w-3 h-2 sm:w-4 sm:h-3 rounded shrink-0" style={{ backgroundColor: REGION_FILLS.RCR }} />
+                <span className="text-[9px] sm:text-[10px] text-slate-800">
+                  <span className="sm:hidden">RCR</span>
+                  <span className="hidden sm:inline">RCR (Rest of Central)</span>
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="w-3 h-2 sm:w-4 sm:h-3 rounded shrink-0" style={{ backgroundColor: REGION_FILLS.OCR }} />
+                <span className="text-[9px] sm:text-[10px] text-slate-800">
+                  <span className="sm:hidden">OCR</span>
+                  <span className="hidden sm:inline">OCR (Outside Central)</span>
+                </span>
+              </div>
+            </div>
+
+            <div className="h-px bg-slate-200 my-1.5 sm:my-2" />
+
+            {/* Liquidity Score with methodology tooltip */}
+            <div className="flex items-center justify-between mb-1 sm:mb-1.5">
+              <p className="text-[8px] sm:text-[9px] text-slate-500 uppercase tracking-wider font-semibold">
+                Volume Activity
               </p>
               <div className="group relative">
-                <div className="w-4 h-4 rounded-full bg-slate-100 flex items-center justify-center cursor-help hover:bg-slate-200 transition-colors">
+                <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-slate-100 flex items-center justify-center cursor-help hover:bg-slate-200 transition-colors">
                   <svg
-                    className="w-2.5 h-2.5 text-slate-500"
+                    className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-slate-500"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -497,58 +563,17 @@ function DistrictLiquidityMapBase({
                 </div>
               </div>
             </div>
-
-            <div className="space-y-1 sm:space-y-1.5">
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <div
-                  className="w-3 h-2 sm:w-4 sm:h-3 rounded-sm shrink-0"
-                  style={{ backgroundColor: LIQUIDITY_FILLS.veryHigh }}
-                />
-                <span className="text-[9px] sm:text-[10px] text-slate-800">
-                  <span className="sm:hidden">80+</span>
-                  <span className="hidden sm:inline">Excellent (≥80)</span>
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <div
-                  className="w-3 h-2 sm:w-4 sm:h-3 rounded-sm shrink-0"
-                  style={{ backgroundColor: LIQUIDITY_FILLS.high }}
-                />
-                <span className="text-[9px] sm:text-[10px] text-slate-800">
-                  <span className="sm:hidden">60-79</span>
-                  <span className="hidden sm:inline">Good (60-79)</span>
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <div
-                  className="w-3 h-2 sm:w-4 sm:h-3 rounded-sm shrink-0"
-                  style={{ backgroundColor: LIQUIDITY_FILLS.neutral }}
-                />
-                <span className="text-[9px] sm:text-[10px] text-slate-800">
-                  <span className="sm:hidden">40-59</span>
-                  <span className="hidden sm:inline">Average (40-59)</span>
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <div
-                  className="w-3 h-2 sm:w-4 sm:h-3 rounded-sm shrink-0"
-                  style={{ backgroundColor: LIQUIDITY_FILLS.low }}
-                />
-                <span className="text-[9px] sm:text-[10px] text-slate-800">
-                  <span className="sm:hidden">20-39</span>
-                  <span className="hidden sm:inline">Below Avg (20-39)</span>
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <div
-                  className="w-3 h-2 sm:w-4 sm:h-3 rounded-sm shrink-0"
-                  style={{ backgroundColor: LIQUIDITY_FILLS.veryLow }}
-                />
-                <span className="text-[9px] sm:text-[10px] text-slate-800">
-                  <span className="sm:hidden">&lt;20</span>
-                  <span className="hidden sm:inline">Poor (&lt;20)</span>
-                </span>
-              </div>
+            {/* Gradient heatbar from High to Low liquidity */}
+            <div
+              className="h-2.5 rounded-sm"
+              style={{
+                background: `linear-gradient(to right, ${LIQUIDITY_BORDERS.veryHigh}, ${LIQUIDITY_BORDERS.high}, ${LIQUIDITY_BORDERS.neutral}, ${LIQUIDITY_BORDERS.low}, ${LIQUIDITY_BORDERS.veryLow})`,
+                width: '100%'
+              }}
+            />
+            <div className="flex justify-between mt-1">
+              <span className="text-[8px] text-slate-500">High</span>
+              <span className="text-[8px] text-slate-500">Low</span>
             </div>
 
             {/* Stats summary - hidden on mobile */}

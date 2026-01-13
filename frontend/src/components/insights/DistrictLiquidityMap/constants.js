@@ -40,7 +40,28 @@ export const COLORS = {
   sand: '#EAE0CF',
 };
 
-// Liquidity colors (based on composite liquidity score 0-100)
+// Region fill colors (same as MarketStrategyMap - fill by CCR/RCR/OCR)
+export const REGION_FILLS = {
+  CCR: 'rgba(33, 52, 72, 0.60)',   // Deep Navy - Premium/Core Central
+  RCR: 'rgba(84, 119, 146, 0.50)', // Ocean Blue - City Fringe
+  OCR: 'rgba(148, 180, 193, 0.35)', // Sky Blue - Suburban
+};
+
+// Dimmed region fill for spotlight effect
+export const REGION_FILL_DIMMED = 'rgba(180, 180, 180, 0.25)';
+
+// Liquidity border colors (based on composite liquidity score 0-100)
+// Used for district borders to indicate liquidity while fill shows region
+export const LIQUIDITY_BORDERS = {
+  veryHigh: '#213448',    // Deep Navy - Score >= 80 (Excellent)
+  high: '#547792',        // Ocean Blue - Score >= 60 (Good)
+  neutral: '#94B4C1',     // Sky Blue - Score >= 40 (Average)
+  low: '#EAE0CF',         // Sand - Score >= 20 (Below Avg)
+  veryLow: '#d4c4a8',     // Darker Sand - Score < 20 (Poor)
+  noData: '#cbd5e1',      // Slate-300 - no data
+};
+
+// Legacy: Liquidity fill colors (kept for reference, now using REGION_FILLS for map fill)
 export const LIQUIDITY_FILLS = {
   veryHigh: 'rgba(33, 52, 72, 0.60)',    // Deep Navy - Score >= 80 (Excellent)
   high: 'rgba(84, 119, 146, 0.50)',      // Ocean Blue - Score >= 60 (Good)
