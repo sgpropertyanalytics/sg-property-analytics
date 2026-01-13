@@ -18,7 +18,7 @@ import apiClient from '../api/client';
 export default function Pricing() {
   const navigate = useNavigate();
   const { user: _user, isAuthenticated } = useAuth();
-  const { isPremium, subscription } = useSubscription();
+  const { canAccessPremium, expiry } = useSubscription();
 
   const handleSelectPlan = async (planId) => {
     // If not logged in, redirect to login with return path
@@ -46,7 +46,7 @@ export default function Pricing() {
   };
 
   // If already premium, show confirmation
-  if (isPremium) {
+  if (canAccessPremium) {
     return (
       <div className="min-h-screen bg-brand-sand py-16 px-4">
         <div className="max-w-md mx-auto text-center">
@@ -61,8 +61,8 @@ export default function Pricing() {
               You have full access to all property data and features.
             </p>
             <p className="text-sm text-brand-sky mb-4">
-              {subscription.ends_at && (
-                <>Subscription ends: {new Date(subscription.ends_at).toLocaleDateString('en-SG', { year: 'numeric', month: 'long', day: 'numeric' })}</>
+              {expiry?.endsAt && (
+                <>Subscription ends: {new Date(expiry.endsAt).toLocaleDateString('en-SG', { year: 'numeric', month: 'long', day: 'numeric' })}</>
               )}
             </p>
             <button

@@ -19,10 +19,10 @@ import { useSubscription } from '../../context/SubscriptionContext';
  */
 export function PreviewChartOverlay({ chartRef, children }) {
   const subscriptionContext = useSubscription();
-  const isPremium = subscriptionContext?.isPremium ?? true; // Default to premium if context unavailable
+  const canAccessPremium = subscriptionContext?.canAccessPremium ?? true; // Default to premium if context unavailable
   // P0 FIX: Check if tier is known (not 'unknown' loading state)
   // When tier is unknown, don't show blur - ChartFrame shows skeleton instead
-  const isTierKnown = subscriptionContext?.isTierKnown ?? true;
+  const isTierKnown = (subscriptionContext?.tierSource ?? 'server') !== 'none';
   const [overlayBounds, setOverlayBounds] = useState(null);
 
   const updateBounds = useCallback(() => {
@@ -37,7 +37,7 @@ export function PreviewChartOverlay({ chartRef, children }) {
     // Premium users don't need overlay
     // P0 FIX: Also skip overlay when tier is unknown (loading state)
     // ChartFrame shows skeleton during boot - we don't want blur AND skeleton
-    if (isPremium || !isTierKnown) {
+    if (canAccessPremium || !isTierKnown) {
       setOverlayBounds(null);
       return;
     }
@@ -76,11 +76,11 @@ export function PreviewChartOverlay({ chartRef, children }) {
       clearInterval(intervalId);
       resizeObserver?.disconnect();
     };
-  }, [isPremium, isTierKnown, chartRef, updateBounds]);
+  }, [canAccessPremium, isTierKnown, chartRef, updateBounds]);
 
   // Premium users see charts normally
   // P0 FIX: Also skip overlay when tier is unknown (loading state)
-  if (isPremium || !isTierKnown) {
+  if (canAccessPremium || !isTierKnown) {
     return <>{children}</>;
   }
 

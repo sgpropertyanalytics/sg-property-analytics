@@ -55,10 +55,10 @@ export function BlurredCell({
   source = 'table',
   className = '',
 }) {
-  const { isPremium, showPaywall } = useSubscription();
+  const { canAccessPremium, paywall } = useSubscription();
 
   // Premium users see the real value (formatted)
-  if (isPremium && value !== null && value !== undefined) {
+  if (canAccessPremium && value !== null && value !== undefined) {
     return (
       <span className={className}>
         {formatValue(value, variant)}
@@ -72,7 +72,7 @@ export function BlurredCell({
   // Handle click - triggers paywall with analytics context
   const handleClick = (e) => {
     e.stopPropagation();
-    showPaywall({
+    paywall.open({
       field,
       source,
       district,

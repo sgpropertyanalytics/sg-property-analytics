@@ -59,7 +59,8 @@ function TimeTrendChartBase({ height = 380, saleType = null, staggerIndex = 0, v
   const timeframe = filters.timeFilter?.type === 'preset' ? filters.timeFilter.value : 'Y1';
   const districts = filters.districts?.join(',') || '';
   // bedroom filtered client-side; districts passed to API for server-side filtering
-  const { isFreeResolved } = useSubscription();
+  const { tier, tierSource } = useSubscription();
+  const isFreeTier = tierSource !== 'none' && tier === 'free';
 
   const chartRef = useRef(null);
 
@@ -281,7 +282,7 @@ Grouped by ${TIME_LABELS[timeGrouping]}.`}
         />
 
         {/* Layer 2: KPI Strip - h-20 fixed */}
-        <DataCardToolbar columns={3} blur={isFreeResolved}>
+        <DataCardToolbar columns={3} blur={isFreeTier}>
           <ToolbarStat
             label="Total Volume"
             value={totalTransactions.toLocaleString()}

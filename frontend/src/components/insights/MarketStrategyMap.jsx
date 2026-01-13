@@ -453,7 +453,8 @@ function MarketStrategyMapBase({
   onModeChange,
   enabled = true,
 }) {
-  const { isPremium, isFreeResolved } = useSubscription();
+  const { tier, tierSource } = useSubscription();
+  const isFreeTier = tierSource !== 'none' && tier === 'free';
   const [hoveredDistrict, setHoveredDistrict] = useState(null);
 
   // Refs for map container and map instance (for tethered hover position calculations)
@@ -661,7 +662,7 @@ function MarketStrategyMapBase({
       {/* Map container - responsive height based on viewport */}
       <div ref={mapContainerRef} className="relative h-[50vh] min-h-[400px] md:h-[60vh] md:min-h-[500px] lg:h-[65vh] lg:min-h-[550px]">
         {/* Blur overlay for free users */}
-        {isFreeResolved && !loading && (
+        {isFreeTier && !loading && (
           <div
             className="absolute inset-0 z-20 pointer-events-none"
             style={{
@@ -875,7 +876,7 @@ function MarketStrategyMapBase({
 
       {/* Region summary bar */}
       {!loading && !error && districtData.length > 0 && (
-        <div className={isFreeResolved ? 'blur-sm grayscale-[40%]' : ''}>
+        <div className={isFreeTier ? 'blur-sm grayscale-[40%]' : ''}>
           <RegionSummaryBar districtData={districtData} selectedPeriod={selectedPeriod} />
         </div>
       )}

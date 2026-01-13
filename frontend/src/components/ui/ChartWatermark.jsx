@@ -17,12 +17,13 @@ import { useSubscription } from '../../context/SubscriptionContext';
  * - Non-interactive (pointer-events-none)
  */
 export function ChartWatermark({ children }) {
-  const { isPremium, isTierKnown } = useSubscription();
+  const { canAccessPremium, tierSource } = useSubscription();
+  const isTierKnown = tierSource !== 'none';
 
   // Premium users see charts without watermark
   // P0 FIX: Also skip watermark when tier is unknown (loading state)
   // ChartFrame shows skeleton during boot - we don't want watermark AND skeleton
-  if (isPremium || !isTierKnown) {
+  if (canAccessPremium || !isTierKnown) {
     return children;
   }
 

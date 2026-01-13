@@ -167,7 +167,7 @@ function NavItem({ item, isActive, onClick, collapsed = false }) {
 export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onPageChange, collapsed = false }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { showPaywall } = useSubscription();
+  const { paywall } = useSubscription();
   const [showAccountSettings, setShowAccountSettings] = useState(false);
 
   // useTransition for non-urgent navigation - prevents Suspense fallback flash
@@ -302,7 +302,7 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
       <AccountSettingsModal
         isOpen={showAccountSettings}
         onClose={() => setShowAccountSettings(false)}
-        onShowPricing={() => showPaywall({ source: 'account_settings' })}
+        onShowPricing={() => paywall.open({ source: 'account_settings' })}
       />
     </nav>
   );

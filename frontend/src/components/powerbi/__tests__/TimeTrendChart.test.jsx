@@ -136,7 +136,12 @@ vi.mock('../../ui', () => ({
 let mockAppReady = true;
 
 vi.mock('../../../context/AppReadyContext', () => ({
-  useAppReadyOptional: () => ({ appReady: mockAppReady }),
+  useAppReadyOptional: () => ({
+    publicReady: mockAppReady,
+    proReady: mockAppReady,
+    bootStatus: mockAppReady ? 'ready' : 'booting',
+    banners: {},
+  }),
 }));
 
 // Mock useChartTiming

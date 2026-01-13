@@ -9,17 +9,17 @@ import { Lock } from 'lucide-react';
  * Decision logic (builds trust through consistency):
  * - Not logged in → Navigate to /login (Google auth)
  * - Logged in but unpaid → Show PricingModal (Stripe)
- * - Paid (isPremium) → Don't render at all
+ * - Paid (canAccessPremium) → Don't render at all
  *
  * Positioned at bottom of main content area (z-30)
  */
 export function UpgradeFooterCTA() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
-  const { isPremium, showPaywall } = useSubscription();
+  const { canAccessPremium, paywall } = useSubscription();
 
   // Don't render if already premium
-  if (isPremium) return null;
+  if (canAccessPremium) return null;
 
   const handleClick = () => {
     if (!isAuthenticated) {
@@ -27,7 +27,7 @@ export function UpgradeFooterCTA() {
       navigate('/login');
     } else {
       // Logged in but unpaid → Show pricing modal
-      showPaywall({ source: 'footer-cta' });
+      paywall.open({ source: 'footer-cta' });
     }
   };
 

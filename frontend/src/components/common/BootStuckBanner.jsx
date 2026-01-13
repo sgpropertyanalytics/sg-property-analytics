@@ -17,33 +17,31 @@ const PUBLIC_ROUTES = ['/', '/landing', '/login', '/pricing'];
  *
  * The retry button triggers BOTH:
  * - Token sync retry (AuthContext.retryTokenSync)
- * - Subscription retry (SubscriptionContext.retrySubscription)
+ * - Subscription refresh (SubscriptionContext.actions.refresh)
  *
  * Usage: Add to App.jsx layout, outside main content
  */
 export function BootStuckBanner() {
   const location = useLocation();
-  const { isBootSlow, isBootStuck, bootStatus } = useAppReady();
-  const { retrySubscription } = useSubscription();
-  const { retryTokenSync } = useAuth();
+  const { bootStatus, banners } = useAppReady();
+  const { actions } = useSubscription();
+  const { retryTokenSync, isAuthenticated } = useAuth();
 
   // Don't show on public routes - they don't need auth/subscription
   if (PUBLIC_ROUTES.includes(location.pathname)) return null;
 
-  // Show nothing if boot is normal (<5s)
-  if (!isBootSlow && !isBootStuck) return null;
+  const usingCachedTier = Boolean(banners?.usingCachedTier) && isAuthenticated;
+  const isBootSlow = bootStatus === 'slow';
+  const isBootStuck = bootStatus === 'stuck';
+
+  // Show nothing if boot is normal (<5s) and not using cached access
+  if (!isBootSlow && !isBootStuck && !usingCachedTier) return null;
 
   const handleRetry = () => {
     // Retry BOTH to break potential deadlock
     retryTokenSync();
-    retrySubscription();
+    actions.refresh();
   };
-
-  // Build list of what's blocking boot
-  const blockedBy = [];
-  if (!bootStatus?.authInitialized) blockedBy.push('authentication');
-  if (!bootStatus?.isSubscriptionReady) blockedBy.push('subscription');
-  if (!bootStatus?.filtersReady) blockedBy.push('filters');
 
   // Phase 1: Boot slow (5-10s) - likely cold start, show reassuring message
   if (isBootSlow && !isBootStuck) {
@@ -60,12 +58,25 @@ export function BootStuckBanner() {
     );
   }
 
+  if (usingCachedTier && !isBootSlow && !isBootStuck) {
+    return (
+      <div className="bg-blue-50 border-b border-blue-200 px-4 py-3 flex items-center justify-between">
+        <span className="text-blue-800 text-sm flex items-center gap-2">
+          <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          </svg>
+          Using cached access — reconnecting…
+        </span>
+      </div>
+    );
+  }
+
   // Phase 2: Boot stuck (>10s) - show retry button
   return (
     <div className="bg-amber-50 border-b border-amber-200 px-4 py-3 flex items-center justify-between">
       <span className="text-amber-800 text-sm">
-        Loading taking longer than expected
-        {blockedBy.length > 0 && ` (${blockedBy.join(', ')})`}.
+        Loading taking longer than expected.
       </span>
       <button
         onClick={handleRetry}

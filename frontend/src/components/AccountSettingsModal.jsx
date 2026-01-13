@@ -12,7 +12,7 @@ import { getInitials } from '../utils/formatters';
  */
 export function AccountSettingsModal({ isOpen, onClose, onShowPricing }) {
   const { user, logout } = useAuth();
-  const { subscription, isPremium, isTierKnown, isFreeResolved, daysUntilExpiry } = useSubscription();
+  const { tier, tierSource, canAccessPremium, expiry } = useSubscription();
 
   const [loading, setLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -169,14 +169,14 @@ export function AccountSettingsModal({ isOpen, onClose, onShowPricing }) {
                 <div>
                   <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Plan</h3>
                   <div className="flex items-center gap-2 mb-1">
-                    {!isTierKnown ? (
+                    {tierSource === 'none' ? (
                       <span className="inline-block h-5 w-20 bg-slate-700 rounded animate-pulse" />
                     ) : (
                       <>
                         <span className="text-base font-bold text-white">
-                          {isPremium ? 'Premium' : 'Free'}
+                          {tier === 'premium' ? 'Premium' : 'Free'}
                         </span>
-                        {isPremium && (
+                        {canAccessPremium && (
                           <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 uppercase">
                             Active
                           </span>
@@ -184,18 +184,18 @@ export function AccountSettingsModal({ isOpen, onClose, onShowPricing }) {
                       </>
                     )}
                   </div>
-                  {isPremium && subscription?.ends_at ? (
+                  {canAccessPremium && expiry?.endsAt ? (
                     <p className="text-[11px] text-slate-500">
-                      Renews {formatDate(subscription.ends_at)}
+                      Renews {formatDate(expiry.endsAt)}
                     </p>
-                  ) : isTierKnown && !isPremium ? (
+                  ) : tierSource !== 'none' && tier === 'free' ? (
                     <p className="text-[11px] text-slate-500">
                       Limited access
                     </p>
                   ) : null}
                 </div>
 
-                {isPremium ? (
+                {canAccessPremium ? (
                   <button
                     onClick={handleManageBilling}
                     disabled={loading}
@@ -203,7 +203,7 @@ export function AccountSettingsModal({ isOpen, onClose, onShowPricing }) {
                   >
                     Manage Billing →
                   </button>
-                ) : isFreeResolved && (
+                ) : tierSource !== 'none' && tier === 'free' && (
                   <button
                     onClick={handleUpgrade}
                     className="mt-4 text-xs text-amber-400 hover:text-amber-300 font-medium text-left"

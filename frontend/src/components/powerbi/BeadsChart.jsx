@@ -78,7 +78,8 @@ function BeadsChartBase({
   // Extract filter values directly (simple, explicit)
   const timeframe = filters.timeFilter?.type === 'preset' ? filters.timeFilter.value : 'Y1';
   // bedroom/district excluded - this chart shows ALL bedroom types as separate bubbles
-  const { isFreeResolved } = useSubscription();
+  const { tier, tierSource } = useSubscription();
+  const isFreeTier = tierSource !== 'none' && tier === 'free';
 
   const chartRef = useRef(null);
   const { wrapApiCall, DebugOverlay, debugInfo } = useDebugOverlay('BeadsChart');
@@ -344,7 +345,7 @@ String Line — Price range for that region.`}
         />
 
         {/* KPI Strip: h-20 fixed */}
-        <DataCardToolbar columns={3} blur={isFreeResolved}>
+        <DataCardToolbar columns={3} blur={isFreeTier}>
           <ToolbarStat
             label="Transactions"
             value={(stats?.totalTransactions || 0).toLocaleString()}

@@ -9,6 +9,7 @@
  * Override only if absolutely necessary via VITE_API_URL.
  */
 import axios from 'axios';
+import { emitTokenExpiredOnce } from '../auth/tokenExpired';
 
 // Determine API base URL (no environment branching)
 const getApiBase = () => {
@@ -308,26 +309,6 @@ export function unwrapEnvelope(body) {
   return { data: body, meta: undefined };
 }
 
-// ===== Auth URL Detection =====
-// Handles both relative ("/auth/...") and absolute ("https://.../api/auth/...") URLs
-function isAuthUrl(url = '') {
-  return url.includes('/api/auth/') || url.includes('/auth/');
-}
-
-// ===== Token Expired Debounce =====
-// Prevents spam during boot when multiple parallel requests hit 401
-let lastTokenExpiredAt = 0;
-const TOKEN_EXPIRED_DEBOUNCE_MS = 1500;
-
-function emitTokenExpired(url) {
-  const now = Date.now();
-  if (now - lastTokenExpiredAt < TOKEN_EXPIRED_DEBOUNCE_MS) {
-    return; // Debounce: skip if fired recently
-  }
-  lastTokenExpiredAt = now;
-  window.dispatchEvent(new CustomEvent('auth:token-expired', { detail: { url } }));
-}
-
 apiClient.interceptors.response.use(
   (response) => {
     // Unwrap api_contract envelope using helper
@@ -346,9 +327,7 @@ apiClient.interceptors.response.use(
 
       // Only emit token-expired for non-auth endpoints
       // Auth endpoints handle their own 401s (e.g., login failure)
-      if (!isAuthUrl(requestUrl)) {
-        emitTokenExpired(requestUrl);
-      }
+      emitTokenExpiredOnce(requestUrl);
     }
     // Note: 403 is NOT treated as token-expired
     // 403 = authenticated but not premium → show paywall, not re-auth

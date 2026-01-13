@@ -48,7 +48,7 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
   // This prevents nav rail from unmounting during page transitions
   const content = children || <Outlet />;
   const location = useLocation();
-  const { showPricingModal, hidePaywall } = useSubscription();
+  const { paywall } = useSubscription();
   const { apiMetadata } = useData();
 
   // Determine active page from URL or prop
@@ -351,7 +351,7 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
       </div>
 
       {/* Pricing Modal - Global paywall trigger */}
-      <PricingModal isOpen={showPricingModal} onClose={hidePaywall} />
+      <PricingModal isOpen={paywall.isOpen} onClose={paywall.close} />
 
       {/* Debug Mode Indicator - Shows when Ctrl+Shift+D is pressed */}
       <DebugModeIndicator />
