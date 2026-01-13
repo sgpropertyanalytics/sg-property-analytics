@@ -450,6 +450,15 @@
   opacity: 0;
 }
 
+/* Child dropdown in disabled state - transparent to show diagonal hatch */
+/* Matches .segmented-btn pattern above */
+.filter-group-disabled.multi-select-dropdown button,
+.filter-group-disabled .multi-select-dropdown button {
+  background-color: transparent !important;
+  border-color: #E5E5E5;
+  color: inherit;
+  cursor: not-allowed;
+}
 
 /* Wireframe dropdown/select styling */
 .wireframe-select {
