@@ -20,6 +20,89 @@ The reducer and validators are a MEANS to safely delete 115 mutation points. If 
 
 ---
 
+## Reliability Criteria (MUST PROVE)
+
+> **Direction ≠ Completion.** You can be "moving toward single writer" but still have 10 mutation points left, one path that bypasses the reducer, one timeout that isn't scoped. Any one of those is enough to keep the free↔premium flicker alive.
+
+### Two Conditions for Reliability
+
+**Condition A: Single-writer is REAL, not "mostly"**
+
+You only get predictability when:
+- There is ONE commit path for auth/tier/subscription
+- AND zero other code can mutate those fields
+
+If any "escape hatch" setter remains (even "just for retries" or "just for timeouts"), instability can persist.
+
+```bash
+# Verification (must pass)
+grep -rE "set(TokenStatus|User|Status|Subscription|Tier|TierSource)" frontend/src/context/ \
+  --include="*.jsx" | grep -v "authCoordinator"
+# Expected: 0 matches
+```
+
+**Condition B: Sequencing covers ALL writers, including timeouts**
+
+A lot of "still unstable" systems fail here:
+- Request sequencing exists for fetch completion
+- But timeouts, retries, and fallback branches still fire out-of-band
+- They overwrite correct states
+
+"requestId required" must apply to:
+- ✅ Fetch success/fail
+- ✅ Timeout actions
+- ✅ Retry scheduling
+- ✅ Fallback to free
+
+If timeouts aren't request-scoped, the system can still flip randomly.
+
+### Two Invariants That Must Never Be Violated
+
+| Invariant | Definition | Failure Mode |
+|-----------|------------|--------------|
+| **Premium can't be lost due to timing** | If backend returns premium once during boot, you must NOT end free at end of boot regardless of timing | Timeout overwrites server-confirmed premium |
+| **Boot must converge** | Within N seconds, state must converge to (authenticated + resolved tier) OR (guest/free) and not remain stuck | Boot stuck forever, tier oscillates |
+
+**If you can't prove these two, you can't claim reliability.**
+
+### Deterministic Repro Suite (To Prove Predictability)
+
+**Step 1: Add debug timeline logging**
+
+For every action dispatched, log:
+- Action type
+- requestId
+- Resulting `(authPhase, subPhase, tier, tierSource)`
+
+**Step 2: Run 10 refreshes under each scenario**
+
+| Scenario | What It Tests |
+|----------|---------------|
+| Backend warm | Happy path convergence |
+| Backend cold (Render sleeping) | Gateway error handling, retry logic |
+| Offline simulation (throttle/block API) | Timeout fallback behavior |
+| Multi-tab (open two tabs, refresh both) | Cross-tab state coherence |
+
+**Step 3: Pass criteria (binary)**
+
+- ✅ Final tier is the SAME every time for each scenario
+- ✅ No oscillations after convergence
+- ✅ Premium invariant never violated
+- ✅ Boot converges within timeout
+
+### What v7 Still Needs to Prove
+
+| Question | Status | How to Verify |
+|----------|--------|---------------|
+| Are timeouts tied to requestId? | 🔲 Implement | Check `SUB_PENDING_TIMEOUT` action includes/checks requestId |
+| Does `FIREBASE_USER_CHANGED` always reset subscription? | 🔲 Verify | Cross-domain invariant #1 |
+| Any place still setting tier outside reducer? | 🔲 Grep | Condition A verification |
+| Does token-sync schedule cause "PRESENT blocks sync"? | 🔲 Test | Run backend-cold scenario |
+
+**Until these are verified, reliability is not guaranteed.**
+
+---
+
 ## Part 1: Mental Models & Frameworks
 
 ### The Problem We Keep Hitting
