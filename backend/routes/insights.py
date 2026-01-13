@@ -1070,3 +1070,81 @@ def district_liquidity():
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
+
+
+# =============================================================================
+# CACHE WARMING FOR INSIGHTS ENDPOINTS
+# =============================================================================
+
+def warm_insights_cache(app):
+    """
+    Pre-populate insights cache with common query patterns.
+
+    Call this at application startup to prevent cold-cache 502 timeouts.
+    Calls service functions directly (thread-safe) instead of test_client.
+
+    NOTE: This runs synchronously - caller should run in background thread.
+
+    Common patterns warmed:
+    - district-liquidity: Y1 timeframe, all bedrooms, Resale (default view)
+    - district-psf: Y1 timeframe, all bedrooms, Resale (default view)
+    """
+    from datetime import date
+    from dateutil.relativedelta import relativedelta
+    from services.insights_service import compute_district_psf, compute_district_liquidity
+
+    # Calculate Y1 date range (same logic as @api_contract timeframe resolution)
+    today = date.today()
+    date_to_exclusive = date(today.year, today.month, 1)  # First of current month
+    date_from = date_to_exclusive - relativedelta(years=1)
+    months_in_period = 12
+
+    try:
+        with app.app_context():
+            # Warm district-liquidity (the slower endpoint)
+            print("      Warming district-liquidity cache...")
+            start = time.time()
+
+            liquidity_data = compute_district_liquidity(
+                date_from=date_from,
+                date_to_exclusive=date_to_exclusive,
+                bed_filter="all",
+                sale_type_filter="Resale",  # DB format
+                timeframe="Y1",
+                months_in_period=months_in_period
+            )
+
+            # Populate the TTL cache directly
+            cache_key = _build_cache_key('district-liquidity', {
+                'timeframe': 'Y1',
+                'bed': 'all',
+                'sale_type': 'Resale',
+            })
+            _district_liquidity_cache.set(cache_key, liquidity_data)
+
+            elapsed = time.time() - start
+            print(f"      ✓ district-liquidity warmed ({elapsed:.1f}s)")
+
+            # Warm district-psf
+            print("      Warming district-psf cache...")
+            start = time.time()
+
+            psf_data = compute_district_psf(
+                date_from=date_from,
+                date_to_exclusive=date_to_exclusive,
+                bed_filter="all",
+                age_filter="all",
+                sale_type_filter="Resale",  # DB format
+                timeframe="Y1",
+                months_in_period=months_in_period
+            )
+
+            # Note: district-psf doesn't have a TTL cache in the route,
+            # but we can still pre-compute the data to warm DB connection pool
+            elapsed = time.time() - start
+            print(f"      ✓ district-psf warmed ({elapsed:.1f}s)")
+
+    except Exception as e:
+        import traceback
+        print(f"      ⚠️ Insights cache warming failed: {e}")
+        traceback.print_exc()
