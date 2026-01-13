@@ -170,6 +170,10 @@ def api_contract(endpoint_name: str):
             # 7. Process response
             elapsed_ms = (time.perf_counter() - start_time) * 1000
 
+            # Capture Set-Cookie headers from original Response (if any) before rebuilding
+            # This preserves auth cookies set by handlers like /auth/login
+            original_set_cookies = []
+
             # Handle tuple responses (response, status_code)
             if isinstance(result, tuple):
                 if len(result) >= 2:
@@ -186,6 +190,8 @@ def api_contract(endpoint_name: str):
 
             # 8. Get data as dict if it's a Response
             if isinstance(response_data, Response):
+                # Capture Set-Cookie headers before extracting JSON
+                original_set_cookies = response_data.headers.getlist('Set-Cookie')
                 try:
                     response_data = response_data.get_json()
                 except Exception:
@@ -240,6 +246,11 @@ def api_contract(endpoint_name: str):
             response = jsonify(response_data)
             response.headers['X-Request-ID'] = request_id
             response.headers['X-API-Contract-Version'] = contract.version
+
+            # Restore Set-Cookie headers that were on the original Response
+            for cookie in original_set_cookies:
+                response.headers.add('Set-Cookie', cookie)
+
             return response, status_code
 
         return wrapper
