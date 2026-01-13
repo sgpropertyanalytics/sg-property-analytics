@@ -49,12 +49,15 @@ Private condo analytics platform using URA transaction data. Resale-focused with
 
 ## Core Invariants (NON-NEGOTIABLE)
 
-These 14 rules apply to EVERY task. Violation = bug.
+These 15 rules apply to EVERY task. Violation = bug.
 
-### 1. Understand Before Implementing
+### 1. KISS: Keep It Simple
+Default to the simplest working solution. No unnecessary abstractions. No premature optimization. Clarity > cleverness. Correctness > elegance.
+
+### 2. Understand Before Implementing
 Read target files, check `git log -20 -- <file>`, find reference implementations. The architecture is SETTLED.
 
-### 2. Layer Responsibilities
+### 3. Layer Responsibilities
 | Layer | Owns | NEVER Does |
 |-------|------|------------|
 | Pages | Business logic, sale type | - |
@@ -62,14 +65,14 @@ Read target files, check `git log -20 -- <file>`, find reference implementations
 | Routes | Parsing, validation | SQL, business logic |
 | Services | SQL, computation | Parsing strings |
 
-### 3. Single Source of Truth
+### 4. Single Source of Truth
 | What | Source | FORBIDDEN |
 |------|--------|-----------|
 | Sale types | `SaleType` enum | String literals |
 | Districts | `constants.py` | Hardcoded mappings |
 | API params | `contract_schema.py` | Undocumented fields |
 
-### 4. Reuse-First
+### 5. Reuse-First
 
 **Search before writing. Assume it exists until proven otherwise.**
 
@@ -89,7 +92,7 @@ grep -r "" frontend/src/hooks/
 
 **Can't find in 2 min? Ask — don't recreate.**
 
-### 5. Library-First
+### 6. Library-First
 
 Before writing ANY infrastructure code (not just >50 lines):
 - **Ask: "What's the native way to do this?"**
@@ -104,20 +107,20 @@ Before writing ANY infrastructure code (not just >50 lines):
 | Zustand | Context >100 lines |
 | react-hook-form + zod | Custom validation |
 
-### 6. Data File Immutability
+### 7. Data File Immutability
 **NEVER** delete/modify CSVs in `backend/data/` or `scripts/data/`.
 
-### 7. Outlier Exclusion
+### 8. Outlier Exclusion
 ```sql
 WHERE COALESCE(is_outlier, false) = false  -- EVERY query
 ```
 
-### 8. SQL Rules
+### 9. SQL Rules
 - `:param` bindings only (no f-strings)
 - Python `date` objects (not strings)
 - SQL in `services/`, not `routes/`
 
-### 9. Frontend Async
+### 10. Frontend Async
 ```javascript
 const { data, status } = useAppQuery(
   async (signal) => { /* fetch */ },
@@ -126,7 +129,7 @@ const { data, status } = useAppQuery(
 );
 ```
 
-### 10. Handle All UI States
+### 11. Handle All UI States
 ```jsx
 if (status === 'pending') return <Skeleton />;
 if (status === 'error') return <ErrorState />;
@@ -134,7 +137,7 @@ if (!data?.length) return <EmptyState />;
 return <Chart data={data} />;
 ```
 
-### 11. Fix Root Cause, Not Symptoms — LIBRARY FIRST
+### 12. Fix Root Cause, Not Symptoms — LIBRARY FIRST
 
 **STOP before implementing ANY solution.** Ask IN ORDER:
 
@@ -188,7 +191,7 @@ Claude CANNOT propose custom code until this block is written:
 | Library is massive | >100KB for a tiny feature |
 | Project-specific domain logic | Business rules unique to this app |
 
-### 12. One API Per Data Need
+### 13. One API Per Data Need
 
 Design APIs around **data needs**, not pages or charts.
 
@@ -200,7 +203,7 @@ Design APIs around **data needs**, not pages or charts.
 
 **Example:** If 3 charts all need quarterly median PSF by district, create ONE `/api/aggregate` endpoint they all share — not 3 separate endpoints.
 
-### 13. Check Both Sides Before Changing Contracts
+### 14. Check Both Sides Before Changing Contracts
 
 When modifying code that sits between two layers (API contracts, adapters, schemas, serializers, type definitions), ALWAYS:
 
@@ -211,7 +214,7 @@ When modifying code that sits between two layers (API contracts, adapters, schem
 
 **Ask before proceeding if all three don't align.**
 
-### 14. Field/API Changes Require Full Search
+### 15. Field/API Changes Require Full Search
 
 When removing, renaming, or changing any field:
 
