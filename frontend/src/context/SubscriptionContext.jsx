@@ -304,8 +304,9 @@ export function SubscriptionProvider({ children }) {
   // This prevents "spinner forever" when backend is down/waking
   // FAIL-OPEN to free - never grant premium unless confirmed by backend
   //
-  // P0 FIX: Use ref to check current status at timeout fire time
+  // P0 FIX: Use refs to check current state at timeout fire time
   // This prevents overwriting a successful fetch that completed just before timeout
+  // Also check activeRequestRef - if a fetch is in progress, don't fire
   const PENDING_TIMEOUT_MS = 15000;
   const statusRef = useRef(status);
   statusRef.current = status;
@@ -322,6 +323,16 @@ export function SubscriptionProvider({ children }) {
       if (currentStatus !== SubscriptionStatus.PENDING) {
         console.warn('[Subscription] Pending timeout fired but status changed, aborting', {
           currentStatus,
+        });
+        return;
+      }
+
+      // P0 FIX: Also check if there's an active fetch in progress
+      // This handles the React batching race - if fetch completed but render hasn't committed
+      const activeRequest = activeRequestRef.current;
+      if (activeRequest.requestId !== null) {
+        console.warn('[Subscription] Pending timeout fired but fetch in progress, aborting', {
+          activeRequest,
         });
         return;
       }
