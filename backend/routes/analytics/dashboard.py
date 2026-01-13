@@ -17,9 +17,11 @@ from utils.normalize import (
     ValidationError as NormalizeValidationError, validation_error_response
 )
 from api.contracts import api_contract
+from utils.subscription import require_premium
 
 
 @analytics_bp.route("/dashboard", methods=["GET", "POST"])
+@require_premium
 @api_contract("dashboard")
 def dashboard():
     """

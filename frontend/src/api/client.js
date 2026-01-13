@@ -117,6 +117,12 @@ const RETRY_CONFIG = {
 
 /**
  * Check if an error is retryable
+ *
+ * STRICT POLICY: Only retry 502/503/504 gateway errors.
+ * - Timeout/network errors → Let SubscriptionContext handle as DEGRADED
+ * - 401/403 → Never retry (auth flow handles these)
+ * - Other 5xx → Don't retry (server errors unlikely to self-resolve)
+ *
  * @param {Error} error - Axios error
  * @param {Object} config - Axios request config
  * @returns {boolean}
@@ -135,27 +141,14 @@ const isRetryableError = (error, config) => {
     return false;
   }
 
-  // Never retry client errors (4xx) - 401 handled separately via events
+  // Never retry client errors (4xx) - 401/403 handled separately via events
   if (error?.response?.status >= 400 && error?.response?.status < 500) {
     return false;
   }
 
-  // Retry timeout errors (cold start scenario)
-  if (error?.code === 'ECONNABORTED' || error?.message?.includes('timeout')) {
-    return true;
-  }
-
-  // Retry network errors
-  if (error?.code === 'ERR_NETWORK' || !error?.response) {
-    return true;
-  }
-
-  // Retry HTML response (Render cold start caused Vercel to return SPA)
-  if (error?.code === 'HTML_RESPONSE') {
-    return true;
-  }
-
-  // Retry specific server errors (gateway issues)
+  // STRICT: Only retry gateway errors (502, 503, 504)
+  // Timeout, network, and HTML errors are NOT retried here
+  // They will be classified as DEGRADED by SubscriptionContext to preserve cache
   if (RETRY_CONFIG.retryableStatuses.includes(error?.response?.status)) {
     return true;
   }
@@ -315,6 +308,26 @@ export function unwrapEnvelope(body) {
   return { data: body, meta: undefined };
 }
 
+// ===== Auth URL Detection =====
+// Handles both relative ("/auth/...") and absolute ("https://.../api/auth/...") URLs
+function isAuthUrl(url = '') {
+  return url.includes('/api/auth/') || url.includes('/auth/');
+}
+
+// ===== Token Expired Debounce =====
+// Prevents spam during boot when multiple parallel requests hit 401
+let lastTokenExpiredAt = 0;
+const TOKEN_EXPIRED_DEBOUNCE_MS = 1500;
+
+function emitTokenExpired(url) {
+  const now = Date.now();
+  if (now - lastTokenExpiredAt < TOKEN_EXPIRED_DEBOUNCE_MS) {
+    return; // Debounce: skip if fired recently
+  }
+  lastTokenExpiredAt = now;
+  window.dispatchEvent(new CustomEvent('auth:token-expired', { detail: { url } }));
+}
+
 apiClient.interceptors.response.use(
   (response) => {
     // Unwrap api_contract envelope using helper
@@ -330,17 +343,16 @@ apiClient.interceptors.response.use(
 
     if (error.response?.status === 401) {
       const requestUrl = error.config?.url || '';
-      // Use startsWith to avoid false positives (e.g., /analytics/auth/... would match includes)
-      const isAuthEndpoint = requestUrl.startsWith('/auth/');
 
-      if (!isAuthEndpoint) {
-        // 401 on non-auth endpoint - emit event for token refresh
-        // This allows components to retry after token refresh
-        window.dispatchEvent(new CustomEvent('auth:token-expired', {
-          detail: { url: requestUrl }
-        }));
+      // Only emit token-expired for non-auth endpoints
+      // Auth endpoints handle their own 401s (e.g., login failure)
+      if (!isAuthUrl(requestUrl)) {
+        emitTokenExpired(requestUrl);
       }
     }
+    // Note: 403 is NOT treated as token-expired
+    // 403 = authenticated but not premium → show paywall, not re-auth
+
     return Promise.reject(error);
   }
 );

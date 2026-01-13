@@ -22,6 +22,7 @@ from utils.normalize import (
 )
 from api.contracts import api_contract
 from api.contracts.contract_schema import PropertyAgeBucket
+from utils.subscription import require_premium
 
 
 # =============================================================================
@@ -294,6 +295,7 @@ def _build_aggregate_cache_key(params: dict) -> str:
 
 
 @analytics_bp.route("/aggregate", methods=["GET"])
+@require_premium
 @api_contract("aggregate")
 def aggregate():
     """
