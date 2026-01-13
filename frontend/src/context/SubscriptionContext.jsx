@@ -163,18 +163,43 @@ const clearLegacyCache = () => {
 const DEFAULT_SUBSCRIPTION = { tier: 'free', subscribed: false, ends_at: null };
 
 /**
- * Subscription status quad-state:
+ * Subscription status states:
  * - 'pending': Not yet resolved (UI shows loading, NOT paywall)
  * - 'loading': API call in flight
  * - 'resolved': Subscription status EXPLICITLY known from backend
- * - 'error': Fetch/parse failed
+ * - 'degraded': Backend unavailable (502/503/504), using cache, don't flip to free
+ * - 'error': Fetch/parse failed (non-gateway error)
  */
 export const SubscriptionStatus = {
   PENDING: 'pending',
   LOADING: 'loading',
   RESOLVED: 'resolved',
+  DEGRADED: 'degraded',
   ERROR: 'error',
 };
+
+/**
+ * Gateway status codes that indicate backend is down/cold-starting
+ * These should NOT cause tier to flip to free
+ */
+const GATEWAY_STATUSES = new Set([502, 503, 504]);
+
+/**
+ * Classify subscription fetch errors for proper handling
+ * @param {Error} err - Axios error object
+ * @returns {{ kind: string, status: number|null }}
+ */
+function classifySubError(err) {
+  const status = err?.response?.status ?? null;
+
+  if (status === 401) return { kind: 'AUTH_REQUIRED', status };
+  if (status === 403) return { kind: 'PREMIUM_REQUIRED', status };
+  if (status === 429) return { kind: 'RATE_LIMITED', status };
+  if (GATEWAY_STATUSES.has(status)) return { kind: 'GATEWAY', status };
+  if (!status) return { kind: 'NETWORK', status: null }; // no response
+  if (status >= 500) return { kind: 'SERVER', status };
+  return { kind: 'OTHER', status };
+}
 
 /**
  * Unwrap API response envelope.
@@ -410,13 +435,47 @@ export function SubscriptionProvider({ children }) {
       }
       if (isStale(requestId)) return;
 
-      if (err.response?.status === 429) {
+      const { kind, status: httpStatus } = classifySubError(err);
+
+      // Rate limit: enter cooldown (keep your existing logic)
+      if (kind === 'RATE_LIMITED') {
         const retryAfterHeader = Number(err.response?.headers?.['retry-after']);
         const retryAfterMs = Number.isFinite(retryAfterHeader) ? retryAfterHeader * 1000 : 15000;
         cooldownUntilRef.current = Date.now() + retryAfterMs;
         console.warn('[Subscription] Rate limited, entering cooldown:', { retryAfterMs });
       }
 
+      // 401: auth required → trigger re-login, do NOT downgrade tier
+      if (kind === 'AUTH_REQUIRED') {
+        console.warn('[Subscription] 401 AUTH_REQUIRED - session expired');
+        setFetchError(err);
+        // Keep cached subscription if any; don't overwrite to free
+        setStatus(SubscriptionStatus.ERROR);
+        window.dispatchEvent(new CustomEvent('auth:token-expired', { detail: { url: '/auth/subscription' } }));
+        return;
+      }
+
+      // 403: free tier (or not entitled) → tier known, resolve to free
+      if (kind === 'PREMIUM_REQUIRED') {
+        console.warn('[Subscription] 403 PREMIUM_REQUIRED - treating as free tier');
+        setFetchError(null);
+        setSubscription(DEFAULT_SUBSCRIPTION);
+        if (normalizedEmail) cacheSubscription(DEFAULT_SUBSCRIPTION, normalizedEmail);
+        setStatus(SubscriptionStatus.RESOLVED);
+        return;
+      }
+
+      // Gateway/backend down: DEGRADED, keep cache, don't flip to free
+      if (kind === 'GATEWAY') {
+        console.warn('[Subscription] Gateway error, entering DEGRADED:', { status: httpStatus });
+        setFetchError(err);
+        // Keep cached subscription if loaded earlier; mark DEGRADED
+        // DO NOT overwrite subscription to free here
+        setStatus(SubscriptionStatus.DEGRADED);
+        return;
+      }
+
+      // Other errors: mark ERROR but do not overwrite subscription
       console.error('[Subscription] Fetch error:', err.message);
       setFetchError(err);
       setStatus(SubscriptionStatus.ERROR);
@@ -513,7 +572,11 @@ export function SubscriptionProvider({ children }) {
     activeRequestRef.current = { requestId, email, type: 'refresh' };
     console.warn('[Subscription] Refreshing');
     setLoading(true);
-    setStatus(SubscriptionStatus.LOADING);
+    // Don't set LOADING status if we already have a resolved subscription
+    // This prevents UI from temporarily going "unknown" when refreshing
+    if (status !== SubscriptionStatus.RESOLVED) {
+      setStatus(SubscriptionStatus.LOADING);
+    }
     setFetchError(null);
 
     try {
@@ -539,12 +602,45 @@ export function SubscriptionProvider({ children }) {
         return;
       }
       if (isStale(requestId)) return;
-      if (err.response?.status === 429) {
+
+      const { kind, status: httpStatus } = classifySubError(err);
+
+      // Rate limit: enter cooldown
+      if (kind === 'RATE_LIMITED') {
         const retryAfterHeader = Number(err.response?.headers?.['retry-after']);
         const retryAfterMs = Number.isFinite(retryAfterHeader) ? retryAfterHeader * 1000 : 15000;
         cooldownUntilRef.current = Date.now() + retryAfterMs;
         console.warn('[Subscription] Rate limited, entering cooldown:', { retryAfterMs });
       }
+
+      // 401: auth required → emit token-expired, do NOT downgrade tier
+      if (kind === 'AUTH_REQUIRED') {
+        console.warn('[Subscription] 401 during refresh - emit token-expired');
+        setFetchError(err);
+        setStatus(SubscriptionStatus.ERROR);
+        window.dispatchEvent(new CustomEvent('auth:token-expired', { detail: { url: '/auth/subscription' } }));
+        return;
+      }
+
+      // 403: free tier → resolve to free
+      if (kind === 'PREMIUM_REQUIRED') {
+        console.warn('[Subscription] 403 during refresh - resolve to free tier');
+        setFetchError(null);
+        setSubscription(DEFAULT_SUBSCRIPTION);
+        if (email) cacheSubscription(DEFAULT_SUBSCRIPTION, email);
+        setStatus(SubscriptionStatus.RESOLVED);
+        return;
+      }
+
+      // Gateway/backend down: DEGRADED, keep cache
+      if (kind === 'GATEWAY') {
+        console.warn('[Subscription] Gateway error during refresh, DEGRADED:', { status: httpStatus });
+        setFetchError(err);
+        setStatus(SubscriptionStatus.DEGRADED);
+        return;
+      }
+
+      // Other errors: mark ERROR but do not overwrite subscription
       console.error('[Subscription] Refresh error:', err.message);
       setFetchError(err);
       setStatus(SubscriptionStatus.ERROR);
@@ -554,7 +650,7 @@ export function SubscriptionProvider({ children }) {
         activeRequestRef.current = { requestId: null, email: null, type: null };
       }
     }
-  }, [startRequest, isStale, getSignal]);
+  }, [startRequest, isStale, getSignal, status]);
 
   /**
    * Manual retry wrapper for boot recovery
@@ -576,6 +672,7 @@ export function SubscriptionProvider({ children }) {
   const isResolved = status === SubscriptionStatus.RESOLVED;
   const isPending = status === SubscriptionStatus.PENDING || status === SubscriptionStatus.LOADING;
   const isError = status === SubscriptionStatus.ERROR;
+  const isDegraded = status === SubscriptionStatus.DEGRADED;
 
   // Premium check with expiry validation
   const isPremiumActive = useMemo(() => {
@@ -596,12 +693,40 @@ export function SubscriptionProvider({ children }) {
   // isPremium: Alias for isPremiumResolved
   const isPremium = isPremiumResolved;
 
-  // DEPRECATED - use isResolved
-  // P0 FIX: isTierKnown must include ERROR state to prevent boot deadlock.
-  // When subscription fetch fails, we treat tier as "known" (defaulting to free restrictions).
-  // This allows AppReadyContext.tierResolved to become true and unblock boot.
-  const isTierKnown = isResolved || isError;
-  const isSubscriptionReady = isResolved || isError;
+  // ===== BOOT VS ENTITLEMENT FLAGS (CRITICAL DISTINCTION) =====
+  //
+  // bootReady / isSubscriptionReady: App can proceed, don't hang
+  //   - RESOLVED: tier confirmed by backend
+  //   - ERROR: fetch failed, fall back to free restrictions
+  //   - DEGRADED: gateway error, keep cache, don't flip to free
+  //
+  // tierCertain: We have EXPLICIT backend confirmation of tier
+  //   - ONLY true when RESOLVED (backend said so)
+  //   - NOT true for DEGRADED (we're guessing from cache)
+  //
+  // canAccessPremium: Safe to show premium content
+  //   - RESOLVED + premium: confirmed by backend
+  //   - DEGRADED + cached premium: trust cache for current user
+  //
+  const isSubscriptionReady = isResolved || isError || isDegraded;
+  const bootReady = isSubscriptionReady; // Alias for clarity
+
+  // tierCertain: ONLY when backend explicitly confirmed tier
+  // Do NOT include DEGRADED - tier is "cached guess", not "known"
+  const tierCertain = isResolved;
+
+  // Legacy alias - but now correctly excludes DEGRADED
+  const isTierKnown = tierCertain;
+
+  // hasCachedPremium: In DEGRADED state, do we have a cached premium subscription?
+  // We trust this because:
+  // 1. Cache was loaded for current user (currentUserEmailRef check in fetchSubscription)
+  // 2. Cache version was validated (getCachedSubscription checks version)
+  const hasCachedPremium = isDegraded && subscription.tier === 'premium' && isPremiumActive;
+
+  // canAccessPremium: Safe to unlock premium content
+  // Either: backend confirmed premium, OR degraded but cached premium
+  const canAccessPremium = isPremiumResolved || hasCachedPremium;
 
   const daysUntilExpiry = useMemo(() => {
     if (!isPremiumActive || !subscription.ends_at) return null;
@@ -654,13 +779,18 @@ export function SubscriptionProvider({ children }) {
     isResolved,       // True when status==='resolved' (safe to gate on tier)
     isPending,        // True when pending/loading (show skeleton, NOT paywall)
     isError,          // True when status==='error'
+    isDegraded,       // True when status==='degraded' (backend down, using cache)
     isFreeResolved,   // True when resolved AND free (show paywall/blur)
     isPremiumResolved,// True when resolved AND premium (show premium content)
     isPremium,        // Alias for isPremiumResolved
 
-    // DEPRECATED - use isResolved
-    isTierKnown,
-    isSubscriptionReady,
+    // Boot gate helpers
+    bootReady,          // App can proceed (RESOLVED, ERROR, or DEGRADED)
+    isSubscriptionReady,// Alias for bootReady
+    tierCertain,        // Backend confirmed tier (RESOLVED only)
+    isTierKnown,        // Legacy alias for tierCertain
+    canAccessPremium,   // Safe to show premium (RESOLVED+premium OR DEGRADED+cached premium)
+    hasCachedPremium,   // DEGRADED with cached premium subscription
 
     // Expiry
     daysUntilExpiry,
@@ -688,11 +818,16 @@ export function SubscriptionProvider({ children }) {
     isResolved,
     isPending,
     isError,
+    isDegraded,
     isFreeResolved,
     isPremiumResolved,
     isPremium,
-    isTierKnown,
+    bootReady,
     isSubscriptionReady,
+    tierCertain,
+    isTierKnown,
+    canAccessPremium,
+    hasCachedPremium,
     daysUntilExpiry,
     isExpiringSoon,
     showPricingModal,

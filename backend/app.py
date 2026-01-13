@@ -75,9 +75,12 @@ def create_app():
     allowed_origins = [
         "http://localhost:3000",
         "http://localhost:3001",
+        "http://localhost:5173",  # Vite default port
         "http://127.0.0.1:3000",
         "http://127.0.0.1:3001",
+        "http://127.0.0.1:5173",  # Vite default port
         "https://sgpropertytrend.vercel.app",
+        "https://sg-property-analyzer.vercel.app",  # Vercel preview
         "https://www.sgpropertyanalytics.com",
         "https://sgpropertyanalytics.com",
     ]
