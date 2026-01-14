@@ -75,10 +75,16 @@ def needs_autocommit(sql_content: str) -> bool:
 
 
 def main():
-    db_url = os.environ.get('DATABASE_URL')
+    # Prefer direct connection for migrations (supports CONCURRENTLY, no pooler transaction wrapping)
+    # Falls back to DATABASE_URL if DATABASE_URL_MIGRATIONS not set
+    db_url = os.environ.get('DATABASE_URL_MIGRATIONS') or os.environ.get('DATABASE_URL')
     if not db_url:
-        print("ERROR: DATABASE_URL not set")
+        print("ERROR: DATABASE_URL_MIGRATIONS or DATABASE_URL must be set")
         sys.exit(1)
+
+    # Log which connection we're using
+    is_direct = os.environ.get('DATABASE_URL_MIGRATIONS') is not None
+    print(f"Using {'direct' if is_direct else 'pooled'} connection for migrations")
 
     migrations_dir = backend_dir / 'migrations'
     if not migrations_dir.exists():
