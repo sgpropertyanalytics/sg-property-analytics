@@ -133,11 +133,8 @@ function checkMonotonicity(state, action) {
       }
     }
 
-    // Check SUB_FETCH_FAIL with auth errors (not gateway/network) - these set tier:'free' in reducer
-    if (action.type === 'SUB_FETCH_FAIL' && action.errorKind !== 'GATEWAY' && action.errorKind !== 'NETWORK') {
-      console.warn('[AuthCoordinator] Blocked: SUB_FETCH_FAIL cannot downgrade premium (use LOGOUT)');
-      return false;
-    }
+    // NOTE: SUB_FETCH_FAIL is NOT blocked here - reducer handles premium case by going to 'degraded'
+    // This preserves BOTH monotonicity (tier stays premium) AND convergence (subPhase reaches terminal)
   }
 
   return true;
@@ -240,8 +237,40 @@ function computeNextState(state, action) {
       };
 
     case 'SUB_FETCH_FAIL':
+      // =========================================================================
+      // OPTION C: Split handling for auth vs gateway errors
+      // - Gateway/network: fail-open (keep cached premium for availability)
+      // - Auth errors: fail-closed (block cached premium for entitlement safety)
+      // =========================================================================
+
+      // AUTH errors (401/403): Session invalid → block cached premium immediately
+      // Set tierSource='none' so hasCachedPremium becomes false
+      if (action.errorKind === 'AUTH' || action.errorKind === 'AUTH_REQUIRED') {
+        return {
+          ...state,
+          subPhase: 'degraded',
+          tierSource: 'none', // KEY: Blocks hasCachedPremium derivation
+          subError: action.error,
+          subRequestId: null,
+          // tier preserved as last-known, but won't grant access without tierSource
+        };
+      }
+
+      // GATEWAY/NETWORK errors (502/503/504, timeouts): Backend unreliable
+      // Keep cached premium for availability (fail-open)
       if (action.errorKind === 'GATEWAY' || action.errorKind === 'NETWORK') {
-        // Degraded - keep cached tier
+        return {
+          ...state,
+          subPhase: 'degraded',
+          subError: action.error,
+          subRequestId: null,
+          // tierSource unchanged → hasCachedPremium still works
+        };
+      }
+
+      // Other errors (404, 500): Depends on current tier
+      if (state.tier === 'premium') {
+        // Premium users: degraded, keep cache (treat like gateway for availability)
         return {
           ...state,
           subPhase: 'degraded',
@@ -249,7 +278,7 @@ function computeNextState(state, action) {
           subRequestId: null,
         };
       }
-      // Auth error - resolve to free
+      // Non-premium: resolve to free
       return {
         ...state,
         subPhase: 'resolved',

@@ -610,18 +610,20 @@ export function SubscriptionProvider({ children }) {
       }
 
       // 401: auth required → dispatch fail with AUTH_REQUIRED
+      // OPTION C: fail-closed for entitlement - block cached premium on auth errors
       if (kind === 'AUTH_REQUIRED') {
-        console.warn('[Subscription] 401 AUTH_REQUIRED - session expired');
+        console.warn('[Subscription] 401 AUTH_REQUIRED - session expired, blocking cached premium');
         logAuthEvent(AuthTimelineEvent.AUTH_401, {
           source: 'fetch',
           requestId,
           tierBefore: subscription.tier,
           statusBefore: status,
-          statusAfter: SubscriptionStatus.DEGRADED, // Keep cached, don't downgrade
+          statusAfter: SubscriptionStatus.DEGRADED,
           httpStatus,
+          note: 'Option C: tierSource cleared to block cached premium',
         });
-        // AUTH_REQUIRED: Keep cached tier - dispatch as GATEWAY to enter DEGRADED
-        dispatch({ type: 'SUB_FETCH_FAIL', requestId, error: err, errorKind: 'GATEWAY' });
+        // OPTION C: Dispatch with AUTH_REQUIRED so reducer sets tierSource='none'
+        dispatch({ type: 'SUB_FETCH_FAIL', requestId, error: err, errorKind: 'AUTH_REQUIRED' });
         return;
       }
 
@@ -856,9 +858,10 @@ export function SubscriptionProvider({ children }) {
         console.warn('[Subscription] Rate limited, entering cooldown:', { retryAfterMs });
       }
 
-      // 401: auth required → DEGRADED, keep cache
+      // 401: auth required → DEGRADED, block cached premium
+      // OPTION C: fail-closed for entitlement
       if (kind === 'AUTH_REQUIRED') {
-        console.warn('[Subscription] 401 during refresh - session expired');
+        console.warn('[Subscription] 401 during refresh - session expired, blocking cached premium');
         logAuthEvent(AuthTimelineEvent.AUTH_401, {
           source: 'refresh',
           requestId,
@@ -866,8 +869,10 @@ export function SubscriptionProvider({ children }) {
           statusBefore: status,
           statusAfter: SubscriptionStatus.DEGRADED,
           httpStatus,
+          note: 'Option C: tierSource cleared to block cached premium',
         });
-        dispatch({ type: 'SUB_FETCH_FAIL', requestId, error: err, errorKind: 'GATEWAY' });
+        // OPTION C: Dispatch with AUTH_REQUIRED so reducer sets tierSource='none'
+        dispatch({ type: 'SUB_FETCH_FAIL', requestId, error: err, errorKind: 'AUTH_REQUIRED' });
         return;
       }
 

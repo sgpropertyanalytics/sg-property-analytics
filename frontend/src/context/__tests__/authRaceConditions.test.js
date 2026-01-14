@@ -705,3 +705,321 @@ describe('Integration: Full auth flow timing', () => {
     vi.useRealTimers();
   });
 });
+
+// ============================================================================
+// P0 Fix Tests: Monotonicity + Convergence (2026-01-14)
+// ============================================================================
+// These tests verify the fix for the P0 bug where premium users could get
+// stuck in boot forever if SUB_FETCH_FAIL was blocked by monotonicity check.
+//
+// The fix ensures:
+// - Monotonicity: premium tier cannot be downgraded by errors
+// - Convergence: subPhase always reaches a terminal state (resolved/degraded)
+
+import { authCoordinatorReducer, initialState } from '../authCoordinator.js';
+
+describe('P0 Fix: Monotonicity + Convergence', () => {
+  describe('Test 1: Premium user + backend 502 → degraded, tier stays premium', () => {
+    it('should transition to degraded and preserve premium tier on gateway error', () => {
+      // Premium user in loading state
+      const state = {
+        ...initialState,
+        tier: 'premium',
+        tierSource: 'cache',
+        subPhase: 'loading',
+        subRequestId: 123,
+      };
+
+      // Backend returns 502
+      const result = authCoordinatorReducer(state, {
+        type: 'SUB_FETCH_FAIL',
+        requestId: 123,
+        error: new Error('502 Bad Gateway'),
+        errorKind: 'GATEWAY',
+      });
+
+      expect(result.subPhase).toBe('degraded'); // Terminal state reached
+      expect(result.tier).toBe('premium'); // Monotonicity preserved
+    });
+  });
+
+  describe('Test 2: Premium user + SUB_FETCH_FAIL(non-gateway) → degraded, tier stays premium', () => {
+    it('should transition to degraded on 404 error for premium user', () => {
+      const state = {
+        ...initialState,
+        tier: 'premium',
+        tierSource: 'cache',
+        subPhase: 'loading',
+        subRequestId: 123,
+      };
+
+      // Backend returns 404 "User not found"
+      const result = authCoordinatorReducer(state, {
+        type: 'SUB_FETCH_FAIL',
+        requestId: 123,
+        error: new Error('404 User not found'),
+        errorKind: 'NOT_FOUND',
+      });
+
+      expect(result.subPhase).toBe('degraded'); // Terminal state reached (not stuck in loading!)
+      expect(result.tier).toBe('premium'); // Monotonicity preserved
+    });
+
+    it('should transition to degraded on 500 error for premium user', () => {
+      const state = {
+        ...initialState,
+        tier: 'premium',
+        tierSource: 'server',
+        subPhase: 'loading',
+        subRequestId: 456,
+      };
+
+      // Backend returns 500
+      const result = authCoordinatorReducer(state, {
+        type: 'SUB_FETCH_FAIL',
+        requestId: 456,
+        error: new Error('500 Internal Server Error'),
+        errorKind: 'SERVER_ERROR',
+      });
+
+      expect(result.subPhase).toBe('degraded'); // Terminal state reached
+      expect(result.tier).toBe('premium'); // Monotonicity preserved
+    });
+
+    it('should transition to degraded on AUTH_REQUIRED error for premium user BUT block cached access', () => {
+      const state = {
+        ...initialState,
+        tier: 'premium',
+        tierSource: 'cache',
+        subPhase: 'loading',
+        subRequestId: 789,
+      };
+
+      // Backend returns 401
+      const result = authCoordinatorReducer(state, {
+        type: 'SUB_FETCH_FAIL',
+        requestId: 789,
+        error: new Error('401 Unauthorized'),
+        errorKind: 'AUTH_REQUIRED',
+      });
+
+      expect(result.subPhase).toBe('degraded'); // Terminal state reached
+      expect(result.tier).toBe('premium'); // Tier preserved (last-known)
+      expect(result.tierSource).toBe('none'); // KEY: Blocks hasCachedPremium
+    });
+
+    it('should block cached premium on 401 (Option C: fail-closed for entitlement)', () => {
+      const state = {
+        ...initialState,
+        tier: 'premium',
+        tierSource: 'cache', // Has cached premium
+        subPhase: 'loading',
+        subRequestId: 123,
+      };
+
+      // 401 auth error
+      const result = authCoordinatorReducer(state, {
+        type: 'SUB_FETCH_FAIL',
+        requestId: 123,
+        error: new Error('401'),
+        errorKind: 'AUTH',
+      });
+
+      // Verify: tier preserved but tierSource cleared
+      expect(result.tier).toBe('premium');
+      expect(result.tierSource).toBe('none');
+      expect(result.subPhase).toBe('degraded');
+
+      // Simulate derivation: hasCachedPremium should be FALSE
+      // hasCachedPremium = tierSource === 'cache' && tier === 'premium' && isPremiumActive
+      const hasCachedPremium = result.tierSource === 'cache'
+        && result.tier === 'premium';
+      expect(hasCachedPremium).toBe(false); // Blocked!
+    });
+
+    it('should KEEP cached premium on gateway error (Option C: fail-open for availability)', () => {
+      const state = {
+        ...initialState,
+        tier: 'premium',
+        tierSource: 'cache', // Has cached premium
+        subPhase: 'loading',
+        subRequestId: 456,
+      };
+
+      // 502 gateway error
+      const result = authCoordinatorReducer(state, {
+        type: 'SUB_FETCH_FAIL',
+        requestId: 456,
+        error: new Error('502 Bad Gateway'),
+        errorKind: 'GATEWAY',
+      });
+
+      // Verify: tier AND tierSource preserved
+      expect(result.tier).toBe('premium');
+      expect(result.tierSource).toBe('cache'); // PRESERVED for availability
+      expect(result.subPhase).toBe('degraded');
+
+      // Simulate derivation: hasCachedPremium should be TRUE
+      const hasCachedPremium = result.tierSource === 'cache'
+        && result.tier === 'premium';
+      expect(hasCachedPremium).toBe(true); // Allowed!
+    });
+  });
+
+  describe('Test 3: Free/unknown user + SUB_FETCH_FAIL → resolved, tier free', () => {
+    it('should resolve to free on non-gateway error for free user', () => {
+      const state = {
+        ...initialState,
+        tier: 'free',
+        tierSource: 'cache',
+        subPhase: 'loading',
+        subRequestId: 123,
+      };
+
+      const result = authCoordinatorReducer(state, {
+        type: 'SUB_FETCH_FAIL',
+        requestId: 123,
+        error: new Error('404 Not found'),
+        errorKind: 'NOT_FOUND',
+      });
+
+      expect(result.subPhase).toBe('resolved'); // Terminal state
+      expect(result.tier).toBe('free'); // Stays free
+    });
+
+    it('should resolve to free on non-gateway error for unknown tier user', () => {
+      const state = {
+        ...initialState,
+        tier: 'unknown',
+        tierSource: 'none',
+        subPhase: 'loading',
+        subRequestId: 123,
+      };
+
+      const result = authCoordinatorReducer(state, {
+        type: 'SUB_FETCH_FAIL',
+        requestId: 123,
+        error: new Error('500 Server error'),
+        errorKind: 'SERVER_ERROR',
+      });
+
+      expect(result.subPhase).toBe('resolved'); // Terminal state
+      expect(result.tier).toBe('free'); // Resolves to free (fail-open)
+    });
+  });
+
+  describe('Test 4: No state remains loading/pending beyond timeout', () => {
+    it('SUB_PENDING_TIMEOUT resolves pending to free for non-premium', () => {
+      const state = {
+        ...initialState,
+        tier: 'unknown',
+        subPhase: 'pending',
+      };
+
+      const result = authCoordinatorReducer(state, { type: 'SUB_PENDING_TIMEOUT' });
+
+      expect(result.subPhase).toBe('resolved');
+      expect(result.tier).toBe('free');
+    });
+
+    it('SUB_PENDING_TIMEOUT is blocked when tier is already premium (monotonicity)', () => {
+      const state = {
+        ...initialState,
+        tier: 'premium',
+        tierSource: 'cache',
+        subPhase: 'pending', // Unusual state but possible
+      };
+
+      const result = authCoordinatorReducer(state, { type: 'SUB_PENDING_TIMEOUT' });
+
+      // Timeout is blocked for premium users
+      expect(result.tier).toBe('premium');
+      // Note: subPhase stays pending here, but this edge case is handled by
+      // the 3-layer timeout guard in SubscriptionContext (statusRef, activeRequestRef, lastFetchSuccessRef)
+    });
+
+    it('loading state always reaches terminal on any SUB_FETCH_FAIL', () => {
+      // This is the key fix - loading must NEVER stay loading after SUB_FETCH_FAIL
+      const loadingState = {
+        ...initialState,
+        tier: 'premium',
+        subPhase: 'loading',
+        subRequestId: 999,
+      };
+
+      // Try various error kinds - ALL must reach terminal state
+      const errorKinds = ['GATEWAY', 'NETWORK', 'AUTH_REQUIRED', 'NOT_FOUND', 'SERVER_ERROR', 'UNKNOWN'];
+
+      for (const errorKind of errorKinds) {
+        const result = authCoordinatorReducer(loadingState, {
+          type: 'SUB_FETCH_FAIL',
+          requestId: 999,
+          error: new Error(`Test error: ${errorKind}`),
+          errorKind,
+        });
+
+        // Must NOT stay in loading
+        expect(result.subPhase).not.toBe('loading');
+        // Must be in a terminal state
+        expect(['resolved', 'degraded']).toContain(result.subPhase);
+      }
+    });
+  });
+
+  describe('Test 5: No action is silently blocked without terminal state', () => {
+    it('SUB_FETCH_FAIL always produces a state change for valid requestId', () => {
+      const baseState = {
+        ...initialState,
+        subPhase: 'loading',
+        subRequestId: 100,
+      };
+
+      // Test with different tiers
+      const tiers = ['unknown', 'free', 'premium'];
+      const errorKinds = ['GATEWAY', 'NETWORK', 'AUTH_REQUIRED', 'NOT_FOUND'];
+
+      for (const tier of tiers) {
+        for (const errorKind of errorKinds) {
+          const state = { ...baseState, tier };
+          const result = authCoordinatorReducer(state, {
+            type: 'SUB_FETCH_FAIL',
+            requestId: 100,
+            error: new Error('test'),
+            errorKind,
+          });
+
+          // Action must NOT be silently blocked (state must change)
+          expect(result.subPhase).not.toBe('loading');
+          expect(result.subRequestId).toBeNull(); // Request cleared
+        }
+      }
+    });
+
+    it('only stale requests are rejected (not valid ones)', () => {
+      const state = {
+        ...initialState,
+        tier: 'premium',
+        subPhase: 'loading',
+        subRequestId: 200, // Current request
+      };
+
+      // Stale request (old requestId) - should be rejected
+      const staleResult = authCoordinatorReducer(state, {
+        type: 'SUB_FETCH_FAIL',
+        requestId: 100, // Old request
+        error: new Error('stale'),
+        errorKind: 'SERVER_ERROR',
+      });
+      expect(staleResult.subPhase).toBe('loading'); // Unchanged - stale rejected
+
+      // Current request - should be accepted
+      const currentResult = authCoordinatorReducer(state, {
+        type: 'SUB_FETCH_FAIL',
+        requestId: 200, // Current request
+        error: new Error('current'),
+        errorKind: 'SERVER_ERROR',
+      });
+      expect(currentResult.subPhase).toBe('degraded'); // Changed - current accepted
+    });
+  });
+});
