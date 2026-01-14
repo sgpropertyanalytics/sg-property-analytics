@@ -234,6 +234,8 @@ export function AuthProvider({ children }) {
           if (result?.user) {
             // User signed in via redirect - sync with backend
             const requestId = authStateGuardRef.current.startRequest();
+            // P0 FIX: Dispatch TOKEN_SYNC_START to set authRequestId for staleness check
+            dispatch({ type: 'TOKEN_SYNC_START', requestId });
             try {
               const idToken = await result.user.getIdToken();
               const response = await apiClient.post('/auth/firebase-sync', {

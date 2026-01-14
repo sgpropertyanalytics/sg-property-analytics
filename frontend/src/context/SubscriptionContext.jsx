@@ -531,10 +531,9 @@ export function SubscriptionProvider({ children }) {
       tierBefore: cachedSub?.tier ?? subscription.tier,
       statusBefore: cachedSub ? SubscriptionStatus.RESOLVED : status,
     });
-    // Dispatch fetch start (only if no cache - avoid flash)
-    if (!cachedSub) {
-      dispatch({ type: 'SUB_FETCH_START', requestId });
-    }
+    // P0 FIX: Always dispatch SUB_FETCH_START to set subRequestId for staleness check
+    // Cache display already happened via SUB_CACHE_LOAD, this is for the verification fetch
+    dispatch({ type: 'SUB_FETCH_START', requestId });
 
     try {
       const response = await apiClient.get('/auth/subscription', {
@@ -999,7 +998,9 @@ export function SubscriptionProvider({ children }) {
   const subscriptionReady = isResolved || isError || isDegraded;
   const bootReady = subscriptionReady; // Alias for clarity
 
-  const tierSource = deriveTierSource(status, hasCachedSubscription);
+  // P1 FIX: Use coordState.tierSource directly instead of deriving
+  // The reducer now owns tierSource and sets it correctly for cache vs server
+  const tierSource = coordState.tierSource;
   const isTierKnown = deriveIsTierKnown(tierSource);
   const tierCertain = tierSource === TierSource.SERVER;
   const usingCachedTier = tierSource === TierSource.CACHE;
