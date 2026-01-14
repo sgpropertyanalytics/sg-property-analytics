@@ -267,6 +267,16 @@ function computeNextState(state, action) {
         cachedSubscription: action.subscription,
       };
 
+    case 'SUB_CACHE_LOAD':
+      // Load from localStorage - tierSource: 'cache' until server confirms
+      return {
+        ...state,
+        subPhase: 'resolved',
+        tier: action.subscription.tier,
+        tierSource: 'cache',
+        cachedSubscription: action.subscription,
+      };
+
     // -------------------------------------------------------------------------
     // USER ACTIONS
     // -------------------------------------------------------------------------

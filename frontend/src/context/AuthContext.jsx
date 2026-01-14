@@ -1,6 +1,6 @@
 // eslint-disable-next-line no-restricted-imports -- MIGRATION_ONLY: useState to be removed by Phase 3
-import { createContext, useContext, useState, useReducer, useEffect, useCallback, useMemo, useRef } from 'react';
-import { authCoordinatorReducer, initialState as coordinatorInitialState, deriveTokenStatus } from './authCoordinator';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { deriveTokenStatus } from './authCoordinator';
 import { signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from 'firebase/auth';
 import { getFirebaseAuth, getGoogleProvider, isFirebaseConfigured } from '../lib/firebase';
 import { queryClient } from '../lib/queryClient';
@@ -139,9 +139,15 @@ export const TokenStatus = {
 
 export function AuthProvider({ children }) {
   // ==========================================================================
-  // AUTH COORDINATOR (single-writer for auth state)
+  // AUTH COORDINATOR (single-writer for auth + subscription state)
+  // The reducer lives in SubscriptionProvider (outer wrapper).
+  // We get coordState and dispatch via useSubscription().
   // ==========================================================================
-  const [coordState, dispatch] = useReducer(authCoordinatorReducer, coordinatorInitialState);
+  const {
+    coordState,
+    dispatch,
+    actions: subscriptionActions,
+  } = useSubscription();
 
   // ==========================================================================
   // MIGRATION_ONLY: Legacy useState - remove as we wire dispatch
@@ -162,9 +168,6 @@ export function AuthProvider({ children }) {
   // P0 FIX: refreshToken() must NOT abort syncTokenWithBackend()
   const authStateGuard = useStaleRequestGuard();  // For onAuthStateChanged sync
   const tokenRefreshGuard = useStaleRequestGuard(); // For refreshToken() calls
-
-  // Subscription context methods (SubscriptionProvider wraps AuthProvider)
-  const { actions: subscriptionActions } = useSubscription();
   const { refresh: refreshSubscription, ensure: ensureSubscription, clear: clearSubscription } = subscriptionActions;
 
   // P0 FIX: Ensure auth listener registers exactly once.

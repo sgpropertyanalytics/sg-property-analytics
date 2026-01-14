@@ -154,7 +154,7 @@ Before proposing ANY auth/subscription change:
 | 2026-01-14 | Phase 0: Lint rules added | 126 |
 | 2026-01-14 | Phase 1: user + initialized migrated | 115 |
 | 2026-01-14 | Phase 2: tokenStatus migrated | 81 |
-| TBD | Phase 3: subscription migrated | Target: ~20 |
+| 2026-01-14 | Phase 3: subscription migrated | 16 |
 
 ---
 
