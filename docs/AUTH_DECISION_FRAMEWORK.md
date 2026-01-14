@@ -147,6 +147,37 @@ Before proposing ANY auth/subscription change:
 
 ---
 
+## UI-Only State: Explicitly Non-Authoritative
+
+The following `useState` declarations are **intentionally outside** the single-writer:
+
+| Context | State | Purpose |
+|---------|-------|---------|
+| AuthContext | `loading` | UI loading spinner during actions |
+| AuthContext | `authUiLoading` | Google button loading state |
+| AuthContext | `error` | Error message display |
+| SubscriptionContext | `showPricingModal` | Paywall modal open/close |
+| SubscriptionContext | `upsellContext` | Analytics context for upsell |
+
+### Why These Are Safe
+
+- They do **not** encode auth/tier/subscription truth
+- They do **not** affect access control decisions
+- They are purely **presentational**
+
+### Red Flags (Regression Warning)
+
+If any of these start to:
+- Gate feature access based on their value
+- Influence tier determination
+- Be read by other components to make auth decisions
+
+...then they have become **domain state** and must be migrated to the reducer.
+
+**Rule:** UI state must never answer "what is the user's tier?" or "can this user access X?"
+
+---
+
 ## Version History
 
 | Date | Change | Setter Count |

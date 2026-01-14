@@ -1,10 +1,20 @@
 /**
- * Auth Coordinator Reducer
- *
- * Single-writer for auth + subscription state.
- * Two domains, requestId sequencing, minimal invariants.
- *
- * @see docs/plans/2026-01-14-auth-single-writer-framework.md
+ * ╔═══════════════════════════════════════════════════════════════════════════╗
+ * ║                    SINGLE-WRITER INVARIANT - READ FIRST                   ║
+ * ╠═══════════════════════════════════════════════════════════════════════════╣
+ * ║                                                                           ║
+ * ║  This reducer is the ONLY place auth/subscription state may be mutated.  ║
+ * ║                                                                           ║
+ * ║  DO NOT:                                                                  ║
+ * ║  - Add useState for auth/tier/subscription in any context                 ║
+ * ║  - Add new mutation paths outside this reducer                            ║
+ * ║  - Bypass dispatch() with direct state manipulation                       ║
+ * ║                                                                           ║
+ * ║  ANY change here is HIGH BLAST RADIUS. Get review from auth owner.        ║
+ * ║                                                                           ║
+ * ║  @see docs/AUTH_DECISION_FRAMEWORK.md (evaluation criteria)               ║
+ * ║  @see docs/plans/2026-01-14-auth-single-writer-framework.md               ║
+ * ╚═══════════════════════════════════════════════════════════════════════════╝
  */
 
 // =============================================================================

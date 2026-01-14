@@ -660,6 +660,7 @@ export function AuthProvider({ children }) {
       // No user + initialized = tokenStatus derives to 'present' automatically
     }
   // Register once by design; guard/functions are accessed via refs.
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentional: refs provide stable access to latest functions
   }, []);
 
   // Sync Firebase user with backend
@@ -708,7 +709,7 @@ export function AuthProvider({ children }) {
       // Backend sync will retry on next API call
       return null;
     }
-  }, [startRequest, isStale, getSignal]);
+  }, [startRequest, isStale, getSignal, refreshSubscription]);
 
   // Sign in with Google
   // Tries popup first (better UX), falls back to redirect if popup fails

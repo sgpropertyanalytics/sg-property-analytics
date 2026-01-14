@@ -6,13 +6,12 @@ import {
   deriveCanAccessPremium,
   deriveHasCachedPremium,
   deriveIsTierKnown,
-  deriveTierSource,
+  // deriveTierSource removed - now using coordState.tierSource directly
 } from './subscriptionDerivations';
 import {
   authCoordinatorReducer,
   initialState as coordinatorInitialState,
-  deriveTokenStatus,
-  deriveSubscriptionStatus,
+  // deriveTokenStatus and deriveSubscriptionStatus are used in AuthContext, not here
 } from './authCoordinator';
 
 /**
