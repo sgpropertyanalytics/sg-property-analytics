@@ -189,4 +189,56 @@ If any of these start to:
 
 ---
 
+## Implementation Session: 2026-01-14
+
+### Codex Review Findings (P0/P1 Issues Found + Fixed)
+
+During Phase 3 migration, Codex identified critical issues that were immediately fixed:
+
+#### P0: Staleness Check Bypass
+
+**Issue #1:** `SUB_FETCH_OK/FAIL` dropped after cache hit
+- When cached subscription loaded, `SUB_FETCH_START` was conditionally skipped
+- `subRequestId` stayed `null`, so `isStaleRequest()` rejected server responses
+- **Fix:** Always dispatch `SUB_FETCH_START` to set `subRequestId`
+
+**Issue #2:** `TOKEN_SYNC_OK` dropped on redirect login
+- Redirect flow called `syncViaRedirectIfNeeded()` which dispatched `TOKEN_SYNC_OK` without `TOKEN_SYNC_START`
+- `authRequestId` was `null`, staleness check rejected the response
+- **Fix:** Dispatch `TOKEN_SYNC_START` before API call in redirect flow
+
+#### P1: tierSource Derivation Bug
+
+**Issue:** `deriveTierSource('resolved', hasCachedSubscription)` returned `'server'` for cache loads
+- Violated "tierSource: 'cache' until server confirms" invariant
+- **Fix:** Read `coordState.tierSource` directly instead of deriving
+
+### Commits
+
+| Commit | Description |
+|--------|-------------|
+| `875b01a6` | Phase 3 single-writer migration (subscription state) |
+| `faa2e3db` | P0 fixes from Codex review (staleness check bypass) |
+| `36d7ffa3` | Safeguards (banner, lint, docs) |
+
+### Context Architecture
+
+```
+SubscriptionProvider (useReducer) → exports { coordState, dispatch }
+    └── AuthProvider → imports from useSubscription()
+```
+
+The outer wrapper (SubscriptionContext) owns the shared reducer. AuthContext imports it.
+
+### Remaining Work
+
+| Phase | Description | Status |
+|-------|-------------|--------|
+| Phase 2 | Collapse 4 sync paths to 1 | 🔲 Not started |
+| Phase 4 | Add enforcement tests | 🔲 Not started |
+
+See `docs/plans/2026-01-14-auth-single-writer-framework.md` for full implementation log.
+
+---
+
 *This framework is the contract between AI and codebase. Violations are bugs.*

@@ -5,6 +5,239 @@
 > **Decision Framework:** [`AUTH_DECISION_FRAMEWORK.md`](../AUTH_DECISION_FRAMEWORK.md) ← **READ FIRST**
 > **Related:** `docs/AUTH_STABILITY_AUDIT.md`
 
+---
+
+## Session Log: 2026-01-14 (Phase 3 Implementation + Codex Review)
+
+### Commits Made
+
+| Commit | Description |
+|--------|-------------|
+| `875b01a6` | Phase 3 single-writer migration (subscription state) |
+| `faa2e3db` | P0 fixes from Codex review (staleness check bypass) |
+| `36d7ffa3` | Safeguards (banner, lint, docs) |
+
+### Setter Count Progression
+
+| Phase | Before | After | Migrated State |
+|-------|--------|-------|----------------|
+| Phase 0 | 126 | 126 | (lint rules only) |
+| Phase 1 | 126 | 115 | `user`, `initialized` |
+| Phase 2 | 115 | 81 | `tokenStatus` |
+| Phase 3 | 81 | **16** | `subscription`, `status`, `loading`, `fetchError`, `hasCachedSubscription` |
+
+### What Was Done
+
+#### 1. Context Architecture Change
+
+**Before:** Each context owned its own `useReducer`
+```
+AuthProvider (useReducer) → AuthContext
+SubscriptionProvider (useState) → SubscriptionContext
+```
+
+**After:** SubscriptionContext (outer wrapper) owns the shared reducer
+```
+SubscriptionProvider (useReducer) → exports { coordState, dispatch }
+    └── AuthProvider → imports { coordState, dispatch } from useSubscription()
+```
+
+**Why outer wrapper owns reducer:**
+- SubscriptionContext wraps AuthContext in the component tree
+- Prevents circular dependency (inner can't import from outer)
+- Single source of truth accessible to both contexts
+
+#### 2. Code Changes in SubscriptionContext.jsx
+
+**Deleted useState (converted to dispatch):**
+```javascript
+// BEFORE: 5 separate useState
+const [subscription, setSubscription] = useState(DEFAULT_SUBSCRIPTION);
+const [status, setStatus] = useState(SubscriptionStatus.PENDING);
+const [loading, setLoading] = useState(false);
+const [fetchError, setFetchError] = useState(null);
+const [hasCachedSubscription, setHasCachedSubscription] = useState(false);
+
+// AFTER: Derived from coordState
+const subscription = coordState.cachedSubscription ?? DEFAULT_SUBSCRIPTION;
+const status = (() => {
+  switch (coordState.subPhase) {
+    case 'resolved': return SubscriptionStatus.RESOLVED;
+    case 'degraded': return SubscriptionStatus.DEGRADED;
+    case 'loading': return SubscriptionStatus.LOADING;
+    case 'pending':
+    default: return SubscriptionStatus.PENDING;
+  }
+})();
+const loading = coordState.subPhase === 'loading';
+const fetchError = coordState.subError;
+const hasCachedSubscription = coordState.tierSource === 'cache';
+const tierSource = coordState.tierSource; // Direct read, not derived
+```
+
+**Added SUB_CACHE_LOAD action:**
+```javascript
+// authCoordinator.js
+case 'SUB_CACHE_LOAD':
+  // Load from localStorage - tierSource: 'cache' until server confirms
+  return {
+    ...state,
+    subPhase: 'resolved',
+    tier: action.subscription.tier,
+    tierSource: 'cache',
+    cachedSubscription: action.subscription,
+  };
+```
+
+**Converted setters to dispatch:**
+```javascript
+// BEFORE
+setSubscription(cached);
+setHasCachedSubscription(true);
+setStatus(SubscriptionStatus.RESOLVED);
+
+// AFTER
+dispatch({ type: 'SUB_CACHE_LOAD', subscription: cached });
+```
+
+#### 3. Code Changes in AuthContext.jsx
+
+**Gets shared reducer from SubscriptionContext:**
+```javascript
+// BEFORE: Own useReducer
+const [coordState, dispatch] = useReducer(authCoordinatorReducer, coordinatorInitialState);
+
+// AFTER: Import from outer wrapper
+const {
+  coordState,
+  dispatch,
+  actions: subscriptionActions,
+} = useSubscription();
+```
+
+### Codex Review Findings + Fixes
+
+#### P0 Issue #1: SUB_FETCH_OK/FAIL Dropped After Cache Hit
+
+**Root Cause:** When cache loaded, `SUB_FETCH_START` was conditionally skipped, so `subRequestId` stayed `null`. When server response arrived, staleness check saw `null !== requestId` and rejected it.
+
+**Failure Path:**
+```
+1. Load cached subscription → subRequestId: null (no START dispatched)
+2. Fetch server subscription → dispatch SUB_FETCH_OK with requestId: 123
+3. Reducer: isStaleRequest() sees null !== 123 → REJECTS response
+4. User stuck with stale cached tier forever
+```
+
+**Fix in SubscriptionContext.jsx:**
+```javascript
+// BEFORE: Conditional SUB_FETCH_START (skipped on cache hit)
+if (!cachedData) {
+  dispatch({ type: 'SUB_FETCH_START', requestId });
+}
+
+// AFTER: Always dispatch SUB_FETCH_START
+dispatch({ type: 'SUB_FETCH_START', requestId }); // Sets subRequestId for staleness check
+```
+
+#### P0 Issue #2: TOKEN_SYNC_OK Dropped on Redirect Login
+
+**Root Cause:** Redirect flow used `syncViaRedirectIfNeeded()` which dispatched `TOKEN_SYNC_OK` directly without first dispatching `TOKEN_SYNC_START`. The `authRequestId` was `null`, so staleness check rejected the response.
+
+**Failure Path:**
+```
+1. Google redirect login → syncViaRedirectIfNeeded() called
+2. API call succeeds → dispatch TOKEN_SYNC_OK with requestId: 456
+3. Reducer: isStaleRequest() sees authRequestId null !== 456 → REJECTS
+4. Auth never transitions to 'established', user stuck in 'syncing'
+```
+
+**Fix in AuthContext.jsx:**
+```javascript
+// BEFORE: Missing TOKEN_SYNC_START
+const response = await apiClient.post('/auth/firebase-sync', ...);
+dispatch({ type: 'TOKEN_SYNC_OK', requestId, subscription: response.data.subscription });
+
+// AFTER: Dispatch TOKEN_SYNC_START first
+dispatch({ type: 'TOKEN_SYNC_START', requestId }); // Sets authRequestId
+const response = await apiClient.post('/auth/firebase-sync', ...);
+dispatch({ type: 'TOKEN_SYNC_OK', requestId, subscription: response.data.subscription });
+```
+
+#### P1 Issue: Cache Tier Incorrectly Marked as Server-Confirmed
+
+**Root Cause:** `deriveTierSource('resolved', hasCachedSubscription)` returned `'server'` for cache loads because `subPhase === 'resolved'`. This violated the "tierSource: 'cache' until server confirms" invariant.
+
+**Fix in SubscriptionContext.jsx:**
+```javascript
+// BEFORE: Derived (incorrectly)
+const tierSource = deriveTierSource(status, hasCachedSubscription);
+
+// AFTER: Direct read from coordState
+const tierSource = coordState.tierSource;
+```
+
+### Safeguards Added
+
+#### 1. Social Guardrail Banner (authCoordinator.js)
+
+```javascript
+/**
+ * ╔═══════════════════════════════════════════════════════════════════════════╗
+ * ║                    SINGLE-WRITER INVARIANT - READ FIRST                   ║
+ * ╠═══════════════════════════════════════════════════════════════════════════╣
+ * ║                                                                           ║
+ * ║  This reducer is the ONLY place auth/subscription state may be mutated.  ║
+ * ║                                                                           ║
+ * ║  DO NOT:                                                                  ║
+ * ║  - Add useState for auth/tier/subscription in any context                 ║
+ * ║  - Add new mutation paths outside this reducer                            ║
+ * ║  - Bypass dispatch() with direct state manipulation                       ║
+ * ║                                                                           ║
+ * ║  ANY change here is HIGH BLAST RADIUS. Get review from auth owner.        ║
+ * ║                                                                           ║
+ * ║  @see docs/AUTH_DECISION_FRAMEWORK.md (evaluation criteria)               ║
+ * ║  @see docs/plans/2026-01-14-auth-single-writer-framework.md               ║
+ * ╚═══════════════════════════════════════════════════════════════════════════╝
+ */
+```
+
+#### 2. Lint Warning Fixes
+
+- Fixed missing dependency in `useCallback` (added `refreshSubscription`)
+- Suppressed intentional exhaustive-deps violations with comments
+- Removed unused imports
+
+#### 3. UI-Only State Documentation
+
+Added to `AUTH_DECISION_FRAMEWORK.md`:
+- Section "UI-Only State: Explicitly Non-Authoritative"
+- Whitelist of allowed useState (loading spinners, modals)
+- Red flags for when UI state becomes domain state
+
+### Test Status
+
+All 22 auth race condition tests pass:
+```bash
+npx vitest run src/context/__tests__/authRaceConditions.test.js
+# ✓ 22 tests passed
+```
+
+### Remaining Work
+
+| Phase | Description | Status |
+|-------|-------------|--------|
+| Phase 2 (from plan) | Collapse 4 sync paths to 1 | 🔲 Not started |
+| Phase 4 | Add enforcement tests | 🔲 Not started |
+
+**Phase 2 Details:** Currently 4 functions doing similar token sync:
+- `syncWithBackend()` → DELETE
+- `syncTokenWithBackend()` → KEEP (rename to `tokenSyncPipeline`)
+- `refreshToken()` → CONVERT to dispatch({ type: 'MANUAL_RETRY' })
+- `retryTokenSync()` → CONVERT to dispatch({ type: 'MANUAL_RETRY' })
+
+---
+
 ## The Actual Goal
 
 **DELETE mutation points, not add validators.**
@@ -1075,11 +1308,13 @@ If yes → plan is right-sized. If no → too much deleted.
 | Phase | Goal | Code Change | Status |
 |-------|------|-------------|--------|
 | 0. Lint rules | Prevent new mutations | +55 lines eslint config | ✅ Done |
-| 1. Coordinator | Single source of truth | +200 lines new reducer | 🔲 Next |
-| 2. Collapse duplicates | Remove 4 → 1 sync paths | **-150 lines deleted** | 🔲 |
-| 3. Migrate contexts | Replace useState with dispatch | **-300 lines deleted** | 🔲 |
-| 4. Tests | Verify transitions | +100 lines tests | 🔲 |
+| 1. Create coordinator | Single source of truth | +200 lines new reducer | ✅ Done (user + initialized) |
+| 2. Collapse duplicates | Remove 4 → 1 sync paths | **-150 lines deleted** | 🔲 Not started |
+| 3. Migrate contexts | Replace useState with dispatch | **-300 lines deleted** | ✅ Done (subscription state) |
+| 4. Tests | Verify transitions | +100 lines tests | 🔲 Not started |
 
+**Current state:** Phases 0, 1, 3 complete. Phase 2 (collapse sync paths) NOT done yet.
+**Setter count:** 126 → 16 (88% reduction)
 **Net result: ~250 lines deleted, cleaner architecture**
 
 ### Escape Hatches
