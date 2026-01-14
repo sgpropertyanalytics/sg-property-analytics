@@ -33,7 +33,6 @@ import {
   REGION_FILL_DIMMED,
   LIQUIDITY_BORDERS,
 } from './constants';
-import { getLiquidityBorder } from './utils';
 import { getRegionForDistrict, REGIONS } from '../../../constants';
 import {
   DistrictLabel,
@@ -190,28 +189,6 @@ function DistrictLiquidityMapBase({
     expr.push(shouldDimDefault ? REGION_FILL_DIMMED : 'rgba(200, 200, 200, 0.15)');
     return expr;
   }, [districtData, hoveredDistrict, isRegionFilterActive, segments]);
-
-  // Dynamic border color expression based on LIQUIDITY SCORE
-  // This shows liquidity level while fill shows region
-  const borderColorExpression = useMemo(() => {
-    const expr = ['case'];
-
-    districtData.forEach((d) => {
-      if (d.has_data) {
-        expr.push(['==', ['get', 'district'], d.district_id]);
-        expr.push(getLiquidityBorder(d.liquidity_metrics?.liquidity_score));
-      }
-    });
-
-    // If no conditions were added, return default border color
-    if (expr.length === 1) {
-      return LIQUIDITY_BORDERS.noData;
-    }
-
-    // Default for districts with no data
-    expr.push(LIQUIDITY_BORDERS.noData);
-    return expr;
-  }, [districtData]);
 
   // Calculate screen position of hovered district for tethered callout
   // Card is fixed below the legend, only the leader line moves
@@ -417,25 +394,14 @@ function DistrictLiquidityMapBase({
                 'fill-opacity': 1,
               }}
             />
-            {/* District border glow - wider, semi-transparent for glow effect */}
-            <Layer
-              id="district-borders-glow"
-              type="line"
-              paint={{
-                'line-color': borderColorExpression,
-                'line-width': 6,
-                'line-opacity': 0.3,
-                'line-blur': 3,
-              }}
-            />
-            {/* District borders - colored by liquidity score */}
+            {/* District borders - white to match Price map */}
             <Layer
               id="district-borders"
               type="line"
               paint={{
-                'line-color': borderColorExpression,
+                'line-color': '#FFFFFF',
                 'line-width': 1.5,
-                'line-opacity': 0.9,
+                'line-opacity': 0.8,
               }}
             />
           </Source>
@@ -492,13 +458,23 @@ function DistrictLiquidityMapBase({
           )}
         </AnimatePresence>
 
-        {/* Legend - Market Segments + Liquidity Score (top-left) - matches Price map structure */}
+        {/* Legend - Market Segments + Liquidity Score (top-left) - matches HoverCard style */}
         <div className="absolute top-2 left-2 sm:top-4 sm:left-4 z-20">
-          <div className="bg-white/95 backdrop-blur-sm rounded-sm border border-slate-300 shadow-md p-2 sm:p-2.5 w-[130px] sm:w-[165px]">
-            {/* Market Segments (fill colors) - same as Price map */}
-            <p className="text-[8px] sm:text-[9px] text-slate-500 uppercase tracking-wider font-semibold mb-1.5 sm:mb-2">
-              Market Segments
-            </p>
+          <div
+            className="bg-white/95 backdrop-blur-sm rounded-none w-[140px] sm:w-[180px] overflow-hidden"
+            style={{ border: '1.5px solid #94B4C1' }}
+          >
+            {/* Header - matches HoverCard header style */}
+            <div className="px-2.5 py-1.5 sm:px-3 sm:py-2 bg-slate-600 text-white">
+              <span className="font-bold text-[10px] sm:text-xs tracking-wide">Legend</span>
+            </div>
+
+            {/* Card body */}
+            <div className="p-2 sm:p-3">
+              {/* Market Segments (fill colors) - same as Price map */}
+              <p className="text-[8px] sm:text-[9px] text-slate-500 uppercase tracking-wider font-semibold mb-1.5 sm:mb-2">
+                Market Segments
+              </p>
             <div className="space-y-1 sm:space-y-1.5">
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <div className="w-3 h-2 sm:w-4 sm:h-3 rounded shrink-0" style={{ backgroundColor: REGION_FILLS.CCR }} />
@@ -596,8 +572,9 @@ function DistrictLiquidityMapBase({
                 </div>
               </div>
             )}
-          </div>
-        </div>
+            </div>{/* Close card body */}
+          </div>{/* Close legend card */}
+        </div>{/* Close legend container */}
       </div>
 
       {/* Region summary bar */}
