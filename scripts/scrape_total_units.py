@@ -949,6 +949,46 @@ def main():
 
     results = []
     stats = {'confirmed': 0, 'likely': 0, 'single': 0, 'mismatch': 0, 'none': 0}
+    db_updated = 0
+    pending_batch = []
+    BATCH_SIZE = 10
+
+    # Initialize DB connection once if --update-db
+    _app_ctx = None
+    upsert_project = None
+    UNITS_STATUS_VERIFIED = None
+    if args.update_db and not args.dry_run:
+        if str(BACKEND_DIR) not in sys.path:
+            sys.path.insert(0, str(BACKEND_DIR))
+        from app import create_app
+        from data_health import upsert_project as _upsert
+        from models.project_units import UNITS_STATUS_VERIFIED as _STATUS
+        upsert_project = _upsert
+        UNITS_STATUS_VERIFIED = _STATUS
+        _app = create_app()
+        _app_ctx = _app.app_context()
+        _app_ctx.push()
+        print(f"  DB connection ready - saving every {BATCH_SIZE} projects")
+
+    def save_batch():
+        """Save pending batch to DB."""
+        nonlocal db_updated, pending_batch
+        if not pending_batch or not upsert_project:
+            return
+        print(f"\n  >> Saving batch of {len(pending_batch)} projects...")
+        for r in pending_batch:
+            sources_list = [s.strip().lower().replace(" ", "") for s in r['sources']]
+            data_source = "scraper:" + "+".join(sources_list)
+            upsert_project(
+                raw_name=r['project_name'],
+                total_units=r['total_units'],
+                units_status=UNITS_STATUS_VERIFIED,
+                data_source=data_source,
+                confidence_score=r['confidence'],
+            )
+            db_updated += 1
+        print(f"  >> Batch saved. Total: {db_updated}")
+        pending_batch = []
 
     for i, project in enumerate(to_process, 1):
         print(f"\n[{i}/{len(to_process)}] {project}")
@@ -957,14 +997,32 @@ def main():
         stats[result['status']] += 1
 
         if result['units']:
-            results.append({
+            result_data = {
                 "project_name": project,
                 "total_units": result['units'],
                 "confidence": result['confidence'],
-                "sources": ", ".join(result['sources']),
+                "sources": result['sources'],
                 "status": result['status'],
                 "all_values": str(result['all_values']),
+            }
+            results.append({
+                **result_data,
+                "sources": ", ".join(result['sources']),
             })
+
+            # Add to pending batch
+            if args.update_db and not args.dry_run:
+                pending_batch.append(result_data)
+                if len(pending_batch) >= BATCH_SIZE:
+                    save_batch()
+
+    # Save any remaining projects
+    if pending_batch and args.update_db and not args.dry_run:
+        save_batch()
+
+    # Clean up app context
+    if _app_ctx:
+        _app_ctx.pop()
 
     # Summary
     print(f"\n{'='*60}")
@@ -983,48 +1041,9 @@ def main():
         for r in results:
             print(f"{r['project_name'][:34]:<35} {r['total_units']:>6} {r['confidence']:>5.0%} {r['status']:<10} {r['sources']}")
 
-    # Update database directly if --update-db flag is set
-    if results and args.update_db and not args.dry_run:
-        print(f"\nUpdating project_units table...")
-
-        # Add backend to path for imports
-        if str(BACKEND_DIR) not in sys.path:
-            sys.path.insert(0, str(BACKEND_DIR))
-
-        from app import create_app
-        from data_health import upsert_project
-        from models.project_units import UNITS_STATUS_VERIFIED
-
-        app = create_app()
-        with app.app_context():
-            db_updated = 0
-            db_errors = []
-
-            for r in results:
-                try:
-                    # Format data_source from scraper sources
-                    sources_list = [s.strip().lower().replace(" ", "") for s in r['sources'].split(",")]
-                    data_source = "scraper:" + "+".join(sources_list)
-
-                    result = upsert_project(
-                        raw_name=r['project_name'],
-                        total_units=r['total_units'],
-                        units_status=UNITS_STATUS_VERIFIED,
-                        data_source=data_source,
-                        confidence_score=r['confidence'],
-                    )
-
-                    action = result['action']
-                    db_updated += 1
-                    print(f"    {action}: {r['project_name']} ({r['total_units']} units)")
-
-                except Exception as e:
-                    db_errors.append({'project': r['project_name'], 'error': str(e)})
-                    print(f"    ERROR: {r['project_name']} - {e}")
-
-            print(f"\n  Database: {db_updated} projects updated")
-            if db_errors:
-                print(f"  Errors: {len(db_errors)}")
+    # DB update summary (already saved in batches above)
+    if args.update_db and not args.dry_run:
+        print(f"\n  Database: {db_updated} projects saved (in batches of {BATCH_SIZE})")
 
     if results and not args.dry_run and not args.update_db:
         print(f"\nUpdating CSV...")
