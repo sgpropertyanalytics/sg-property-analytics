@@ -87,7 +87,11 @@ export function useSubscription() {
 const SUBSCRIPTION_CACHE_PREFIX = 'subscription:';
 
 // Cache version - bump this to invalidate all existing caches on deploy
-const CACHE_VERSION = 5; // Bumped for per-user cache migration
+const CACHE_VERSION = 6; // Bumped for cachedAt TTL support
+
+// P0 FIX: Max cache TTL for premium (24 hours)
+// Prevents immortal cached premium when ends_at is null
+const PREMIUM_CACHE_MAX_TTL_MS = 24 * 60 * 60 * 1000;
 
 /**
  * Normalize email for cache key (lowercase, trimmed)
@@ -116,12 +120,29 @@ const getCachedSubscription = (email) => {
         return null;
       }
       if ((parsed.tier === 'free' || parsed.tier === 'premium') && typeof parsed.subscribed === 'boolean') {
+        // Parse and validate ends_at
         if (parsed.ends_at) {
           const parsedDate = new Date(parsed.ends_at);
           if (Number.isNaN(parsedDate.getTime())) {
             parsed.ends_at = null;
           }
         }
+
+        // P0 FIX: For premium, enforce cache TTL to prevent immortal cached premium
+        // If ends_at is null (no explicit expiry), use cache age as expiry
+        if (parsed.tier === 'premium' && !parsed.ends_at) {
+          const cachedAt = parsed.cachedAt || 0;
+          const cacheAge = Date.now() - cachedAt;
+          if (cacheAge > PREMIUM_CACHE_MAX_TTL_MS) {
+            console.warn('[Subscription] Cached premium expired (no ends_at, TTL exceeded)', {
+              cacheAge: Math.round(cacheAge / 1000 / 60),
+              maxTTL: Math.round(PREMIUM_CACHE_MAX_TTL_MS / 1000 / 60),
+            });
+            localStorage.removeItem(cacheKey);
+            return null;
+          }
+        }
+
         return parsed;
       }
     }
@@ -144,6 +165,7 @@ const cacheSubscription = (sub, email) => {
     localStorage.setItem(cacheKey, JSON.stringify({
       ...sub,
       version: CACHE_VERSION,
+      cachedAt: Date.now(), // P0 FIX: Track cache age for TTL enforcement
     }));
   } catch {
     // Ignore storage errors
@@ -592,9 +614,11 @@ export function SubscriptionProvider({ children }) {
           source: 'fetch',
           requestId,
           statusBefore: status,
-          statusAfter: lastStableStatusRef.current,
+          statusAfter: SubscriptionStatus.DEGRADED,
         });
-        // Abort - no dispatch needed, state unchanged
+        // P0 FIX: Abort MUST dispatch terminal action (convergence invariant)
+        // Otherwise subPhase can stay 'loading' forever
+        dispatch({ type: 'SUB_FETCH_ABORT', requestId });
         return;
       }
       if (isStale(requestId)) return;
@@ -841,9 +865,10 @@ export function SubscriptionProvider({ children }) {
           source: 'refresh',
           requestId,
           statusBefore: status,
-          statusAfter: lastStableStatusRef.current,
+          statusAfter: SubscriptionStatus.DEGRADED,
         });
-        // Abort - no dispatch needed
+        // P0 FIX: Abort MUST dispatch terminal action (convergence invariant)
+        dispatch({ type: 'SUB_FETCH_ABORT', requestId });
         return;
       }
       if (isStale(requestId)) return;

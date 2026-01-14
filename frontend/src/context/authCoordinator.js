@@ -288,6 +288,23 @@ function computeNextState(state, action) {
         subRequestId: null,
       };
 
+    case 'SUB_FETCH_ABORT':
+      // P0 FIX: Abort must reach terminal state (convergence invariant)
+      // If we were loading, transition to degraded so boot can complete
+      // Keep tier/tierSource unchanged (abort is not an error signal)
+      if (state.subPhase === 'loading') {
+        return {
+          ...state,
+          subPhase: 'degraded',
+          subRequestId: null, // Clear so future fetches aren't blocked
+        };
+      }
+      // If not loading (e.g., pending), just clear requestId
+      return {
+        ...state,
+        subRequestId: null,
+      };
+
     case 'SUB_PENDING_TIMEOUT':
       if (state.subPhase !== 'pending') return state;
       return {

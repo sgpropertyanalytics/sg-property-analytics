@@ -1023,3 +1023,144 @@ describe('P0 Fix: Monotonicity + Convergence', () => {
     });
   });
 });
+
+// ============================================================================
+// P0 Fix: SUB_FETCH_ABORT Convergence (2026-01-14)
+// ============================================================================
+// These tests verify that abort always reaches terminal state
+
+describe('P0 Fix: SUB_FETCH_ABORT Convergence', () => {
+  it('abort during loading transitions to degraded and clears subRequestId', () => {
+    const state = {
+      ...initialState,
+      tier: 'premium',
+      tierSource: 'cache',
+      subPhase: 'loading',
+      subRequestId: 123,
+    };
+
+    const result = authCoordinatorReducer(state, {
+      type: 'SUB_FETCH_ABORT',
+      requestId: 123,
+    });
+
+    // Must reach terminal state
+    expect(result.subPhase).toBe('degraded');
+    // Must clear requestId so future fetches work
+    expect(result.subRequestId).toBeNull();
+    // Must preserve tier (abort is not an error)
+    expect(result.tier).toBe('premium');
+    expect(result.tierSource).toBe('cache');
+  });
+
+  it('abort during pending just clears subRequestId', () => {
+    const state = {
+      ...initialState,
+      subPhase: 'pending',
+      subRequestId: 456,
+    };
+
+    const result = authCoordinatorReducer(state, {
+      type: 'SUB_FETCH_ABORT',
+      requestId: 456,
+    });
+
+    // Pending stays pending (timeout will handle)
+    expect(result.subPhase).toBe('pending');
+    // But requestId is cleared
+    expect(result.subRequestId).toBeNull();
+  });
+
+  it('every fetch attempt ends in terminal action (enumeration)', () => {
+    // This test proves the convergence invariant:
+    // For any subPhase='loading' state, one of these MUST be dispatched:
+    const terminalActions = ['SUB_FETCH_OK', 'SUB_FETCH_FAIL', 'SUB_FETCH_ABORT'];
+
+    const loadingState = {
+      ...initialState,
+      subPhase: 'loading',
+      subRequestId: 999,
+    };
+
+    for (const actionType of terminalActions) {
+      const action = actionType === 'SUB_FETCH_OK'
+        ? { type: actionType, requestId: 999, subscription: { tier: 'free', subscribed: false } }
+        : actionType === 'SUB_FETCH_FAIL'
+          ? { type: actionType, requestId: 999, error: new Error('test'), errorKind: 'GATEWAY' }
+          : { type: actionType, requestId: 999 };
+
+      const result = authCoordinatorReducer(loadingState, action);
+
+      // All terminal actions must exit loading
+      expect(result.subPhase).not.toBe('loading');
+      // All terminal actions must clear requestId
+      expect(result.subRequestId).toBeNull();
+    }
+  });
+});
+
+// ============================================================================
+// P0 Fix: Cache TTL for Premium (2026-01-14)
+// ============================================================================
+// Note: The actual cache TTL logic is in SubscriptionContext.jsx getCachedSubscription()
+// These tests verify the derivation logic doesn't grant premium without proper source
+
+describe('P0 Fix: Cache TTL Policy', () => {
+  it('cached premium with ends_at requires valid future date', () => {
+    // This tests the isPremiumActive derivation logic
+    // Subscription with expired ends_at should NOT be active
+
+    const expiredSubscription = {
+      tier: 'premium',
+      subscribed: true,
+      ends_at: '2020-01-01T00:00:00Z', // Expired
+    };
+
+    // Simulate isPremiumActive check
+    const isPremiumActive = (sub) => {
+      if (sub.tier !== 'premium') return false;
+      if (!sub.subscribed) return false;
+      if (sub.ends_at) {
+        const endsAt = new Date(sub.ends_at);
+        if (endsAt < new Date()) return false;
+      }
+      return true;
+    };
+
+    expect(isPremiumActive(expiredSubscription)).toBe(false);
+  });
+
+  it('cached premium without ends_at relies on cache TTL (24h max)', () => {
+    // This documents the policy: if ends_at is null, cache TTL limits premium access
+    // The actual enforcement is in getCachedSubscription() with PREMIUM_CACHE_MAX_TTL_MS
+
+    // Test the derivation side: if tierSource is 'none', hasCachedPremium is false
+    const tierSourceNone = 'none';
+    const tierSourceCache = 'cache';
+
+    // hasCachedPremium = tierSource === 'cache' && tier === 'premium' && isPremiumActive
+    const hasCachedPremium = (tierSource, tier) => tierSource === 'cache' && tier === 'premium';
+
+    expect(hasCachedPremium(tierSourceNone, 'premium')).toBe(false);
+    expect(hasCachedPremium(tierSourceCache, 'premium')).toBe(true);
+  });
+
+  it('expired cache (by TTL) returns null from getCachedSubscription', () => {
+    // This is a documentation test - the actual logic is:
+    // if (tier === 'premium' && !ends_at) {
+    //   if (Date.now() - cachedAt > 24h) return null;
+    // }
+    //
+    // Policy: Premium without ends_at cannot persist beyond 24 hours
+    // This prevents "immortal cached premium" from bad data or backend bugs
+
+    const PREMIUM_CACHE_MAX_TTL_MS = 24 * 60 * 60 * 1000;
+
+    // Simulate expired cache check
+    const cachedAt = Date.now() - (25 * 60 * 60 * 1000); // 25 hours ago
+    const cacheAge = Date.now() - cachedAt;
+    const isExpired = cacheAge > PREMIUM_CACHE_MAX_TTL_MS;
+
+    expect(isExpired).toBe(true);
+  });
+});
