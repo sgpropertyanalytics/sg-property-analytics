@@ -161,9 +161,9 @@ class TestUpsertSQL:
         assert 'INSERT INTO transactions' in sql
 
     def test_upsert_sql_has_on_conflict(self):
-        """Upsert SQL includes ON CONFLICT."""
+        """Upsert SQL includes ON CONFLICT with (source, row_hash)."""
         sql = build_upsert_sql()
-        assert 'ON CONFLICT (row_hash)' in sql
+        assert 'ON CONFLICT (source, row_hash)' in sql
 
     def test_upsert_sql_has_do_update(self):
         """Upsert SQL uses DO UPDATE not DO NOTHING."""
