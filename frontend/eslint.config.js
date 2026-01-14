@@ -146,6 +146,68 @@ export default [
     },
   },
 
+  // =============================================================================
+  // AUTH SINGLE-WRITER FRAMEWORK (Phase 0)
+  // =============================================================================
+  // These rules enforce the single-writer pattern for auth/subscription state.
+  // All state mutations must go through the authCoordinatorReducer.
+  // See: docs/plans/2026-01-14-auth-single-writer-framework.md
+  //
+  // MIGRATION ESCAPE HATCH:
+  // During migration, use this comment pattern (sparingly):
+  //   // eslint-disable-next-line no-restricted-syntax -- MIGRATION_ONLY: remove by Phase 3
+  // Track count with: grep -c "MIGRATION_ONLY" src/context/*.jsx
+  // Success = count goes to zero.
+  //
+  // AuthContext.jsx: Ban useState entirely - all state via useReducer
+  {
+    files: ['src/context/AuthContext.jsx'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        paths: [{
+          name: 'react',
+          importNames: ['useState'],
+          message: 'useState is banned in AuthContext. Use useReducer with authCoordinatorReducer. See docs/plans/2026-01-14-auth-single-writer-framework.md',
+        }],
+      }],
+    },
+  },
+  // SubscriptionContext.jsx: Ban auth state setters, allow UI state (paywall modal)
+  // Banned: setSubscription, setStatus, setLoading, setFetchError, setHasCachedSubscription
+  // Allowed: setShowPricingModal, setUpsellContext (pure UI state)
+  {
+    files: ['src/context/SubscriptionContext.jsx'],
+    rules: {
+      'no-restricted-syntax': ['error',
+        {
+          selector: "CallExpression[callee.name='setSubscription']",
+          message: 'setSubscription is banned. Use dispatch() with authCoordinatorReducer.',
+        },
+        {
+          selector: "CallExpression[callee.name='setStatus']",
+          message: 'setStatus is banned. Use dispatch() with authCoordinatorReducer.',
+        },
+        {
+          selector: "CallExpression[callee.name='setFetchError']",
+          message: 'setFetchError is banned. Use dispatch() with authCoordinatorReducer.',
+        },
+        {
+          selector: "CallExpression[callee.name='setHasCachedSubscription']",
+          message: 'setHasCachedSubscription is banned. Use dispatch() with authCoordinatorReducer.',
+        },
+        // Note: setLoading banned via pattern matching to avoid false positives
+        {
+          selector: "CallExpression[callee.name='setLoading'][arguments.0.type='Literal']",
+          message: 'setLoading is banned for auth state. Use dispatch() with authCoordinatorReducer.',
+        },
+        {
+          selector: "CallExpression[callee.name='setLoading'][arguments.0.type='Identifier']",
+          message: 'setLoading is banned for auth state. Use dispatch() with authCoordinatorReducer.',
+        },
+      ],
+    },
+  },
+
   // Ignore patterns
   {
     ignores: ['dist/', 'node_modules/', '*.config.js', '*.config.cjs', 'eslint-plugin-design/'],

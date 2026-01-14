@@ -1,7 +1,8 @@
 # Auth Single-Writer Framework Implementation Plan
 
 > **Last Updated:** 2026-01-14
-> **Status:** Draft v7 (Refocused on Code Deletion)
+> **Status:** Phase 2 Complete (user + initialized + tokenStatus migrated)
+> **Decision Framework:** [`AUTH_DECISION_FRAMEWORK.md`](../AUTH_DECISION_FRAMEWORK.md) ← **READ FIRST**
 > **Related:** `docs/AUTH_STABILITY_AUDIT.md`
 
 ## The Actual Goal
@@ -334,9 +335,25 @@ Should be ONE canonical pipeline with events.
 
 ## Part 4: Implementation Plan
 
-### Phase 0: Lint Rules (Day 1)
+### Phase 0: Lint Rules (Day 1) ✅ COMPLETE
 
 **Goal:** Prevent NEW mutations while we migrate. Surgical, not global.
+
+**Status:** ✅ Implemented 2026-01-14
+
+**Verification:**
+```bash
+$ npx eslint src/context/AuthContext.jsx src/context/SubscriptionContext.jsx 2>&1 | grep -c "error"
+66  # violations detected - lint rules working
+
+$ npx eslint src/context/SubscriptionContext.jsx 2>&1 | grep -E "(setShowPricingModal|setUpsellContext)"
+# (no output) - UI setters correctly NOT flagged
+```
+
+**What was added to `eslint.config.js`:**
+- AuthContext.jsx: `no-restricted-imports` bans `useState` from React
+- SubscriptionContext.jsx: `no-restricted-syntax` bans auth setters (`setSubscription`, `setStatus`, `setFetchError`, `setHasCachedSubscription`, `setLoading`)
+- UI setters allowed: `setShowPricingModal`, `setUpsellContext`
 
 ```javascript
 // eslint.config.js - ONLY target the two auth context files
@@ -1055,13 +1072,13 @@ If yes → plan is right-sized. If no → too much deleted.
 
 ### Phase Summary
 
-| Phase | Goal | Code Change |
-|-------|------|-------------|
-| 0. Lint rules | Prevent new mutations | +20 lines eslint config |
-| 1. Coordinator | Single source of truth | +200 lines new reducer |
-| 2. Collapse duplicates | Remove 4 → 1 sync paths | **-150 lines deleted** |
-| 3. Migrate contexts | Replace useState with dispatch | **-300 lines deleted** |
-| 4. Tests | Verify transitions | +100 lines tests |
+| Phase | Goal | Code Change | Status |
+|-------|------|-------------|--------|
+| 0. Lint rules | Prevent new mutations | +55 lines eslint config | ✅ Done |
+| 1. Coordinator | Single source of truth | +200 lines new reducer | 🔲 Next |
+| 2. Collapse duplicates | Remove 4 → 1 sync paths | **-150 lines deleted** | 🔲 |
+| 3. Migrate contexts | Replace useState with dispatch | **-300 lines deleted** | 🔲 |
+| 4. Tests | Verify transitions | +100 lines tests | 🔲 |
 
 **Net result: ~250 lines deleted, cleaner architecture**
 

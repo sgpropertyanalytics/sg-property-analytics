@@ -3,6 +3,7 @@
 **Date**: 2026-01-13
 **Branch**: C
 **Commits**: f71d91d8, da5495b0, 48b40a36
+**Decision Framework**: [`AUTH_DECISION_FRAMEWORK.md`](./AUTH_DECISION_FRAMEWORK.md) ← **ALL AI MUST READ**
 
 ---
 
@@ -277,7 +278,8 @@ window.__AUTH_TIMELINE__.filterBySource('fetch')
 
 | Phase | Task | Effort | Status |
 |-------|------|--------|--------|
-| 1 | Implement single-writer pattern (useReducer) | 3-4 days | 🔲 Planned |
+| 0 | Lint rules to prevent new mutations | 1 day | ✅ Done (2026-01-14) |
+| 1 | Implement single-writer pattern (useReducer) | 3-4 days | 🔲 Next |
 | 2 | Add monotonicity guards in reducers | 2 days | 🔲 Planned |
 | 3 | Zustand migration (when E2E exists) | 2-3 weeks | 🔲 Deferred |
 | - | Create `/auth/state` unified endpoint | TBD | 🔲 Backlog |
