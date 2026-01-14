@@ -79,8 +79,7 @@ def create_app():
         "http://127.0.0.1:3000",
         "http://127.0.0.1:3001",
         "http://127.0.0.1:5173",  # Vite default port
-        "https://sgpropertytrend.vercel.app",
-        "https://sg-property-analyzer.vercel.app",  # Vercel preview
+        "https://sg-property-analyzer.vercel.app",
         "https://www.sgpropertyanalytics.com",
         "https://sgpropertyanalytics.com",
     ]

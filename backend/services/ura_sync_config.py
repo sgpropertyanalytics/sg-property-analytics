@@ -209,8 +209,14 @@ def build_upsert_sql() -> str:
 
     The statement:
     1. Attempts INSERT
-    2. On conflict with row_hash, UPDATE the updatable fields
+    2. On conflict with (source, row_hash), UPDATE the updatable fields
     3. Returns whether the row was inserted or updated
+
+    Uses (source, row_hash) as conflict target to allow:
+    - Same row_hash from different sources (CSV vs URA API) - legitimate
+    - No duplicate row_hash within the same source - required for upsert
+
+    Requires: idx_transactions_source_row_hash_unique index (migration 021)
 
     Returns:
         SQL string with :named_param placeholders
@@ -228,7 +234,7 @@ def build_upsert_sql() -> str:
     sql = f"""
     INSERT INTO transactions ({columns})
     VALUES ({values})
-    ON CONFLICT (row_hash) WHERE row_hash IS NOT NULL
+    ON CONFLICT (source, row_hash) WHERE row_hash IS NOT NULL
     DO UPDATE SET {update_set}
     RETURNING
         id,
