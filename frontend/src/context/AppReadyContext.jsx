@@ -4,6 +4,7 @@ import { useSubscription } from './SubscriptionContext';
 // Phase 4: Migrated from useFilterState (Context) to useFilterStore (Zustand)
 // Using useFilterStore directly to access both state and forceDefaults action
 import { useFilterStore } from '../stores';
+import { logAuthEvent, AuthTimelineEvent } from '../utils/authTimelineLogger';
 
 // Boot stuck detection thresholds (milliseconds)
 const BOOT_WARNING_THRESHOLD_MS = 3000;   // Warning: Something might be slow (console only)
@@ -172,6 +173,13 @@ export function AppReadyProvider({ children }) {
       if (process.env.NODE_ENV === 'development') {
         console.warn(`[AppReady] ✓ Boot complete in ${bootDuration}ms`);
       }
+      logAuthEvent(AuthTimelineEvent.BOOT_COMPLETE, {
+        source: 'app_ready',
+        elapsed: bootDuration,
+        tierAfter: tier,
+        tierSourceAfter: tierSource,
+        statusAfter: subscriptionStatus,
+      });
       // Reset flags for potential page navigation
       hasLoggedWarningRef.current = false;
       hasLoggedCriticalRef.current = false;
@@ -213,6 +221,18 @@ export function AppReadyProvider({ children }) {
           'This is likely a bug - charts will not load.',
           payload
         );
+        logAuthEvent(AuthTimelineEvent.BOOT_STUCK, {
+          source: 'app_ready',
+          elapsed: payload.elapsed_ms,
+          blockedBy: payload.blocked_by,
+          tierAfter: tier,
+          tierSourceAfter: tierSource,
+          statusAfter: subscriptionStatus,
+          authInitialized,
+          subscriptionResolved,
+          tierResolved,
+          filtersReady,
+        });
         // TODO: Send to error tracking service if configured
         // errorTrackingService?.captureMessage('Boot stuck', { extra: payload });
       }

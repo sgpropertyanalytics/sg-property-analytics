@@ -44,6 +44,7 @@ Private condo analytics platform using URA transaction data. Resale-focused with
 |------|-------|
 | File map, tech debt | [`REPO_MAP.md`](./REPO_MAP.md) |
 | Historical incidents | [`REPO_MAP.md#9`](./REPO_MAP.md#9-historical-incidents-landmines) |
+| **Auth decision framework** | [`AUTH_DECISION_FRAMEWORK.md`](./docs/AUTH_DECISION_FRAMEWORK.md) |
 
 ---
 
