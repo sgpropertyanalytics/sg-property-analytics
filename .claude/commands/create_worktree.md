@@ -145,8 +145,8 @@ git worktree list
 ### Port Configuration
 
 To avoid conflicts with main development:
-- Backend: Use port 5002 (main uses 5001)
-- Frontend: Use port 5174 (main uses 5173)
+- Backend: Use port 5001 (main uses 5000)
+- Frontend: Use port 3001 (main uses 3000)
 
 ### When Done
 

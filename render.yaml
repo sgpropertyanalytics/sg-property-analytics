@@ -23,6 +23,8 @@ services:
         value: "3.11.7"
       - key: FLASK_ENV
         value: production
+      - key: FLASK_DEBUG
+        value: "false"  # Explicit: secure cookies in production
       - key: DATABASE_URL
         sync: false  # Set manually in Render dashboard (Supabase connection string)
       - key: URA_ACCESS_KEY
