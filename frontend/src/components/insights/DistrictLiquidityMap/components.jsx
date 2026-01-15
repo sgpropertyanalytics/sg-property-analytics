@@ -293,7 +293,7 @@ export function HoverCard({ district, data, position }) {
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95, y: 10 }}
       transition={{ duration: 0.2, ease: 'easeOut' }}
-      className="absolute z-50 pointer-events-none top-[152px] sm:top-[240px] left-2 sm:left-4"
+      className="absolute z-50 pointer-events-none top-[152px] sm:top-[280px] left-2 sm:left-4"
     >
       {/* Technical card with tier-colored border */}
       <div

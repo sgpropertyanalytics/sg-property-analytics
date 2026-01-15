@@ -52,7 +52,7 @@ from services.classifier_extended import (
     extract_lease_start_year,
     calculate_remaining_lease
 )
-from services.etl.fingerprint import compute_row_hash
+from services.etl.fingerprint import compute_row_hash, normalize_floor_range
 from constants import SALE_TYPE_NEW, SALE_TYPE_SUB, SALE_TYPE_RESALE
 
 logger = logging.getLogger(__name__)
@@ -416,7 +416,8 @@ class URACanonicalMapper:
         district = normalize_district(txn.get('district', ''))
         property_type = str(txn.get('propertyType', '')).strip() or 'Condominium'
         tenure = str(txn.get('tenure', '')).strip() or None
-        floor_range = str(txn.get('floorRange', '')).strip() or None
+        # Normalize floor_range for consistent hashing (CSV uses "XX to YY", API uses "XX-YY")
+        floor_range = normalize_floor_range(str(txn.get('floorRange', '')).strip() or None)
         type_of_sale = txn.get('typeOfSale', '3')
         num_units = parse_int_safe(txn.get('noOfUnits'), 'noOfUnits', default=1)
         type_of_area = str(txn.get('typeOfArea', '')).strip() or None
