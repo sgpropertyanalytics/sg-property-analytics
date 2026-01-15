@@ -461,7 +461,7 @@ function DistrictLiquidityMapBase({
         {/* Legend - Market Segments + Liquidity Score (top-left) - matches HoverCard style */}
         <div className="absolute top-2 left-2 sm:top-4 sm:left-4 z-20">
           <div
-            className="bg-white/95 backdrop-blur-sm rounded-none w-[140px] sm:w-[180px] overflow-hidden"
+            className="bg-white/95 backdrop-blur-sm rounded-none w-[140px] sm:w-[220px] overflow-hidden"
             style={{ border: '1.5px solid #94B4C1' }}
           >
             {/* Header - matches HoverCard header style */}
