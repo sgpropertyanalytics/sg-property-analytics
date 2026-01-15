@@ -233,3 +233,100 @@ def compute_batch_fingerprint(file_fingerprints: Dict[str, str]) -> str:
     sorted_items = sorted(file_fingerprints.items())
     combined = '|'.join(f'{k}:{v}' for k, v in sorted_items)
     return hashlib.sha256(combined.encode()).hexdigest()[:16]
+
+
+# =============================================================================
+# P0 GUARDRAILS - Row Hash Integrity
+# =============================================================================
+
+def assert_hash_integrity(session, source: str) -> dict:
+    """
+    Import-time guardrail: verify hash coverage and uniqueness.
+
+    Checks:
+    1. row_hash is NOT NULL for 100% of rows
+    2. No collisions (no row_hash with count > 1)
+
+    Call after any batch import to catch catastrophic regressions.
+
+    Args:
+        session: SQLAlchemy session
+        source: 'csv' or 'ura_api'
+
+    Returns:
+        Dict with {total, with_hash, distinct, passed}
+
+    Raises:
+        AssertionError if any check fails
+    """
+    from sqlalchemy import text
+
+    result = session.execute(text("""
+        SELECT
+            COUNT(*) as total,
+            COUNT(row_hash) as with_hash,
+            COUNT(DISTINCT row_hash) as distinct_hashes
+        FROM transactions
+        WHERE source = :source
+    """), {'source': source}).fetchone()
+
+    total = result[0]
+    with_hash = result[1]
+    distinct = result[2]
+
+    stats = {
+        'total': total,
+        'with_hash': with_hash,
+        'distinct': distinct,
+        'coverage_pct': (with_hash / total * 100) if total > 0 else 0,
+        'collision_count': with_hash - distinct,
+        'passed': True
+    }
+
+    # Check 1: 100% coverage
+    if with_hash != total:
+        stats['passed'] = False
+        raise AssertionError(
+            f"Hash coverage violation for {source}: "
+            f"{total - with_hash:,} rows missing row_hash ({with_hash:,}/{total:,})"
+        )
+
+    # Check 2: No collisions
+    if with_hash != distinct:
+        stats['passed'] = False
+        raise AssertionError(
+            f"Hash collision for {source}: "
+            f"{with_hash - distinct:,} collisions ({with_hash:,} rows, {distinct:,} distinct)"
+        )
+
+    return stats
+
+
+def get_overlap_window(session) -> tuple:
+    """
+    Get the overlapping date window between CSV and API data.
+
+    Use this to scope validators - excludes pre-2021 CSV-only and
+    Jan-2026 API-only data from match rate calculations.
+
+    Args:
+        session: SQLAlchemy session
+
+    Returns:
+        Tuple of (start_date, end_date) for the overlap window
+    """
+    from sqlalchemy import text
+
+    result = session.execute(text("""
+        SELECT
+            GREATEST(
+                (SELECT MIN(transaction_month) FROM transactions WHERE source = 'csv' AND row_hash IS NOT NULL),
+                (SELECT MIN(transaction_month) FROM transactions WHERE source = 'ura_api' AND row_hash IS NOT NULL)
+            ) as overlap_start,
+            LEAST(
+                (SELECT MAX(transaction_month) FROM transactions WHERE source = 'csv' AND row_hash IS NOT NULL),
+                (SELECT MAX(transaction_month) FROM transactions WHERE source = 'ura_api' AND row_hash IS NOT NULL)
+            ) as overlap_end
+    """)).fetchone()
+
+    return (result[0], result[1])
