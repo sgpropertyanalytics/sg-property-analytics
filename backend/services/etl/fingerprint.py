@@ -9,9 +9,60 @@ Provides hashing functions for:
 All hashes are stable and reproducible across runs.
 """
 import hashlib
+import re
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 from datetime import date, datetime
+
+
+def normalize_floor_range(floor_range: Optional[str]) -> Optional[str]:
+    """
+    Normalize floor range format for consistent hashing.
+
+    Converts "XX to YY" → "XX-YY" format to ensure CSV and URA API
+    data produce identical hashes for the same transaction.
+
+    Args:
+        floor_range: Floor range string (e.g., "11 to 15", "11-15", "B1-B2")
+
+    Returns:
+        Normalized string in "XX-YY" format, or None/original if no match
+
+    Examples:
+        >>> normalize_floor_range("11 to 15")
+        '11-15'
+        >>> normalize_floor_range("11-15")
+        '11-15'
+        >>> normalize_floor_range("B1 to B2")
+        'B1-B2'
+    """
+    if not floor_range:
+        return floor_range
+
+    floor_range = str(floor_range).strip()
+    floor_range = re.sub(r'\s+', ' ', floor_range)
+    floor_range = floor_range.replace('–', '-').replace('—', '-')
+
+    # "XX to YY" -> "XX-YY"
+    match = re.match(r'^(\d+)\s+to\s+(\d+)$', floor_range, re.IGNORECASE)
+    if match:
+        return f"{match.group(1)}-{match.group(2)}"
+
+    # "XX - YY" -> "XX-YY"
+    match = re.match(r'^(\d+)\s*-\s*(\d+)$', floor_range)
+    if match:
+        return f"{match.group(1)}-{match.group(2)}"
+
+    # Basement floors
+    match = re.match(r'^(B\d+)\s+to\s+(B\d+)$', floor_range, re.IGNORECASE)
+    if match:
+        return f"{match.group(1).upper()}-{match.group(2).upper()}"
+
+    match = re.match(r'^(B\d+)\s*-\s*(B\d+)$', floor_range, re.IGNORECASE)
+    if match:
+        return f"{match.group(1).upper()}-{match.group(2).upper()}"
+
+    return floor_range
 
 
 def compute_file_sha256(filepath: str) -> str:
@@ -82,8 +133,22 @@ def compute_row_hash(
     for field in natural_key_fields:
         val = row.get(field)
 
+        # Special handling for area_sqft: round to 1 decimal place to eliminate
+        # sqm→sqft conversion precision differences (e.g., 613.55 vs 613.54)
+        # Using 0.1 precision instead of integer to reduce collision risk
+        if field == 'area_sqft':
+            if val is None:
+                values.append('')
+            elif isinstance(val, (int, float)):
+                # Check for NaN
+                if isinstance(val, float) and val != val:
+                    values.append('')
+                else:
+                    values.append(f'{round(val, 1):.1f}')
+            else:
+                values.append('')
         # Handle None/NaN consistently
-        if val is None:
+        elif val is None:
             values.append('')
         elif isinstance(val, float) and (str(val) == 'nan' or val != val):  # NaN check
             values.append('')

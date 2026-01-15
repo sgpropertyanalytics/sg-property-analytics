@@ -37,36 +37,9 @@ logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 5000
 
-
-def normalize_floor_range(floor_range: Optional[str]) -> Optional[str]:
-    """Normalize floor range: "XX to YY" -> "XX-YY", handle en-dash, etc."""
-    if not floor_range:
-        return floor_range
-
-    floor_range = str(floor_range).strip()
-    floor_range = re.sub(r'\s+', ' ', floor_range)
-    floor_range = floor_range.replace('–', '-').replace('—', '-')
-
-    # "XX to YY" -> "XX-YY"
-    match = re.match(r'^(\d+)\s+to\s+(\d+)$', floor_range, re.IGNORECASE)
-    if match:
-        return f"{match.group(1)}-{match.group(2)}"
-
-    # "XX - YY" -> "XX-YY"
-    match = re.match(r'^(\d+)\s*-\s*(\d+)$', floor_range)
-    if match:
-        return f"{match.group(1)}-{match.group(2)}"
-
-    # Basement floors
-    match = re.match(r'^(B\d+)\s+to\s+(B\d+)$', floor_range, re.IGNORECASE)
-    if match:
-        return f"{match.group(1).upper()}-{match.group(2).upper()}"
-
-    match = re.match(r'^(B\d+)\s*-\s*(B\d+)$', floor_range, re.IGNORECASE)
-    if match:
-        return f"{match.group(1).upper()}-{match.group(2).upper()}"
-
-    return floor_range
+# Import normalize_floor_range from shared location (single source of truth)
+# This ensures CSV backfill and URA API mapper use identical normalization
+from services.etl.fingerprint import normalize_floor_range
 
 
 def canonicalize_project_name(name: Optional[str]) -> str:

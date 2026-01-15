@@ -393,10 +393,11 @@ class TestURACanonicalMapperMapProject:
         assert rows[0]["sale_type"] == SALE_TYPE_NEW
 
     def test_map_project_floor_range(self, mapper, sample_ura_project):
-        """Floor range is preserved."""
+        """Floor range is normalized to XX-YY format for consistent hashing."""
         rows = list(mapper.map_project(sample_ura_project))
-        assert rows[0]["floor_range"] == "21 to 25"
-        assert rows[1]["floor_range"] == "16 to 20"
+        # Input "21 to 25" is normalized to "21-25" for consistent hashing with CSV data
+        assert rows[0]["floor_range"] == "21-25"
+        assert rows[1]["floor_range"] == "16-20"
 
     def test_map_project_floor_level_classified(self, mapper, sample_ura_project):
         """Floor level is classified."""
