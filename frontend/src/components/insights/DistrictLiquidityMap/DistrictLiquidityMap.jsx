@@ -219,10 +219,10 @@ function DistrictLiquidityMapBase({
     }
 
     // Fixed card position: below the legend with small gap
-    // Card CSS: top-[152px] sm:top-[240px] left-2 sm:left-4
+    // Card CSS: top-[152px] sm:top-[280px] left-2 sm:left-4
     const cardWidth = 220;
     const cardLeft = 16; // Matches sm:left-4 (16px)
-    const cardTop = 240; // Matches sm:top-[240px]
+    const cardTop = 280; // Matches sm:top-[280px]
     const headerHeight = 36; // Height of the tier-colored header
 
     // Leader line: start = card header, end = district
