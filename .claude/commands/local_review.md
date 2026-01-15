@@ -168,7 +168,7 @@ Checked against REPO_MAP.md Section 9:
 
 ```bash
 # Start backend
-cd backend && flask run --port 5001
+cd backend && flask run --port 5000
 
 # Start frontend
 cd frontend && npm run dev

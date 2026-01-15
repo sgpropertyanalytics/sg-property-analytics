@@ -18,7 +18,7 @@ Analytics platform for Singapore private residential transactions.
 cd backend
 pip install -r requirements.txt
 export DATABASE_URL=postgresql://dev:dev@localhost:5432/sg_property
-flask run --port 5001
+flask run --port 5000
 ```
 
 ### Frontend

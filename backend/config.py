@@ -93,7 +93,7 @@ class Config:
     )
 
     CSV_FOLDER = os.getenv('CSV_FOLDER', 'rawdata')
-    DEBUG = os.getenv('FLASK_DEBUG', 'True').lower() == 'true'
+    DEBUG = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
 
     # SQLAlchemy configuration - PostgreSQL ONLY
     # SQLite is NOT supported in any environment
