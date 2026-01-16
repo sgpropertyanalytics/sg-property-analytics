@@ -298,61 +298,72 @@ def create_app():
         except Exception:
             pass  # Non-critical diagnostic
 
-        # === SCHEMA CHECK: Fail fast if critical columns are missing ===
-        try:
-            from services.schema_check import run_schema_check
-            schema_report = run_schema_check()
+        # === STARTUP VALIDATION CHECKS ===
+        # Gate behind RUN_STARTUP_CHECKS env var (default: off in production)
+        # Set RUN_STARTUP_CHECKS=1 in staging/dev for schema/data validation
+        # In production, these checks add startup time and can cause timeouts
+        run_checks = os.getenv('RUN_STARTUP_CHECKS', '').lower() in ('1', 'true', 'yes')
 
-            if not schema_report['is_valid']:
-                print("\n" + "=" * 60)
-                print("FATAL: SCHEMA DRIFT DETECTED")
-                print("=" * 60)
+        if run_checks:
+            print("   🔍 Running startup checks (RUN_STARTUP_CHECKS=1)...")
 
-                # Show missing tables
-                if schema_report['missing_tables']:
-                    print(f"\nMissing tables: {', '.join(schema_report['missing_tables'])}")
+            # === SCHEMA CHECK: Fail fast if critical columns are missing ===
+            try:
+                from services.schema_check import run_schema_check
+                schema_report = run_schema_check()
 
-                # Show missing critical columns
-                critical = [c for c in schema_report['missing_columns'] if c['severity'] == 'critical']
-                if critical:
-                    print(f"\nMissing critical columns:")
-                    for col in critical:
-                        print(f"   - {col['table']}.{col['column']}")
+                if not schema_report['is_valid']:
+                    print("\n" + "=" * 60)
+                    print("FATAL: SCHEMA DRIFT DETECTED")
+                    print("=" * 60)
 
-                # Show missing optional columns (warnings)
-                warnings = [c for c in schema_report['missing_columns'] if c['severity'] == 'warning']
-                if warnings:
-                    print(f"\nMissing optional columns ({len(warnings)} total):")
-                    # Show first 5 as examples
-                    for col in warnings[:5]:
-                        print(f"   - {col['table']}.{col['column']}")
-                    if len(warnings) > 5:
-                        print(f"   ... and {len(warnings) - 5} more")
+                    # Show missing tables
+                    if schema_report['missing_tables']:
+                        print(f"\nMissing tables: {', '.join(schema_report['missing_tables'])}")
 
-                print("\n" + "-" * 60)
-                print("TO FIX: Run migrations before starting the app:")
-                print("   psql \"$DATABASE_URL\" -f backend/migrations/001_add_all_missing_columns.sql")
-                print("-" * 60 + "\n")
+                    # Show missing critical columns
+                    critical = [c for c in schema_report['missing_columns'] if c['severity'] == 'critical']
+                    if critical:
+                        print(f"\nMissing critical columns:")
+                        for col in critical:
+                            print(f"   - {col['table']}.{col['column']}")
 
-                # HARD FAIL: Don't serve broken APIs
-                # This prevents silent 500 errors from missing columns
-                raise RuntimeError(
-                    f"Schema drift: {len(schema_report['missing_tables'])} missing tables, "
-                    f"{len(critical)} missing critical columns. "
-                    "Run migrations before starting the app."
-                )
-            else:
-                print("   ✓ Schema check passed")
-        except RuntimeError:
-            # Re-raise schema errors (don't catch our own RuntimeError)
-            raise
-        except Exception as e:
-            # Other errors (e.g., can't connect to check schema) - warn but continue
-            print(f"   ⚠️  Schema check skipped: {e}")
+                    # Show missing optional columns (warnings)
+                    warnings = [c for c in schema_report['missing_columns'] if c['severity'] == 'warning']
+                    if warnings:
+                        print(f"\nMissing optional columns ({len(warnings)} total):")
+                        # Show first 5 as examples
+                        for col in warnings[:5]:
+                            print(f"   - {col['table']}.{col['column']}")
+                        if len(warnings) > 5:
+                            print(f"   ... and {len(warnings) - 5} more")
 
-        # Auto-validate data on startup (READ-ONLY, ~100ms)
-        # This runs inside create_app() so it works with gunicorn
-        _run_startup_validation()
+                    print("\n" + "-" * 60)
+                    print("TO FIX: Run migrations before starting the app:")
+                    print("   psql \"$DATABASE_URL\" -f backend/migrations/001_add_all_missing_columns.sql")
+                    print("-" * 60 + "\n")
+
+                    # HARD FAIL: Don't serve broken APIs
+                    # This prevents silent 500 errors from missing columns
+                    raise RuntimeError(
+                        f"Schema drift: {len(schema_report['missing_tables'])} missing tables, "
+                        f"{len(critical)} missing critical columns. "
+                        "Run migrations before starting the app."
+                    )
+                else:
+                    print("   ✓ Schema check passed")
+            except RuntimeError:
+                # Re-raise schema errors (don't catch our own RuntimeError)
+                raise
+            except Exception as e:
+                # Other errors (e.g., can't connect to check schema) - warn but continue
+                print(f"   ⚠️  Schema check skipped: {e}")
+
+            # Auto-validate data on startup (READ-ONLY, ~100ms)
+            # This runs inside create_app() so it works with gunicorn
+            _run_startup_validation()
+        else:
+            print("   ⏭️  Startup checks disabled (set RUN_STARTUP_CHECKS=1 to enable)")
 
         # =======================================================================
         # REMOVED FROM WEB BOOT (2024-01 optimization)
@@ -388,19 +399,20 @@ def create_app():
             print(f"   ⚠️  Firebase pre-init skipped: {e}")
 
         # Checksum verification (~500ms): Detect tampering of tracked CSV files
-        # This is a critical data integrity check - logs violations but does NOT block startup
-        try:
-            from utils.data_checksums import verify_all
-            violations = verify_all()
-            if violations:
-                print("   ⚠️  DATA INTEGRITY VIOLATIONS:")
-                for v in violations:
-                    print(f"      - {v}")
-                print("      Run: python -c \"from utils.data_checksums import save_checksums; save_checksums()\"")
-            else:
-                print("   ✓ Data checksum verification passed")
-        except Exception as e:
-            print(f"   ⚠️  Checksum verification skipped: {e}")
+        # Gated behind RUN_STARTUP_CHECKS (adds startup time, better in cron job)
+        if run_checks:
+            try:
+                from utils.data_checksums import verify_all
+                violations = verify_all()
+                if violations:
+                    print("   ⚠️  DATA INTEGRITY VIOLATIONS:")
+                    for v in violations:
+                        print(f"      - {v}")
+                    print("      Run: python -c \"from utils.data_checksums import save_checksums; save_checksums()\"")
+                else:
+                    print("   ✓ Data checksum verification passed")
+            except Exception as e:
+                print(f"   ⚠️  Checksum verification skipped: {e}")
 
     # Register routes
     # Analytics routes (PUBLIC - no authentication required)
