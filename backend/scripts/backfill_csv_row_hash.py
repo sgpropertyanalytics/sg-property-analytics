@@ -140,7 +140,7 @@ def fetch_batch_with_seek(
 
     result = session.execute(text(f"""
         SELECT id, project_name, transaction_date, price, area_sqft,
-               floor_range, sale_type, district
+               floor_range, property_type, sale_type, district
         FROM transactions
         WHERE {where_clause}
           AND id > :last_id
@@ -151,7 +151,7 @@ def fetch_batch_with_seek(
     return [{
         'id': row[0], 'project_name': row[1], 'transaction_date': row[2],
         'price': row[3], 'area_sqft': row[4], 'floor_range': row[5],
-        'sale_type': row[6], 'district': row[7],
+        'property_type': row[6], 'sale_type': row[7], 'district': row[8],
     } for row in result]
 
 
@@ -172,8 +172,9 @@ def compute_batch_hashes(rows: List[Dict[str, Any]]) -> Tuple[List[Tuple[str, in
             'project_name': canonicalize_project_name(row['project_name']),
             'transaction_month': derive_transaction_month(row['transaction_date']),
             'price': row['price'],
-            'area_sqft': row['area_sqft'],
+            'area_sqft': row['area_sqft'],  # Will be canonicalized to area_sqft_x100 by compute_row_hash
             'floor_range': normalize_floor_range(row['floor_range']),
+            'property_type': row['property_type'],
             'sale_type': row['sale_type'],
             'district': row['district'],
         }

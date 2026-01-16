@@ -15,6 +15,39 @@ from typing import List, Dict, Any, Optional
 from datetime import date, datetime
 
 
+def canonicalize_area_sqft(area_sqft: Optional[float]) -> Optional[int]:
+    """
+    Canonicalize area_sqft to stable integer representation.
+
+    Converts sqft to integer of (sqft × 100) to preserve 2 decimal places
+    without rounding ambiguity. This eliminates format drift between sources.
+
+    Args:
+        area_sqft: Area in square feet (e.g., 1689.95)
+
+    Returns:
+        Integer representation (e.g., 168995), or None if input is None/NaN
+
+    Examples:
+        >>> canonicalize_area_sqft(1689.95)
+        168995
+        >>> canonicalize_area_sqft(1689.93)
+        168993
+        >>> canonicalize_area_sqft(None)
+        None
+    """
+    if area_sqft is None:
+        return None
+
+    if isinstance(area_sqft, float):
+        # Check for NaN
+        if str(area_sqft) == 'nan' or area_sqft != area_sqft:
+            return None
+
+    # Convert to integer of sqft × 100 (2dp precision)
+    return int(round(float(area_sqft) * 100))
+
+
 def normalize_floor_range(floor_range: Optional[str]) -> Optional[str]:
     """
     Normalize floor range format for consistent hashing.
@@ -110,12 +143,17 @@ def compute_row_hash(
     normalize_dates: bool = True
 ) -> str:
     """
-    Compute stable hash from natural key fields.
+    Compute stable hash from natural key fields with canonical normalization.
 
     This hash is used for:
     - Deduplication within a batch
     - Idempotent promotion (ON CONFLICT DO NOTHING)
     - Detecting duplicate records across batches
+
+    Special field handling:
+    - 'area_sqft_x100': Looks up 'area_sqft' in row and canonicalizes to int × 100
+    - 'floor_range': Normalizes format (e.g., "11 to 15" → "11-15")
+    - Other fields: Standard normalization (dates, numbers, strings)
 
     Args:
         row: Dict of field values (using canonical field names)
@@ -126,29 +164,31 @@ def compute_row_hash(
         32-character hex hash
 
     Example:
-        >>> natural_key = ['project_name', 'transaction_month', 'price', 'area_sqft', 'floor_range']
+        >>> natural_key = ['project_name', 'transaction_month', 'price', 'area_sqft_x100', 'floor_range']
         >>> hash = compute_row_hash(row, natural_key)
     """
     values = []
     for field in natural_key_fields:
+        # Special handling for canonical fields
+        if field == 'area_sqft_x100':
+            # Look up 'area_sqft' and canonicalize
+            area_val = row.get('area_sqft')
+            canonical = canonicalize_area_sqft(area_val)
+            values.append(str(canonical) if canonical is not None else '')
+            continue
+
+        if field == 'floor_range':
+            # Normalize floor range format
+            floor_val = row.get('floor_range')
+            normalized = normalize_floor_range(floor_val)
+            values.append(str(normalized).strip().lower() if normalized else '')
+            continue
+
+        # Standard field handling
         val = row.get(field)
 
-        # Special handling for area_sqft: round to 1 decimal place to eliminate
-        # sqm→sqft conversion precision differences (e.g., 613.55 vs 613.54)
-        # Using 0.1 precision instead of integer to reduce collision risk
-        if field == 'area_sqft':
-            if val is None:
-                values.append('')
-            elif isinstance(val, (int, float)):
-                # Check for NaN
-                if isinstance(val, float) and val != val:
-                    values.append('')
-                else:
-                    values.append(f'{round(val, 1):.1f}')
-            else:
-                values.append('')
         # Handle None/NaN consistently
-        elif val is None:
+        if val is None:
             values.append('')
         elif isinstance(val, float) and (str(val) == 'nan' or val != val):  # NaN check
             values.append('')
