@@ -6,12 +6,16 @@ Tracks applied migrations in a `_migrations` table to ensure idempotency.
 Safe to run multiple times - only applies new migrations.
 
 IMPORTANT: Requires DATABASE_URL_MIGRATIONS environment variable.
-This must be a DIRECT database connection (not pooler) for DDL operations.
-Supabase pooler (port 6543) wraps queries in transactions, breaking some DDL.
+- Session pooler (port 5432): OK - does not wrap queries in transactions
+- Transaction pooler (port 6543): REJECTED - wraps queries, breaks DDL
+- Direct connection: OK but may have IPv6 issues from some hosts
+
+Concurrency: Uses pg_advisory_lock to ensure only one migration runner
+executes at a time, preventing race conditions during parallel deploys.
 
 Usage:
-    DATABASE_URL_MIGRATIONS=<direct_url> python -m scripts.run_migrations
-    DATABASE_URL_MIGRATIONS=<direct_url> python scripts/run_migrations.py
+    DATABASE_URL_MIGRATIONS=<session_pooler_url> python -m scripts.run_migrations
+    DATABASE_URL_MIGRATIONS=<session_pooler_url> python scripts/run_migrations.py
 """
 import os
 import sys
@@ -22,6 +26,11 @@ from pathlib import Path
 backend_dir = Path(__file__).parent.parent
 if str(backend_dir) not in sys.path:
     sys.path.insert(0, str(backend_dir))
+
+# Advisory lock ID for migration serialization
+# This prevents concurrent migration runs from racing
+# Using a fixed ID derived from 'migrations' string hash
+MIGRATION_LOCK_ID = 839274628  # hash('sg_property_migrations') % (2**31)
 
 
 def connect_with_retry(db_url: str, attempts: int = 4, base_sleep: float = 0.75):
@@ -208,8 +217,14 @@ def main():
     cur = conn.cursor()
 
     try:
-        # Create tracking table if not exists (with autocommit for this)
+        # Acquire advisory lock to prevent concurrent migration runs
+        # This blocks until the lock is available (or connection times out)
         conn.autocommit = True
+        print("Acquiring migration lock...")
+        cur.execute("SELECT pg_advisory_lock(%s)", (MIGRATION_LOCK_ID,))
+        print("Migration lock acquired")
+
+        # Create tracking table if not exists
         cur.execute("""
             CREATE TABLE IF NOT EXISTS _migrations (
                 name TEXT PRIMARY KEY,
@@ -276,6 +291,13 @@ def main():
         print(f"\nMigrations complete: {len(pending)} applied")
 
     finally:
+        # Release advisory lock (also released automatically on disconnect)
+        try:
+            conn.autocommit = True
+            cur.execute("SELECT pg_advisory_unlock(%s)", (MIGRATION_LOCK_ID,))
+            print("Migration lock released")
+        except Exception:
+            pass  # Lock released on disconnect anyway
         cur.close()
         conn.close()
 
