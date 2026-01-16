@@ -306,12 +306,15 @@ function computeNextState(state, action) {
       };
 
     case 'SUB_PENDING_TIMEOUT':
+      // P0 FIX: Timeout must set tierSource to something other than 'none'
+      // Boot gate: tierResolved = !isAuthenticated || tierSource !== 'none'
+      // Setting tierSource: 'none' keeps tierResolved=false, blocking boot forever
       if (state.subPhase !== 'pending') return state;
       return {
         ...state,
         subPhase: 'resolved',
         tier: 'free',
-        tierSource: 'none',
+        tierSource: 'timeout', // NOT 'none' - allows boot gate to resolve
       };
 
     case 'SUB_BOOTSTRAP':

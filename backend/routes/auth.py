@@ -79,6 +79,11 @@ def get_firebase_app():
     Returns the Firebase app instance, or None if initialization failed.
     Uses a sentinel value (False) to cache failure state and avoid
     retrying initialization on every request (which was causing slowdowns).
+
+    Supports three initialization methods (in priority order):
+    1. FIREBASE_SERVICE_ACCOUNT_JSON - JSON string of service account (for Render/Heroku)
+    2. FIREBASE_SERVICE_ACCOUNT_PATH - File path to service account JSON
+    3. Default credentials (for Google Cloud environments)
     """
     global _firebase_app
 
@@ -91,19 +96,39 @@ def get_firebase_app():
         return None
 
     try:
+        import json
         import firebase_admin
         from firebase_admin import credentials
 
-        # Check for service account path
-        service_account_path = os.getenv('FIREBASE_SERVICE_ACCOUNT_PATH')
-        if service_account_path and os.path.exists(service_account_path):
-            cred = credentials.Certificate(service_account_path)
-            _firebase_app = firebase_admin.initialize_app(cred)
-            print("[Auth] Firebase Admin SDK initialized with service account")
-        else:
+        cred = None
+
+        # Priority 1: JSON string env var (for Render/Heroku/etc)
+        service_account_json = os.getenv('FIREBASE_SERVICE_ACCOUNT_JSON')
+        if service_account_json:
+            try:
+                service_account_info = json.loads(service_account_json)
+                cred = credentials.Certificate(service_account_info)
+                print("[Auth] Firebase Admin SDK initialized with JSON env var")
+            except json.JSONDecodeError as je:
+                print(f"[Auth] FIREBASE_SERVICE_ACCOUNT_JSON is invalid JSON: {je}")
+                # Fall through to try other methods
+
+        # Priority 2: File path
+        if cred is None:
+            service_account_path = os.getenv('FIREBASE_SERVICE_ACCOUNT_PATH')
+            if service_account_path and os.path.exists(service_account_path):
+                cred = credentials.Certificate(service_account_path)
+                print("[Auth] Firebase Admin SDK initialized with service account file")
+
+        # Priority 3: Default credentials (Google Cloud)
+        if cred is None:
             # Try to initialize with default credentials (for Cloud Run, etc.)
             _firebase_app = firebase_admin.initialize_app()
             print("[Auth] Firebase Admin SDK initialized with default credentials")
+            return _firebase_app
+
+        # Initialize with credential
+        _firebase_app = firebase_admin.initialize_app(cred)
         return _firebase_app
     except Exception as e:
         # Cache the failure so we don't retry on every request
