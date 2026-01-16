@@ -143,16 +143,20 @@ def check_invalid_indexes(conn, auto_drop: bool = False):
         sys.exit(1)
 
 
-def is_pooler_url(url: str) -> bool:
+def is_transaction_pooler_url(url: str) -> bool:
     """
-    Detect if URL is a Supabase pooler connection (port 6543).
+    Detect if URL is a Supabase TRANSACTION pooler connection (port 6543).
 
-    Pooler connections wrap queries in transactions, breaking DDL operations.
+    Transaction pooler (port 6543) wraps queries in transactions, breaking DDL.
+    Session pooler (port 5432) does NOT wrap queries and is safe for migrations.
+
+    Supabase pooler modes:
+    - Port 6543: Transaction mode (UNSAFE for DDL)
+    - Port 5432: Session mode (SAFE for DDL)
     """
-    # Check for common pooler patterns
+    # Only reject transaction pooler (port 6543)
+    # Session pooler (port 5432 on pooler.supabase.com) is fine
     if ':6543' in url:
-        return True
-    if 'pooler.supabase.com' in url:
         return True
     return False
 
@@ -173,21 +177,26 @@ def main():
         print("=" * 60)
         sys.exit(1)
 
-    # Guard against accidentally using pooler URL
-    if is_pooler_url(db_url):
+    # Guard against accidentally using TRANSACTION pooler (port 6543)
+    # Session pooler (port 5432) is fine - it doesn't wrap queries in transactions
+    if is_transaction_pooler_url(db_url):
         print("=" * 60)
-        print("ERROR: DATABASE_URL_MIGRATIONS appears to be a pooler connection")
+        print("ERROR: DATABASE_URL_MIGRATIONS is using transaction pooler (port 6543)")
         print("=" * 60)
-        print("\nDetected pooler URL pattern (port 6543 or pooler.supabase.com).")
-        print("Migrations require a DIRECT database connection.")
-        print("\nUse the direct endpoint instead:")
-        print("  postgresql://postgres:[PASSWORD]@db.<project>.supabase.co:5432/postgres")
-        print("\nPooler URL (WRONG):  ...@pooler.supabase.com:6543/...")
-        print("Direct URL (CORRECT): ...@db.<project>.supabase.co:5432/...")
+        print("\nTransaction pooler wraps queries in transactions, breaking DDL.")
+        print("\nUse SESSION pooler (port 5432) or direct connection instead:")
+        print("  Session pooler: postgresql://postgres.<project>:[PASSWORD]@pooler.supabase.com:5432/postgres")
+        print("  Direct:         postgresql://postgres:[PASSWORD]@db.<project>.supabase.co:5432/postgres")
+        print("\nTransaction pooler (WRONG): ...@pooler.supabase.com:6543/...")
+        print("Session pooler (OK):        ...@pooler.supabase.com:5432/...")
         print("=" * 60)
         sys.exit(1)
 
-    print("Using direct connection for migrations")
+    # Identify connection type for logging
+    if 'pooler.supabase.com' in db_url:
+        print("Using session pooler connection for migrations")
+    else:
+        print("Using direct connection for migrations")
 
     migrations_dir = backend_dir / 'migrations'
     if not migrations_dir.exists():
