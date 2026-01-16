@@ -87,17 +87,49 @@ SQM_TO_SQFT = 10.7639
 # URA may revise data retroactively; 3 months covers typical revision lag
 REVISION_WINDOW_MONTHS = 3
 
-# Natural key fields for row hash
-# Includes all fields that identify a unique transaction
-NATURAL_KEY_FIELDS = [
+# =============================================================================
+# Two-Key Architecture for Transaction Identity
+# =============================================================================
+#
+# ROW_KEY (strict): Deduplication within each source (CSV or API)
+# - Distinguishes all distinct transactions within a single source
+# - Should have ~0 collisions per source
+# - Uses canonical area representation (sqft × 100 as integer)
+#
+# MATCH_KEY (coarse): Cross-source matching (CSV ↔ API)
+# - Groups candidate transactions that likely represent the same real-world event
+# - Excludes area (may differ slightly between sources due to format drift)
+# - Used with resolver to handle remaining ambiguity
+#
+# Why area_sqft_x100?
+# - Eliminates rounding ambiguity (1689.95 vs 1689.93 → both store as 168995)
+# - Source-agnostic (no magic decimal tuning)
+# - Preserves precision needed to distinguish distinct units
+
+ROW_KEY_FIELDS = [
     'project_name',
     'transaction_month',
     'price',
-    'area_sqft',
-    'floor_range',
-    'sale_type',
+    'area_sqft_x100',      # Canonical: integer of sqft × 100 (2dp precision)
+    'floor_range',         # Normalized format (e.g., "11-15")
+    'property_type',
     'district',
+    'sale_type',
 ]
+
+MATCH_KEY_FIELDS = [
+    'project_name',
+    'transaction_month',
+    'price',
+    # area_sqft_x100 excluded - may differ between sources
+    'floor_range',
+    'property_type',
+    'district',
+    'sale_type',
+]
+
+# Legacy alias for backward compatibility during migration
+NATURAL_KEY_FIELDS = ROW_KEY_FIELDS
 
 # Known URA API fields at project level
 KNOWN_PROJECT_FIELDS = {
