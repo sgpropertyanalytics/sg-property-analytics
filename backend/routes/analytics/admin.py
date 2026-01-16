@@ -1,13 +1,19 @@
 """
 Admin, Health, and Debug Endpoints
 
-Endpoints:
-- /health - Health check (exempt from rate limiting)
-- /ping - Simple ping (exempt from rate limiting)
-- /debug/data-status - Data integrity diagnostics
-- /admin/update-metadata - Manual metadata update
-- /admin/filter-outliers - Outlier management
-- /dashboard/cache - Cache management
+Health & Readiness:
+- /health - Liveness probe (zero DB queries, always 200 if process alive)
+- /ready - Readiness probe (lightweight DB ping, returns 503 if DB down)
+- /ping - Simple ping (no DB, no auth)
+
+Debug (Protected):
+- /debug/health-detailed - Full health metrics with DB queries (requires X-Admin-Secret)
+- /debug/data-status - Data integrity diagnostics (requires X-Admin-Secret)
+
+Admin (Protected):
+- /admin/update-metadata - Manual metadata update (requires X-Admin-Secret)
+- /admin/filter-outliers - Outlier management (requires X-Admin-Secret)
+- /dashboard/cache - Cache management (requires X-Admin-Secret)
 """
 
 import time
@@ -56,7 +62,46 @@ def ping():
 
 @analytics_bp.route("/health", methods=["GET"])
 def health():
-    """Health check endpoint."""
+    """
+    Liveness probe - ZERO database queries.
+
+    Render polls this endpoint every few seconds. If slow or failing,
+    Render kills the instance with "Exited with status 1".
+
+    For detailed health metrics with DB queries, use /debug/health-detailed.
+    """
+    return jsonify({
+        "status": "ok"
+    }), 200
+
+
+@analytics_bp.route("/ready", methods=["GET"])
+def ready():
+    """
+    Readiness probe - fast DB ping with 500ms timeout.
+
+    Returns 200 if DB responds within 500ms, 503 otherwise.
+    Use this to check if the service can handle requests.
+
+    For zero-DB liveness checks, use /health instead.
+    """
+    from services.health import check_database_ready
+
+    if check_database_ready(timeout_ms=500):
+        return jsonify({"status": "ready"}), 200
+    else:
+        return jsonify({"status": "not_ready"}), 503
+
+
+@analytics_bp.route("/debug/health-detailed", methods=["GET"])
+@require_admin_secret
+def debug_health_detailed():
+    """
+    Detailed health metrics - includes DB queries and ETL stats.
+
+    PROTECTED: Requires X-Admin-Secret header (or DEBUG mode).
+    This is the OLD /health endpoint with full diagnostics.
+    """
     from models.transaction import Transaction
     from models.database import db
     from sqlalchemy import func, text

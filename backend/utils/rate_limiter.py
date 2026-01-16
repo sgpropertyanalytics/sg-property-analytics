@@ -63,11 +63,11 @@ def is_health_check():
     """
     Check if the current request is a health check.
 
-    Exempt health check endpoints from rate limiting to prevent
+    Exempt health/readiness check endpoints from rate limiting to prevent
     Render (and other orchestration platforms) from marking
     the instance as unhealthy due to 429 errors.
     """
-    health_paths = {'/api/health', '/api/ping', '/health', '/ping'}
+    health_paths = {'/api/health', '/api/ready', '/api/ping', '/health', '/ready', '/ping'}
     return request.path in health_paths
 
 
