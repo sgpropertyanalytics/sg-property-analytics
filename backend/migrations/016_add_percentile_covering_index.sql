@@ -12,6 +12,9 @@
 --
 -- Run with: psql "$DATABASE_URL" -f backend/migrations/016_add_percentile_covering_index.sql
 --
+-- Note: Originally used CONCURRENTLY but removed for Supabase/PgBouncer compatibility.
+-- Regular CREATE INDEX is safe during deploys (no traffic routed yet).
+--
 -- Expected improvement: 200-300ms reduction in page load time
 --                       (from ~1200ms to ~900ms for market-overview)
 
@@ -29,7 +32,7 @@
 --
 -- Partial index: Only non-outlier records (matches WHERE clause in all queries)
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_txn_percentile_psf
+CREATE INDEX IF NOT EXISTS idx_txn_percentile_psf
   ON transactions(sale_type, transaction_date, district, bedroom_count, psf)
   WHERE COALESCE(is_outlier, false) = false;
 
@@ -42,7 +45,7 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_txn_percentile_psf
 -- district which is used to derive region. The query planner will use this
 -- index and then compute region from district.
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_txn_percentile_region_psf
+CREATE INDEX IF NOT EXISTS idx_txn_percentile_region_psf
   ON transactions(sale_type, transaction_date, psf)
   INCLUDE (district, bedroom_count, price, area_sqft)
   WHERE COALESCE(is_outlier, false) = false;
@@ -55,7 +58,7 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_txn_percentile_region_psf
 -- Optimized for: GROUP BY date_trunc('month', transaction_date)
 -- with PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf)
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_txn_monthly_percentile
+CREATE INDEX IF NOT EXISTS idx_txn_monthly_percentile
   ON transactions(sale_type, date_trunc('month', transaction_date), psf)
   WHERE COALESCE(is_outlier, false) = false;
 
@@ -95,6 +98,6 @@ ORDER BY indexname;
 -- ============================================================================
 -- ROLLBACK (if needed)
 -- ============================================================================
--- DROP INDEX CONCURRENTLY IF EXISTS idx_txn_percentile_psf;
--- DROP INDEX CONCURRENTLY IF EXISTS idx_txn_percentile_region_psf;
--- DROP INDEX CONCURRENTLY IF EXISTS idx_txn_monthly_percentile;
+-- DROP INDEX IF EXISTS idx_txn_percentile_psf;
+-- DROP INDEX IF EXISTS idx_txn_percentile_region_psf;
+-- DROP INDEX IF EXISTS idx_txn_monthly_percentile;
