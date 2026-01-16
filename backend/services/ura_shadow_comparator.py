@@ -182,13 +182,26 @@ class URAShadowComparator:
         """
         Compare all API data against all CSV data.
 
+        Automatically uses the overlap window (intersection of date ranges)
+        to ensure fair comparison between sources. This excludes CSV data
+        from before API starts (Dec 2020 - Jan 2021) and API data after
+        CSV ends (future months).
+
         Args:
-            date_range: Optional (start, end) date range to compare
+            date_range: Optional (start, end) date range to compare.
+                       If None, automatically uses overlap window.
             property_types: Optional list of property types to include
 
         Returns:
             ComparisonReport with detailed comparison results
         """
+        # Auto-detect overlap window if no date range specified
+        if date_range is None:
+            from services.etl.fingerprint import get_overlap_window
+            from models.database import db
+            date_range = get_overlap_window(db.session)
+            logger.info(f"Auto-detected overlap window: {date_range[0]} to {date_range[1]}")
+
         return self._compare(
             current_filter=SourceFilter.for_source('ura_api'),
             baseline_filter=SourceFilter.for_source('csv'),

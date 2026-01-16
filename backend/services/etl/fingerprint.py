@@ -133,9 +133,11 @@ def compute_row_hash(
     for field in natural_key_fields:
         val = row.get(field)
 
-        # Special handling for area_sqft: round to 1 decimal place to eliminate
-        # sqm→sqft conversion precision differences (e.g., 613.55 vs 613.54)
-        # Using 0.1 precision instead of integer to reduce collision risk
+        # Special handling for area_sqft: round to integer to eliminate
+        # sqm→sqft conversion precision differences (e.g., 1689.95 vs 1689.93)
+        # Analysis showed 1 decimal is insufficient when values straddle rounding
+        # boundaries (1689.95→1690.0 vs 1689.93→1689.9 = mismatch!)
+        # Integer rounding: 1689.95→1690 vs 1689.93→1690 = match ✅
         if field == 'area_sqft':
             if val is None:
                 values.append('')
@@ -144,7 +146,7 @@ def compute_row_hash(
                 if isinstance(val, float) and val != val:
                     values.append('')
                 else:
-                    values.append(f'{round(val, 1):.1f}')
+                    values.append(f'{round(val, 0):.0f}')
             else:
                 values.append('')
         # Handle None/NaN consistently
