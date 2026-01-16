@@ -8,8 +8,8 @@
 -- Usage:
 --   psql $DATABASE_URL -f migrations/003_add_partial_indexes.sql
 --
--- Note: CONCURRENTLY creates indexes without blocking reads/writes.
--- If running manually, ensure autocommit is enabled.
+-- Note: Originally used CONCURRENTLY but removed for Supabase/PgBouncer compatibility.
+-- Regular CREATE INDEX is safe during deploys (no traffic routed yet).
 
 -- ============================================================================
 -- PARTIAL INDEXES FOR NON-OUTLIER QUERIES (MOST COMMON PATTERN)
@@ -17,34 +17,34 @@
 
 -- Primary composite index for filtered analytics queries
 -- Covers: TimeTrendChart, BedroomMixChart, VolumeByLocationChart, TransactionDataTable
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_txn_active_composite
+CREATE INDEX IF NOT EXISTS idx_txn_active_composite
   ON transactions(transaction_date, district, bedroom_count, sale_type)
   INCLUDE (price, psf, area_sqft)
   WHERE is_outlier = false OR is_outlier IS NULL;
 
 -- Price histogram optimization (used by PriceDistributionChart)
 -- Critical for the optimized two-step histogram query
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_txn_price_active
+CREATE INDEX IF NOT EXISTS idx_txn_price_active
   ON transactions(price)
   WHERE price > 0 AND (is_outlier = false OR is_outlier IS NULL);
 
 -- PSF queries with outlier filter
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_txn_psf_active
+CREATE INDEX IF NOT EXISTS idx_txn_psf_active
   ON transactions(psf)
   WHERE psf > 0 AND (is_outlier = false OR is_outlier IS NULL);
 
 -- District + date for location-based queries
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_txn_district_date_active
+CREATE INDEX IF NOT EXISTS idx_txn_district_date_active
   ON transactions(district, transaction_date)
   WHERE is_outlier = false OR is_outlier IS NULL;
 
 -- Bedroom-specific queries (common filter pattern)
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_txn_bedroom_date_active
+CREATE INDEX IF NOT EXISTS idx_txn_bedroom_date_active
   ON transactions(bedroom_count, transaction_date)
   WHERE is_outlier = false OR is_outlier IS NULL;
 
 -- Sale type breakdown (New Sale vs Resale analysis)
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_txn_saletype_date_active
+CREATE INDEX IF NOT EXISTS idx_txn_saletype_date_active
   ON transactions(sale_type, transaction_date)
   WHERE is_outlier = false OR is_outlier IS NULL;
 
@@ -53,7 +53,7 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_txn_saletype_date_active
 -- ============================================================================
 
 -- Project name with date (for project detail queries)
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_txn_project_date_active
+CREATE INDEX IF NOT EXISTS idx_txn_project_date_active
   ON transactions(project_name, transaction_date)
   WHERE is_outlier = false OR is_outlier IS NULL;
 

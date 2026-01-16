@@ -5,13 +5,13 @@ Run all pending SQL migrations in order.
 Tracks applied migrations in a `_migrations` table to ensure idempotency.
 Safe to run multiple times - only applies new migrations.
 
-Handles CONCURRENTLY indexes:
-- Migrations with CREATE INDEX CONCURRENTLY cannot run in a transaction
-- These are detected and run with autocommit=True
+IMPORTANT: Requires DATABASE_URL_MIGRATIONS environment variable.
+This must be a DIRECT database connection (not pooler) for DDL operations.
+Supabase pooler (port 6543) wraps queries in transactions, breaking some DDL.
 
 Usage:
-    python -m scripts.run_migrations
-    python scripts/run_migrations.py
+    DATABASE_URL_MIGRATIONS=<direct_url> python -m scripts.run_migrations
+    DATABASE_URL_MIGRATIONS=<direct_url> python scripts/run_migrations.py
 """
 import os
 import sys
@@ -69,22 +69,125 @@ def needs_autocommit(sql_content: str) -> bool:
 
     CREATE INDEX CONCURRENTLY cannot run inside a transaction block.
     Same for DROP INDEX CONCURRENTLY, REINDEX CONCURRENTLY, etc.
+
+    Note: CONCURRENTLY has been removed from migrations for Supabase compatibility,
+    but this detection is kept for safety in case any are added back.
     """
     sql_upper = sql_content.upper()
     return 'CONCURRENTLY' in sql_upper
 
 
-def main():
-    # Prefer direct connection for migrations (supports CONCURRENTLY, no pooler transaction wrapping)
-    # Falls back to DATABASE_URL if DATABASE_URL_MIGRATIONS not set
-    db_url = os.environ.get('DATABASE_URL_MIGRATIONS') or os.environ.get('DATABASE_URL')
-    if not db_url:
-        print("ERROR: DATABASE_URL_MIGRATIONS or DATABASE_URL must be set")
+def check_invalid_indexes(conn, auto_drop: bool = False):
+    """
+    Detect and optionally drop invalid indexes from interrupted CONCURRENTLY operations.
+
+    When CREATE INDEX CONCURRENTLY is interrupted (e.g., connection drop),
+    PostgreSQL leaves the index in an "invalid" state. These indexes:
+    - Are not used by the query planner
+    - Still consume disk space
+    - Block CREATE INDEX IF NOT EXISTS from creating a valid replacement
+
+    Args:
+        conn: Database connection
+        auto_drop: If True, automatically drop invalid indexes. If False, fail fast.
+
+    Returns:
+        List of invalid index names found (after dropping if auto_drop=True).
+
+    Raises:
+        SystemExit: If invalid indexes found and auto_drop=False.
+    """
+    cursor = conn.cursor()
+    # Scope to public schema only, exclude in-progress concurrent builds (indisready=false)
+    cursor.execute("""
+        SELECT c.relname AS index_name
+        FROM pg_index i
+        JOIN pg_class c ON c.oid = i.indexrelid
+        JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE NOT i.indisvalid
+          AND i.indisready  -- Exclude in-progress concurrent builds
+          AND n.nspname = 'public'
+    """)
+    invalid = [row[0] for row in cursor.fetchall()]
+    cursor.close()
+
+    if not invalid:
+        return []
+
+    print("\n" + "=" * 60)
+    print("INVALID INDEXES DETECTED (from interrupted migrations)")
+    print("=" * 60)
+    for name in invalid:
+        print(f"  - {name}")
+
+    if auto_drop:
+        print("\nAuto-dropping invalid indexes...")
+        drop_cursor = conn.cursor()
+        for name in invalid:
+            try:
+                drop_cursor.execute(f'DROP INDEX IF EXISTS "{name}"')
+                print(f"  Dropped: {name}")
+            except Exception as e:
+                print(f"  Failed to drop {name}: {e}")
+        drop_cursor.close()
+        print("=" * 60 + "\n")
+        return []
+    else:
+        print("\nThese indexes block migrations from creating valid replacements.")
+        print("CREATE INDEX IF NOT EXISTS will no-op, leaving broken indexes.")
+        print("\nTo fix manually, run in psql:")
+        for name in invalid:
+            print(f'  DROP INDEX IF EXISTS "{name}";')
+        print("\nOr set AUTO_DROP_INVALID_INDEXES=1 to drop automatically.")
+        print("=" * 60)
         sys.exit(1)
 
-    # Log which connection we're using
-    is_direct = os.environ.get('DATABASE_URL_MIGRATIONS') is not None
-    print(f"Using {'direct' if is_direct else 'pooled'} connection for migrations")
+
+def is_pooler_url(url: str) -> bool:
+    """
+    Detect if URL is a Supabase pooler connection (port 6543).
+
+    Pooler connections wrap queries in transactions, breaking DDL operations.
+    """
+    # Check for common pooler patterns
+    if ':6543' in url:
+        return True
+    if 'pooler.supabase.com' in url:
+        return True
+    return False
+
+
+def main():
+    # REQUIRE direct connection for migrations - do NOT fall back to pooler
+    # Supabase pooler (port 6543) wraps queries in transactions, which can break DDL
+    db_url = os.environ.get('DATABASE_URL_MIGRATIONS')
+    if not db_url:
+        print("=" * 60)
+        print("ERROR: DATABASE_URL_MIGRATIONS environment variable required")
+        print("=" * 60)
+        print("\nMigrations require a DIRECT database connection (not pooler).")
+        print("Supabase pooler wraps queries in transactions, breaking some DDL.")
+        print("\nSet DATABASE_URL_MIGRATIONS to your direct Supabase endpoint:")
+        print("  postgresql://postgres:[PASSWORD]@db.<project>.supabase.co:5432/postgres")
+        print("\nNOTE: Use port 5432 (direct), NOT port 6543 (pooler)")
+        print("=" * 60)
+        sys.exit(1)
+
+    # Guard against accidentally using pooler URL
+    if is_pooler_url(db_url):
+        print("=" * 60)
+        print("ERROR: DATABASE_URL_MIGRATIONS appears to be a pooler connection")
+        print("=" * 60)
+        print("\nDetected pooler URL pattern (port 6543 or pooler.supabase.com).")
+        print("Migrations require a DIRECT database connection.")
+        print("\nUse the direct endpoint instead:")
+        print("  postgresql://postgres:[PASSWORD]@db.<project>.supabase.co:5432/postgres")
+        print("\nPooler URL (WRONG):  ...@pooler.supabase.com:6543/...")
+        print("Direct URL (CORRECT): ...@db.<project>.supabase.co:5432/...")
+        print("=" * 60)
+        sys.exit(1)
+
+    print("Using direct connection for migrations")
 
     migrations_dir = backend_dir / 'migrations'
     if not migrations_dir.exists():
@@ -104,6 +207,11 @@ def main():
                 applied_at TIMESTAMPTZ DEFAULT NOW()
             )
         """)
+
+        # Check for invalid indexes (leftover from interrupted CONCURRENTLY)
+        # Will fail fast unless AUTO_DROP_INVALID_INDEXES=1 is set
+        auto_drop = os.environ.get('AUTO_DROP_INVALID_INDEXES', '').lower() in ('1', 'true', 'yes')
+        check_invalid_indexes(conn, auto_drop=auto_drop)
 
         # Get already-applied migrations
         cur.execute("SELECT name FROM _migrations")

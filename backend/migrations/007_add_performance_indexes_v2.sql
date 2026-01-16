@@ -4,8 +4,8 @@
 --
 -- Run with: psql "$DATABASE_URL" -f backend/migrations/007_add_performance_indexes_v2.sql
 --
--- Note: CONCURRENTLY creates indexes without blocking reads/writes
--- If running manually, ensure autocommit is enabled.
+-- Note: Originally used CONCURRENTLY but removed for Supabase/PgBouncer compatibility.
+-- Regular CREATE INDEX is safe during deploys (no traffic routed yet).
 --
 -- Expected improvement: 30-50% reduction in query time for filtered aggregations
 
@@ -13,8 +13,12 @@
 -- SALE TYPE + DATE COMPOSITE (for New vs Resale chart)
 -- Covers: NewVsResaleChart, sale_type filtering in aggregate endpoint
 -- ============================================================================
+-- NOTE: This index was originally created in 003_add_partial_indexes.sql without
+-- the INCLUDE clause. We drop it here to recreate with INCLUDE for better
+-- covering query performance.
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_txn_saletype_date_active
+DROP INDEX IF EXISTS idx_txn_saletype_date_active;
+CREATE INDEX IF NOT EXISTS idx_txn_saletype_date_active
   ON transactions(sale_type, transaction_date)
   INCLUDE (price, psf, district, bedroom_count)
   WHERE is_outlier = false OR is_outlier IS NULL;
@@ -24,7 +28,7 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_txn_saletype_date_active
 -- Covers: Region-based aggregations with sale type breakdown
 -- ============================================================================
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_txn_district_saletype_date_active
+CREATE INDEX IF NOT EXISTS idx_txn_district_saletype_date_active
   ON transactions(district, sale_type, transaction_date)
   INCLUDE (price, psf)
   WHERE is_outlier = false OR is_outlier IS NULL;
@@ -34,7 +38,7 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_txn_district_saletype_date_active
 -- Covers: Freehold vs 99-year filtering in sidebar
 -- ============================================================================
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_txn_tenure_active
+CREATE INDEX IF NOT EXISTS idx_txn_tenure_active
   ON transactions(remaining_lease)
   INCLUDE (price, psf, district, bedroom_count)
   WHERE is_outlier = false OR is_outlier IS NULL;
@@ -44,7 +48,7 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_txn_tenure_active
 -- Covers: Property age filtering in sidebar
 -- ============================================================================
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_txn_lease_year_active
+CREATE INDEX IF NOT EXISTS idx_txn_lease_year_active
   ON transactions(lease_start_year, transaction_date)
   WHERE is_outlier = false OR is_outlier IS NULL
     AND lease_start_year IS NOT NULL;
@@ -54,7 +58,7 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_txn_lease_year_active
 -- Covers: ProjectDetailPanel queries
 -- ============================================================================
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_txn_project_bedroom_active
+CREATE INDEX IF NOT EXISTS idx_txn_project_bedroom_active
   ON transactions(project_name, bedroom_count)
   INCLUDE (price, psf, transaction_date, sale_type)
   WHERE is_outlier = false OR is_outlier IS NULL;
