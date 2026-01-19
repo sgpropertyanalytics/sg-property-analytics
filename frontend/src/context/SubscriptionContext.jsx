@@ -326,7 +326,26 @@ export function SubscriptionProvider({ children }) {
         dispatch({ type: 'SUB_CACHE_LOAD', subscription });
       } else if (type === 'SUBSCRIPTION_CLEARED') {
         console.log('[Subscription] Cross-tab sync: subscription cleared in another tab', { email });
-        // Clear subscription in this tab too
+
+        // P1 FIX: Clear localStorage cache to prevent stale premium on reload
+        // Must NOT use clearCachedSubscription() here - it would re-broadcast and create infinite loop
+        const normalizedEmail = normalizeEmail(email);
+        if (normalizedEmail) {
+          try {
+            const cacheKey = `${SUBSCRIPTION_CACHE_PREFIX}${normalizedEmail}`;
+            localStorage.removeItem(cacheKey);
+            console.log('[Subscription] Cross-tab sync: cleared localStorage cache', { email: normalizedEmail });
+          } catch (err) {
+            console.error('[Subscription] Cross-tab sync: failed to clear cache', err);
+          }
+        }
+
+        // Clear related refs to maintain consistency with clearSubscription()
+        bootstrappedInSessionRef.current = false;
+        lastEnsureAttemptRef.current = { email: null, ts: 0 };
+        currentUserEmailRef.current = null;
+
+        // Dispatch state update to free tier
         dispatch({ type: 'SUB_FETCH_FAIL', errorKind: 'AUTH', error: new Error('Subscription cleared') });
       }
     };
