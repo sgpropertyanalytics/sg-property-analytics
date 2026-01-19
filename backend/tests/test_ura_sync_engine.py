@@ -817,3 +817,74 @@ class TestComparatorSQLInjectionPrevention:
         assert ':baseline_value' in sql, "SQL should use :param placeholder"
         assert params['baseline_value'] == 'csv', "Params should contain the value"
         assert "'csv'" not in sql, "Value should NOT be quoted in SQL string"
+
+    def test_table_alias_generates_correct_sql(self):
+        """
+        Test that table_alias parameter generates correct prefixed SQL.
+
+        Verifies:
+        1. Column names are prefixed with alias (e.g., "b.transaction_month")
+        2. Parameter names are NOT affected (e.g., ":property_types" stays unchanged)
+        """
+        from services.ura_shadow_comparator import URAShadowComparator, SourceFilter
+        from unittest.mock import MagicMock
+        from datetime import date
+
+        comparator = URAShadowComparator(MagicMock())
+
+        # Test _build_source_condition with table_alias
+        run_filter = SourceFilter.for_run('test-uuid')
+        sql, params = comparator._build_source_condition(run_filter, 'current', table_alias='c')
+
+        assert 'c.run_id' in sql, "SQL should have table-aliased column"
+        assert ':current_value' in sql, "Parameter name should NOT have alias"
+        assert params['current_value'] == 'test-uuid'
+
+        # Test _build_common_conditions with table_alias
+        common_params = {
+            'date_start': date(2021, 1, 1),
+            'date_end': date(2025, 1, 1),
+            'property_types': ('Condominium', 'Apartment'),
+        }
+        sql, params = comparator._build_common_conditions(common_params, table_alias='b')
+
+        # Column names should be prefixed
+        assert 'b.is_outlier' in sql, "is_outlier should have table alias"
+        assert 'b.transaction_month' in sql, "transaction_month should have table alias"
+        assert 'b.property_type' in sql, "property_type should have table alias"
+
+        # Parameter names should NOT be prefixed - this was the bug!
+        assert ':date_start' in sql, "date_start param should NOT have alias"
+        assert ':date_end' in sql, "date_end param should NOT have alias"
+        assert ':property_types' in sql, "property_types param should NOT have alias"
+        assert 'b.property_types' not in sql, "param name should NOT get alias prefix"
+
+        # Params dict keys should be unchanged
+        assert 'date_start' in params
+        assert 'date_end' in params
+        assert 'property_types' in params
+
+    def test_table_alias_none_default_unchanged(self):
+        """
+        Test that table_alias=None (default) produces unaliased SQL.
+
+        Ensures backward compatibility with existing call sites.
+        """
+        from services.ura_shadow_comparator import URAShadowComparator
+        from unittest.mock import MagicMock
+        from datetime import date
+
+        comparator = URAShadowComparator(MagicMock())
+
+        common_params = {
+            'date_start': date(2021, 1, 1),
+            'date_end': date(2025, 1, 1),
+        }
+
+        # Without table_alias (default behavior)
+        sql, params = comparator._build_common_conditions(common_params)
+
+        # Should NOT have any table prefix
+        assert 'COALESCE(is_outlier' in sql, "Should have no prefix when alias is None"
+        assert 'transaction_month >=' in sql, "Should have no prefix when alias is None"
+        assert 'b.' not in sql and 'c.' not in sql, "No table aliases in default mode"

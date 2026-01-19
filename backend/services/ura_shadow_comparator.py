@@ -329,40 +329,59 @@ class URAShadowComparator:
 
         return report
 
-    def _build_source_condition(self, filter: SourceFilter, param_prefix: str) -> Tuple[str, Dict[str, Any]]:
+    def _build_source_condition(
+        self,
+        filter: SourceFilter,
+        param_prefix: str,
+        table_alias: Optional[str] = None
+    ) -> Tuple[str, Dict[str, Any]]:
         """
         Build SQL condition and params for a source filter.
 
         Args:
             filter: The source filter
             param_prefix: Prefix for parameter names (e.g., 'current', 'baseline')
+            table_alias: Optional table alias prefix (e.g., "b" for JOINs)
 
         Returns:
             Tuple of (SQL condition string, params dict)
         """
+        prefix = f"{table_alias}." if table_alias else ""
         param_name = f"{param_prefix}_value"
         if filter.filter_type == FilterType.RUN_ID:
-            return f"run_id = :{param_name}", {param_name: filter.value}
+            return f"{prefix}run_id = :{param_name}", {param_name: filter.value}
         else:  # SOURCE
-            return f"source = :{param_name}", {param_name: filter.value}
+            return f"{prefix}source = :{param_name}", {param_name: filter.value}
 
-    def _build_common_conditions(self, common_params: Dict[str, Any]) -> Tuple[str, Dict[str, Any]]:
+    def _build_common_conditions(
+        self,
+        common_params: Dict[str, Any],
+        table_alias: Optional[str] = None
+    ) -> Tuple[str, Dict[str, Any]]:
         """
         Build common WHERE conditions from params.
+
+        Args:
+            common_params: Parameters for filtering
+            table_alias: Optional table alias prefix (e.g., "b" for JOINs)
 
         Returns:
             Tuple of (SQL conditions string, params dict)
         """
-        conditions = ["COALESCE(is_outlier, false) = false"]
+        prefix = f"{table_alias}." if table_alias else ""
+
+        conditions = [f"COALESCE({prefix}is_outlier, false) = false"]
         params = {}
 
         if 'date_start' in common_params:
-            conditions.append("transaction_month >= :date_start AND transaction_month < :date_end")
+            conditions.append(
+                f"{prefix}transaction_month >= :date_start AND {prefix}transaction_month < :date_end"
+            )
             params['date_start'] = common_params['date_start']
             params['date_end'] = common_params['date_end']
 
         if 'property_types' in common_params:
-            conditions.append("property_type IN :property_types")
+            conditions.append(f"{prefix}property_type IN :property_types")
             params['property_types'] = common_params['property_types']
 
         return " AND ".join(conditions), params
@@ -597,19 +616,16 @@ class URAShadowComparator:
 
         Uses parameterized queries to prevent SQL injection.
         """
-        # Build conditions with table-prefixed params
-        current_cond, current_params = self._build_source_condition(current_filter, 'current')
-        baseline_cond, baseline_params = self._build_source_condition(baseline_filter, 'baseline')
-        common_cond, common_params_sql = self._build_common_conditions(common_params)
-
-        # Modify conditions for table aliases
-        # Replace column references to use table aliases
-        current_cond_c = current_cond.replace('run_id', 'c.run_id').replace('source', 'c.source')
-        baseline_cond_b = baseline_cond.replace('run_id', 'b.run_id').replace('source', 'b.source')
-        common_cond_b = (common_cond
-                         .replace('is_outlier', 'b.is_outlier')
-                         .replace('transaction_month', 'b.transaction_month')
-                         .replace('property_type', 'b.property_type'))
+        # Build conditions with table aliases directly - no fragile string replacement
+        current_cond_c, current_params = self._build_source_condition(
+            current_filter, 'current', table_alias='c'
+        )
+        baseline_cond_b, baseline_params = self._build_source_condition(
+            baseline_filter, 'baseline', table_alias='b'
+        )
+        common_cond_b, common_params_sql = self._build_common_conditions(
+            common_params, table_alias='b'
+        )
 
         query = text(f"""
             SELECT
