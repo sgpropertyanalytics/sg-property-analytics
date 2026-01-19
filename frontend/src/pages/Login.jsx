@@ -46,14 +46,9 @@ function Login() {
 
   const from = location.state?.from?.pathname || '/market-overview';
 
-  // P0 Fix 3: Auto-redirect already authenticated users
-  // Standard pattern: if you're already logged in, no need to see login page
-  useEffect(() => {
-    if (initialized && isAuthenticated && !signInInitiatedRef.current) {
-      console.warn('[Login] Already authenticated, redirecting to:', from);
-      navigate(from, { replace: true });
-    }
-  }, [initialized, isAuthenticated, from, navigate]);
+  // Tier 2.2: Auto-redirect removed per user preference
+  // User wants to always see login page, even if already authenticated
+  // (Removed the useEffect that would auto-redirect authenticated users)
 
   // Blinking cursor effect
   useEffect(() => {

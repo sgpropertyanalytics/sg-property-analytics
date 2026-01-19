@@ -70,6 +70,7 @@ def get_auth_token_from_request():
 # Firebase Admin SDK (lazy initialization)
 # None = not attempted, False = failed, otherwise = app instance
 _firebase_app = None
+_firebase_error_type = None  # 'config' for permanent errors, 'transient' for temporary
 
 
 def get_firebase_app():
@@ -85,7 +86,7 @@ def get_firebase_app():
     2. FIREBASE_SERVICE_ACCOUNT_PATH - File path to service account JSON
     3. Default credentials (for Google Cloud environments)
     """
-    global _firebase_app
+    global _firebase_app, _firebase_error_type
 
     # Already initialized successfully
     if _firebase_app not in (None, False):
@@ -130,10 +131,17 @@ def get_firebase_app():
         # Initialize with credential
         _firebase_app = firebase_admin.initialize_app(cred)
         return _firebase_app
-    except Exception as e:
-        # Cache the failure so we don't retry on every request
+    except ImportError as e:
+        # Config error: missing firebase-admin package (permanent until deployed with package)
         _firebase_app = False
-        print(f"[Auth] Firebase Admin SDK initialization failed (will use email-only sync): {e}")
+        _firebase_error_type = 'config'
+        print(f"[Auth] Firebase Admin SDK initialization failed - missing package: {e}")
+        return None
+    except Exception as e:
+        # Transient error: could be network, credentials, etc.
+        _firebase_app = False
+        _firebase_error_type = 'transient'
+        print(f"[Auth] Firebase Admin SDK initialization failed (transient): {e}")
         return None
 
 
@@ -302,7 +310,12 @@ def firebase_sync():
                 if not avatar_url:
                     avatar_url = decoded_token.get('picture')
             elif not Config.DEBUG:
-                return jsonify({"error": "Firebase auth unavailable"}), 503
+                # Distinguish config errors (500) from transient errors (503)
+                global _firebase_error_type
+                if _firebase_error_type == 'config':
+                    return jsonify({"error": "Firebase configuration error - missing dependencies"}), 500
+                else:
+                    return jsonify({"error": "Firebase auth temporarily unavailable"}), 503
         except Exception as e:
             print(f"Firebase token verification failed: {e}")
             # In development, allow fallback to email-only sync

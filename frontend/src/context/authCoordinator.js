@@ -114,10 +114,19 @@ function isStaleRequest(state, action) {
 // =============================================================================
 
 function checkMonotonicity(state, action) {
-  // Rule: Premium cannot be overwritten by timeout
-  if (state.tier === 'premium' && action.type === 'SUB_PENDING_TIMEOUT') {
-    console.warn('[AuthCoordinator] Blocked: timeout cannot overwrite premium');
-    return false;
+  // Phase 3 fix: Prevent timeout from overriding ANY error state (not just premium)
+  // Auth errors (authPhase='error' or tierSource='none') must not be overwritten by timeout
+  if (action.type === 'SUB_PENDING_TIMEOUT') {
+    // Block if auth failed (401/403 set tierSource='none')
+    if (state.tierSource === 'none' && state.authPhase === 'error') {
+      console.warn('[AuthCoordinator] Blocked: timeout cannot overwrite auth error state');
+      return false;
+    }
+    // Block if premium (original rule)
+    if (state.tier === 'premium') {
+      console.warn('[AuthCoordinator] Blocked: timeout cannot overwrite premium');
+      return false;
+    }
   }
 
   // Rule: Premium can only be downgraded by LOGOUT or server success (SUB_FETCH_OK/TOKEN_SYNC_OK)
@@ -206,6 +215,20 @@ function computeNextState(state, action) {
         authPhase: 'error',
         authError: action.error || new Error('Token sync timeout'),
         authRequestId: null,
+      };
+
+    case 'AUTH_FAILURE_AND_LOGOUT':
+      // Phase 1 fix: Atomic dispatch for auth failures
+      // Combines TOKEN_SYNC_FAIL + FIREBASE_USER_CHANGED + clearSubscription
+      // Prevents race conditions from separate dispatches
+      return {
+        ...initialState,
+        initialized: true,
+        authPhase: 'error',
+        authError: action.error,
+        subPhase: 'resolved',
+        tier: 'free',
+        tierSource: 'none',
       };
 
     case 'TOKEN_SYNC_ABORT':
