@@ -463,6 +463,8 @@ export function AuthProvider({ children }) {
                 });
                 // Single atomic dispatch instead of three separate operations
                 dispatch({ type: 'AUTH_FAILURE_AND_LOGOUT', requestId, error: result.error });
+                // P1 FIX: Side-effect still needed - reducer handles state, but subscription cache needs clearing
+                clearSubscription();
               } else {
                 // Other errors (network, etc.) - treat like retryable
                 // DON'T call ensureSubscription - it requires JWT cookie from firebase-sync
