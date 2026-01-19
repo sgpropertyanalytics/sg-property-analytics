@@ -152,8 +152,13 @@ const getCachedSubscription = (email) => {
   return null;
 };
 
+// Tier 2.3: BroadcastChannel for cross-tab sync
+// Shared channel instance (created in SubscriptionProvider)
+let subscriptionSyncChannel = null;
+
 /**
  * Save subscription to localStorage for a specific user
+ * Tier 2.3: Also broadcasts to other tabs via BroadcastChannel
  * @param {Object} sub - Subscription data {tier, subscribed, ends_at}
  * @param {string} email - User email (cache key identifier)
  */
@@ -162,11 +167,21 @@ const cacheSubscription = (sub, email) => {
   if (!normalizedEmail) return;
   try {
     const cacheKey = `${SUBSCRIPTION_CACHE_PREFIX}${normalizedEmail}`;
-    localStorage.setItem(cacheKey, JSON.stringify({
+    const cachedData = {
       ...sub,
       version: CACHE_VERSION,
       cachedAt: Date.now(), // P0 FIX: Track cache age for TTL enforcement
-    }));
+    };
+    localStorage.setItem(cacheKey, JSON.stringify(cachedData));
+
+    // Tier 2.3: Broadcast change to other tabs
+    if (subscriptionSyncChannel) {
+      subscriptionSyncChannel.postMessage({
+        type: 'SUBSCRIPTION_CHANGED',
+        email: normalizedEmail,
+        subscription: cachedData,
+      });
+    }
   } catch {
     // Ignore storage errors
   }
@@ -174,6 +189,7 @@ const cacheSubscription = (sub, email) => {
 
 /**
  * Clear cached subscription for a specific user
+ * Tier 2.3: Also broadcasts to other tabs via BroadcastChannel
  * @param {string} email - User email (cache key identifier)
  */
 const clearCachedSubscription = (email) => {
@@ -182,6 +198,14 @@ const clearCachedSubscription = (email) => {
   try {
     const cacheKey = `${SUBSCRIPTION_CACHE_PREFIX}${normalizedEmail}`;
     localStorage.removeItem(cacheKey);
+
+    // Tier 2.3: Broadcast clear to other tabs
+    if (subscriptionSyncChannel) {
+      subscriptionSyncChannel.postMessage({
+        type: 'SUBSCRIPTION_CLEARED',
+        email: normalizedEmail,
+      });
+    }
   } catch {
     // Ignore storage errors
   }
@@ -279,6 +303,63 @@ export function SubscriptionProvider({ children }) {
   useEffect(() => {
     clearLegacyCache();
   }, []);
+
+  // Tier 2.3: Set up BroadcastChannel for cross-tab subscription sync
+  useEffect(() => {
+    // Create channel on mount
+    subscriptionSyncChannel = new BroadcastChannel('subscription-sync');
+
+    // Listen for messages from other tabs
+    const handleMessage = (event) => {
+      const { type, email } = event.data;
+
+      // Only process if this is for the current user
+      if (email !== currentUserEmailRef.current) return;
+
+      if (type === 'SUBSCRIPTION_CHANGED') {
+        const { subscription } = event.data;
+        console.log('[Subscription] Cross-tab sync: subscription changed in another tab', {
+          tier: subscription.tier,
+          email,
+        });
+        // Dispatch update to local state
+        dispatch({ type: 'SUB_CACHE_LOAD', subscription });
+      } else if (type === 'SUBSCRIPTION_CLEARED') {
+        console.log('[Subscription] Cross-tab sync: subscription cleared in another tab', { email });
+
+        // P1 FIX: Clear localStorage cache to prevent stale premium on reload
+        // Must NOT use clearCachedSubscription() here - it would re-broadcast and create infinite loop
+        const normalizedEmail = normalizeEmail(email);
+        if (normalizedEmail) {
+          try {
+            const cacheKey = `${SUBSCRIPTION_CACHE_PREFIX}${normalizedEmail}`;
+            localStorage.removeItem(cacheKey);
+            console.log('[Subscription] Cross-tab sync: cleared localStorage cache', { email: normalizedEmail });
+          } catch (err) {
+            console.error('[Subscription] Cross-tab sync: failed to clear cache', err);
+          }
+        }
+
+        // Clear related refs to maintain consistency with clearSubscription()
+        bootstrappedInSessionRef.current = false;
+        lastEnsureAttemptRef.current = { email: null, ts: 0 };
+        currentUserEmailRef.current = null;
+
+        // Dispatch state update to free tier
+        dispatch({ type: 'SUB_FETCH_FAIL', errorKind: 'AUTH', error: new Error('Subscription cleared') });
+      }
+    };
+
+    subscriptionSyncChannel.onmessage = handleMessage;
+
+    // Cleanup on unmount
+    return () => {
+      if (subscriptionSyncChannel) {
+        subscriptionSyncChannel.close();
+        subscriptionSyncChannel = null;
+      }
+    };
+  }, []); // Run once on mount
 
   // ==========================================================================
   // DERIVED STATE from coordState (Phase 3 complete - setters deleted)

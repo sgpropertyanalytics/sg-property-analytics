@@ -443,7 +443,8 @@ export function AuthProvider({ children }) {
                   dispatch({ type: 'TOKEN_SYNC_OK', requestId });
                 }
               } else if (result.authFailure || result.timedOut) {
-                // P0 FIX 3: Only degrade to guest on auth failures (401/403) or timeout
+                // Phase 1 fix: Use atomic action to prevent double-dispatch race
+                // Combines TOKEN_SYNC_FAIL + FIREBASE_USER_CHANGED + clearSubscription
                 // AUTH INVARIANT: ERROR sets user=null (monotonic guest transition)
                 // CRITICAL: Must also resolve subscription to 'free' to unblock boot gate
                 console.warn('[Auth] Token sync failed (auth failure or timeout), entering guest mode', {
@@ -458,12 +459,12 @@ export function AuthProvider({ children }) {
                   authFailure: result.authFailure,
                   timedOut: result.timedOut,
                   error: result.error?.message,
-                  action: 'clearSubscription',
+                  action: 'AUTH_FAILURE_AND_LOGOUT',
                 });
-                const failAction = result.timedOut ? 'TOKEN_SYNC_TIMEOUT' : 'TOKEN_SYNC_FAIL';
-                dispatch({ type: failAction, requestId, error: result.error });
-                dispatch({ type: 'FIREBASE_USER_CHANGED', user: null }); // Force guest mode
-                clearSubscription(); // Resolve subscription as free to unblock boot
+                // Single atomic dispatch instead of three separate operations
+                dispatch({ type: 'AUTH_FAILURE_AND_LOGOUT', requestId, error: result.error });
+                // P1 FIX: Side-effect still needed - reducer handles state, but subscription cache needs clearing
+                clearSubscription();
               } else {
                 // Other errors (network, etc.) - treat like retryable
                 // DON'T call ensureSubscription - it requires JWT cookie from firebase-sync
@@ -728,12 +729,13 @@ export function AuthProvider({ children }) {
       // Try popup first - better UX
       const result = await signInWithPopup(auth, provider);
 
-      // Sync with backend to get JWT and subscription status
-      const backendData = await syncWithBackend(result.user);
+      // Phase 1.4 fix: Remove explicit sync - rely only on onAuthStateChanged
+      // onAuthStateChanged will fire automatically and handle sync
+      // This eliminates the dual sync path race condition
 
       return {
         firebaseUser: result.user,
-        backendData,
+        // backendData will be populated by onAuthStateChanged sync
       };
     } catch (err) {
       // Check if this is a popup-related error that should trigger fallback
@@ -761,7 +763,7 @@ export function AuthProvider({ children }) {
       setError(getErrorMessage(err.code));
       throw err;
     }
-  }, [syncWithBackend]);
+  }, []); // Phase 1.4: Removed syncWithBackend dependency (no longer called)
 
   // Sign out
   const logout = useCallback(async () => {
@@ -1105,6 +1107,8 @@ export function AuthProvider({ children }) {
     // Token state machine - now derived from coordState.authPhase
     tokenStatus: derivedTokenStatus,
     tokenReady,
+    // Tier 2.1: Export authPhase for ProtectedRoute backend session check
+    authPhase: coordState.authPhase,
   }), [
     coordState.user,
     coordState.initialized,
