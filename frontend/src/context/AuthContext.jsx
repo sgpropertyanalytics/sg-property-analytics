@@ -237,8 +237,20 @@ export function AuthProvider({ children }) {
    * @returns {{ ok: boolean, aborted: boolean, timedOut?: boolean, retryable?: boolean, authFailure?: boolean, error?: Error, stale?: boolean }}
    */
   async function tokenSyncPipeline(firebaseUser, requestId, getSignalFn, isStaleFn, forceRefresh = false) {
+    // P0 FIX: Early staleness check BEFORE any async work
+    // Prevents stale requests from even starting
+    if (isStaleFn(requestId)) {
+      return { ok: false, aborted: false, stale: true };
+    }
+
     try {
       const idToken = await firebaseUser.getIdToken(forceRefresh);
+
+      // P0 FIX: Staleness check AFTER getIdToken, BEFORE POST
+      // The await above can yield; another startRequest() may have fired
+      if (isStaleFn(requestId)) {
+        return { ok: false, aborted: false, stale: true };
+      }
 
       // Wrap API call with timeout to guarantee terminal resolution
       const response = await withTimeout(
