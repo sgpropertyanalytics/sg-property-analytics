@@ -48,11 +48,28 @@ function Login() {
   const [cursorVisible, setCursorVisible] = useState(true);
 
   // P0 Fix 2: Track if sign-in was initiated (to gate navigation)
-  const signInInitiatedRef = useRef(false);
+  // REDIRECT FIX: Use sessionStorage to persist across page reload (redirect flow reloads page)
+  const signInInitiatedRef = useRef(
+    (() => {
+      try {
+        return sessionStorage.getItem('auth_sign_in_initiated') === 'true';
+      } catch {
+        return false;
+      }
+    })()
+  );
 
   // P0 Fix 3: Track user UID when sign-in was initiated
-  // Navigate only when user.uid differs from this OR this was null and user becomes set
-  const uidAtInitRef = useRef(null);
+  // REDIRECT FIX: Use sessionStorage to persist across page reload
+  const uidAtInitRef = useRef(
+    (() => {
+      try {
+        return sessionStorage.getItem('auth_uid_at_init') || null;
+      } catch {
+        return null;
+      }
+    })()
+  );
 
   // P0 Fix 3: Track when popup flow actually completes (signInWithGoogle resolves)
   const popupCompletedRef = useRef(false);
@@ -93,6 +110,13 @@ function Login() {
       signInInitiatedRef.current = false;
       uidAtInitRef.current = null;
       popupCompletedRef.current = false;
+      // REDIRECT FIX: Clear sessionStorage after successful navigation
+      try {
+        sessionStorage.removeItem('auth_sign_in_initiated');
+        sessionStorage.removeItem('auth_uid_at_init');
+      } catch {
+        // sessionStorage unavailable - no-op
+      }
       navigate(from, { replace: true });
     }
   }, [user, isAuthenticated, from, navigate]);
@@ -105,6 +129,14 @@ function Login() {
     uidAtInitRef.current = user?.uid || null;
     popupCompletedRef.current = false;
 
+    // REDIRECT FIX: Persist to sessionStorage (survives page reload during redirect flow)
+    try {
+      sessionStorage.setItem('auth_sign_in_initiated', 'true');
+      sessionStorage.setItem('auth_uid_at_init', user?.uid || '');
+    } catch {
+      // sessionStorage unavailable - redirect flow won't work, but popup fallback may
+    }
+
     try {
       // Rule C: Bounded wait (20s) - popup can hang forever due to COOP/browser issues
       await withTimeout(signInWithGoogle(), 20000);
@@ -115,6 +147,13 @@ function Login() {
       signInInitiatedRef.current = false;
       uidAtInitRef.current = null;
       popupCompletedRef.current = false;
+      // REDIRECT FIX: Clear sessionStorage on error
+      try {
+        sessionStorage.removeItem('auth_sign_in_initiated');
+        sessionStorage.removeItem('auth_uid_at_init');
+      } catch {
+        // sessionStorage unavailable - no-op
+      }
 
       const isCancelled =
         err?.code === 'auth/popup-closed-by-user' ||
