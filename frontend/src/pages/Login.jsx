@@ -76,9 +76,15 @@ function Login() {
 
   const from = location.state?.from?.pathname || '/market-overview';
 
-  // Tier 2.2: Auto-redirect removed per user preference
-  // User wants to always see login page, even if already authenticated
-  // (Removed the useEffect that would auto-redirect authenticated users)
+  // P0 FIX: Auto-redirect if user is already authenticated
+  // When Firebase has a persisted session, redirect immediately instead of
+  // making the user click "Continue with Google" again
+  useEffect(() => {
+    if (initialized && isAuthenticated && user) {
+      console.warn('[Login] Auto-redirect: user already authenticated, navigating to:', from);
+      navigate(from, { replace: true });
+    }
+  }, [initialized, isAuthenticated, user, from, navigate]);
 
   // Blinking cursor effect
   useEffect(() => {
@@ -128,7 +134,17 @@ function Login() {
       isSigningIn,
       isAuthenticated,
       initialized,
+      userEmail: user?.email,
     });
+
+    // P0 FIX: If user is already authenticated, just navigate to app
+    // No need to re-authenticate with Google
+    if (isAuthenticated && user) {
+      console.warn('[Login] User already authenticated, navigating directly to:', from);
+      navigate(from, { replace: true });
+      return;
+    }
+
     if (!isConfigured) {
       console.warn('[Login] Exiting early - not configured');
       return;
