@@ -178,8 +178,9 @@ export function AuthProvider({ children }) {
   ensureSubscriptionRef.current = ensureSubscription;
   const refreshSubscriptionRef = useRef(refreshSubscription);
   refreshSubscriptionRef.current = refreshSubscription;
-  // Single-flight enforcement: true when /auth/firebase-sync is in-flight
-  const isSyncingRef = useRef(false);
+  // Single-flight enforcement: tracks requestId that owns the sync (null = no sync in progress)
+  // P0 FIX: Changed from boolean to requestId to prevent race where old callback clears newer sync's flag
+  const syncOwnerRef = useRef(null);
   // tokenStatusRef now tracks derived status from coordState.authPhase (not useState)
   const derivedTokenStatusForRef = deriveTokenStatus(coordState.authPhase, coordState.user, coordState.initialized);
   const tokenStatusRef = useRef(derivedTokenStatusForRef);
@@ -214,11 +215,11 @@ export function AuthProvider({ children }) {
    * SINGLE-FLIGHT INVARIANT:
    * - This is the ONLY function that calls /auth/firebase-sync
    * - Called by onAuthStateChanged (normal flow) and refreshToken (manual retry)
-   * - Single-flight enforced via isSyncingRef (caller manages)
+   * - Single-flight enforced via syncOwnerRef (caller manages)
    * - Both callers use authStateGuardRef for requestId/signal/staleness
    *
    * DESIGN:
-   * - Returns result object, caller handles dispatching and isSyncingRef
+   * - Returns result object, caller handles dispatching and syncOwnerRef
    * - Abort/cancel is expected control flow (debug level logging)
    * - forceRefresh=true forces Firebase to get a new ID token (used by refreshToken)
    * - forceRefresh does NOT bypass requestId staleness/monotonicity checks
@@ -423,8 +424,8 @@ export function AuthProvider({ children }) {
               tokenStatusAfter: TokenStatus.REFRESHING,
               email: firebaseUser.email,
             });
-            // SINGLE-FLIGHT: Mark sync as in-progress (cleared in finally)
-            isSyncingRef.current = true;
+            // SINGLE-FLIGHT: This requestId now owns the sync (cleared in finally if still owner)
+            syncOwnerRef.current = requestId;
             dispatch({ type: 'TOKEN_SYNC_START', requestId });
 
             // Sync with backend to get token
@@ -643,8 +644,11 @@ export function AuthProvider({ children }) {
             logAuthError('[Auth] Unexpected error in auth state handler', err);
           }
         } finally {
-          // SINGLE-FLIGHT: Clear sync flag when callback completes (any path)
-          isSyncingRef.current = false;
+          // SINGLE-FLIGHT: Only clear if this request still owns the sync
+          // P0 FIX: Prevents race where old callback clears newer sync's ownership
+          if (syncOwnerRef.current === requestId) {
+            syncOwnerRef.current = null;
+          }
           // Safety net removed - dispatch({ type: 'FIREBASE_USER_CHANGED' }) at line 282
           // now unconditionally sets initialized, so this is no longer needed.
           if (!authStateGuardRef.current.isStale(requestId) && !didSetInitialized) {
@@ -678,10 +682,9 @@ export function AuthProvider({ children }) {
   // This eliminates duplicate /auth/firebase-sync API calls.
 
   // Sign in with Google
-  // Tries popup first (better UX), falls back to redirect if popup fails
-  // PHASE 2 FIX: Removed dual sync path. onAuthStateChanged handles token sync.
-  // This eliminates the race condition where both signInWithGoogle AND onAuthStateChanged
-  // were calling /auth/firebase-sync simultaneously.
+  // PHASE 3 FIX: Use redirect-first on environments with COOP issues
+  // Popup auth fails silently due to Google's strict COOP policy blocking window.closed detection
+  // Redirect auth works reliably across all browsers
   const signInWithGoogle = useCallback(async () => {
     setError(null);
 
@@ -693,41 +696,17 @@ export function AuthProvider({ children }) {
     const auth = getFirebaseAuth();
     const provider = getGoogleProvider();
 
+    // COOP FIX: Use redirect auth directly - popup has known COOP issues with Google
+    // Google's auth pages have strict COOP (same-origin) that breaks popup communication
+    // Even with our COOP header (same-origin-allow-popups), the popup window can't communicate back
+    console.log('[Auth] Using redirect auth flow');
     try {
-      // Try popup first - better UX
-      const result = await signInWithPopup(auth, provider);
-
-      // SINGLE SYNC PATH: Do NOT call syncWithBackend here.
-      // onAuthStateChanged will fire immediately after popup completes
-      // and handle the token sync via tokenSyncPipeline.
-      // This ensures single-writer for auth state and eliminates dual API calls.
-
-      return { firebaseUser: result.user };
-    } catch (err) {
-      // Check if this is a popup-related error that should trigger fallback
-      const shouldFallbackToRedirect =
-        err.code === 'auth/popup-blocked' ||
-        err.code === 'auth/popup-closed-by-user' ||
-        err.code === 'auth/cancelled-popup-request' ||
-        err.message?.includes('fireauth') ||
-        err.message?.includes('Cross-Origin');
-
-      if (shouldFallbackToRedirect && err.code !== 'auth/popup-closed-by-user') {
-        // Fallback to redirect for popup failures (except user-initiated close)
-        console.warn('[Auth] Popup failed, falling back to redirect:', err.code || err.message);
-        try {
-          await signInWithRedirect(auth, provider);
-          return null; // Redirect navigates away
-        } catch (redirectErr) {
-          logAuthError('Google sign-in redirect error', redirectErr);
-          setError(getErrorMessage(redirectErr.code));
-          throw redirectErr;
-        }
-      }
-
-      logAuthError('Google sign-in error', err);
-      setError(getErrorMessage(err.code));
-      throw err;
+      await signInWithRedirect(auth, provider);
+      return null; // Redirect navigates away, won't reach here
+    } catch (redirectErr) {
+      logAuthError('Google sign-in redirect error', redirectErr);
+      setError(getErrorMessage(redirectErr.code));
+      throw redirectErr;
     }
   }, []);
 
@@ -797,7 +776,7 @@ export function AuthProvider({ children }) {
     }
 
     // SINGLE-FLIGHT: If sync already in progress, no-op
-    if (isSyncingRef.current) {
+    if (syncOwnerRef.current !== null) {
       console.warn('[Auth] Sync already in-flight, skipping refreshToken');
       return { ok: false, tokenStored: false, reason: 'already_syncing' };
     }
@@ -805,8 +784,8 @@ export function AuthProvider({ children }) {
     // Use SHARED guard (same as onAuthStateChanged) for single-flight
     const requestId = authStateGuardRef.current.startRequest();
 
-    // SINGLE-FLIGHT: Mark sync as in-progress
-    isSyncingRef.current = true;
+    // SINGLE-FLIGHT: This requestId now owns the sync
+    syncOwnerRef.current = requestId;
 
     // Update token status to refreshing via dispatch
     prevTokenStatusRef.current = derivedTokenStatusForRef; // Store for abort recovery
@@ -867,8 +846,10 @@ export function AuthProvider({ children }) {
       dispatch({ type: 'TOKEN_SYNC_FAIL', requestId, error: result.error });
       return { ok: false, tokenStored: false, reason: 'unknown_error' };
     } finally {
-      // SINGLE-FLIGHT: Clear sync flag when done
-      isSyncingRef.current = false;
+      // SINGLE-FLIGHT: Only clear if this request still owns the sync
+      if (syncOwnerRef.current === requestId) {
+        syncOwnerRef.current = null;
+      }
     }
   }, [coordState.user, clearSubscription, dispatch]);
 
