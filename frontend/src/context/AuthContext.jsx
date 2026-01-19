@@ -229,39 +229,15 @@ export function AuthProvider({ children }) {
       }
 
       // Handle redirect result (for mobile sign-in)
+      // SINGLE SYNC PATH: Do NOT call /auth/firebase-sync here.
+      // onAuthStateChanged will fire for redirect users and handle sync via tokenSyncPipeline.
+      // This handler only logs/detects redirect completion.
       getRedirectResult(auth)
-        .then(async (result) => {
+        .then((result) => {
           if (result?.user) {
-            // User signed in via redirect - sync with backend
-            const requestId = authStateGuardRef.current.startRequest();
-            // P0 FIX: Dispatch TOKEN_SYNC_START to set authRequestId for staleness check
-            dispatch({ type: 'TOKEN_SYNC_START', requestId });
-            try {
-              const idToken = await result.user.getIdToken();
-              const response = await apiClient.post('/auth/firebase-sync', {
-                idToken,
-                email: result.user.email,
-                displayName: result.user.displayName,
-                photoURL: result.user.photoURL,
-              }, {
-                signal: authStateGuardRef.current.getSignal(),
-                __allowRetry: true, // Retry on 502/503/504 (Render cold start)
-              });
-
-              if (!authStateGuardRef.current.isStale(requestId)) {
-                // Bootstrap subscription from firebase-sync response
-                if (response.data.subscription) {
-                  refreshSubscriptionRef.current({
-                    bootstrap: response.data.subscription,
-                    email: result.user.email,
-                  });
-                }
-                dispatch({ type: 'TOKEN_SYNC_OK', requestId, subscription: response.data.subscription });
-              }
-            } catch (err) {
-              if (err.name !== 'CanceledError' && err.name !== 'AbortError') {
-                logAuthError('[Auth] Backend sync failed after redirect', err);
-              }
+            // Redirect sign-in detected - onAuthStateChanged will handle sync
+            if (import.meta.env.DEV) {
+              console.log('[Auth] Redirect sign-in detected, deferring to onAuthStateChanged');
             }
           }
         })
