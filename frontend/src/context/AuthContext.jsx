@@ -161,6 +161,17 @@ export function AuthProvider({ children }) {
   // Cleared when onAuthStateChanged fires (Firebase auth state is known)
   const [authUiLoading, setAuthUiLoading] = useState(true);
 
+  // P0 FIX: Safety timeout - if authUiLoading is stuck, force it to false
+  // This ensures the sign-in button becomes clickable even if Firebase is slow
+  useEffect(() => {
+    if (!authUiLoading) return; // Already resolved
+    const timeout = setTimeout(() => {
+      console.warn('[Auth] authUiLoading safety timeout - forcing to false after 5s');
+      setAuthUiLoading(false);
+    }, 5000);
+    return () => clearTimeout(timeout);
+  }, [authUiLoading]);
+
   // tokenStatus is now DERIVED from coordState.authPhase (Phase 2 complete)
   // No useState needed - see deriveTokenStatus() at bottom of component
 
@@ -336,7 +347,9 @@ export function AuthProvider({ children }) {
     }
 
     try {
+      console.log('[Auth] Initializing Firebase auth...');
       const auth = getFirebaseAuth();
+      console.log('[Auth] Firebase auth instance created');
       setLoading(true);
 
       if (process.env.NODE_ENV !== 'production') {
@@ -350,20 +363,27 @@ export function AuthProvider({ children }) {
       // SINGLE SYNC PATH: Do NOT call /auth/firebase-sync here.
       // onAuthStateChanged will fire for redirect users and handle sync via tokenSyncPipeline.
       // This handler only logs/detects redirect completion.
+      console.log('[Auth] Checking for redirect result...');
       getRedirectResult(auth)
         .then((result) => {
+          console.log('[Auth] getRedirectResult resolved', { hasUser: !!result?.user });
           if (result?.user) {
             // Redirect sign-in detected - onAuthStateChanged will handle sync
-            if (import.meta.env.DEV) {
-              console.log('[Auth] Redirect sign-in detected, deferring to onAuthStateChanged');
-            }
+            console.log('[Auth] Redirect sign-in detected, deferring to onAuthStateChanged');
           }
         })
         .catch((err) => {
+          console.error('[Auth] Redirect result error:', err);
           logAuthError('[Auth] Redirect result error', err);
         });
 
+      console.log('[Auth] Registering onAuthStateChanged listener...');
       const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+        console.log('[Auth] onAuthStateChanged fired', {
+          hasUser: !!firebaseUser,
+          email: firebaseUser?.email,
+          authUiLoading,
+        });
         // Start a new request for each auth state change - cancels any in-flight API calls
         // Uses authStateGuard - separate from tokenRefreshGuard to avoid cross-abort
         const requestId = authStateGuardRef.current.startRequest();
@@ -669,6 +689,7 @@ export function AuthProvider({ children }) {
     } catch (err) {
       logAuthError('Failed to initialize Firebase auth', err);
       setLoading(false);
+      setAuthUiLoading(false); // P0 FIX: Must clear UI loading on error, else button stays disabled forever
       dispatch({ type: 'FIREBASE_USER_CHANGED', user: null }); // Sets initialized: true
       // No user + initialized = tokenStatus derives to 'present' automatically
     }

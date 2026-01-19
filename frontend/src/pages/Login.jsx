@@ -122,7 +122,17 @@ function Login() {
   }, [user, isAuthenticated, from, navigate]);
 
   const handleGoogleSignIn = async () => {
-    if (!isConfigured) return;
+    console.warn('[Login] handleGoogleSignIn called', {
+      isConfigured,
+      authUiLoading,
+      isSigningIn,
+      isAuthenticated,
+      initialized,
+    });
+    if (!isConfigured) {
+      console.warn('[Login] Exiting early - not configured');
+      return;
+    }
 
     setIsSigningIn(true);
     signInInitiatedRef.current = true;
