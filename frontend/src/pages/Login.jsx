@@ -14,11 +14,24 @@ import { toast } from 'sonner';
  * - Blinking terminal cursor on headline
  * - Mobile-first responsive image
  *
- * AUTH FLOW (P0 Fix 3):
+ * AUTH FLOW (P0 Fix 4 - Deterministic Auth Contract):
  * 1. If user is already authenticated on page load → redirect immediately
- * 2. If user clicks sign-in → wait for popup to complete AND fresh user before navigating
- *    (This prevents premature navigation when user has cached Firebase session)
+ * 2. Sign-in has bounded wait (20s timeout) - Rule C: No infinite waits
+ * 3. Navigation depends on auth TRUTH (isAuthenticated), not popup promise
+ * 4. UI locks (isSigningIn) never outlive auth truth - Rule E
  */
+
+// Bounded timeout wrapper - Rule C: No infinite waits
+const withTimeout = (promise, ms) =>
+  Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(
+        () => reject(Object.assign(new Error('Sign-in timed out'), { code: 'auth/timeout' })),
+        ms
+      )
+    ),
+  ]);
 
 // Data atmosphere - coordinates for mobile view
 const DATA_COORDS = ['01.3521°N', '103.8198°E', '0x7F3A', 'SGP_001', '01.2894°N'];
@@ -63,27 +76,28 @@ function Login() {
     return () => clearInterval(interval);
   }, []);
 
-  // P0 Fix 2 + 3: Navigate only when popup completes with fresh user
-  // Don't wait for subscription - that's handled by dashboard boot gate
+  // P0 Fix 4: Navigate based on auth TRUTH, not popup promise
+  // Rule: Navigation depends on isAuthenticated becoming true, not popup resolving
   useEffect(() => {
     if (!signInInitiatedRef.current) return;
 
-    // P0 Fix 3: Check if this is a FRESH sign-in (user changed)
+    // Check if this is a FRESH sign-in (user changed from when we started)
     const currentUid = user?.uid || null;
     const isFreshSignIn =
       (uidAtInitRef.current === null && currentUid !== null) || // Was not authenticated, now is
       (uidAtInitRef.current !== null && currentUid !== null && currentUid !== uidAtInitRef.current); // Different user
 
-    // Navigate when: authenticated with valid UID AND (fresh sign-in OR popup completed)
-    const shouldNavigate = isAuthenticated && currentUid && (isFreshSignIn || popupCompletedRef.current);
+    // Navigate when: authenticated with fresh sign-in
+    // DO NOT require popupCompletedRef - popup can hang due to COOP/browser issues
+    // Auth truth (onAuthStateChanged) is the source of truth, not popup promise
+    const shouldNavigate = isAuthenticated && currentUid && isFreshSignIn;
 
     if (shouldNavigate) {
-      console.warn('[Login] Fresh sign-in detected, navigating to:', from);
+      console.warn('[Login] Auth truth: fresh sign-in detected, navigating to:', from);
       // Reset all refs
       signInInitiatedRef.current = false;
       uidAtInitRef.current = null;
       popupCompletedRef.current = false;
-      setIsSigningIn(false);
       navigate(from, { replace: true });
     }
   }, [user, isAuthenticated, from, navigate]);
@@ -93,30 +107,37 @@ function Login() {
 
     setIsSigningIn(true);
     signInInitiatedRef.current = true;
-    // P0 Fix 3: Capture current user UID at initiation time
     uidAtInitRef.current = user?.uid || null;
     popupCompletedRef.current = false;
 
     try {
-      await signInWithGoogle();
-      // P0 Fix 3: Mark popup as completed - the effect will handle navigation
+      // Rule C: Bounded wait (20s) - popup can hang forever due to COOP/browser issues
+      await withTimeout(signInWithGoogle(), 20000);
+      // Optional UX signal - navigation no longer depends on this
       popupCompletedRef.current = true;
     } catch (err) {
-      // Reset all refs on error/cancel
+      // Reset refs on error
       signInInitiatedRef.current = false;
       uidAtInitRef.current = null;
       popupCompletedRef.current = false;
-      setIsSigningIn(false);
 
-      // P0 Fix 3: Show friendly message if user cancelled while already authenticated
-      // (They'll be auto-redirected to dashboard by the effect)
-      const isCancelled = err?.code === 'auth/popup-closed-by-user' ||
-                          err?.code === 'auth/cancelled-popup-request';
-      if (isCancelled && isAuthenticated) {
+      const isCancelled =
+        err?.code === 'auth/popup-closed-by-user' ||
+        err?.code === 'auth/cancelled-popup-request';
+      const isTimeout = err?.code === 'auth/timeout';
+
+      if (isTimeout) {
+        console.warn('[Login] Sign-in timed out after 20s');
+        toast.error('Sign-in is taking too long. Please try again.');
+      } else if (isCancelled && isAuthenticated) {
         toast.info('Sign-in cancelled — staying on your current session.');
       } else if (!isCancelled) {
-        console.error('Sign-in failed:', err);
+        console.error('[Login] Sign-in failed:', err);
+        toast.error('Sign-in failed. Please try again.');
       }
+    } finally {
+      // Rule E: UI lock never outlives auth truth
+      setIsSigningIn(false);
     }
   };
 
