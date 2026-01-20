@@ -69,6 +69,8 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
+    is_test = os.getenv("PYTEST_CURRENT_TEST") is not None
+
     # Initialize CORS - allow credentials for auth cookies
     # Note: Flask-CORS handles all CORS headers automatically, no after_request needed
     # For credentials to work, we must specify exact origins (not wildcard)
@@ -90,6 +92,26 @@ def create_app():
          expose_headers=["X-Request-ID", "X-DB-Time-Ms", "X-Query-Count"],
          supports_credentials=True)
 
+    # Security headers (HSTS, CSP, etc.)
+    if Config.SECURITY_HEADERS_ENABLED:
+        from flask_talisman import Talisman
+
+        Talisman(
+            app,
+            force_https=Config.SECURITY_HEADERS_FORCE_HTTPS and not is_test,
+            strict_transport_security=True,
+            strict_transport_security_max_age=Config.SECURITY_HEADERS_HSTS_MAX_AGE,
+            strict_transport_security_include_subdomains=Config.SECURITY_HEADERS_HSTS_INCLUDE_SUBDOMAINS,
+            strict_transport_security_preload=Config.SECURITY_HEADERS_HSTS_PRELOAD,
+            frame_options=Config.SECURITY_HEADERS_FRAME_OPTIONS,
+            x_content_type_options=True,
+            referrer_policy=Config.SECURITY_HEADERS_REFERRER_POLICY,
+            permissions_policy=Config.SECURITY_HEADERS_PERMISSIONS_POLICY,
+            content_security_policy=Config.SECURITY_HEADERS_CSP,
+            content_security_policy_report_only=Config.SECURITY_HEADERS_REPORT_ONLY,
+            content_security_policy_report_uri=Config.SECURITY_HEADERS_CSP_REPORT_URI,
+        )
+
     # === API CONTRACT MIDDLEWARE ===
     # Request ID injection for request correlation and debugging
     from api.middleware import setup_request_id_middleware
@@ -102,6 +124,17 @@ def create_app():
     # Request usage logging (sampling + watchlist)
     from api.middleware import setup_request_logging_middleware
     setup_request_logging_middleware(app)
+
+    @app.route("/api/csp-report", methods=["POST"])
+    def csp_report():
+        """
+        CSP report endpoint for report-only or enforced policies.
+
+        Logs payloads for observability and returns 204.
+        """
+        payload = request.get_json(silent=True) or {}
+        app.logger.warning("CSP violation reported: %s", payload)
+        return ("", 204)
 
     # Load contract schemas (registers contracts on import)
     try:

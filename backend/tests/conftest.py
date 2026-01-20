@@ -38,6 +38,11 @@ def update_snapshots(request):
 @pytest.fixture
 def app():
     """Create test Flask application."""
+    import os
+
+    if "DATABASE_URL" not in os.environ:
+        os.environ["DATABASE_URL"] = "postgresql://dev:dev@localhost:5432/sg_property"
+
     from app import create_app
 
     app = create_app()
