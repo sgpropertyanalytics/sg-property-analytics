@@ -95,6 +95,32 @@ class Config:
     CSV_FOLDER = os.getenv('CSV_FOLDER', 'rawdata')
     DEBUG = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
 
+    # Security headers (Flask-Talisman)
+    SECURITY_HEADERS_ENABLED = os.getenv('SECURITY_HEADERS_ENABLED', 'true').lower() in ('1', 'true', 'yes')
+    SECURITY_HEADERS_REPORT_ONLY = os.getenv('SECURITY_HEADERS_REPORT_ONLY', 'false').lower() in ('1', 'true', 'yes')
+    SECURITY_HEADERS_FORCE_HTTPS = os.getenv('SECURITY_HEADERS_FORCE_HTTPS', 'false').lower() in ('1', 'true', 'yes')
+    SECURITY_HEADERS_REFERRER_POLICY = os.getenv('SECURITY_HEADERS_REFERRER_POLICY', 'no-referrer')
+    SECURITY_HEADERS_FRAME_OPTIONS = os.getenv('SECURITY_HEADERS_FRAME_OPTIONS', 'DENY')
+    SECURITY_HEADERS_HSTS_MAX_AGE = int(os.getenv('SECURITY_HEADERS_HSTS_MAX_AGE', '31536000'))  # 1 year
+    SECURITY_HEADERS_HSTS_INCLUDE_SUBDOMAINS = os.getenv(
+        'SECURITY_HEADERS_HSTS_INCLUDE_SUBDOMAINS', 'true'
+    ).lower() in ('1', 'true', 'yes')
+    SECURITY_HEADERS_HSTS_PRELOAD = os.getenv('SECURITY_HEADERS_HSTS_PRELOAD', 'false').lower() in ('1', 'true', 'yes')
+    SECURITY_HEADERS_CSP_REPORT_URI = os.getenv('SECURITY_HEADERS_CSP_REPORT_URI', '/api/csp-report')
+    SECURITY_HEADERS_CSP = {
+        "default-src": "'none'",
+        "base-uri": "'none'",
+        "frame-ancestors": "'none'",
+        "form-action": "'none'",
+        "object-src": "'none'",
+    }
+    SECURITY_HEADERS_PERMISSIONS_POLICY = {
+        "geolocation": "()",
+        "camera": "()",
+        "microphone": "()",
+        "payment": "()",
+    }
+
     # SQLAlchemy configuration - PostgreSQL ONLY
     # SQLite is NOT supported in any environment
     SQLALCHEMY_DATABASE_URI = get_database_url()
