@@ -729,8 +729,9 @@ class TestNaturalKeyFields:
         assert "project_name" in NATURAL_KEY_FIELDS
         assert "transaction_month" in NATURAL_KEY_FIELDS
         assert "price" in NATURAL_KEY_FIELDS
-        assert "area_sqft" in NATURAL_KEY_FIELDS
+        assert "area_sqft_int" in NATURAL_KEY_FIELDS  # Canonical integer representation
         assert "floor_range" in NATURAL_KEY_FIELDS
+        assert "property_type" in NATURAL_KEY_FIELDS
         assert "sale_type" in NATURAL_KEY_FIELDS
         assert "district" in NATURAL_KEY_FIELDS
 

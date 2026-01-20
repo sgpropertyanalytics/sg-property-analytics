@@ -19,20 +19,24 @@ def canonicalize_area_sqft(area_sqft: Optional[float]) -> Optional[int]:
     """
     Canonicalize area_sqft to stable integer representation.
 
-    Converts sqft to integer of (sqft × 100) to preserve 2 decimal places
-    without rounding ambiguity. This eliminates format drift between sources.
+    Rounds sqft to nearest integer to absorb tiny precision differences
+    between CSV and API sources (e.g., 699.66 vs 699.65 from sqm conversion).
 
     Args:
         area_sqft: Area in square feet (e.g., 1689.95)
 
     Returns:
-        Integer representation (e.g., 168995), or None if input is None/NaN
+        Integer representation (e.g., 1690), or None if input is None/NaN
 
     Examples:
         >>> canonicalize_area_sqft(1689.95)
-        168995
+        1690
         >>> canonicalize_area_sqft(1689.93)
-        168993
+        1690
+        >>> canonicalize_area_sqft(699.66)
+        700
+        >>> canonicalize_area_sqft(699.65)
+        700
         >>> canonicalize_area_sqft(None)
         None
     """
@@ -44,8 +48,8 @@ def canonicalize_area_sqft(area_sqft: Optional[float]) -> Optional[int]:
         if str(area_sqft) == 'nan' or area_sqft != area_sqft:
             return None
 
-    # Convert to integer of sqft × 100 (2dp precision)
-    return int(round(float(area_sqft) * 100))
+    # Round to integer to absorb sub-sqft precision differences
+    return int(round(float(area_sqft)))
 
 
 def normalize_floor_range(floor_range: Optional[str]) -> Optional[str]:
@@ -151,7 +155,7 @@ def compute_row_hash(
     - Detecting duplicate records across batches
 
     Special field handling:
-    - 'area_sqft_x100': Looks up 'area_sqft' in row and canonicalizes to int × 100
+    - 'area_sqft_int': Looks up 'area_sqft' in row and rounds to integer
     - 'floor_range': Normalizes format (e.g., "11 to 15" → "11-15")
     - Other fields: Standard normalization (dates, numbers, strings)
 
@@ -164,14 +168,14 @@ def compute_row_hash(
         32-character hex hash
 
     Example:
-        >>> natural_key = ['project_name', 'transaction_month', 'price', 'area_sqft_x100', 'floor_range']
+        >>> natural_key = ['project_name', 'transaction_month', 'price', 'area_sqft_int', 'floor_range']
         >>> hash = compute_row_hash(row, natural_key)
     """
     values = []
     for field in natural_key_fields:
         # Special handling for canonical fields
-        if field == 'area_sqft_x100':
-            # Look up 'area_sqft' and canonicalize
+        if field == 'area_sqft_int':
+            # Look up 'area_sqft' and canonicalize to integer
             area_val = row.get('area_sqft')
             canonical = canonicalize_area_sqft(area_val)
             values.append(str(canonical) if canonical is not None else '')
