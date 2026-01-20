@@ -88,48 +88,27 @@ SQM_TO_SQFT = 10.7639
 REVISION_WINDOW_MONTHS = 3
 
 # =============================================================================
-# Two-Key Architecture for Transaction Identity
+# Natural Key Fields for Transaction Identity
 # =============================================================================
 #
-# ROW_KEY (strict): Deduplication within each source (CSV or API)
-# - Distinguishes all distinct transactions within a single source
-# - Should have ~0 collisions per source
-# - Uses canonical area representation (sqft × 100 as integer)
+# These fields uniquely identify a transaction for deduplication and matching.
+# Used by compute_row_hash() to generate row_hash for upserts.
 #
-# MATCH_KEY (coarse): Cross-source matching (CSV ↔ API)
-# - Groups candidate transactions that likely represent the same real-world event
-# - Excludes area (may differ slightly between sources due to format drift)
-# - Used with resolver to handle remaining ambiguity
-#
-# Why area_sqft_x100?
-# - Eliminates rounding ambiguity (1689.95 vs 1689.93 → both store as 168995)
-# - Source-agnostic (no magic decimal tuning)
-# - Preserves precision needed to distinguish distinct units
+# Canonicalization (handled by compute_row_hash in fingerprint.py):
+# - area_sqft_int: Rounds area_sqft to integer (e.g., 699.66 → 700)
+#   This absorbs tiny precision differences between CSV and API sources.
+# - floor_range: Normalized to "XX-YY" format (e.g., "01 to 05" → "01-05")
 
-ROW_KEY_FIELDS = [
+NATURAL_KEY_FIELDS = [
     'project_name',
     'transaction_month',
     'price',
-    'area_sqft_x100',      # Canonical: integer of sqft × 100 (2dp precision)
+    'area_sqft_int',       # Canonical: area rounded to integer
     'floor_range',         # Normalized format (e.g., "11-15")
     'property_type',
     'district',
     'sale_type',
 ]
-
-MATCH_KEY_FIELDS = [
-    'project_name',
-    'transaction_month',
-    'price',
-    # area_sqft_x100 excluded - may differ between sources
-    'floor_range',
-    'property_type',
-    'district',
-    'sale_type',
-]
-
-# Legacy alias for backward compatibility during migration
-NATURAL_KEY_FIELDS = ROW_KEY_FIELDS
 
 # Known URA API fields at project level
 KNOWN_PROJECT_FIELDS = {
