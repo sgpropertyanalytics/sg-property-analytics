@@ -1,5 +1,4 @@
 from models.user import User
-from routes import auth as auth_module
 
 
 def test_schema_guard_missing_columns_returns_503(client, monkeypatch):
@@ -30,21 +29,14 @@ def test_subscription_endpoint_success_includes_entitlements(client, monkeypatch
         subscription_status="active",
     )
 
-    class DummyQuery:
-        def get(self, user_id):
-            if user_id == user.id:
-                return user
-            return None
-
-    class DummyUser:
-        query = DummyQuery()
-
     monkeypatch.setattr(
         "services.schema_guard.check_user_entitlement_columns",
         lambda: {"missing": [], "error": None},
     )
-    monkeypatch.setattr(auth_module, "verify_token", lambda token: user.id)
-    monkeypatch.setattr(auth_module, "User", DummyUser)
+    monkeypatch.setattr(
+        "utils.subscription.get_user_from_request",
+        lambda: user,
+    )
 
     response = client.get(
         "/api/auth/subscription",

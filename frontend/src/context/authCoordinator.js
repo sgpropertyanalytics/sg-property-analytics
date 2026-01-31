@@ -1,20 +1,11 @@
 /**
- * ╔═══════════════════════════════════════════════════════════════════════════╗
- * ║                    SINGLE-WRITER INVARIANT - READ FIRST                   ║
- * ╠═══════════════════════════════════════════════════════════════════════════╣
- * ║                                                                           ║
- * ║  This reducer is the ONLY place auth/subscription state may be mutated.  ║
- * ║                                                                           ║
- * ║  DO NOT:                                                                  ║
- * ║  - Add useState for auth/tier/subscription in any context                 ║
- * ║  - Add new mutation paths outside this reducer                            ║
- * ║  - Bypass dispatch() with direct state manipulation                       ║
- * ║                                                                           ║
- * ║  ANY change here is HIGH BLAST RADIUS. Get review from auth owner.        ║
- * ║                                                                           ║
- * ║  @see docs/AUTH_DECISION_FRAMEWORK.md (evaluation criteria)               ║
- * ║  @see docs/plans/2026-01-14-auth-single-writer-framework.md               ║
- * ╚═══════════════════════════════════════════════════════════════════════════╝
+ * Auth Coordinator - Single-writer reducer for auth + subscription state
+ *
+ * Firebase-Only model: No token sync, no JWT, no cookies.
+ * Firebase SDK handles auth; this reducer tracks auth state + subscription state.
+ *
+ * SINGLE-WRITER INVARIANT:
+ * This reducer is the ONLY place auth/subscription state may be mutated.
  */
 
 // =============================================================================
@@ -24,11 +15,7 @@
 export const initialState = {
   // Auth domain
   user: null,
-  authPhase: 'idle', // idle | syncing | established | retrying | error
-  authError: null,
   initialized: false,
-  authUiLoading: true,
-  authUiError: null,
 
   // Subscription domain
   tier: 'unknown', // unknown | free | premium
@@ -37,10 +24,8 @@ export const initialState = {
   subError: null,
   cachedSubscription: null,
 
-  // Request sequencing (per-domain)
-  authRequestId: null,
+  // Request sequencing
   subRequestId: null,
-  retryCount: 0,
 };
 
 // =============================================================================
@@ -70,7 +55,7 @@ export function authCoordinatorReducer(state, action) {
   // 5. Post-check: initialized monotonicity (false → true only)
   if (state.initialized && !nextState.initialized) {
     console.error('[AuthCoordinator] INVARIANT VIOLATION: initialized went true → false');
-    return state; // Block the transition
+    return state;
   }
 
   return nextState;
@@ -81,20 +66,6 @@ export function authCoordinatorReducer(state, action) {
 // =============================================================================
 
 function isStaleRequest(state, action) {
-  // Auth domain: Only OK/FAIL/TIMEOUT need requestId (they're async completions)
-  // RETRY/ABORT are dispatched synchronously from the same flow, no requestId needed
-  const authCompletions = ['TOKEN_SYNC_OK', 'TOKEN_SYNC_FAIL', 'TOKEN_SYNC_TIMEOUT'];
-  if (authCompletions.includes(action.type)) {
-    if (action.requestId == null) {
-      console.error(`[AuthCoordinator] ${action.type} missing requestId`);
-      return true;
-    }
-    if (state.authRequestId !== action.requestId) {
-      console.warn(`[AuthCoordinator] Stale auth: ${action.requestId} != ${state.authRequestId}`);
-      return true;
-    }
-  }
-
   // Sub domain: Only OK/FAIL need requestId
   const subCompletions = ['SUB_FETCH_OK', 'SUB_FETCH_FAIL'];
   if (subCompletions.includes(action.type)) {
@@ -116,36 +87,23 @@ function isStaleRequest(state, action) {
 // =============================================================================
 
 function checkMonotonicity(state, action) {
-  // Phase 3 fix: Prevent timeout from overriding ANY error state (not just premium)
-  // Auth errors (authPhase='error' or tierSource='none') must not be overwritten by timeout
+  // Prevent timeout from overriding error or premium state
   if (action.type === 'SUB_PENDING_TIMEOUT') {
-    // Block if auth failed (401/403 set tierSource='none')
-    if (state.tierSource === 'none' && state.authPhase === 'error') {
-      console.warn('[AuthCoordinator] Blocked: timeout cannot overwrite auth error state');
-      return false;
-    }
-    // Block if premium (original rule)
     if (state.tier === 'premium') {
       console.warn('[AuthCoordinator] Blocked: timeout cannot overwrite premium');
       return false;
     }
   }
 
-  // Rule: Premium can only be downgraded by LOGOUT or server success (SUB_FETCH_OK/TOKEN_SYNC_OK)
-  // SUB_FETCH_FAIL with auth errors would set tier:'free' in reducer - block that for premium users
+  // Rule: Premium can only be downgraded by LOGOUT or server success (SUB_FETCH_OK)
   if (state.tier === 'premium' && action.type !== 'LOGOUT') {
-    // Check explicit tier in action.subscription
     const nextTier = action.subscription?.tier;
     if (nextTier === 'free') {
-      const isServerSuccess = action.type === 'SUB_FETCH_OK' || action.type === 'TOKEN_SYNC_OK';
-      if (!isServerSuccess) {
+      if (action.type !== 'SUB_FETCH_OK') {
         console.warn(`[AuthCoordinator] Blocked: ${action.type} cannot downgrade premium`);
         return false;
       }
     }
-
-    // NOTE: SUB_FETCH_FAIL is NOT blocked here - reducer handles premium case by going to 'degraded'
-    // This preserves BOTH monotonicity (tier stays premium) AND convergence (subPhase reaches terminal)
   }
 
   return true;
@@ -162,89 +120,19 @@ function computeNextState(state, action) {
     // -------------------------------------------------------------------------
     case 'FIREBASE_USER_CHANGED':
       if (!action.user) {
-        // Logout - reset everything
+        // Logout / no user - reset everything
         return {
           ...initialState,
           initialized: true,
           subPhase: 'resolved',
           tier: 'free',
           tierSource: 'none',
-          authUiLoading: false,
-          authUiError: null,
         };
       }
       return {
         ...state,
         user: action.user,
         initialized: true,
-        authUiError: null,
-      };
-
-    case 'TOKEN_SYNC_START':
-      return {
-        ...state,
-        authPhase: 'syncing',
-        authRequestId: action.requestId,
-        authUiError: null,
-      };
-
-    case 'TOKEN_SYNC_OK':
-      return {
-        ...state,
-        authPhase: 'established',
-        authError: null,
-        retryCount: 0,
-        authRequestId: null,
-        authUiError: null,
-        // Bootstrap subscription if provided
-        ...(action.subscription ? {
-          tier: action.subscription.tier,
-          tierSource: 'server',
-          subPhase: 'resolved',
-          cachedSubscription: action.subscription,
-        } : {}),
-      };
-
-    case 'TOKEN_SYNC_RETRY':
-      if (state.retryCount >= 2) {
-        return { ...state, authPhase: 'error', authError: action.error };
-      }
-      return {
-        ...state,
-        authPhase: 'retrying',
-        retryCount: state.retryCount + 1,
-      };
-
-    case 'TOKEN_SYNC_FAIL':
-    case 'TOKEN_SYNC_TIMEOUT':
-      return {
-        ...state,
-        authPhase: 'error',
-        authError: action.error || new Error('Token sync timeout'),
-        authRequestId: null,
-      };
-
-    case 'AUTH_FAILURE_AND_LOGOUT':
-      // Phase 1 fix: Atomic dispatch for auth failures
-      // Combines TOKEN_SYNC_FAIL + FIREBASE_USER_CHANGED + clearSubscription
-      // Prevents race conditions from separate dispatches
-      return {
-        ...initialState,
-        initialized: true,
-        authPhase: 'error',
-        authError: action.error,
-        subPhase: 'resolved',
-        tier: 'free',
-        tierSource: 'none',
-        authUiLoading: false,
-        authUiError: null,
-      };
-
-    case 'TOKEN_SYNC_ABORT':
-      return {
-        ...state,
-        authPhase: state.retryCount > 0 ? 'retrying' : 'idle',
-        authRequestId: null,
       };
 
     // -------------------------------------------------------------------------
@@ -269,40 +157,29 @@ function computeNextState(state, action) {
       };
 
     case 'SUB_FETCH_FAIL':
-      // =========================================================================
-      // OPTION C: Split handling for auth vs gateway errors
-      // - Gateway/network: fail-open (keep cached premium for availability)
-      // - Auth errors: fail-closed (block cached premium for entitlement safety)
-      // =========================================================================
-
-      // AUTH errors (401/403): Session invalid → block cached premium immediately
-      // Set tierSource='none' so hasCachedPremium becomes false
+      // AUTH errors (401/403): Session invalid → block cached premium
       if (action.errorKind === 'AUTH' || action.errorKind === 'AUTH_REQUIRED') {
         return {
           ...state,
           subPhase: 'degraded',
-          tierSource: 'none', // KEY: Blocks hasCachedPremium derivation
+          tierSource: 'none',
           subError: action.error,
           subRequestId: null,
-          // tier preserved as last-known, but won't grant access without tierSource
         };
       }
 
-      // GATEWAY/NETWORK errors (502/503/504, timeouts): Backend unreliable
-      // Keep cached premium for availability (fail-open)
+      // GATEWAY/NETWORK errors: Keep cached premium for availability
       if (action.errorKind === 'GATEWAY' || action.errorKind === 'NETWORK') {
         return {
           ...state,
           subPhase: 'degraded',
           subError: action.error,
           subRequestId: null,
-          // tierSource unchanged → hasCachedPremium still works
         };
       }
 
-      // Other errors (404, 500): Depends on current tier
+      // Other errors: depends on current tier
       if (state.tier === 'premium') {
-        // Premium users: degraded, keep cache (treat like gateway for availability)
         return {
           ...state,
           subPhase: 'degraded',
@@ -310,7 +187,6 @@ function computeNextState(state, action) {
           subRequestId: null,
         };
       }
-      // Non-premium: resolve to free
       return {
         ...state,
         subPhase: 'resolved',
@@ -321,45 +197,28 @@ function computeNextState(state, action) {
       };
 
     case 'SUB_FETCH_ABORT':
-      // P0 FIX: Abort must reach terminal state (convergence invariant)
-      // If we were loading, transition to degraded so boot can complete
-      // Keep tier/tierSource unchanged (abort is not an error signal)
       if (state.subPhase === 'loading') {
         return {
           ...state,
           subPhase: 'degraded',
-          subRequestId: null, // Clear so future fetches aren't blocked
+          subRequestId: null,
         };
       }
-      // If not loading (e.g., pending), just clear requestId
       return {
         ...state,
         subRequestId: null,
       };
 
     case 'SUB_PENDING_TIMEOUT':
-      // P0 FIX: Timeout must set tierSource to something other than 'none'
-      // Boot gate: tierResolved = !isAuthenticated || tierSource !== 'none'
-      // Setting tierSource: 'none' keeps tierResolved=false, blocking boot forever
       if (state.subPhase !== 'pending') return state;
       return {
         ...state,
         subPhase: 'resolved',
         tier: 'free',
-        tierSource: 'timeout', // NOT 'none' - allows boot gate to resolve
-      };
-
-    case 'SUB_BOOTSTRAP':
-      return {
-        ...state,
-        subPhase: 'resolved',
-        tier: action.subscription.tier,
-        tierSource: 'server',
-        cachedSubscription: action.subscription,
+        tierSource: 'timeout',
       };
 
     case 'SUB_CACHE_LOAD':
-      // Load from localStorage - tierSource: 'cache' until server confirms
       return {
         ...state,
         subPhase: 'resolved',
@@ -377,34 +236,6 @@ function computeNextState(state, action) {
         initialized: true,
         subPhase: 'resolved',
         tier: 'free',
-        authUiLoading: false,
-        authUiError: null,
-      };
-
-    case 'MANUAL_RETRY':
-      return {
-        ...state,
-        authPhase: 'syncing',
-        retryCount: 0,
-        authError: null,
-      };
-
-    case 'AUTH_UI_LOADING_SET':
-      return {
-        ...state,
-        authUiLoading: action.value,
-      };
-
-    case 'AUTH_UI_ERROR_SET':
-      return {
-        ...state,
-        authUiError: action.error,
-      };
-
-    case 'AUTH_UI_ERROR_CLEAR':
-      return {
-        ...state,
-        authUiError: null,
       };
 
     default:

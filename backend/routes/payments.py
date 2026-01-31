@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 import os
 from models.database import db
 from models.user import User
-from routes.auth import verify_token, get_auth_token_from_request
+from utils.subscription import get_user_from_request
 
 payments_bp = Blueprint('payments', __name__)
 
@@ -64,17 +64,10 @@ def create_checkout():
         if not stripe:
             return jsonify({"error": "Payment system not configured"}), 503
 
-        # Verify JWT
-        token = get_auth_token_from_request()
-        if not token:
-            return jsonify({"error": "Authorization required"}), 401
-        user_id = verify_token(token)
-        if not user_id:
-            return jsonify({"error": "Invalid token"}), 401
-
-        user = User.query.get(user_id)
+        # Verify auth
+        user = get_user_from_request()
         if not user:
-            return jsonify({"error": "User not found"}), 404
+            return jsonify({"error": "Authorization required"}), 401
 
         # Parse request
         data = request.get_json()
@@ -267,15 +260,8 @@ def create_portal_session():
         if not stripe:
             return jsonify({"error": "Payment system not configured"}), 503
 
-        # Verify JWT
-        token = get_auth_token_from_request()
-        if not token:
-            return jsonify({"error": "Authorization required"}), 401
-        user_id = verify_token(token)
-        if not user_id:
-            return jsonify({"error": "Invalid token"}), 401
-
-        user = User.query.get(user_id)
+        # Verify auth
+        user = get_user_from_request()
         if not user or not user.stripe_customer_id:
             return jsonify({"error": "No subscription found"}), 404
 

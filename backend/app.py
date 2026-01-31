@@ -5,7 +5,7 @@ All analytics use SQL aggregation for memory efficiency.
 No in-memory DataFrames - safe for resource-constrained hosting (Render 512MB).
 
 SaaS Features:
-- User authentication (JWT-based)
+- User authentication (Firebase-only, Bearer token per-request)
 - Ad serving and tracking
 - Analytics API remains public (no authentication required)
 """
@@ -71,9 +71,9 @@ def create_app():
 
     is_test = os.getenv("PYTEST_CURRENT_TEST") is not None
 
-    # Initialize CORS - allow credentials for auth cookies
+    # Initialize CORS
     # Note: Flask-CORS handles all CORS headers automatically, no after_request needed
-    # For credentials to work, we must specify exact origins (not wildcard)
+    # Firebase-only auth uses Bearer tokens (no cookies), so credentials are not needed
     allowed_origins = [
         "http://localhost:3000",
         "http://localhost:3001",
@@ -88,9 +88,8 @@ def create_app():
     CORS(app,
          resources={r"/api/*": {"origins": allowed_origins}},
          methods=["GET", "POST", "OPTIONS", "PUT", "DELETE"],
-         allow_headers=["Content-Type", "Authorization", "X-Request-ID", "X-CSRF-Token"],
-         expose_headers=["X-Request-ID", "X-DB-Time-Ms", "X-Query-Count"],
-         supports_credentials=True)
+         allow_headers=["Content-Type", "Authorization", "X-Request-ID"],
+         expose_headers=["X-Request-ID", "X-DB-Time-Ms", "X-Query-Count"])
 
     # Security headers (HSTS, CSP, etc.)
     if Config.SECURITY_HEADERS_ENABLED:
@@ -148,13 +147,7 @@ def create_app():
 
     def _add_cors_headers_to_response(response):
         """
-        Add CORS headers that are compatible with credentials.
-
-        CRITICAL: Flask-CORS uses supports_credentials=True, so we MUST:
-        - Echo the request Origin (not '*') if it's in allowed_origins
-        - Add Access-Control-Allow-Credentials: true
-
-        Using '*' with credentials breaks the CORS spec and causes network errors.
+        Add CORS headers for error responses (Flask-CORS may miss these).
         """
         # Only add if not already present (Flask-CORS may have added them)
         if 'Access-Control-Allow-Origin' in response.headers:
@@ -164,9 +157,8 @@ def create_app():
         origin = request.headers.get('Origin')
         if origin and origin in allowed_origins:
             response.headers['Access-Control-Allow-Origin'] = origin
-            response.headers['Access-Control-Allow-Credentials'] = 'true'
             response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, PUT, DELETE'
-            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Request-ID, X-CSRF-Token'
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Request-ID'
         # If origin not in allowed list, don't add CORS headers (request will fail CORS check)
 
     @app.errorhandler(HTTPException)
@@ -194,7 +186,6 @@ def create_app():
         if request_id:
             response.headers['X-Request-ID'] = request_id
 
-        # Add CORS headers (credentials-compatible)
         _add_cors_headers_to_response(response)
         return response
 
@@ -230,7 +221,6 @@ def create_app():
         if request_id:
             response.headers['X-Request-ID'] = request_id
 
-        # Add CORS headers (credentials-compatible)
         _add_cors_headers_to_response(response)
         return response
 
@@ -239,7 +229,6 @@ def create_app():
     def add_cors_headers(response):
         from flask import g
 
-        # Add CORS headers if not present (credentials-compatible)
         _add_cors_headers_to_response(response)
 
         # Ensure X-Request-ID is in response (for correlation)
@@ -249,17 +238,6 @@ def create_app():
                 response.headers['X-Request-ID'] = request_id
 
         return response
-
-    @app.before_request
-    def enforce_csrf():
-        if request.method in {"POST", "PUT", "PATCH", "DELETE"} and request.path.startswith("/api/"):
-            auth_cookie = request.cookies.get(Config.AUTH_COOKIE_NAME)
-            if not auth_cookie:
-                return None
-            csrf_cookie = request.cookies.get(Config.CSRF_COOKIE_NAME)
-            csrf_header = request.headers.get("X-CSRF-Token", "")
-            if not csrf_cookie or csrf_cookie != csrf_header:
-                return jsonify({"error": "CSRF token missing or invalid"}), 403
 
     # SECURITY: Prevent caching of tier-sensitive API responses
     # This prevents premium data from being cached and served to free users
@@ -427,7 +405,7 @@ def create_app():
             if firebase_app:
                 print("   ✓ Firebase Admin SDK initialized")
             else:
-                print("   ℹ️  Firebase Admin SDK not configured (email-only auth)")
+                print("   ℹ️  Firebase Admin SDK not configured")
         except Exception as e:
             print(f"   ⚠️  Firebase pre-init skipped: {e}")
 
@@ -452,7 +430,7 @@ def create_app():
     from routes.analytics import analytics_bp
     app.register_blueprint(analytics_bp, url_prefix='/api')
 
-    # Auth routes (JWT-based authentication)
+    # Auth routes (Firebase-only authentication)
     from routes.auth import auth_bp
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
 

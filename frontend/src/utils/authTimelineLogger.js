@@ -52,10 +52,6 @@ export const AuthTimelineEvent = {
   // Auth context events
   AUTH_STATE_CHANGE: 'AUTH_STATE_CHANGE',
   AUTH_NO_USER: 'AUTH_NO_USER',
-  TOKEN_SYNC_START: 'TOKEN_SYNC_START',
-  TOKEN_SYNC_OK: 'TOKEN_SYNC_OK',
-  TOKEN_SYNC_RETRY: 'TOKEN_SYNC_RETRY',
-  TOKEN_SYNC_ERR: 'TOKEN_SYNC_ERR',
   AUTH_FAILURE: 'AUTH_FAILURE',
 
   // Timeout fallback events

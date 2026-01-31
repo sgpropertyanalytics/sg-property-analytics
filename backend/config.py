@@ -71,13 +71,6 @@ def get_database_url():
 
 class Config:
     SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key')
-    JWT_SECRET = os.getenv('JWT_SECRET', os.getenv('SECRET_KEY', 'dev-jwt-secret-key'))
-    JWT_ALGORITHM = os.getenv('JWT_ALGORITHM', 'HS256')
-    JWT_EXPIRATION_HOURS = int(os.getenv('JWT_EXPIRATION_HOURS', '24'))
-    AUTH_COOKIE_NAME = os.getenv('AUTH_COOKIE_NAME', 'auth_token')
-    CSRF_COOKIE_NAME = os.getenv('CSRF_COOKIE_NAME', 'csrf_token')
-    AUTH_COOKIE_SAMESITE = os.getenv('AUTH_COOKIE_SAMESITE', 'Lax')
-    AUTH_COOKIE_SECURE = os.getenv('AUTH_COOKIE_SECURE')
 
     # AI Agent Configuration (Anthropic Claude)
     ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY')

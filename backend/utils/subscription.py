@@ -1,7 +1,7 @@
 """
 Subscription Check Utility
 
-Provides functions to check user subscription status from JWT tokens.
+Provides functions to check user subscription status from Firebase ID tokens.
 Use this for tier-aware API responses - return full data for premium users,
 teaser data for free users.
 
@@ -16,26 +16,95 @@ Preview Dashboard Model (Blur Paywall):
 from flask import request
 from functools import wraps
 from models.user import User
+from models.database import db
+
+
+def get_user_from_firebase_token():
+    """
+    Extract and verify user from Authorization: Bearer <firebase-id-token> header.
+
+    Verifies the Firebase ID token via firebase_admin.auth, looks up the user
+    by firebase_uid (indexed), auto-creates if not found, and updates profile
+    if changed.
+
+    Returns:
+        User object if valid Firebase token, None otherwise
+    """
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return None
+
+    id_token = auth_header.split(' ', 1)[1]
+    if not id_token:
+        return None
+
+    try:
+        from routes.auth import get_firebase_app
+        firebase_app = get_firebase_app()
+        if not firebase_app:
+            return None
+
+        from firebase_admin import auth as firebase_auth
+        decoded_token = firebase_auth.verify_id_token(id_token)
+    except Exception:
+        return None
+
+    firebase_uid = decoded_token.get('uid')
+    email = decoded_token.get('email')
+    display_name = decoded_token.get('name')
+    avatar_url = decoded_token.get('picture')
+
+    if not firebase_uid:
+        return None
+
+    # Lookup by firebase_uid first (indexed, fast)
+    user = User.query.filter_by(firebase_uid=firebase_uid).first()
+
+    if not user and email:
+        # Fallback: lookup by email (for existing users without firebase_uid linked)
+        user = User.query.filter_by(email=email.strip().lower()).first()
+        if user:
+            # Link firebase_uid to existing user
+            user.firebase_uid = firebase_uid
+            db.session.commit()
+
+    if not user:
+        # Auto-create user
+        user = User(
+            email=email.strip().lower() if email else None,
+            firebase_uid=firebase_uid,
+            password_hash='firebase_auth',
+            plan_tier='free',
+            display_name=display_name,
+            avatar_url=avatar_url,
+        )
+        db.session.add(user)
+        db.session.commit()
+    else:
+        # Update profile if changed
+        needs_update = False
+        if display_name and display_name != user.display_name:
+            user.display_name = display_name
+            needs_update = True
+        if avatar_url and avatar_url != user.avatar_url:
+            user.avatar_url = avatar_url
+            needs_update = True
+        if needs_update:
+            db.session.commit()
+
+    return user
 
 
 def get_user_from_request():
     """
-    Extract and verify user from Authorization header or auth cookie.
+    Extract and verify user from request.
+
+    Verifies Firebase ID token from Authorization: Bearer header.
 
     Returns:
         User object if valid token, None otherwise
     """
-    from routes.auth import verify_token, get_auth_token_from_request
-
-    token = get_auth_token_from_request()
-    if not token:
-        return None
-    user_id = verify_token(token)
-
-    if not user_id:
-        return None
-
-    return User.query.get(user_id)
+    return get_user_from_firebase_token()
 
 
 def is_premium_user():

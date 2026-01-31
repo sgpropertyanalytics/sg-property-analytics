@@ -39,8 +39,9 @@ const DATA_COORDS = ['01.3521°N', '103.8198°E', '0x7F3A', 'SGP_001', '01.2894�
 function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { signInWithGoogle, error: authError, authUiLoading, isConfigured, isAuthenticated, initialized, user } = useAuth();
+  const { signInWithGoogle, isConfigured, isAuthenticated, initialized, user, getErrorMessage } = useAuth();
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [authError, setAuthError] = useState(null);
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -123,55 +124,32 @@ function Login() {
   }, [user, isAuthenticated, from, navigate]);
 
   const handleGoogleSignIn = async () => {
-    console.warn('[Login] handleGoogleSignIn called', {
-      isConfigured,
-      authUiLoading,
-      isSigningIn,
-      isAuthenticated,
-      initialized,
-      userEmail: user?.email,
-    });
-
-    // P0 FIX: If user is already authenticated, just navigate to app
-    // No need to re-authenticate with Google
     if (isAuthenticated && user) {
-      console.warn('[Login] User already authenticated, navigating directly to:', from);
       navigate(from, { replace: true });
       return;
     }
 
-    if (!isConfigured) {
-      console.warn('[Login] Exiting early - not configured');
-      return;
-    }
+    if (!isConfigured) return;
 
     setIsSigningIn(true);
+    setAuthError(null);
     signInInitiatedRef.current = true;
     uidAtInitRef.current = user?.uid || null;
 
-    // REDIRECT FIX: Persist to sessionStorage (survives page reload during redirect flow)
     try {
       sessionStorage.setItem('auth_sign_in_initiated', 'true');
       sessionStorage.setItem('auth_uid_at_init', user?.uid || '');
-    } catch {
-      // sessionStorage unavailable - redirect flow won't work, but popup fallback may
-    }
+    } catch { /* sessionStorage unavailable */ }
 
     try {
-      // Rule C: Bounded wait (20s) - popup can hang forever due to COOP/browser issues
       await withTimeout(signInWithGoogle(), 20000);
-      // Optional UX signal - navigation no longer depends on this
     } catch (err) {
-      // Reset refs on error
       signInInitiatedRef.current = false;
       uidAtInitRef.current = null;
-      // REDIRECT FIX: Clear sessionStorage on error
       try {
         sessionStorage.removeItem('auth_sign_in_initiated');
         sessionStorage.removeItem('auth_uid_at_init');
-      } catch {
-        // sessionStorage unavailable - no-op
-      }
+      } catch { /* ignore */ }
 
       const isCancelled =
         err?.code === 'auth/popup-closed-by-user' ||
@@ -179,16 +157,14 @@ function Login() {
       const isTimeout = err?.code === 'auth/timeout';
 
       if (isTimeout) {
-        console.warn('[Login] Sign-in timed out after 20s');
         toast.error('Sign-in is taking too long. Please try again.');
       } else if (isCancelled && isAuthenticated) {
         toast.info('Sign-in cancelled — staying on your current session.');
       } else if (!isCancelled) {
-        console.error('[Login] Sign-in failed:', err);
+        setAuthError(getErrorMessage(err?.code));
         toast.error('Sign-in failed. Please try again.');
       }
     } finally {
-      // Rule E: UI lock never outlives auth truth
       setIsSigningIn(false);
     }
   };
@@ -352,7 +328,7 @@ function Login() {
           {isConfigured ? (
             <motion.button
               onClick={handleGoogleSignIn}
-              disabled={authUiLoading || isSigningIn}
+              disabled={isSigningIn}
               className="group w-full h-12 bg-black text-white font-mono text-xs uppercase tracking-widest hover:bg-black/90 active:bg-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 relative overflow-hidden"
               whileHover={{ scale: 1.005 }}
               whileTap={{ scale: 0.995 }}

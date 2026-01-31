@@ -6,7 +6,6 @@ import {
   deriveCanAccessPremium,
   deriveHasCachedPremium,
   deriveIsTierKnown,
-  // deriveTierSource removed - now using coordState.tierSource directly
 } from './subscriptionDerivations';
 import {
   authCoordinatorReducer,
@@ -14,7 +13,7 @@ import {
 } from './authCoordinator';
 
 /**
- * Inline stale request guard (previously useStaleRequestGuard hook)
+ * Inline stale request guard
  * Simple abort/stale request protection for subscription fetches.
  */
 function useStaleRequestGuard() {
@@ -22,13 +21,10 @@ function useStaleRequestGuard() {
   const abortControllerRef = useRef(null);
 
   const startRequest = useCallback(() => {
-    // Abort previous request if any
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
-    // Create new abort controller
     abortControllerRef.current = new AbortController();
-    // Increment and return new request ID
     requestIdRef.current += 1;
     return requestIdRef.current;
   }, []);
@@ -48,28 +44,13 @@ function useStaleRequestGuard() {
  * Subscription Context (Entitlement-Only)
  *
  * Manages subscription/entitlement state for the freemium model.
- * Provides canAccessPremium flag and paywall actions for triggering the pricing modal.
+ * Firebase-Only model: no bootstrap from firebase-sync, always fetches from server.
  *
  * ARCHITECTURE:
- * - This context is ENTITLEMENT-ONLY - it does not manage auth state
- * - AuthContext owns auth state and PUSHES subscription data here
- * - SubscriptionProvider wraps AuthProvider (so AuthContext can call useSubscription)
- * - 401/logout handling is driven by AuthContext (calls clearSubscription)
- *
- * TIER MODEL:
- * - tier: 'unknown' | 'free' | 'premium' (public export)
- * - tierSource: 'server' | 'cache' | 'none'
- * - status: 'pending' | 'ready' | 'degraded' | 'error' (public export)
- *
- * UI GATING RULES (CRITICAL):
- * - status === 'pending': Show loading/skeleton (NEVER paywall/blur)
- * - tier === 'free' && tierSource !== 'none': Show paywall/blur
- * - canAccessPremium: Show premium content
- *
- * AuthContext Integration:
- * - actions.ensure() - canonical auto-fetch entrypoint (idempotent)
- * - actions.clear() - on logout or 401 token failure
- * - actions.refresh() - refresh from backend or apply bootstrap data
+ * - AuthContext sets user via dispatch, then calls ensure(email)
+ * - SubscriptionContext fetches /auth/subscription (Bearer token added by API client)
+ * - localStorage cache for fast display, verified by server fetch
+ * - BroadcastChannel for cross-tab sync
  */
 
 const SubscriptionContext = createContext(null);
@@ -84,28 +65,14 @@ export function useSubscription() {
 
 // Cache key prefix for localStorage (per-user keying)
 const SUBSCRIPTION_CACHE_PREFIX = 'subscription:';
-
-// Cache version - bump this to invalidate all existing caches on deploy
-const CACHE_VERSION = 6; // Bumped for cachedAt TTL support
-
-// P0 FIX: Max cache TTL for premium (24 hours)
-// Prevents immortal cached premium when ends_at is null
+const CACHE_VERSION = 6;
 const PREMIUM_CACHE_MAX_TTL_MS = 24 * 60 * 60 * 1000;
 
-/**
- * Normalize email for cache key (lowercase, trimmed)
- * Returns null if email is falsy or not a string
- */
 const normalizeEmail = (email) => {
   if (!email || typeof email !== 'string') return null;
   return email.toLowerCase().trim();
 };
 
-/**
- * Get cached subscription for a specific user
- * @param {string} email - User email (cache key identifier)
- * @returns {Object|null} Cached subscription or null
- */
 const getCachedSubscription = (email) => {
   const normalizedEmail = normalizeEmail(email);
   if (!normalizedEmail) return null;
@@ -119,29 +86,20 @@ const getCachedSubscription = (email) => {
         return null;
       }
       if ((parsed.tier === 'free' || parsed.tier === 'premium') && typeof parsed.subscribed === 'boolean') {
-        // Parse and validate ends_at
         if (parsed.ends_at) {
           const parsedDate = new Date(parsed.ends_at);
           if (Number.isNaN(parsedDate.getTime())) {
             parsed.ends_at = null;
           }
         }
-
-        // P0 FIX: For premium, enforce cache TTL to prevent immortal cached premium
-        // If ends_at is null (no explicit expiry), use cache age as expiry
         if (parsed.tier === 'premium' && !parsed.ends_at) {
           const cachedAt = parsed.cachedAt || 0;
           const cacheAge = Date.now() - cachedAt;
           if (cacheAge > PREMIUM_CACHE_MAX_TTL_MS) {
-            console.warn('[Subscription] Cached premium expired (no ends_at, TTL exceeded)', {
-              cacheAge: Math.round(cacheAge / 1000 / 60),
-              maxTTL: Math.round(PREMIUM_CACHE_MAX_TTL_MS / 1000 / 60),
-            });
             localStorage.removeItem(cacheKey);
             return null;
           }
         }
-
         return parsed;
       }
     }
@@ -151,16 +109,8 @@ const getCachedSubscription = (email) => {
   return null;
 };
 
-// Tier 2.3: BroadcastChannel for cross-tab sync
-// Shared channel instance (created in SubscriptionProvider)
 let subscriptionSyncChannel = null;
 
-/**
- * Save subscription to localStorage for a specific user
- * Tier 2.3: Also broadcasts to other tabs via BroadcastChannel
- * @param {Object} sub - Subscription data {tier, subscribed, ends_at}
- * @param {string} email - User email (cache key identifier)
- */
 const cacheSubscription = (sub, email) => {
   const normalizedEmail = normalizeEmail(email);
   if (!normalizedEmail) return;
@@ -169,11 +119,9 @@ const cacheSubscription = (sub, email) => {
     const cachedData = {
       ...sub,
       version: CACHE_VERSION,
-      cachedAt: Date.now(), // P0 FIX: Track cache age for TTL enforcement
+      cachedAt: Date.now(),
     };
     localStorage.setItem(cacheKey, JSON.stringify(cachedData));
-
-    // Tier 2.3: Broadcast change to other tabs
     if (subscriptionSyncChannel) {
       subscriptionSyncChannel.postMessage({
         type: 'SUBSCRIPTION_CHANGED',
@@ -186,19 +134,12 @@ const cacheSubscription = (sub, email) => {
   }
 };
 
-/**
- * Clear cached subscription for a specific user
- * Tier 2.3: Also broadcasts to other tabs via BroadcastChannel
- * @param {string} email - User email (cache key identifier)
- */
 const clearCachedSubscription = (email) => {
   const normalizedEmail = normalizeEmail(email);
   if (!normalizedEmail) return;
   try {
     const cacheKey = `${SUBSCRIPTION_CACHE_PREFIX}${normalizedEmail}`;
     localStorage.removeItem(cacheKey);
-
-    // Tier 2.3: Broadcast clear to other tabs
     if (subscriptionSyncChannel) {
       subscriptionSyncChannel.postMessage({
         type: 'SUBSCRIPTION_CLEARED',
@@ -210,17 +151,8 @@ const clearCachedSubscription = (email) => {
   }
 };
 
-// Default subscription: tier='free', but status='pending' means not resolved yet
 const DEFAULT_SUBSCRIPTION = { tier: 'free', subscribed: false, ends_at: null };
 
-/**
- * Subscription status states:
- * - 'pending': Not yet resolved (UI shows loading, NOT paywall)
- * - 'loading': API call in flight
- * - 'resolved': Subscription status EXPLICITLY known from backend
- * - 'degraded': Backend unavailable (502/503/504), using cache, don't flip to free
- * - 'error': Fetch/parse failed (non-gateway error)
- */
 export const SubscriptionStatus = {
   PENDING: 'pending',
   LOADING: 'loading',
@@ -229,39 +161,25 @@ export const SubscriptionStatus = {
   ERROR: 'error',
 };
 
-/**
- * Gateway status codes that indicate backend is down/cold-starting
- * These should NOT cause tier to flip to free
- */
 const GATEWAY_STATUSES = new Set([502, 503, 504]);
 const BOOT_DEGRADE_GRACE_MS = 15000;
 
-/**
- * Classify subscription fetch errors for proper handling
- * @param {Error} err - Axios error object
- * @returns {{ kind: string, status: number|null }}
- */
 function classifySubError(err) {
   const status = err?.response?.status ?? null;
-
   if (status === 401) return { kind: 'AUTH_REQUIRED', status };
   if (status === 403) return { kind: 'PREMIUM_REQUIRED', status };
   if (status === 429) return { kind: 'RATE_LIMITED', status };
   if (GATEWAY_STATUSES.has(status)) return { kind: 'GATEWAY', status };
-  if (!status) return { kind: 'NETWORK', status: null }; // no response
+  if (!status) return { kind: 'NETWORK', status: null };
   if (status >= 500) return { kind: 'SERVER', status };
   return { kind: 'OTHER', status };
 }
 
-/**
- * Unwrap API response envelope.
- * Returns { tier, subscribed, ends_at } or null on error.
- * Does NOT fallback to 'free' - caller must set ERROR status on null.
- */
 export const unwrapSubscriptionResponse = (responseData) => {
-  // Handle enveloped response: {data: {tier, subscribed, ...}, meta: {...}}
-  if (responseData?.data && typeof responseData.data === 'object' && 'tier' in responseData.data) {
-    const { tier, subscribed, ends_at } = responseData.data;
+  // API client interceptor already unwraps the @api_contract envelope,
+  // so responseData is the flat object: { tier, subscribed, has_access, ... }
+  if (responseData && typeof responseData === 'object' && 'tier' in responseData) {
+    const { tier, subscribed, ends_at } = responseData;
     if (tier === 'free' || tier === 'premium') {
       return { tier, subscribed: subscribed || false, ends_at: ends_at || null };
     }
@@ -272,77 +190,47 @@ export const unwrapSubscriptionResponse = (responseData) => {
 };
 
 export function SubscriptionProvider({ children }) {
-  // ==========================================================================
-  // AUTH COORDINATOR (single-writer for auth + subscription state)
-  // This is the OUTER wrapper, so the reducer lives here.
-  // AuthContext (inner) gets coordState/dispatch via useSubscription().
-  // ==========================================================================
   const [coordState, dispatch] = useReducer(authCoordinatorReducer, coordinatorInitialState);
 
-  // Tier 2.3: Set up BroadcastChannel for cross-tab subscription sync
+  // BroadcastChannel for cross-tab subscription sync
+  const currentUserEmailRef = useRef(null);
+
   useEffect(() => {
-    // Create channel on mount
     subscriptionSyncChannel = new BroadcastChannel('subscription-sync');
 
-    // Listen for messages from other tabs
     const handleMessage = (event) => {
       const { type, email } = event.data;
-
-      // Only process if this is for the current user
       if (email !== currentUserEmailRef.current) return;
 
       if (type === 'SUBSCRIPTION_CHANGED') {
         const { subscription } = event.data;
-        console.log('[Subscription] Cross-tab sync: subscription changed in another tab', {
-          tier: subscription.tier,
-          email,
-        });
-        // Dispatch update to local state
         dispatch({ type: 'SUB_CACHE_LOAD', subscription });
       } else if (type === 'SUBSCRIPTION_CLEARED') {
-        console.log('[Subscription] Cross-tab sync: subscription cleared in another tab', { email });
-
-        // P1 FIX: Clear localStorage cache to prevent stale premium on reload
-        // Must NOT use clearCachedSubscription() here - it would re-broadcast and create infinite loop
         const normalizedEmail = normalizeEmail(email);
         if (normalizedEmail) {
           try {
-            const cacheKey = `${SUBSCRIPTION_CACHE_PREFIX}${normalizedEmail}`;
-            localStorage.removeItem(cacheKey);
-            console.log('[Subscription] Cross-tab sync: cleared localStorage cache', { email: normalizedEmail });
-          } catch (err) {
-            console.error('[Subscription] Cross-tab sync: failed to clear cache', err);
-          }
+            localStorage.removeItem(`${SUBSCRIPTION_CACHE_PREFIX}${normalizedEmail}`);
+          } catch { /* ignore */ }
         }
-
-        // Clear related refs to maintain consistency with clearSubscription()
-        bootstrappedInSessionRef.current = false;
         lastEnsureAttemptRef.current = { email: null, ts: 0 };
         currentUserEmailRef.current = null;
-
-        // Dispatch state update to free tier
         dispatch({ type: 'SUB_FETCH_FAIL', errorKind: 'AUTH', error: new Error('Subscription cleared') });
       }
     };
 
     subscriptionSyncChannel.onmessage = handleMessage;
 
-    // Cleanup on unmount
     return () => {
       if (subscriptionSyncChannel) {
         subscriptionSyncChannel.close();
         subscriptionSyncChannel = null;
       }
     };
-  }, []); // Run once on mount
+  }, []);
 
-  // ==========================================================================
-  // DERIVED STATE from coordState (Phase 3 complete - setters deleted)
-  // ==========================================================================
-  // subscription: Full object from coordState.cachedSubscription
+  // Derived state from coordState
   const subscription = coordState.cachedSubscription ?? DEFAULT_SUBSCRIPTION;
 
-  // status: Derived from coordState.subPhase
   const status = (() => {
     switch (coordState.subPhase) {
       case 'resolved': return SubscriptionStatus.RESOLVED;
@@ -353,125 +241,42 @@ export function SubscriptionProvider({ children }) {
     }
   })();
 
-  // loading: Derived from subPhase
-  const loading = coordState.subPhase === 'loading';
-
-  // fetchError: From coordState.subError
   const fetchError = coordState.subError;
-
-  // hasCachedSubscription: Derived from tierSource
   const hasCachedSubscription = coordState.tierSource === 'cache';
 
-  // UI state (NOT part of auth domain - keeps useState)
+  // UI state
   const [showPricingModal, setShowPricingModal] = useState(false);
   const bootStartRef = useRef(Date.now());
-
-  // Abort/stale request protection
   const { startRequest, isStale, getSignal } = useStaleRequestGuard();
-
-  // Ref for hidePaywall timeout cleanup
   const hidePaywallTimeoutRef = useRef(null);
-
-  // Track active subscription request to avoid duplicate fetch abort loops
   const activeRequestRef = useRef({ requestId: null, email: null, type: null });
-
-  // P0 FIX: Track when last successful fetch completed
-  // Used by pending timeout to avoid race with React batching
   const lastFetchSuccessRef = useRef(0);
-
-  // Track current user email for per-user cache operations
-  const currentUserEmailRef = useRef(null);
-
-  // 429 cooldown (prevents repeated hammering after rate limit)
   const cooldownUntilRef = useRef(0);
-
-  // Track last stable status to avoid leaving LOADING after aborts
-  const lastStableStatusRef = useRef(status);
-  useEffect(() => {
-    if (status !== SubscriptionStatus.LOADING) {
-      lastStableStatusRef.current = status;
-    }
-  }, [status]);
-
-  // Safety fuse: prevent repeated sequential fetches within short window (per user)
   const lastFetchAttemptRef = useRef({ email: null, ts: 0 });
   const MIN_FETCH_INTERVAL_MS = 2000;
-
-  // Deterministic guard: Set true when bootstrapSubscription is called (from firebase-sync),
-  // cleared after first fetchSubscription skip. Prevents duplicate fetch after sign-in
-  // without relying on timing assumptions.
-  const bootstrappedInSessionRef = useRef(false);
-
-  // Auto-only debounce for ensureSubscription (manual refresh bypasses)
   const lastEnsureAttemptRef = useRef({ email: null, ts: 0 });
   const ENSURE_DEBOUNCE_MS = 1000;
+  const [upsellContext, setUpsellContext] = useState({ field: null, source: null, district: null });
 
-  // Analytics context for upsell tracking
-  const [upsellContext, setUpsellContext] = useState({
-    field: null,
-    source: null,
-    district: null,
-  });
-
-  // SUBSCRIPTION INVARIANT: Pending timeout fallback (15s)
-  // If subscription status stays PENDING for too long, resolve to free tier
-  // This prevents "spinner forever" when backend is down/waking
-  // FAIL-OPEN to free - never grant premium unless confirmed by backend
-  //
-  // P0 FIX: Use refs to check current state at timeout fire time
-  // This prevents overwriting a successful fetch that completed just before timeout
-  // Also check activeRequestRef - if a fetch is in progress, don't fire
+  // Pending timeout fallback (15s)
   const PENDING_TIMEOUT_MS = 15000;
   const statusRef = useRef(status);
   statusRef.current = status;
 
   useEffect(() => {
-    if (status !== SubscriptionStatus.PENDING) {
-      return; // Only apply timeout when pending
-    }
+    if (status !== SubscriptionStatus.PENDING) return;
 
     const timeoutId = setTimeout(() => {
-      // P0 FIX: Re-check status at fire time using ref (not stale closure)
-      // If status changed to LOADING/RESOLVED/etc, abort timeout action
-      const currentStatus = statusRef.current;
-      if (currentStatus !== SubscriptionStatus.PENDING) {
-        console.warn('[Subscription] Pending timeout fired but status changed, aborting', {
-          currentStatus,
-        });
-        return;
-      }
-
-      // P0 FIX: Also check if there's an active fetch in progress
-      // This handles the React batching race - if fetch completed but render hasn't committed
-      const activeRequest = activeRequestRef.current;
-      if (activeRequest.requestId !== null) {
-        console.warn('[Subscription] Pending timeout fired but fetch in progress, aborting', {
-          activeRequest,
-        });
-        return;
-      }
-
-      // P0 FIX: Check if a fetch succeeded recently (within 2s)
-      // This handles the race where fetch completed, activeRequestRef cleared,
-      // but React hasn't committed the state update yet
-      const timeSinceLastSuccess = Date.now() - lastFetchSuccessRef.current;
-      if (timeSinceLastSuccess < 2000) {
-        console.warn('[Subscription] Pending timeout fired but recent fetch success, aborting', {
-          timeSinceLastSuccess,
-        });
-        return;
-      }
+      if (statusRef.current !== SubscriptionStatus.PENDING) return;
+      if (activeRequestRef.current.requestId !== null) return;
+      if (Date.now() - lastFetchSuccessRef.current < 2000) return;
 
       console.warn('[Subscription] Pending timeout (15s) - resolving to free tier');
       logAuthEvent(AuthTimelineEvent.PENDING_TIMEOUT, {
         source: 'subscription',
         tierBefore: subscription.tier,
         tierAfter: 'free',
-        statusBefore: currentStatus,
-        statusAfter: SubscriptionStatus.RESOLVED,
-        note: 'Fail-open to free after 15s pending',
       });
-      // Dispatch to reducer - monotonicity guard will block if premium was already confirmed
       dispatch({ type: 'SUB_PENDING_TIMEOUT' });
     }, PENDING_TIMEOUT_MS);
 
@@ -479,561 +284,200 @@ export function SubscriptionProvider({ children }) {
   }, [status, subscription.tier]);
 
   /**
-   * Apply subscription from bootstrap (primary path - no API call)
-   * Called after firebase-sync returns subscription data.
-   * @param {Object} sub - Subscription data {tier, subscribed, ends_at}
-   * @param {string} email - User email for per-user cache
-   */
-  const applyBootstrapSubscription = useCallback((sub, email) => {
-    if (!sub || (sub.tier !== 'free' && sub.tier !== 'premium')) {
-      console.error('[Subscription] Bootstrap called with invalid tier:', sub?.tier);
-      // Validation error - log and return (exceptional case, server data should be valid)
-      return;
-    }
-
-    // Normalize email for cache key
-    const normalizedEmail = normalizeEmail(email);
-    if (!normalizedEmail) {
-      console.warn('[Subscription] Bootstrap called without valid email - skipping cache');
-    }
-
-    console.warn('[Subscription] Bootstrapping subscription');
-    const newSub = {
-      tier: sub.tier,
-      subscribed: sub.subscribed || false,
-      ends_at: sub.ends_at || null,
-    };
-
-    // Log BEFORE dispatch (capture current state)
-    logAuthEvent(AuthTimelineEvent.BOOTSTRAP, {
-      source: 'bootstrap',
-      tierBefore: subscription.tier,
-      tierAfter: newSub.tier,
-      statusBefore: status,
-      statusAfter: SubscriptionStatus.RESOLVED,
-      email: normalizedEmail,
-    });
-
-    // Single dispatch to reducer
-    dispatch({ type: 'SUB_BOOTSTRAP', subscription: newSub });
-
-    // Cache per-user (only if email is valid)
-    if (normalizedEmail) {
-      currentUserEmailRef.current = normalizedEmail;
-      cacheSubscription(newSub, normalizedEmail);
-    }
-
-    // Mark as bootstrapped to prevent duplicate fetch from onAuthStateChanged
-    bootstrappedInSessionRef.current = true;
-  }, [subscription.tier, status, dispatch]);
-
-  /**
-   * Fetch subscription from backend
-   * Called by AuthContext on page refresh when no firebase-sync occurs.
-   *
-   * @param {string} email - User email for per-user cache
-   *
-   * FLOW:
-   * 1. Load per-user cache first (fast display)
-   * 2. Fetch from API to verify/update
-   *
-   * RACE GUARD: Checks current user after fetch to prevent overwriting
-   * clearSubscription() state if logout happened during the request.
+   * Fetch subscription from backend.
+   * Always fetches from server (no bootstrap path).
    */
   const fetchSubscription = useCallback(async (email) => {
-    // Duplicate guard: If bootstrapSubscription was called in this session, skip ONCE
-    // This prevents the onAuthStateChanged → fetchSubscription duplicate after sign-in
-    // Deterministic: no timing assumptions, just "was bootstrap called before this fetch?"
-    if (bootstrappedInSessionRef.current) {
-      console.warn('[Subscription] Skipping fetch - already bootstrapped in this session');
-      bootstrappedInSessionRef.current = false; // Clear flag so future fetches work
-      return;
-    }
-
-    // Normalize email for cache key
     const normalizedEmail = normalizeEmail(email);
-    if (!normalizedEmail) {
-      console.warn('[Subscription] Fetch called without valid email - skipping cache operations');
-    }
+    if (!normalizedEmail) return;
 
-    // Track current user (only if email is valid)
-    if (normalizedEmail) {
-      currentUserEmailRef.current = normalizedEmail;
-    }
+    currentUserEmailRef.current = normalizedEmail;
 
-    // Avoid repeated fetch calls for the same user while a request is in flight
     if (activeRequestRef.current.type === 'fetch'
-      && activeRequestRef.current.email === (normalizedEmail || email)) {
-      console.warn('[Subscription] Fetch already in progress');
+      && activeRequestRef.current.email === normalizedEmail) {
       return;
     }
 
     const now = Date.now();
-    if (cooldownUntilRef.current > now) {
-      const waitMs = cooldownUntilRef.current - now;
-      console.warn('[Subscription] Fetch blocked by cooldown:', { waitMs });
-      return;
-    }
+    if (cooldownUntilRef.current > now) return;
     if (lastFetchAttemptRef.current.email === normalizedEmail
       && now - lastFetchAttemptRef.current.ts < MIN_FETCH_INTERVAL_MS) {
-      console.warn('[Subscription] Fetch skipped due to recent request');
       return;
     }
 
-    // Step 1: Load per-user cache first (fast display while verifying)
-    const cachedSub = normalizedEmail ? getCachedSubscription(normalizedEmail) : null;
+    // Load cache first for fast display
+    const cachedSub = getCachedSubscription(normalizedEmail);
     if (cachedSub) {
-      console.warn('[Subscription] Loaded subscription from cache');
-      logAuthEvent(AuthTimelineEvent.CACHE_LOAD, {
-        source: 'fetch',
-        tierBefore: subscription.tier,
-        tierAfter: cachedSub.tier,
-        statusBefore: status,
-        statusAfter: SubscriptionStatus.RESOLVED,
-        hasCachedBefore: hasCachedSubscription,
-        hasCachedAfter: true,
-      });
-      // Dispatch cache load (tierSource: 'cache')
       dispatch({ type: 'SUB_CACHE_LOAD', subscription: cachedSub });
-      // Continue to verify from backend...
     }
 
     const requestId = startRequest();
     lastFetchAttemptRef.current = { email: normalizedEmail, ts: now };
-    activeRequestRef.current = { requestId, email: normalizedEmail || email, type: 'fetch' };
-    console.warn('[Subscription] Fetching /auth/subscription');
-    logAuthEvent(AuthTimelineEvent.FETCH_START, {
-      source: 'fetch',
-      requestId,
-      tierBefore: cachedSub?.tier ?? subscription.tier,
-      statusBefore: cachedSub ? SubscriptionStatus.RESOLVED : status,
-    });
-    // P0 FIX: Always dispatch SUB_FETCH_START to set subRequestId for staleness check
-    // Cache display already happened via SUB_CACHE_LOAD, this is for the verification fetch
+    activeRequestRef.current = { requestId, email: normalizedEmail, type: 'fetch' };
     dispatch({ type: 'SUB_FETCH_START', requestId });
 
     try {
-      const response = await apiClient.get('/auth/subscription', {
-        signal: getSignal(),
-      });
+      const response = await apiClient.get('/auth/subscription', { signal: getSignal() });
 
       if (isStale(requestId)) return;
-
-      // Race guard: User switched accounts mid-flight (email changed)
-      if (normalizedEmail && currentUserEmailRef.current !== normalizedEmail) {
-        console.warn('[Subscription] User changed during fetch, discarding result');
-        return;
-      }
+      if (currentUserEmailRef.current !== normalizedEmail) return;
 
       const subData = unwrapSubscriptionResponse(response.data);
       if (subData) {
-        console.warn('[Subscription] Fetch success');
-        logAuthEvent(AuthTimelineEvent.FETCH_OK, {
-          source: 'fetch',
-          requestId,
-          tierBefore: subscription.tier,
-          tierAfter: subData.tier,
-          statusBefore: status,
-          statusAfter: SubscriptionStatus.RESOLVED,
-          hasCachedBefore: hasCachedSubscription,
-          hasCachedAfter: false,
-        });
-        // Dispatch success - reducer sets tier, tierSource: 'server', subPhase: 'resolved'
         dispatch({ type: 'SUB_FETCH_OK', requestId, subscription: subData });
-        // Cache only if we have a valid normalized email
-        if (normalizedEmail) {
-          cacheSubscription(subData, normalizedEmail);
-        }
-        // P0 FIX: Mark success timestamp to prevent timeout race
+        cacheSubscription(subData, normalizedEmail);
         lastFetchSuccessRef.current = Date.now();
       } else {
-        console.error('[Subscription] Failed to parse subscription response');
-        logAuthEvent(AuthTimelineEvent.FETCH_ERR, {
-          source: 'fetch',
-          requestId,
-          error: 'Failed to parse subscription response',
-          statusBefore: status,
-          statusAfter: SubscriptionStatus.RESOLVED,
-        });
-        // Parse error - resolve to free (not a gateway error)
         dispatch({
-          type: 'SUB_FETCH_FAIL',
-          requestId,
+          type: 'SUB_FETCH_FAIL', requestId,
           error: new Error('Failed to parse subscription response'),
           errorKind: 'OTHER',
         });
       }
     } catch (err) {
       if (err.name === 'CanceledError' || err.name === 'AbortError') {
-        console.warn('[Subscription] Fetch aborted');
-        logAuthEvent(AuthTimelineEvent.ABORT, {
-          source: 'fetch',
-          requestId,
-          statusBefore: status,
-          statusAfter: SubscriptionStatus.DEGRADED,
-        });
-        // P0 FIX: Abort MUST dispatch terminal action (convergence invariant)
-        // Otherwise subPhase can stay 'loading' forever
         dispatch({ type: 'SUB_FETCH_ABORT', requestId });
         return;
       }
       if (isStale(requestId)) return;
 
-      const { kind, status: httpStatus } = classifySubError(err);
+      const { kind } = classifySubError(err);
 
-      // Rate limit: enter cooldown
       if (kind === 'RATE_LIMITED') {
         const retryAfterHeader = Number(err.response?.headers?.['retry-after']);
         const retryAfterMs = Number.isFinite(retryAfterHeader) ? retryAfterHeader * 1000 : 15000;
         cooldownUntilRef.current = Date.now() + retryAfterMs;
-        console.warn('[Subscription] Rate limited, entering cooldown:', { retryAfterMs });
       }
 
-      // 401: auth required → dispatch fail with AUTH_REQUIRED
-      // OPTION C: fail-closed for entitlement - block cached premium on auth errors
       if (kind === 'AUTH_REQUIRED') {
-        console.warn('[Subscription] 401 AUTH_REQUIRED - session expired, blocking cached premium');
-        logAuthEvent(AuthTimelineEvent.AUTH_401, {
-          source: 'fetch',
-          requestId,
-          tierBefore: subscription.tier,
-          statusBefore: status,
-          statusAfter: SubscriptionStatus.DEGRADED,
-          httpStatus,
-          note: 'Option C: tierSource cleared to block cached premium',
-        });
-        // OPTION C: Dispatch with AUTH_REQUIRED so reducer sets tierSource='none'
         dispatch({ type: 'SUB_FETCH_FAIL', requestId, error: err, errorKind: 'AUTH_REQUIRED' });
         return;
       }
-
-      // 403: free tier (or not entitled) → resolve to free via SUB_FETCH_OK with free tier
       if (kind === 'PREMIUM_REQUIRED') {
-        console.warn('[Subscription] 403 PREMIUM_REQUIRED - treating as free tier');
-        logAuthEvent(AuthTimelineEvent.AUTH_403, {
-          source: 'fetch',
-          requestId,
-          tierBefore: subscription.tier,
-          tierAfter: 'free',
-          statusBefore: status,
-          statusAfter: SubscriptionStatus.RESOLVED,
-          httpStatus,
-        });
-        // 403 is server confirmation of free tier
         dispatch({ type: 'SUB_FETCH_OK', requestId, subscription: DEFAULT_SUBSCRIPTION });
-        if (normalizedEmail) cacheSubscription(DEFAULT_SUBSCRIPTION, normalizedEmail);
+        cacheSubscription(DEFAULT_SUBSCRIPTION, normalizedEmail);
         return;
       }
-
-      // Gateway/backend down OR network error: DEGRADED, keep cache
       if (kind === 'GATEWAY' || kind === 'NETWORK') {
-        console.warn(`[Subscription] ${kind} error, entering DEGRADED:`, { status: httpStatus });
-        logAuthEvent(AuthTimelineEvent.GATEWAY_ERR, {
-          source: 'fetch',
-          requestId,
-          kind,
-          tierBefore: subscription.tier,
-          statusBefore: status,
-          statusAfter: SubscriptionStatus.DEGRADED,
-          httpStatus,
-        });
         dispatch({ type: 'SUB_FETCH_FAIL', requestId, error: err, errorKind: kind });
         return;
       }
-
-      // Bounded cold-start policy: treat early 5xx as DEGRADED if we have cache
       if (kind === 'SERVER' && cachedSub && Date.now() - bootStartRef.current < BOOT_DEGRADE_GRACE_MS) {
-        console.warn('[Subscription] SERVER error during boot, entering DEGRADED', { status: httpStatus });
-        logAuthEvent(AuthTimelineEvent.GATEWAY_ERR, {
-          source: 'fetch',
-          requestId,
-          kind: 'SERVER_BOOT',
-          tierBefore: subscription.tier,
-          statusBefore: status,
-          statusAfter: SubscriptionStatus.DEGRADED,
-          httpStatus,
-        });
         dispatch({ type: 'SUB_FETCH_FAIL', requestId, error: err, errorKind: 'GATEWAY' });
         return;
       }
 
-      // Other errors: resolve to free
-      console.error('[Subscription] Fetch error:', err.message);
-      logAuthEvent(AuthTimelineEvent.FETCH_ERR, {
-        source: 'fetch',
-        requestId,
-        kind,
-        tierBefore: subscription.tier,
-        statusBefore: status,
-        statusAfter: SubscriptionStatus.RESOLVED,
-        error: err.message,
-        httpStatus,
-      });
       dispatch({ type: 'SUB_FETCH_FAIL', requestId, error: err, errorKind: kind });
     } finally {
       if (activeRequestRef.current.requestId === requestId) {
         activeRequestRef.current = { requestId: null, email: null, type: null };
       }
     }
-  }, [startRequest, isStale, getSignal, subscription.tier, status, hasCachedSubscription, dispatch]);
+  }, [startRequest, isStale, getSignal, dispatch]);
 
-  /**
-   * Canonical subscription fetch authority.
-   * Idempotent auto-fetch entrypoint for AuthContext.
-   * Skips if already resolved/loading for the same user, or in ERROR state
-   * (manual retry required).
-   */
   const ensureSubscription = useCallback((email, options = {}) => {
     const { force = false, reason = 'auto' } = options;
     const normalizedEmail = normalizeEmail(email);
-    if (!normalizedEmail) {
-      console.warn('[Subscription] ensureSubscription called without valid email', { reason });
-      return;
-    }
+    if (!normalizedEmail) return;
 
     const now = Date.now();
     if (!force
       && lastEnsureAttemptRef.current.email === normalizedEmail
       && now - lastEnsureAttemptRef.current.ts < ENSURE_DEBOUNCE_MS) {
-      console.warn('[Subscription] ensureSubscription debounced', { reason });
       return;
     }
 
     const isSameUser = currentUserEmailRef.current === normalizedEmail;
     const isResolved = status === SubscriptionStatus.RESOLVED;
     const isLoading = status === SubscriptionStatus.LOADING;
-    const isError = status === SubscriptionStatus.ERROR;
 
-    if (!force && isSameUser && (isResolved || isLoading)) {
-      console.warn('[Subscription] ensureSubscription skipped (already resolved/loading)', {
-        status,
-        reason,
-      });
-      return;
-    }
-
-    if (!force && isSameUser && isError) {
-      console.warn('[Subscription] ensureSubscription skipped (error state requires manual retry)', {
-        reason,
-      });
-      return;
-    }
+    if (!force && isSameUser && (isResolved || isLoading)) return;
 
     lastEnsureAttemptRef.current = { email: normalizedEmail, ts: now };
     fetchSubscription(normalizedEmail);
   }, [fetchSubscription, status]);
 
-  /**
-   * Clear subscription (called on logout or 401)
-   * Sets to free tier with RESOLVED status (explicit logout = explicit free)
-   */
   const clearSubscription = useCallback(() => {
     const email = currentUserEmailRef.current;
-    console.warn('[Subscription] Clearing (logout)');
-    logAuthEvent(AuthTimelineEvent.CLEAR, {
-      source: 'logout',
-      tierBefore: subscription.tier,
-      tierAfter: 'free',
-      statusBefore: status,
-      statusAfter: SubscriptionStatus.RESOLVED,
-      email,
-    });
-    // NOTE: State is cleared by LOGOUT action dispatched from AuthContext
-    // This function handles side-effects: localStorage cache and refs
-    // Reset bootstrap flag for clean state on next sign-in
-    bootstrappedInSessionRef.current = false;
     lastEnsureAttemptRef.current = { email: null, ts: 0 };
-    // Clear per-user cache
     clearCachedSubscription(email);
     currentUserEmailRef.current = null;
-  }, [subscription.tier, status]);
+  }, []);
 
   /**
-   * Refresh subscription from backend (after payment)
-   * Forces a fresh fetch. Uses currentUserEmailRef for cache.
+   * Refresh subscription from backend (after payment).
    */
   const refreshSubscription = useCallback(async () => {
     const email = currentUserEmailRef.current;
-    if (activeRequestRef.current.type === 'refresh' && activeRequestRef.current.email === email) {
-      console.warn('[Subscription] Refresh already in progress');
-      return;
-    }
+    if (activeRequestRef.current.type === 'refresh' && activeRequestRef.current.email === email) return;
+
     const now = Date.now();
-    if (cooldownUntilRef.current > now) {
-      const waitMs = cooldownUntilRef.current - now;
-      console.warn('[Subscription] Refresh blocked by cooldown:', { waitMs });
-      return;
-    }
+    if (cooldownUntilRef.current > now) return;
+
     const requestId = startRequest();
     activeRequestRef.current = { requestId, email, type: 'refresh' };
-    console.warn('[Subscription] Refreshing');
-    logAuthEvent(AuthTimelineEvent.REFRESH_START, {
-      source: 'refresh',
-      requestId,
-      tierBefore: subscription.tier,
-      statusBefore: status,
-    });
-    // Dispatch fetch start (only if not resolved - avoid flash)
     if (status !== SubscriptionStatus.RESOLVED) {
       dispatch({ type: 'SUB_FETCH_START', requestId });
     }
 
     try {
-      const response = await apiClient.get('/auth/subscription', {
-        signal: getSignal(),
-      });
-
+      const response = await apiClient.get('/auth/subscription', { signal: getSignal() });
       if (isStale(requestId)) return;
 
       const subData = unwrapSubscriptionResponse(response.data);
       if (subData) {
-        console.warn('[Subscription] Refresh success');
-        logAuthEvent(AuthTimelineEvent.REFRESH_OK, {
-          source: 'refresh',
-          requestId,
-          tierBefore: subscription.tier,
-          tierAfter: subData.tier,
-          statusBefore: status,
-          statusAfter: SubscriptionStatus.RESOLVED,
-        });
         dispatch({ type: 'SUB_FETCH_OK', requestId, subscription: subData });
         cacheSubscription(subData, email);
-        // P0 FIX: Mark success timestamp to prevent timeout race
         lastFetchSuccessRef.current = Date.now();
       } else {
-        logAuthEvent(AuthTimelineEvent.REFRESH_ERR, {
-          source: 'refresh',
-          requestId,
-          error: 'Failed to parse refresh response',
-          statusBefore: status,
-          statusAfter: SubscriptionStatus.RESOLVED,
-        });
         dispatch({
-          type: 'SUB_FETCH_FAIL',
-          requestId,
+          type: 'SUB_FETCH_FAIL', requestId,
           error: new Error('Failed to parse refresh response'),
           errorKind: 'OTHER',
         });
       }
     } catch (err) {
       if (err.name === 'CanceledError' || err.name === 'AbortError') {
-        logAuthEvent(AuthTimelineEvent.ABORT, {
-          source: 'refresh',
-          requestId,
-          statusBefore: status,
-          statusAfter: SubscriptionStatus.DEGRADED,
-        });
-        // P0 FIX: Abort MUST dispatch terminal action (convergence invariant)
         dispatch({ type: 'SUB_FETCH_ABORT', requestId });
         return;
       }
       if (isStale(requestId)) return;
 
-      const { kind, status: httpStatus } = classifySubError(err);
+      const { kind } = classifySubError(err);
 
-      // Rate limit: enter cooldown
       if (kind === 'RATE_LIMITED') {
         const retryAfterHeader = Number(err.response?.headers?.['retry-after']);
         const retryAfterMs = Number.isFinite(retryAfterHeader) ? retryAfterHeader * 1000 : 15000;
         cooldownUntilRef.current = Date.now() + retryAfterMs;
-        console.warn('[Subscription] Rate limited, entering cooldown:', { retryAfterMs });
       }
-
-      // 401: auth required → DEGRADED, block cached premium
-      // OPTION C: fail-closed for entitlement
       if (kind === 'AUTH_REQUIRED') {
-        console.warn('[Subscription] 401 during refresh - session expired, blocking cached premium');
-        logAuthEvent(AuthTimelineEvent.AUTH_401, {
-          source: 'refresh',
-          requestId,
-          tierBefore: subscription.tier,
-          statusBefore: status,
-          statusAfter: SubscriptionStatus.DEGRADED,
-          httpStatus,
-          note: 'Option C: tierSource cleared to block cached premium',
-        });
-        // OPTION C: Dispatch with AUTH_REQUIRED so reducer sets tierSource='none'
         dispatch({ type: 'SUB_FETCH_FAIL', requestId, error: err, errorKind: 'AUTH_REQUIRED' });
         return;
       }
-
-      // 403: free tier → resolve to free (server confirmation)
       if (kind === 'PREMIUM_REQUIRED') {
-        console.warn('[Subscription] 403 during refresh - resolve to free tier');
-        logAuthEvent(AuthTimelineEvent.AUTH_403, {
-          source: 'refresh',
-          requestId,
-          tierBefore: subscription.tier,
-          tierAfter: 'free',
-          statusBefore: status,
-          statusAfter: SubscriptionStatus.RESOLVED,
-          httpStatus,
-        });
         dispatch({ type: 'SUB_FETCH_OK', requestId, subscription: DEFAULT_SUBSCRIPTION });
         if (email) cacheSubscription(DEFAULT_SUBSCRIPTION, email);
         return;
       }
-
-      // Gateway/backend down OR network error: DEGRADED, keep cache
       if (kind === 'GATEWAY' || kind === 'NETWORK') {
-        console.warn(`[Subscription] ${kind} error during refresh, DEGRADED:`, { status: httpStatus });
-        logAuthEvent(AuthTimelineEvent.GATEWAY_ERR, {
-          source: 'refresh',
-          requestId,
-          kind,
-          tierBefore: subscription.tier,
-          statusBefore: status,
-          statusAfter: SubscriptionStatus.DEGRADED,
-          httpStatus,
-        });
         dispatch({ type: 'SUB_FETCH_FAIL', requestId, error: err, errorKind: kind });
         return;
       }
-
-      // Bounded cold-start policy: treat early 5xx as DEGRADED
       if (kind === 'SERVER' && Date.now() - bootStartRef.current < BOOT_DEGRADE_GRACE_MS) {
-        console.warn('[Subscription] SERVER error during boot refresh, DEGRADED', { status: httpStatus });
-        logAuthEvent(AuthTimelineEvent.GATEWAY_ERR, {
-          source: 'refresh',
-          requestId,
-          kind: 'SERVER_BOOT',
-          tierBefore: subscription.tier,
-          statusBefore: status,
-          statusAfter: SubscriptionStatus.DEGRADED,
-          httpStatus,
-        });
         dispatch({ type: 'SUB_FETCH_FAIL', requestId, error: err, errorKind: 'GATEWAY' });
         return;
       }
-
-      // Other errors: resolve to free
-      console.error('[Subscription] Refresh error:', err.message);
-      logAuthEvent(AuthTimelineEvent.REFRESH_ERR, {
-        source: 'refresh',
-        requestId,
-        kind,
-        tierBefore: subscription.tier,
-        statusBefore: status,
-        statusAfter: SubscriptionStatus.RESOLVED,
-        error: err.message,
-        httpStatus,
-      });
       dispatch({ type: 'SUB_FETCH_FAIL', requestId, error: err, errorKind: kind });
     } finally {
       if (activeRequestRef.current.requestId === requestId) {
         activeRequestRef.current = { requestId: null, email: null, type: null };
       }
     }
-  }, [startRequest, isStale, getSignal, status, subscription.tier, dispatch]);
+  }, [startRequest, isStale, getSignal, status, dispatch]);
 
-  const refresh = useCallback(async (options = {}) => {
-    const { bootstrap, email } = options;
-    if (bootstrap) {
-      applyBootstrapSubscription(bootstrap, email);
-      return;
-    }
+  const refresh = useCallback(async () => {
     await refreshSubscription();
-  }, [applyBootstrapSubscription, refreshSubscription]);
+  }, [refreshSubscription]);
 
   const clear = useCallback(() => {
     clearSubscription();
@@ -1045,12 +489,10 @@ export function SubscriptionProvider({ children }) {
 
   // ===== DERIVED STATE =====
 
-  // Status checks
   const isResolved = status === SubscriptionStatus.RESOLVED;
   const isError = status === SubscriptionStatus.ERROR;
   const isDegraded = status === SubscriptionStatus.DEGRADED;
 
-  // Premium check with expiry validation
   const isPremiumActive = useMemo(() => {
     if (subscription.tier !== 'premium') return false;
     if (!subscription.subscribed) return false;
@@ -1061,43 +503,13 @@ export function SubscriptionProvider({ children }) {
     return true;
   }, [subscription]);
 
-  // GATE CONDITIONS: Use these for paywall/blur/content gating
-  // isPremiumResolved: Show premium content (ONLY when we KNOW user is premium)
   const isPremiumResolved = isResolved && isPremiumActive;
-
-  // ===== BOOT VS ENTITLEMENT FLAGS (CRITICAL DISTINCTION) =====
-  //
-  // bootReady / isSubscriptionReady: App can proceed, don't hang
-  //   - RESOLVED: tier confirmed by backend
-  //   - ERROR: fetch failed, fall back to free restrictions
-  //   - DEGRADED: gateway error, keep cache, don't flip to free
-  //
-  // tierCertain: We have EXPLICIT backend confirmation of tier
-  //   - ONLY true when RESOLVED (backend said so)
-  //   - NOT true for DEGRADED (we're guessing from cache)
-  //
-  // canAccessPremium: Safe to show premium content
-  //   - RESOLVED + premium: confirmed by backend
-  //   - DEGRADED + cached premium: trust cache for current user
-  //
   const subscriptionReady = isResolved || isError || isDegraded;
-  const bootReady = subscriptionReady; // Alias for clarity
 
-  // P1 FIX: Use coordState.tierSource directly instead of deriving
-  // The reducer now owns tierSource and sets it correctly for cache vs server
   const tierSource = coordState.tierSource;
   const isTierKnown = deriveIsTierKnown(tierSource);
-  const tierCertain = tierSource === TierSource.SERVER;
-  const usingCachedTier = tierSource === TierSource.CACHE;
-
   const hasCachedPremium = deriveHasCachedPremium(tierSource, subscription, isPremiumActive);
   const canAccessPremium = deriveCanAccessPremium(isPremiumResolved, hasCachedPremium);
-
-  useEffect(() => {
-    if (import.meta.env.DEV && canAccessPremium && tierSource === TierSource.NONE) {
-      console.error('[Subscription] Invalid premium access without a tier source.');
-    }
-  }, [canAccessPremium, tierSource]);
 
   const daysUntilExpiry = useMemo(() => {
     if (!isPremiumActive || !subscription.ends_at) return null;
@@ -1110,16 +522,10 @@ export function SubscriptionProvider({ children }) {
 
   const statusPublic = useMemo(() => {
     switch (status) {
-      case SubscriptionStatus.RESOLVED:
-        return 'ready';
-      case SubscriptionStatus.DEGRADED:
-        return 'degraded';
-      case SubscriptionStatus.ERROR:
-        return 'error';
-      case SubscriptionStatus.LOADING:
-      case SubscriptionStatus.PENDING:
-      default:
-        return 'pending';
+      case SubscriptionStatus.RESOLVED: return 'ready';
+      case SubscriptionStatus.DEGRADED: return 'degraded';
+      case SubscriptionStatus.ERROR: return 'error';
+      default: return 'pending';
     }
   }, [status]);
 
@@ -1137,26 +543,20 @@ export function SubscriptionProvider({ children }) {
 
   const hidePaywall = useCallback(() => {
     setShowPricingModal(false);
-    if (hidePaywallTimeoutRef.current) {
-      clearTimeout(hidePaywallTimeoutRef.current);
-    }
+    if (hidePaywallTimeoutRef.current) clearTimeout(hidePaywallTimeoutRef.current);
     hidePaywallTimeoutRef.current = setTimeout(() => {
       setUpsellContext({ field: null, source: null, district: null });
       hidePaywallTimeoutRef.current = null;
     }, 300);
   }, []);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (hidePaywallTimeoutRef.current) {
-        clearTimeout(hidePaywallTimeoutRef.current);
-      }
+      if (hidePaywallTimeoutRef.current) clearTimeout(hidePaywallTimeoutRef.current);
     };
   }, []);
 
   const value = useMemo(() => ({
-    // Auth coordinator (single-writer) - shared with AuthContext
     coordState,
     dispatch,
     tier: tierPublic,
@@ -1185,7 +585,6 @@ export function SubscriptionProvider({ children }) {
       fetchError,
       subscriptionReady,
       tierSource,
-      usingCachedTier,
       hasCachedSubscription,
     } : undefined,
   }), [
@@ -1209,7 +608,6 @@ export function SubscriptionProvider({ children }) {
     status,
     fetchError,
     subscriptionReady,
-    usingCachedTier,
     hasCachedSubscription,
   ]);
 

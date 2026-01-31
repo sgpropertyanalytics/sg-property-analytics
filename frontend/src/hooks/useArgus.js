@@ -33,7 +33,6 @@
  */
 
 import { useState, useCallback, useRef } from 'react';
-import { emitTokenExpiredOnce } from '../auth/tokenExpired';
 
 // API base for SSE endpoint
 const getApiBase = () => {
@@ -116,13 +115,26 @@ export function useArgus() {
     const url = `${apiBase}/ai/interpret-chart`;
 
     try {
+      // Get Firebase Bearer token for auth
+      let authHeaders = {};
+      try {
+        const { getAuth } = await import('firebase/auth');
+        const auth = getAuth();
+        if (auth.currentUser) {
+          const idToken = await auth.currentUser.getIdToken();
+          authHeaders = { Authorization: `Bearer ${idToken}` };
+        }
+      } catch {
+        // Firebase not initialized - proceed without token
+      }
+
       // Use fetch for SSE with POST body (EventSource doesn't support POST)
       const fetchResponse = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...authHeaders,
         },
-        credentials: 'include', // Include cookies for auth
         body: JSON.stringify({
           chartType,
           chartTitle,
@@ -135,7 +147,6 @@ export function useArgus() {
 
       // Check for auth/premium errors
       if (fetchResponse.status === 401) {
-        emitTokenExpiredOnce(url);
         throw new Error('Authentication required. Please sign in.');
       }
       if (fetchResponse.status === 403) {

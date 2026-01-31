@@ -1,5 +1,5 @@
 /**
- * API Client - Axios instance with cookie-based auth
+ * API Client - Axios instance with Firebase Bearer token auth
  *
  * Canonical API base: '/api' for all environments.
  *
@@ -9,7 +9,6 @@
  * Override only if absolutely necessary via VITE_API_URL.
  */
 import axios from 'axios';
-import { emitTokenExpiredOnce } from '../auth/tokenExpired';
 
 // Determine API base URL (no environment branching)
 const getApiBase = () => {
@@ -22,32 +21,6 @@ const getApiBase = () => {
 };
 
 const API_BASE = getApiBase();
-const CSRF_HEADER = 'X-CSRF-Token';
-
-if (typeof window !== 'undefined' && API_BASE.startsWith('http')) {
-  try {
-    const apiUrl = new URL(API_BASE);
-    if (apiUrl.origin !== window.location.origin) {
-      console.warn(
-        '[API] Cross-origin API base detected. Cookie-based auth requires same-site requests ',
-        'or SameSite=None; Secure cookies with proper CORS.',
-        { apiOrigin: apiUrl.origin, appOrigin: window.location.origin }
-      );
-    }
-  } catch {
-    // Ignore malformed API_BASE
-  }
-}
-
-const getCookie = (name) => {
-  if (typeof document === 'undefined') return null;
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) {
-    return parts.pop().split(';').shift() || null;
-  }
-  return null;
-};
 
 // ===== Concurrent Request Limiter =====
 // Limits the number of simultaneous API requests to prevent server overload
@@ -114,7 +87,6 @@ const queueRequest = (executeFn, options = {}) => {
 const apiClient = axios.create({
   baseURL: API_BASE,
   timeout: 45000, // 45 seconds - generous for cold starts
-  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -244,15 +216,18 @@ if (!apiClient.__retryInterceptorInstalled) {
   apiClient.__retryInterceptorInstalled = true;
 }
 
-// Response interceptor - handle errors
-
-apiClient.interceptors.request.use((config) => {
-  const method = (config.method || 'get').toLowerCase();
-  if (method !== 'get' && method !== 'head') {
-    const csrfToken = getCookie('csrf_token');
-    if (csrfToken) {
-      config.headers[CSRF_HEADER] = csrfToken;
+// Request interceptor - attach Firebase Bearer token
+apiClient.interceptors.request.use(async (config) => {
+  try {
+    const { getAuth } = await import('firebase/auth');
+    const auth = getAuth();
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      const idToken = await currentUser.getIdToken();
+      config.headers.Authorization = `Bearer ${idToken}`;
     }
+  } catch {
+    // Firebase not initialized or no user - proceed without token
   }
   return config;
 });
@@ -343,17 +318,8 @@ apiClient.interceptors.response.use(
   (error) => {
     // Normalize error FIRST - adds userMessage for UI consumption
     normalizeError(error);
-
-    if (error.response?.status === 401) {
-      const requestUrl = error.config?.url || '';
-
-      // Only emit token-expired for non-auth endpoints
-      // Auth endpoints handle their own 401s (e.g., login failure)
-      emitTokenExpiredOnce(requestUrl);
-    }
-    // Note: 403 is NOT treated as token-expired
-    // 403 = authenticated but not premium → show paywall, not re-auth
-
+    // Note: 401s are handled by Firebase SDK auto-refresh (getIdToken in request interceptor)
+    // Note: 403 = authenticated but not premium → show paywall, not re-auth
     return Promise.reject(error);
   }
 );

@@ -18,11 +18,8 @@ Run: pytest tests/contracts/test_endpoint_smoke.py -v --tb=short
 
 import pytest
 from unittest.mock import patch, MagicMock
-from datetime import datetime, timedelta
-import jwt
 
 from app import create_app
-from config import Config
 
 
 # =============================================================================
@@ -115,15 +112,8 @@ def client(app):
 
 @pytest.fixture(scope="module")
 def auth_headers():
-    """Generate valid JWT for authenticated endpoints."""
-    payload = {
-        'user_id': 999999,
-        'email': 'smoke-test@test.com',
-        'exp': datetime.utcnow() + timedelta(hours=1),
-        'iat': datetime.utcnow()
-    }
-    token = jwt.encode(payload, Config.JWT_SECRET, algorithm=Config.JWT_ALGORITHM)
-    return {"Authorization": f"Bearer {token}"}
+    """Auth headers for authenticated endpoints (Firebase token mocked at request level)."""
+    return {"Authorization": "Bearer mock-firebase-token"}
 
 
 @pytest.fixture(scope="module")

@@ -15,9 +15,7 @@ const PUBLIC_ROUTES = ['/', '/landing', '/login', '/pricing'];
  *
  * This provides better UX during Render cold starts, which can take 5-30s.
  *
- * The retry button triggers BOTH:
- * - Token refresh (AuthContext.refreshToken) - PHASE 2: consolidated from retryTokenSync
- * - Subscription refresh (SubscriptionContext.actions.refresh)
+ * The retry button triggers subscription refresh (re-fetches from server).
  *
  * Usage: Add to App.jsx layout, outside main content
  */
@@ -25,7 +23,7 @@ export function BootStuckBanner() {
   const location = useLocation();
   const { bootStatus, banners } = useAppReady();
   const { actions } = useSubscription();
-  const { refreshToken, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
 
   // Don't show on public routes - they don't need auth/subscription
   if (PUBLIC_ROUTES.includes(location.pathname)) return null;
@@ -38,9 +36,6 @@ export function BootStuckBanner() {
   if (!isBootSlow && !isBootStuck && !usingCachedTier) return null;
 
   const handleRetry = () => {
-    // Retry BOTH to break potential deadlock
-    // PHASE 2: Using refreshToken (consolidated from retryTokenSync)
-    refreshToken();
     actions.refresh();
   };
 

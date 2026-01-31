@@ -21,12 +21,9 @@ Run: pytest tests/contracts/test_all_endpoints_strict.py -v
 import os
 import pytest
 from unittest.mock import patch, MagicMock
-from datetime import datetime, timedelta
-import jwt
 
 # Import app factory
 from app import create_app
-from config import Config
 
 
 # =============================================================================
@@ -155,16 +152,8 @@ def client(app):
 
 @pytest.fixture(scope="module")
 def auth_headers(app):
-    """Generate valid JWT for authenticated endpoints."""
-    # Create a mock user token
-    payload = {
-        'user_id': 999999,  # Test user ID
-        'email': 'test@strict-mode.test',
-        'exp': datetime.utcnow() + timedelta(hours=1),
-        'iat': datetime.utcnow()
-    }
-    token = jwt.encode(payload, Config.JWT_SECRET, algorithm=Config.JWT_ALGORITHM)
-    return {"Authorization": f"Bearer {token}"}
+    """Auth headers for authenticated endpoints (Firebase token mocked at request level)."""
+    return {"Authorization": "Bearer mock-firebase-token"}
 
 
 @pytest.fixture(scope="module")
