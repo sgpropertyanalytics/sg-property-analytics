@@ -1,27 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Lock, Mail, Eye, EyeOff } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 
 /**
  * Login Page - Swiss International + Technical Brutalist
  *
- * Polish Features:
- * - Data atmosphere overlay on right panel
- * - Micro-interactions on buttons
- * - Blinking terminal cursor on headline
- * - Mobile-first responsive image
- *
- * AUTH FLOW (P0 Fix 4 - Deterministic Auth Contract):
- * 1. If user is already authenticated on page load → redirect immediately
- * 2. Sign-in has bounded wait (20s timeout) - Rule C: No infinite waits
- * 3. Navigation depends on auth TRUTH (isAuthenticated), not popup promise
- * 4. UI locks (isSigningIn) never outlive auth truth - Rule E
+ * Auth flow:
+ * 1. If already authenticated → redirect immediately
+ * 2. signInWithPopup (immediate) with redirect fallback (mobile)
+ * 3. onAuthStateChanged fires → auto-redirect effect navigates
  */
 
-// Bounded timeout wrapper - Rule C: No infinite waits
+// Safety net: reject if popup hangs beyond timeout
 const withTimeout = (promise, ms) =>
   Promise.race([
     promise,
@@ -41,11 +34,6 @@ function Login() {
   const location = useLocation();
   const { signInWithGoogle, isConfigured, isAuthenticated, initialized, user, getErrorMessage } = useAuth();
   const [isSigningIn, setIsSigningIn] = useState(false);
-  const [authError, setAuthError] = useState(null);
-  const [showEmailForm, setShowEmailForm] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [cursorVisible, setCursorVisible] = useState(true);
 
   const from = location.state?.from?.pathname || '/market-overview';
@@ -74,25 +62,21 @@ function Login() {
     if (!isConfigured) return;
 
     setIsSigningIn(true);
-    setAuthError(null);
 
     try {
-      // signInWithGoogle uses popup (immediate) with redirect fallback
       await withTimeout(signInWithGoogle(), 20000);
       // Popup resolved → onAuthStateChanged fires → auto-redirect effect navigates
     } catch (err) {
       const isCancelled =
         err?.code === 'auth/popup-closed-by-user' ||
         err?.code === 'auth/cancelled-popup-request';
-      const isTimeout = err?.code === 'auth/timeout';
 
-      if (isTimeout) {
+      if (err?.code === 'auth/timeout') {
         toast.error('Sign-in is taking too long. Please try again.');
       } else if (isCancelled && isAuthenticated) {
         toast.info('Sign-in cancelled — staying on your current session.');
       } else if (!isCancelled) {
-        setAuthError(getErrorMessage(err?.code));
-        toast.error('Sign-in failed. Please try again.');
+        toast.error(getErrorMessage(err?.code));
       }
     } finally {
       setIsSigningIn(false);
@@ -240,21 +224,7 @@ function Login() {
             Evaluate with the latest data + market trends
           </p>
 
-          {/* Error Message */}
-          <AnimatePresence>
-            {authError && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="mb-6 p-4 border border-red-500 bg-red-50"
-              >
-                <p className="font-mono text-xs text-red-600 uppercase tracking-wide">{authError}</p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Google Sign In Button - With Hover Animation */}
+          {/* Google Sign In Button */}
           {isConfigured ? (
             <motion.button
               onClick={handleGoogleSignIn}
@@ -288,94 +258,6 @@ function Login() {
               [ CONTINUE WITH GOOGLE ]
             </button>
           )}
-
-          {/* Divider */}
-          <div className="flex items-center gap-4 my-6">
-            <div className="flex-1 h-px bg-black/10" />
-            <span className="font-mono text-[10px] uppercase tracking-widest text-black/30">Or</span>
-            <div className="flex-1 h-px bg-black/10" />
-          </div>
-
-          {/* Email Toggle - Bracket Animation */}
-          <motion.button
-            onClick={() => setShowEmailForm(!showEmailForm)}
-            className="group w-full font-mono text-xs uppercase text-black/50 hover:text-black transition-colors py-2 flex items-center justify-center"
-            whileHover={{ letterSpacing: '0.15em' }}
-          >
-            <span className="inline-block transition-transform duration-200 group-hover:-translate-x-1">[</span>
-            <span className="mx-2 transition-all duration-200 group-hover:tracking-wider">
-              {showEmailForm ? 'Hide Email Form' : 'Continue with Email'}
-            </span>
-            <span className="inline-block transition-transform duration-200 group-hover:translate-x-1">]</span>
-          </motion.button>
-
-          {/* Expandable Email Form */}
-          <AnimatePresence>
-            {showEmailForm && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.2 }}
-                className="overflow-hidden"
-              >
-                <div className="mt-6 space-y-4">
-                  {/* Email Input */}
-                  <div>
-                    <label className="block font-mono text-[10px] uppercase tracking-widest text-black/50 mb-2">
-                      Email
-                    </label>
-                    <div className="relative">
-                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-black/30" />
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="you@example.com"
-                        className="w-full pl-12 pr-4 py-4 bg-white border border-black text-black placeholder:text-black/30 font-mono text-sm focus:outline-none focus:ring-0 focus:border-[#FF6600] transition-colors"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Password Input */}
-                  <div>
-                    <label className="block font-mono text-[10px] uppercase tracking-widest text-black/50 mb-2">
-                      Password
-                    </label>
-                    <div className="relative">
-                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-black/30" />
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Enter password"
-                        className="w-full pl-12 pr-12 py-4 bg-white border border-black text-black placeholder:text-black/30 font-mono text-sm focus:outline-none focus:ring-0 focus:border-[#FF6600] transition-colors"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-black/30 hover:text-black transition-colors"
-                      >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Email Submit Button */}
-                  <button
-                    disabled
-                    className="w-full py-4 bg-black text-white font-mono text-xs uppercase tracking-widest hover:bg-black/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Authenticate
-                  </button>
-
-                  <p className="font-mono text-[10px] text-center text-black/40 uppercase tracking-wide">
-                    Email sign-in coming soon. Use Google for now.
-                  </p>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
 
           {/* Footer */}
           <p className="mt-6 font-mono text-[10px] text-center text-black/30 uppercase tracking-wide">
