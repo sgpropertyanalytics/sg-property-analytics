@@ -1,7 +1,5 @@
-// eslint-disable-next-line no-restricted-imports -- MIGRATION_ONLY: useState to be removed by Phase 3
-import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { deriveTokenStatus } from './authCoordinator';
-import { signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from 'firebase/auth';
+import { createContext, useContext, useEffect, useCallback, useMemo, useRef } from 'react';
+import { signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from 'firebase/auth';
 import { getFirebaseAuth, getGoogleProvider, isFirebaseConfigured } from '../lib/firebase';
 import { queryClient } from '../lib/queryClient';
 import apiClient from '../api/client';
@@ -84,7 +82,23 @@ const logAuthError = (message, err, details = {}) => {
     message: err?.message,
     code: err?.code,
     status: err?.response?.status,
+    errorCode: err?.response?.data?.error_code,
   });
+};
+
+const getBackendAuthErrorMessage = (errorCode) => {
+  switch (errorCode) {
+    case 'firebase_admin_unavailable':
+      return 'Authentication service is warming up. Please try again in a moment.';
+    case 'firebase_admin_misconfigured':
+      return 'Authentication is temporarily unavailable. Please contact support.';
+    case 'firebase_token_unverified':
+      return 'We could not verify your Google sign-in. Please try again.';
+    case 'id_token_required':
+      return 'Sign-in could not be completed. Please try again.';
+    default:
+      return null;
+  }
 };
 
 /**
@@ -120,23 +134,6 @@ export function useAuth() {
   return context;
 }
 
-/**
- * Token status state machine
- * - 'present': Token synced with backend for this session
- * - 'missing': No token, user authenticated (need sync)
- * - 'refreshing': Token sync in progress
- * - 'error': Token sync failed (non-abort)
- *
- * INVARIANT: tokenStatus does NOT mean "sync succeeded".
- * Subscription fetch must not deadlock if backend sync fails.
- */
-export const TokenStatus = {
-  PRESENT: 'present',
-  MISSING: 'missing',
-  REFRESHING: 'refreshing',
-  ERROR: 'error',
-};
-
 export function AuthProvider({ children }) {
   // ==========================================================================
   // AUTH COORDINATOR (single-writer for auth + subscription state)
@@ -149,31 +146,28 @@ export function AuthProvider({ children }) {
     actions: subscriptionActions,
   } = useSubscription();
 
-  // ==========================================================================
-  // MIGRATION_ONLY: Legacy useState - remove as we wire dispatch
-  // Track count: grep -c "MIGRATION_ONLY" src/context/AuthContext.jsx
-  // user + initialized: MIGRATED to coordState (Phase 1 complete)
-  // ==========================================================================
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const setAuthUiLoading = useCallback((value) => {
+    dispatch({ type: 'AUTH_UI_LOADING_SET', value });
+  }, [dispatch]);
 
-  // UI loading state for Google button
-  // Cleared when onAuthStateChanged fires (Firebase auth state is known)
-  const [authUiLoading, setAuthUiLoading] = useState(true);
+  const setAuthUiError = useCallback((message) => {
+    dispatch({ type: 'AUTH_UI_ERROR_SET', error: message });
+  }, [dispatch]);
+
+  const clearAuthUiError = useCallback(() => {
+    dispatch({ type: 'AUTH_UI_ERROR_CLEAR' });
+  }, [dispatch]);
 
   // P0 FIX: Safety timeout - if authUiLoading is stuck, force it to false
   // This ensures the sign-in button becomes clickable even if Firebase is slow
   useEffect(() => {
-    if (!authUiLoading) return; // Already resolved
+    if (!coordState.authUiLoading) return; // Already resolved
     const timeout = setTimeout(() => {
       console.warn('[Auth] authUiLoading safety timeout - forcing to false after 5s');
       setAuthUiLoading(false);
     }, 5000);
     return () => clearTimeout(timeout);
-  }, [authUiLoading]);
-
-  // tokenStatus is now DERIVED from coordState.authPhase (Phase 2 complete)
-  // No useState needed - see deriveTokenStatus() at bottom of component
+  }, [coordState.authUiLoading, setAuthUiLoading]);
 
   // SINGLE stale guard for all /auth/firebase-sync calls
   // P0 FIX: Only ONE in-flight firebase-sync at a time (single-flight invariant)
@@ -192,14 +186,11 @@ export function AuthProvider({ children }) {
   // Single-flight enforcement: tracks requestId that owns the sync (null = no sync in progress)
   // P0 FIX: Changed from boolean to requestId to prevent race where old callback clears newer sync's flag
   const syncOwnerRef = useRef(null);
-  // tokenStatusRef now tracks derived status from coordState.authPhase (not useState)
-  const derivedTokenStatusForRef = deriveTokenStatus(coordState.authPhase, coordState.user, coordState.initialized);
-  const tokenStatusRef = useRef(derivedTokenStatusForRef);
-  tokenStatusRef.current = derivedTokenStatusForRef;
-
-  // Track previous status for safe abort recovery (restore on abort, don't downgrade)
-  const prevTokenStatusRef = useRef(derivedTokenStatusForRef);
-
+  const clearSyncOwner = (requestId) => {
+    if (syncOwnerRef.current === requestId) {
+      syncOwnerRef.current = null;
+    }
+  };
   // P0 FIX: Delayed retry for firebase-sync on retryable errors
   // When backend is waking up (502/503/504), we schedule a retry instead of calling ensureSubscription
   // ensureSubscription requires JWT cookie from firebase-sync, so it won't work if firebase-sync failed
@@ -216,6 +207,81 @@ export function AuthProvider({ children }) {
       }
     };
   }, []);
+
+  const scheduleTokenSyncRetry = ({
+    firebaseUser,
+    requestId,
+    dispatchInitialRetry = false,
+  }) => {
+    const canRetry = syncRetryCountRef.current < TOKEN_SYNC_MAX_RETRIES;
+
+    if (!canRetry) {
+      // Max retries exhausted - set established and let 15s timeout handle subscription
+      // P0 FIX: Don't call ensureSubscription - it won't work without JWT cookie
+      syncRetryCountRef.current = 0;
+      clearSyncOwner(requestId);
+      dispatch({ type: 'TOKEN_SYNC_OK', requestId });
+      return;
+    }
+
+    if (dispatchInitialRetry) {
+      dispatch({ type: 'TOKEN_SYNC_RETRY' }); // Track retry count in reducer
+    }
+
+    syncRetryCountRef.current += 1;
+    syncOwnerRef.current = requestId;
+    if (syncRetryTimeoutRef.current) {
+      clearTimeout(syncRetryTimeoutRef.current);
+      syncRetryTimeoutRef.current = null;
+    }
+
+    syncRetryTimeoutRef.current = setTimeout(async () => {
+      if (!firebaseUser || authStateGuardRef.current.isStale(requestId)) {
+        console.warn('[Auth] Retry cancelled - user changed or request stale');
+        clearSyncOwner(requestId);
+        return;
+      }
+      console.warn('[Auth] Retrying firebase-sync after delay', {
+        retrySource: 'auth_context',
+        attempt: syncRetryCountRef.current,
+        maxRetries: TOKEN_SYNC_MAX_RETRIES,
+      });
+      try {
+        const retryResult = await tokenSyncPipeline(
+          firebaseUser,
+          requestId,
+          authStateGuardRef.current.getSignal,
+          authStateGuardRef.current.isStale
+        );
+        if (!authStateGuardRef.current.isStale(requestId)) {
+          if (retryResult.ok) {
+            syncRetryCountRef.current = 0; // Reset on success
+            dispatch({ type: 'TOKEN_SYNC_OK', requestId, subscription: retryResult.subscription });
+          } else if (retryResult.retryable) {
+            // P0 FIX: Chain retry if still retryable and under max
+            console.warn('[Auth] Retry still retryable, scheduling another attempt', {
+              retrySource: 'auth_context',
+              attempt: syncRetryCountRef.current,
+              maxRetries: TOKEN_SYNC_MAX_RETRIES,
+            });
+            scheduleTokenSyncRetry({
+              firebaseUser,
+              requestId,
+              dispatchInitialRetry: true,
+            });
+            return;
+          } else {
+            // Non-retryable or max retries - set established so boot gate opens
+            syncRetryCountRef.current = 0;
+            dispatch({ type: 'TOKEN_SYNC_OK', requestId });
+          }
+        }
+      } finally {
+        syncRetryTimeoutRef.current = null;
+        clearSyncOwner(requestId);
+      }
+    }, TOKEN_SYNC_RETRY_DELAY_MS);
+  };
 
   // PHASE 2: Removed unused aliases { startRequest, isStale, getSignal }
   // All calls go through authStateGuardRef.current.* (single-flight for /auth/firebase-sync)
@@ -273,7 +339,8 @@ export function AuthProvider({ children }) {
           photoURL: firebaseUser.photoURL,
         }, {
           signal: getSignalFn(),
-          __allowRetry: true, // Retry on 502/503/504 (Render cold start)
+          // Phase 2: AuthContext owns retry scheduling for firebase-sync.
+          // Avoid double-retry via API interceptor for non-idempotent POSTs.
         }),
         TOKEN_REFRESH_TIMEOUT_MS,
         'Token sync'
@@ -313,6 +380,12 @@ export function AuthProvider({ children }) {
         return { ok: false, aborted: false, stale: true };
       }
 
+      const backendErrorCode = err?.response?.data?.error_code;
+      const backendMessage = backendErrorCode ? getBackendAuthErrorMessage(backendErrorCode) : null;
+      if (backendMessage) {
+        setAuthUiError(backendMessage);
+      }
+
       // P0 FIX 3: Check error status to determine if retryable vs auth failure
       const status = err?.response?.status;
       const isGatewayError = status === 502 || status === 503 || status === 504;
@@ -320,18 +393,24 @@ export function AuthProvider({ children }) {
 
       if (isGatewayError) {
         // Gateway errors: backend is waking up, don't degrade auth
-        console.warn('[Auth] Token sync hit gateway error (backend waking up)', { status });
+        console.warn('[Auth] Token sync hit gateway error (backend waking up)', {
+          status,
+          errorCode: backendErrorCode,
+        });
         return { ok: false, aborted: false, retryable: true, error: err };
       }
 
       if (isAuthFailure) {
         // Auth failures: token is invalid, must degrade
-        logAuthError('[Auth] Token sync auth failure - will degrade to guest', err, { status });
+        logAuthError('[Auth] Token sync auth failure - will degrade to guest', err, {
+          status,
+          errorCode: backendErrorCode,
+        });
         return { ok: false, aborted: false, authFailure: true, error: err };
       }
 
       // Other errors (network, etc.) - log but don't throw
-      logAuthError('[Auth] Backend token sync failed', err, { status });
+      logAuthError('[Auth] Backend token sync failed', err, { status, errorCode: backendErrorCode });
       return { ok: false, aborted: false, error: err };
     }
   }
@@ -342,7 +421,7 @@ export function AuthProvider({ children }) {
       // Firebase not configured - skip auth listener
       dispatch({ type: 'FIREBASE_USER_CHANGED', user: null }); // Sets initialized: true
       setAuthUiLoading(false); // Clear UI loading
-      // No user + initialized = tokenStatus derives to 'present' automatically
+      // No user + initialized = authPhase stays idle (guest mode)
       return;
     }
 
@@ -350,8 +429,6 @@ export function AuthProvider({ children }) {
       console.log('[Auth] Initializing Firebase auth...');
       const auth = getFirebaseAuth();
       console.log('[Auth] Firebase auth instance created');
-      setLoading(true);
-
       if (process.env.NODE_ENV !== 'production') {
         if (authListenerRegisteredRef.current) {
           console.error('[Auth] onAuthStateChanged registered more than once', new Error().stack);
@@ -382,13 +459,15 @@ export function AuthProvider({ children }) {
         console.log('[Auth] onAuthStateChanged fired', {
           hasUser: !!firebaseUser,
           email: firebaseUser?.email,
-          authUiLoading,
+          authUiLoading: coordState.authUiLoading,
         });
         // Start a new request for each auth state change - cancels any in-flight API calls
         // Uses authStateGuard - separate from tokenRefreshGuard to avoid cross-abort
         const requestId = authStateGuardRef.current.startRequest();
         // Local flag to track if we've set initialized in this callback
         let didSetInitialized = false;
+        const authPhaseBefore = coordState.authPhase;
+        const retryCountBefore = coordState.retryCount;
 
         // P0 FIX: Reset retry count on auth state change (prevents cross-user state leak)
         // Also clear any pending retry timeout
@@ -397,6 +476,7 @@ export function AuthProvider({ children }) {
           clearTimeout(syncRetryTimeoutRef.current);
           syncRetryTimeoutRef.current = null;
         }
+        syncOwnerRef.current = null;
 
         // INVARIANT: Set user and initialized IMMEDIATELY when Firebase tells us auth state.
         // This MUST happen before any async operations to guarantee boot completes.
@@ -408,28 +488,26 @@ export function AuthProvider({ children }) {
           // CRITICAL: Clear loading states SYNCHRONOUSLY after we know auth state.
           // Guard: Only set if this is still the current request (prevents race conditions)
           if (!authStateGuardRef.current.isStale(requestId)) {
-            setLoading(false);
             setAuthUiLoading(false); // Clear UI loading on first auth state
             didSetInitialized = true;
           }
 
-          // === TOKEN STATUS STATE MACHINE ===
+          // === AUTH PHASE STATE MACHINE ===
           if (!firebaseUser) {
             // No user → token not needed (derives to 'present' automatically)
             logAuthEvent(AuthTimelineEvent.AUTH_NO_USER, {
               source: 'auth_listener',
-              tokenStatusBefore: tokenStatusRef.current,
-              tokenStatusAfter: TokenStatus.PRESENT,
+              authPhaseBefore,
+              authPhaseAfter: 'idle',
             });
             // No dispatch needed - FIREBASE_USER_CHANGED with null user already sets authPhase
-            // which derives to tokenStatus 'present' for guest mode
-          } else if (tokenStatusRef.current === TokenStatus.PRESENT) {
+          } else if (authPhaseBefore === 'established') {
             // User exists, token already synced in this session
             // authPhase is already 'established', no dispatch needed
             logAuthEvent(AuthTimelineEvent.AUTH_STATE_CHANGE, {
               source: 'auth_listener',
-              tokenStatusBefore: TokenStatus.PRESENT,
-              tokenStatusAfter: TokenStatus.PRESENT,
+              authPhaseBefore,
+              authPhaseAfter: 'established',
               action: 'ensureSubscription',
               email: firebaseUser.email,
             });
@@ -437,11 +515,10 @@ export function AuthProvider({ children }) {
             ensureSubscriptionRef.current(firebaseUser.email, { reason: 'auth_listener' });
           } else {
             // User exists, no token → need sync
-            prevTokenStatusRef.current = tokenStatusRef.current; // Store for abort recovery
             logAuthEvent(AuthTimelineEvent.TOKEN_SYNC_START, {
               source: 'auth_listener',
-              tokenStatusBefore: tokenStatusRef.current,
-              tokenStatusAfter: TokenStatus.REFRESHING,
+              authPhaseBefore,
+              authPhaseAfter: 'syncing',
               email: firebaseUser.email,
             });
             // SINGLE-FLIGHT: This requestId now owns the sync (cleared in finally if still owner)
@@ -456,7 +533,7 @@ export function AuthProvider({ children }) {
               authStateGuardRef.current.isStale
             );
 
-            // Update token status based on result
+            // Update auth phase based on result
             // Guard: Only update if this is still the current request
             if (!authStateGuardRef.current.isStale(requestId)) {
               if (result.aborted) {
@@ -464,16 +541,17 @@ export function AuthProvider({ children }) {
                 console.warn('[Auth] Token sync aborted');
                 logAuthEvent(AuthTimelineEvent.ABORT, {
                   source: 'token_sync',
-                  tokenStatusBefore: TokenStatus.REFRESHING,
-                  tokenStatusAfter: prevTokenStatusRef.current,
+                  authPhaseBefore: 'syncing',
+                  authPhaseAfter: retryCountBefore > 0 ? 'retrying' : 'idle',
                 });
                 dispatch({ type: 'TOKEN_SYNC_ABORT', requestId });
               } else if (result.ok) {
                 logAuthEvent(AuthTimelineEvent.TOKEN_SYNC_OK, {
                   source: 'token_sync',
-                  tokenStatusBefore: TokenStatus.REFRESHING,
-                  tokenStatusAfter: TokenStatus.PRESENT,
+                  authPhaseBefore: 'syncing',
+                  authPhaseAfter: 'established',
                 });
+                clearAuthUiError();
                 dispatch({ type: 'TOKEN_SYNC_OK', requestId, subscription: result.subscription });
               } else if (result.retryable) {
                 // P0 FIX: Gateway errors (502/503/504) - backend waking up
@@ -483,81 +561,25 @@ export function AuthProvider({ children }) {
                 const canRetry = syncRetryCountRef.current < TOKEN_SYNC_MAX_RETRIES;
                 console.warn('[Auth] Token sync retryable error, keeping user authenticated', {
                   error: result.error?.message,
+                  retrySource: 'auth_context',
                   retryCount: syncRetryCountRef.current,
+                  maxRetries: TOKEN_SYNC_MAX_RETRIES,
                   willRetry: canRetry,
                 });
                 logAuthEvent(AuthTimelineEvent.TOKEN_SYNC_RETRY, {
                   source: 'token_sync',
-                  tokenStatusBefore: TokenStatus.REFRESHING,
-                  tokenStatusAfter: canRetry ? TokenStatus.REFRESHING : TokenStatus.PRESENT,
+                  authPhaseBefore: 'syncing',
+                  authPhaseAfter: canRetry ? 'retrying' : 'established',
                   error: result.error?.message,
                   retryCount: syncRetryCountRef.current,
                   action: canRetry ? 'scheduled_retry' : 'max_retries_exhausted',
                 });
 
-                if (canRetry) {
-                  // Keep REFRESHING and schedule retry
-                  // Don't change tokenStatus - stay in REFRESHING to allow retry
-                  syncRetryCountRef.current += 1;
-                  syncRetryTimeoutRef.current = setTimeout(async () => {
-                    // Re-check if user still exists and we should retry
-                    if (!firebaseUser || authStateGuardRef.current.isStale(requestId)) {
-                      console.warn('[Auth] Retry cancelled - user changed or request stale');
-                      return;
-                    }
-                    console.warn('[Auth] Retrying firebase-sync after delay', {
-                      attempt: syncRetryCountRef.current,
-                    });
-                    const retryResult = await tokenSyncPipeline(
-                      firebaseUser,
-                      requestId,
-                      authStateGuardRef.current.getSignal,
-                      authStateGuardRef.current.isStale
-                    );
-                    // Handle retry result
-                    if (!authStateGuardRef.current.isStale(requestId)) {
-                      if (retryResult.ok) {
-                        syncRetryCountRef.current = 0; // Reset on success
-                        dispatch({ type: 'TOKEN_SYNC_OK', requestId, subscription: retryResult.subscription });
-                      } else if (retryResult.retryable && syncRetryCountRef.current < TOKEN_SYNC_MAX_RETRIES) {
-                        // P0 FIX: Chain retry if still retryable and under max
-                        console.warn('[Auth] Retry still retryable, scheduling another attempt', {
-                          attempt: syncRetryCountRef.current,
-                        });
-                        syncRetryCountRef.current += 1;
-                        dispatch({ type: 'TOKEN_SYNC_RETRY' }); // Track retry count in reducer
-                        // Schedule another retry (recursive via setTimeout)
-                        syncRetryTimeoutRef.current = setTimeout(async () => {
-                          if (!firebaseUser || authStateGuardRef.current.isStale(requestId)) return;
-                          const chainResult = await tokenSyncPipeline(
-                            firebaseUser, requestId,
-                            authStateGuardRef.current.getSignal,
-                            authStateGuardRef.current.isStale
-                          );
-                          if (!authStateGuardRef.current.isStale(requestId)) {
-                            if (chainResult.ok) {
-                              syncRetryCountRef.current = 0;
-                              dispatch({ type: 'TOKEN_SYNC_OK', requestId, subscription: chainResult.subscription });
-                            } else {
-                              // Final attempt failed - give up, let 15s timeout handle it
-                              // Set established (no subscription) so boot gate opens
-                              dispatch({ type: 'TOKEN_SYNC_OK', requestId });
-                            }
-                          }
-                        }, TOKEN_SYNC_RETRY_DELAY_MS);
-                      } else {
-                        // Non-retryable error OR max retries exhausted - give up
-                        // Set established (no subscription) so boot gate opens
-                        dispatch({ type: 'TOKEN_SYNC_OK', requestId });
-                        // Let 15s subscription timeout handle resolution to free
-                      }
-                    }
-                  }, TOKEN_SYNC_RETRY_DELAY_MS);
-                } else {
-                  // Max retries exhausted - set established and let 15s timeout handle subscription
-                  // P0 FIX: Don't call ensureSubscription - it won't work without JWT cookie
-                  dispatch({ type: 'TOKEN_SYNC_OK', requestId });
-                }
+                scheduleTokenSyncRetry({
+                  firebaseUser,
+                  requestId,
+                  dispatchInitialRetry: true,
+                });
               } else if (result.authFailure || result.timedOut) {
                 // Phase 1 fix: Use atomic action to prevent double-dispatch race
                 // Combines TOKEN_SYNC_FAIL + FIREBASE_USER_CHANGED + clearSubscription
@@ -570,8 +592,8 @@ export function AuthProvider({ children }) {
                 });
                 logAuthEvent(AuthTimelineEvent.AUTH_FAILURE, {
                   source: 'token_sync',
-                  tokenStatusBefore: TokenStatus.REFRESHING,
-                  tokenStatusAfter: TokenStatus.ERROR,
+                  authPhaseBefore: 'syncing',
+                  authPhaseAfter: 'error',
                   authFailure: result.authFailure,
                   timedOut: result.timedOut,
                   error: result.error?.message,
@@ -588,72 +610,25 @@ export function AuthProvider({ children }) {
                 const canRetry = syncRetryCountRef.current < TOKEN_SYNC_MAX_RETRIES;
                 console.warn('[Auth] Token sync error (non-auth), keeping user authenticated', {
                   error: result.error?.message,
+                  retrySource: 'auth_context',
                   retryCount: syncRetryCountRef.current,
+                  maxRetries: TOKEN_SYNC_MAX_RETRIES,
                   willRetry: canRetry,
                 });
                 logAuthEvent(AuthTimelineEvent.TOKEN_SYNC_ERR, {
                   source: 'token_sync',
-                  tokenStatusBefore: TokenStatus.REFRESHING,
-                  tokenStatusAfter: canRetry ? TokenStatus.REFRESHING : TokenStatus.PRESENT,
+                  authPhaseBefore: 'syncing',
+                  authPhaseAfter: canRetry ? 'retrying' : 'established',
                   error: result.error?.message,
                   retryCount: syncRetryCountRef.current,
                   action: canRetry ? 'scheduled_retry' : 'max_retries_exhausted',
                 });
 
-                if (canRetry) {
-                  // Keep REFRESHING and schedule retry (same logic as retryable branch)
-                  syncRetryCountRef.current += 1;
-                  dispatch({ type: 'TOKEN_SYNC_RETRY' }); // Track retry count in reducer
-                  syncRetryTimeoutRef.current = setTimeout(async () => {
-                    if (!firebaseUser || authStateGuardRef.current.isStale(requestId)) {
-                      console.warn('[Auth] Retry cancelled - user changed or request stale');
-                      return;
-                    }
-                    console.warn('[Auth] Retrying firebase-sync after network error', {
-                      attempt: syncRetryCountRef.current,
-                    });
-                    const retryResult = await tokenSyncPipeline(
-                      firebaseUser,
-                      requestId,
-                      authStateGuardRef.current.getSignal,
-                      authStateGuardRef.current.isStale
-                    );
-                    if (!authStateGuardRef.current.isStale(requestId)) {
-                      if (retryResult.ok) {
-                        syncRetryCountRef.current = 0;
-                        dispatch({ type: 'TOKEN_SYNC_OK', requestId, subscription: retryResult.subscription });
-                      } else if (retryResult.retryable && syncRetryCountRef.current < TOKEN_SYNC_MAX_RETRIES) {
-                        // P0 FIX: Chain retry if still retryable and under max
-                        syncRetryCountRef.current += 1;
-                        dispatch({ type: 'TOKEN_SYNC_RETRY' }); // Track retry count in reducer
-                        syncRetryTimeoutRef.current = setTimeout(async () => {
-                          if (!firebaseUser || authStateGuardRef.current.isStale(requestId)) return;
-                          const chainResult = await tokenSyncPipeline(
-                            firebaseUser, requestId,
-                            authStateGuardRef.current.getSignal,
-                            authStateGuardRef.current.isStale
-                          );
-                          if (!authStateGuardRef.current.isStale(requestId)) {
-                            if (chainResult.ok) {
-                              syncRetryCountRef.current = 0;
-                              dispatch({ type: 'TOKEN_SYNC_OK', requestId, subscription: chainResult.subscription });
-                            } else {
-                              // Final attempt failed - set established so boot gate opens
-                              dispatch({ type: 'TOKEN_SYNC_OK', requestId });
-                            }
-                          }
-                        }, TOKEN_SYNC_RETRY_DELAY_MS);
-                      } else {
-                        // Non-retryable or max retries - set established so boot gate opens
-                        dispatch({ type: 'TOKEN_SYNC_OK', requestId });
-                      }
-                    }
-                  }, TOKEN_SYNC_RETRY_DELAY_MS);
-                } else {
-                  // Max retries exhausted - set established and let 15s timeout handle subscription
-                  // P0 FIX: Don't call ensureSubscription - it won't work without JWT cookie
-                  dispatch({ type: 'TOKEN_SYNC_OK', requestId });
-                }
+                scheduleTokenSyncRetry({
+                  firebaseUser,
+                  requestId,
+                  dispatchInitialRetry: true,
+                });
               }
             }
           }
@@ -673,7 +648,7 @@ export function AuthProvider({ children }) {
           // now unconditionally sets initialized, so this is no longer needed.
           if (!authStateGuardRef.current.isStale(requestId) && !didSetInitialized) {
             console.warn('[Auth] Safety net: unexpected path - initialized should be set by dispatch');
-            setLoading(false);
+            setAuthUiLoading(false);
           }
         }
       });
@@ -688,10 +663,9 @@ export function AuthProvider({ children }) {
       };
     } catch (err) {
       logAuthError('Failed to initialize Firebase auth', err);
-      setLoading(false);
       setAuthUiLoading(false); // P0 FIX: Must clear UI loading on error, else button stays disabled forever
       dispatch({ type: 'FIREBASE_USER_CHANGED', user: null }); // Sets initialized: true
-      // No user + initialized = tokenStatus derives to 'present' automatically
+      // No user + initialized = authPhase stays idle (guest mode)
     }
   // Register once by design; guard/functions are accessed via refs.
   // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentional: refs provide stable access to latest functions
@@ -707,10 +681,10 @@ export function AuthProvider({ children }) {
   // Popup auth fails silently due to Google's strict COOP policy blocking window.closed detection
   // Redirect auth works reliably across all browsers
   const signInWithGoogle = useCallback(async () => {
-    setError(null);
+    clearAuthUiError();
 
     if (!isFirebaseConfigured()) {
-      setError('Google Sign-In is not configured. Please contact the administrator.');
+      setAuthUiError('Google Sign-In is not configured. Please contact the administrator.');
       throw new Error('Firebase not configured');
     }
 
@@ -726,14 +700,14 @@ export function AuthProvider({ children }) {
       return null; // Redirect navigates away, won't reach here
     } catch (redirectErr) {
       logAuthError('Google sign-in redirect error', redirectErr);
-      setError(getErrorMessage(redirectErr.code));
+      setAuthUiError(getErrorMessage(redirectErr.code));
       throw redirectErr;
     }
   }, []);
 
   // Sign out
   const logout = useCallback(async () => {
-    setError(null);
+    clearAuthUiError();
 
     // Dispatch LOGOUT to reset auth state (sets user=null, tier=free, authPhase=idle)
     dispatch({ type: 'LOGOUT' });
@@ -755,7 +729,7 @@ export function AuthProvider({ children }) {
       await apiClient.post('/auth/logout');
     } catch (err) {
       logAuthError('Sign-out error', err);
-      setError('Failed to sign out. Please try again.');
+      setAuthUiError('Failed to sign out. Please try again.');
       throw err;
     }
   }, []);
@@ -808,8 +782,7 @@ export function AuthProvider({ children }) {
     // SINGLE-FLIGHT: This requestId now owns the sync
     syncOwnerRef.current = requestId;
 
-    // Update token status to refreshing via dispatch
-    prevTokenStatusRef.current = derivedTokenStatusForRef; // Store for abort recovery
+    // Update auth phase to syncing via dispatch
     dispatch({ type: 'TOKEN_SYNC_START', requestId });
 
     try {
@@ -955,20 +928,14 @@ export function AuthProvider({ children }) {
     };
   }, [coordState.user, refreshToken]);
 
-  // Derived: tokenStatus from coordState.authPhase (Phase 2 migration)
-  const derivedTokenStatus = deriveTokenStatus(
-    coordState.authPhase,
-    coordState.user,
-    coordState.initialized
-  );
-  const tokenReady = derivedTokenStatus === TokenStatus.PRESENT;
+  const authLoading = coordState.authPhase === 'syncing' || coordState.authPhase === 'retrying';
 
   const value = useMemo(() => ({
     user: coordState.user,
-    loading,
-    authUiLoading, // Separate UI loading for Google button (5s max)
+    loading: authLoading,
+    authUiLoading: coordState.authUiLoading, // Separate UI loading for Google button (5s max)
     initialized: coordState.initialized,
-    error,
+    error: coordState.authUiError,
     signInWithGoogle,
     logout,
     // PHASE 2: syncWithBackend REMOVED - onAuthStateChanged handles token sync
@@ -976,23 +943,18 @@ export function AuthProvider({ children }) {
     refreshToken, // Exposed for explicit token refresh (used by BootStuckBanner and 401 interceptor)
     isAuthenticated: !!coordState.user,
     isConfigured: isFirebaseConfigured(),
-    // Token state machine - now derived from coordState.authPhase
-    tokenStatus: derivedTokenStatus,
-    tokenReady,
     // Tier 2.1: Export authPhase for ProtectedRoute backend session check
     authPhase: coordState.authPhase,
   }), [
     coordState.user,
     coordState.initialized,
     coordState.authPhase,
-    loading,
-    authUiLoading,
-    error,
+    coordState.authUiLoading,
+    coordState.authUiError,
+    authLoading,
     signInWithGoogle,
     logout,
     refreshToken,
-    derivedTokenStatus,
-    tokenReady,
   ]);
 
   return (
@@ -1003,3 +965,7 @@ export function AuthProvider({ children }) {
 }
 
 export default AuthContext;
+
+export const __test__ = {
+  getBackendAuthErrorMessage,
+};

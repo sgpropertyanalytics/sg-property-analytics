@@ -1,5 +1,4 @@
-import { createContext, useContext, useMemo, useEffect, useRef, useState } from 'react';
-import { useAuth } from './AuthContext';
+import { createContext, useContext, useMemo, useEffect, useRef, useState, useCallback } from 'react';
 import { useSubscription } from './SubscriptionContext';
 // Phase 4: Migrated from useFilterState (Context) to useFilterStore (Zustand)
 // Using useFilterStore directly to access both state and forceDefaults action
@@ -75,12 +74,15 @@ export function useAppReadyOptional() {
 }
 
 export function AppReadyProvider({ children }) {
-  const { initialized: authInitialized, isAuthenticated, tokenStatus } = useAuth();
   const {
     status: subscriptionStatus,
     tier,
     tierSource,
+    coordState,
   } = useSubscription();
+
+  const authInitialized = coordState.initialized;
+  const isAuthenticated = !!coordState.user;
 
   // Phase 4: Filter state from Zustand store (includes forceDefaults action)
   const filterStore = useFilterStore();
@@ -165,6 +167,11 @@ export function AppReadyProvider({ children }) {
     };
   };
 
+  const emitBootTelemetry = useCallback((type, payload) => {
+    if (typeof window === 'undefined') return;
+    window.dispatchEvent(new CustomEvent(`app:boot-${type}`, { detail: payload }));
+  }, []);
+
   // Boot stuck detection - warning at 3s, critical at 10s
   useEffect(() => {
     if (appReady) {
@@ -198,8 +205,7 @@ export function AppReadyProvider({ children }) {
           `Blocked by: ${payload.blocked_by.join(', ')}`,
           payload
         );
-        // TODO: Send to telemetry service if configured
-        // telemetryService?.logEvent('boot_slow', payload);
+        emitBootTelemetry('slow', payload);
       }
     }, BOOT_WARNING_THRESHOLD_MS);
 
@@ -233,8 +239,7 @@ export function AppReadyProvider({ children }) {
           tierResolved,
           filtersReady,
         });
-        // TODO: Send to error tracking service if configured
-        // errorTrackingService?.captureMessage('Boot stuck', { extra: payload });
+        emitBootTelemetry('stuck', payload);
       }
     }, BOOT_CRITICAL_THRESHOLD_MS);
 
@@ -244,7 +249,7 @@ export function AppReadyProvider({ children }) {
       clearTimeout(criticalTimeoutId);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- buildTelemetryPayload is stable
-  }, [appReady, authInitialized, subscriptionResolved, tierResolved, filtersReady]);
+  }, [appReady, authInitialized, subscriptionResolved, tierResolved, filtersReady, emitBootTelemetry]);
 
   // Force filter defaults when boot is stuck due to hydration failure
   // BOOT INVARIANT: forceDefaults executes only once (didForceDefaultsRef guard)
@@ -262,10 +267,9 @@ export function AppReadyProvider({ children }) {
     if (process.env.NODE_ENV === 'development') {
       // Only log when appReady changes or during boot phase
       if (prevAppReadyRef.current !== appReady || !appReady) {
-        // Key debug values: tokenStatus, subscriptionStatus, publicReady/proReady
+        // Key debug values: subscriptionStatus, publicReady/proReady
         console.warn('[AppReady] Boot status:', {
           // 3 key values for debugging auth issues
-          tokenStatus,
           subscriptionStatus,
           'publicReady/proReady': `${publicReady}/${proReady}`,
           tier,
@@ -278,7 +282,7 @@ export function AppReadyProvider({ children }) {
       }
       prevAppReadyRef.current = appReady;
     }
-  }, [bootStatus, appReady, tokenStatus, subscriptionStatus, publicReady, proReady, tier, tierSource, usingCachedTier]);
+  }, [bootStatus, appReady, subscriptionStatus, publicReady, proReady, tier, tierSource, usingCachedTier]);
 
   // Expose debug info on window for DevTools console access
   // Gated: development mode OR ?__debug query param (for prod debugging)
@@ -293,7 +297,6 @@ export function AppReadyProvider({ children }) {
       get status() {
         return {
           // 3 KEY DEBUG VALUES (for cold start debugging)
-          tokenStatus,
           subscriptionStatus,
           tier,
           tierSource,
@@ -319,7 +322,7 @@ export function AppReadyProvider({ children }) {
     return () => {
       delete window.__APP_READY_DEBUG__;
     };
-  }, [appReady, publicReady, proReady, subscriptionResolved, authInitialized, tierResolved, tierSource, usingCachedTier, filtersReady, filtersDefaulted, isBootSlow, isBootStuck, tokenStatus, subscriptionStatus, tier]);
+  }, [appReady, publicReady, proReady, subscriptionResolved, authInitialized, tierResolved, tierSource, usingCachedTier, filtersReady, filtersDefaulted, isBootSlow, isBootStuck, subscriptionStatus, tier]);
 
   const bootPhase = appReady
     ? 'ready'

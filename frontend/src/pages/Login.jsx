@@ -71,9 +71,6 @@ function Login() {
     })()
   );
 
-  // P0 Fix 3: Track when popup flow actually completes (signInWithGoogle resolves)
-  const popupCompletedRef = useRef(false);
-
   const from = location.state?.from?.pathname || '/market-overview';
 
   // P0 FIX: Auto-redirect if user is already authenticated
@@ -106,7 +103,6 @@ function Login() {
       (uidAtInitRef.current !== null && currentUid !== null && currentUid !== uidAtInitRef.current); // Different user
 
     // Navigate when: authenticated with fresh sign-in
-    // DO NOT require popupCompletedRef - popup can hang due to COOP/browser issues
     // Auth truth (onAuthStateChanged) is the source of truth, not popup promise
     const shouldNavigate = isAuthenticated && currentUid && isFreshSignIn;
 
@@ -115,7 +111,6 @@ function Login() {
       // Reset all refs
       signInInitiatedRef.current = false;
       uidAtInitRef.current = null;
-      popupCompletedRef.current = false;
       // REDIRECT FIX: Clear sessionStorage after successful navigation
       try {
         sessionStorage.removeItem('auth_sign_in_initiated');
@@ -153,7 +148,6 @@ function Login() {
     setIsSigningIn(true);
     signInInitiatedRef.current = true;
     uidAtInitRef.current = user?.uid || null;
-    popupCompletedRef.current = false;
 
     // REDIRECT FIX: Persist to sessionStorage (survives page reload during redirect flow)
     try {
@@ -167,12 +161,10 @@ function Login() {
       // Rule C: Bounded wait (20s) - popup can hang forever due to COOP/browser issues
       await withTimeout(signInWithGoogle(), 20000);
       // Optional UX signal - navigation no longer depends on this
-      popupCompletedRef.current = true;
     } catch (err) {
       // Reset refs on error
       signInInitiatedRef.current = false;
       uidAtInitRef.current = null;
-      popupCompletedRef.current = false;
       // REDIRECT FIX: Clear sessionStorage on error
       try {
         sessionStorage.removeItem('auth_sign_in_initiated');

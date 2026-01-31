@@ -76,6 +76,20 @@ describe('unwrapEnvelope', () => {
   });
 });
 
+describe('retry policy', () => {
+  it('does not retry non-idempotent requests without explicit opt-in', () => {
+    const error = { response: { status: 502 } };
+    const config = { method: 'post' };
+    expect(__test__.isRetryableError(error, config)).toBe(false);
+  });
+
+  it('retries gateway errors for idempotent requests', () => {
+    const error = { response: { status: 503 } };
+    const config = { method: 'get' };
+    expect(__test__.isRetryableError(error, config)).toBe(true);
+  });
+});
+
 describe('envelope unwrap regression', () => {
   /**
    * REGRESSION TEST: Ensure no .data.data patterns sneak into the codebase

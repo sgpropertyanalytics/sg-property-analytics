@@ -118,8 +118,27 @@ This is the safest way to migrate production before deploying new backend code.
 ## Verification Checklist
 
 - ✅ `GET /api/auth/subscription` returns 200 with entitlement fields.
+- ✅ `GET /api/auth/health` returns Firebase Admin status and cookie settings.
 - ✅ App boot is not stuck on `tier_unknown`.
 - ✅ Render logs show no `UndefinedColumn` errors.
+- ✅ Auth cookies are set with correct SameSite/Secure values for your deployment.
+- ✅ `/auth/firebase-sync` retries are owned by AuthContext (no API interceptor retries for that POST).
+
+## Auth Cookie + CORS Requirements
+
+The frontend uses cookie-based auth. Ensure one of the following is true:
+
+1. **Same-origin API** (recommended): Frontend calls `/api` on the same origin via proxy/rewrites.
+2. **Cross-origin API**: Set cookies for cross-site use and allow credentials.
+
+If you are using a cross-origin API base, set:
+
+```
+AUTH_COOKIE_SAMESITE=None
+AUTH_COOKIE_SECURE=true
+```
+
+And ensure CORS allows credentials for the frontend origin.
 
 ## Schema Check on Startup
 
