@@ -11,7 +11,6 @@ import {
 import {
   authCoordinatorReducer,
   initialState as coordinatorInitialState,
-  // deriveTokenStatus and deriveSubscriptionStatus are used in AuthContext, not here
 } from './authCoordinator';
 
 /**
@@ -211,17 +210,6 @@ const clearCachedSubscription = (email) => {
   }
 };
 
-/**
- * Clear old global cache key (migration cleanup)
- */
-const clearLegacyCache = () => {
-  try {
-    localStorage.removeItem('subscription_cache');
-  } catch {
-    // Ignore
-  }
-};
-
 // Default subscription: tier='free', but status='pending' means not resolved yet
 const DEFAULT_SUBSCRIPTION = { tier: 'free', subscribed: false, ends_at: null };
 
@@ -279,14 +267,6 @@ export const unwrapSubscriptionResponse = (responseData) => {
     }
     return null;
   }
-  // Handle flat response (legacy): {tier, subscribed, ...}
-  if (responseData && 'tier' in responseData) {
-    const { tier, subscribed, ends_at } = responseData;
-    if (tier === 'free' || tier === 'premium') {
-      return { tier, subscribed: subscribed || false, ends_at: ends_at || null };
-    }
-    return null;
-  }
   console.warn('[Subscription] Unknown response format:', responseData);
   return null;
 };
@@ -298,11 +278,6 @@ export function SubscriptionProvider({ children }) {
   // AuthContext (inner) gets coordState/dispatch via useSubscription().
   // ==========================================================================
   const [coordState, dispatch] = useReducer(authCoordinatorReducer, coordinatorInitialState);
-
-  // Clear legacy global cache on mount (one-time migration)
-  useEffect(() => {
-    clearLegacyCache();
-  }, []);
 
   // Tier 2.3: Set up BroadcastChannel for cross-tab subscription sync
   useEffect(() => {

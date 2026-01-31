@@ -8,6 +8,7 @@ Includes:
 """
 from flask import Blueprint, request, jsonify, current_app
 from datetime import datetime, timedelta
+import time
 import secrets
 import jwt
 import os
@@ -19,7 +20,18 @@ from api.contracts import api_contract
 auth_bp = Blueprint('auth', __name__)
 
 def _cookie_secure():
+    if Config.AUTH_COOKIE_SECURE is not None:
+        return str(Config.AUTH_COOKIE_SECURE).lower() in ('1', 'true', 'yes')
+    if _cookie_samesite() == 'None':
+        return True
     return not Config.DEBUG
+
+
+def _cookie_samesite():
+    value = (Config.AUTH_COOKIE_SAMESITE or 'Lax').strip()
+    if value.lower() == 'none':
+        return 'None'
+    return value
 
 
 def set_auth_cookie(response, token):
@@ -28,7 +40,7 @@ def set_auth_cookie(response, token):
         token,
         httponly=True,
         secure=_cookie_secure(),
-        samesite="Lax",
+        samesite=_cookie_samesite(),
         max_age=Config.JWT_EXPIRATION_HOURS * 3600,
         path="/",
     )
@@ -42,7 +54,7 @@ def set_csrf_cookie(response):
         token,
         httponly=False,
         secure=_cookie_secure(),
-        samesite="Lax",  # Must match auth cookie for cross-origin (Vercel→Render)
+        samesite=_cookie_samesite(),  # Must match auth cookie for cross-origin (Vercel→Render)
         max_age=Config.JWT_EXPIRATION_HOURS * 3600,
         path="/",
     )
@@ -71,6 +83,8 @@ def get_auth_token_from_request():
 # None = not attempted, False = failed, otherwise = app instance
 _firebase_app = None
 _firebase_error_type = None  # 'config' for permanent errors, 'transient' for temporary
+_firebase_last_attempt = None
+_firebase_retry_delay_s = 30
 
 
 def get_firebase_app():
@@ -86,15 +100,20 @@ def get_firebase_app():
     2. FIREBASE_SERVICE_ACCOUNT_PATH - File path to service account JSON
     3. Default credentials (for Google Cloud environments)
     """
-    global _firebase_app, _firebase_error_type
+    global _firebase_app, _firebase_error_type, _firebase_last_attempt
 
     # Already initialized successfully
     if _firebase_app not in (None, False):
         return _firebase_app
 
-    # Previously failed - don't retry (prevents slow repeated initialization attempts)
-    if _firebase_app is False:
+    # Previously failed due to config - don't retry until deploy fixes it
+    if _firebase_app is False and _firebase_error_type == 'config':
         return None
+
+    # Transient failures: throttle retries to avoid tight loops
+    if _firebase_error_type == 'transient' and _firebase_last_attempt is not None:
+        if time.time() - _firebase_last_attempt < _firebase_retry_delay_s:
+            return None
 
     try:
         import json
@@ -112,7 +131,10 @@ def get_firebase_app():
                 print("[Auth] Firebase Admin SDK initialized with JSON env var")
             except json.JSONDecodeError as je:
                 print(f"[Auth] FIREBASE_SERVICE_ACCOUNT_JSON is invalid JSON: {je}")
-                # Fall through to try other methods
+                _firebase_app = False
+                _firebase_error_type = 'config'
+                _firebase_last_attempt = time.time()
+                return None
 
         # Priority 2: File path
         if cred is None:
@@ -126,21 +148,27 @@ def get_firebase_app():
             # Try to initialize with default credentials (for Cloud Run, etc.)
             _firebase_app = firebase_admin.initialize_app()
             print("[Auth] Firebase Admin SDK initialized with default credentials")
+            _firebase_error_type = None
+            _firebase_last_attempt = None
             return _firebase_app
 
         # Initialize with credential
         _firebase_app = firebase_admin.initialize_app(cred)
+        _firebase_error_type = None
+        _firebase_last_attempt = None
         return _firebase_app
     except ImportError as e:
         # Config error: missing firebase-admin package (permanent until deployed with package)
         _firebase_app = False
         _firebase_error_type = 'config'
+        _firebase_last_attempt = time.time()
         print(f"[Auth] Firebase Admin SDK initialization failed - missing package: {e}")
         return None
     except Exception as e:
         # Transient error: could be network, credentials, etc.
-        _firebase_app = False
+        _firebase_app = None
         _firebase_error_type = 'transient'
+        _firebase_last_attempt = time.time()
         print(f"[Auth] Firebase Admin SDK initialization failed (transient): {e}")
         return None
 
@@ -293,7 +321,10 @@ def firebase_sync():
         avatar_url = data.get('photoURL')
 
         if not id_token:
-            return jsonify({"error": "idToken is required"}), 400
+            return jsonify({
+                "error": "idToken is required",
+                "error_code": "id_token_required",
+            }), 400
 
         # Try to verify with Firebase Admin SDK
         firebase_uid = None
@@ -313,19 +344,34 @@ def firebase_sync():
                 # Distinguish config errors (500) from transient errors (503)
                 global _firebase_error_type
                 if _firebase_error_type == 'config':
-                    return jsonify({"error": "Firebase configuration error - missing dependencies"}), 500
+                    return jsonify({
+                        "error": "Firebase configuration error - missing dependencies",
+                        "error_code": "firebase_admin_misconfigured",
+                    }), 500
                 else:
-                    return jsonify({"error": "Firebase auth temporarily unavailable"}), 503
+                    return jsonify({
+                        "error": "Firebase auth temporarily unavailable",
+                        "error_code": "firebase_admin_unavailable",
+                    }), 503
         except Exception as e:
             print(f"Firebase token verification failed: {e}")
             # In development, allow fallback to email-only sync
             if not email:
-                return jsonify({"error": "Could not verify Firebase token"}), 401
+                return jsonify({
+                    "error": "Could not verify Firebase token",
+                    "error_code": "firebase_token_unverified",
+                }), 401
             if not Config.DEBUG:
-                return jsonify({"error": "Could not verify Firebase token"}), 401
+                return jsonify({
+                    "error": "Could not verify Firebase token",
+                    "error_code": "firebase_token_unverified",
+                }), 401
 
         if not email:
-            return jsonify({"error": "Email is required"}), 400
+            return jsonify({
+                "error": "Email is required",
+                "error_code": "email_required",
+            }), 400
 
         email = email.strip().lower()
 
@@ -499,3 +545,32 @@ def delete_account():
 def logout():
     response = jsonify({"message": "Logged out"})
     return clear_auth_cookie(response), 200
+
+
+@auth_bp.route("/health", methods=["GET"])
+def auth_health():
+    """Auth health endpoint for diagnostics (no secrets)."""
+    firebase_status = 'unknown'
+    if _firebase_app not in (None, False):
+        firebase_status = 'ready'
+    elif _firebase_error_type == 'config':
+        firebase_status = 'misconfigured'
+    elif _firebase_error_type == 'transient':
+        firebase_status = 'transient_error'
+
+    last_attempt_age = None
+    if _firebase_last_attempt is not None:
+        last_attempt_age = max(0, int(time.time() - _firebase_last_attempt))
+
+    return jsonify({
+        "firebase_admin": {
+            "status": firebase_status,
+            "error_type": _firebase_error_type,
+            "last_attempt_age_s": last_attempt_age,
+            "retry_delay_s": _firebase_retry_delay_s,
+        },
+        "cookies": {
+            "auth_cookie_samesite": _cookie_samesite(),
+            "auth_cookie_secure": _cookie_secure(),
+        },
+    }), 200

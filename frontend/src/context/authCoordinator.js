@@ -27,6 +27,8 @@ export const initialState = {
   authPhase: 'idle', // idle | syncing | established | retrying | error
   authError: null,
   initialized: false,
+  authUiLoading: true,
+  authUiError: null,
 
   // Subscription domain
   tier: 'unknown', // unknown | free | premium
@@ -167,12 +169,15 @@ function computeNextState(state, action) {
           subPhase: 'resolved',
           tier: 'free',
           tierSource: 'none',
+          authUiLoading: false,
+          authUiError: null,
         };
       }
       return {
         ...state,
         user: action.user,
         initialized: true,
+        authUiError: null,
       };
 
     case 'TOKEN_SYNC_START':
@@ -180,6 +185,7 @@ function computeNextState(state, action) {
         ...state,
         authPhase: 'syncing',
         authRequestId: action.requestId,
+        authUiError: null,
       };
 
     case 'TOKEN_SYNC_OK':
@@ -189,6 +195,7 @@ function computeNextState(state, action) {
         authError: null,
         retryCount: 0,
         authRequestId: null,
+        authUiError: null,
         // Bootstrap subscription if provided
         ...(action.subscription ? {
           tier: action.subscription.tier,
@@ -229,6 +236,8 @@ function computeNextState(state, action) {
         subPhase: 'resolved',
         tier: 'free',
         tierSource: 'none',
+        authUiLoading: false,
+        authUiError: null,
       };
 
     case 'TOKEN_SYNC_ABORT':
@@ -368,6 +377,8 @@ function computeNextState(state, action) {
         initialized: true,
         subPhase: 'resolved',
         tier: 'free',
+        authUiLoading: false,
+        authUiError: null,
       };
 
     case 'MANUAL_RETRY':
@@ -378,51 +389,25 @@ function computeNextState(state, action) {
         authError: null,
       };
 
+    case 'AUTH_UI_LOADING_SET':
+      return {
+        ...state,
+        authUiLoading: action.value,
+      };
+
+    case 'AUTH_UI_ERROR_SET':
+      return {
+        ...state,
+        authUiError: action.error,
+      };
+
+    case 'AUTH_UI_ERROR_CLEAR':
+      return {
+        ...state,
+        authUiError: null,
+      };
+
     default:
       return state;
-  }
-}
-
-// =============================================================================
-// DERIVED STATE HELPERS
-// =============================================================================
-
-/**
- * Derive tokenStatus from authPhase (backwards compatibility)
- */
-export function deriveTokenStatus(authPhase, user, initialized) {
-  switch (authPhase) {
-    case 'established':
-      return 'present';
-    case 'error':
-      return 'error';
-    case 'syncing':
-    case 'retrying':
-      return 'refreshing';
-    case 'idle':
-    default:
-      // Guest mode (no user + initialized) = no sync needed = present
-      if (!user && initialized) return 'present';
-      // User exists but not synced = need sync
-      if (user) return 'missing';
-      // Not initialized yet = missing
-      return 'missing';
-  }
-}
-
-/**
- * Derive subscriptionStatus from subPhase (backwards compatibility)
- */
-export function deriveSubscriptionStatus(subPhase) {
-  switch (subPhase) {
-    case 'resolved':
-      return 'RESOLVED';
-    case 'degraded':
-      return 'DEGRADED';
-    case 'loading':
-      return 'LOADING';
-    case 'pending':
-    default:
-      return 'PENDING';
   }
 }

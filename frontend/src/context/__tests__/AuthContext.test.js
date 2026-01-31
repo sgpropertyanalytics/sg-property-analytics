@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { isAbortError } from '../AuthContext';
+import { isAbortError, __test__ } from '../AuthContext';
 
 describe('AuthContext', () => {
   describe('isAbortError helper', () => {
@@ -34,6 +34,24 @@ describe('AuthContext', () => {
     it('should return false for null/undefined', () => {
       expect(isAbortError(null)).toBe(false);
       expect(isAbortError(undefined)).toBe(false);
+    });
+  });
+
+  describe('backend auth error message mapping', () => {
+    it('returns a user-friendly message for known backend error codes', () => {
+      expect(__test__.getBackendAuthErrorMessage('firebase_admin_unavailable'))
+        .toMatch(/warming up/i);
+      expect(__test__.getBackendAuthErrorMessage('firebase_admin_misconfigured'))
+        .toMatch(/temporarily unavailable/i);
+      expect(__test__.getBackendAuthErrorMessage('firebase_token_unverified'))
+        .toMatch(/could not verify/i);
+      expect(__test__.getBackendAuthErrorMessage('id_token_required'))
+        .toMatch(/could not be completed/i);
+    });
+
+    it('returns null for unknown error codes', () => {
+      expect(__test__.getBackendAuthErrorMessage('unknown_code')).toBeNull();
+      expect(__test__.getBackendAuthErrorMessage(undefined)).toBeNull();
     });
   });
 

@@ -24,6 +24,21 @@ const getApiBase = () => {
 const API_BASE = getApiBase();
 const CSRF_HEADER = 'X-CSRF-Token';
 
+if (typeof window !== 'undefined' && API_BASE.startsWith('http')) {
+  try {
+    const apiUrl = new URL(API_BASE);
+    if (apiUrl.origin !== window.location.origin) {
+      console.warn(
+        '[API] Cross-origin API base detected. Cookie-based auth requires same-site requests ',
+        'or SameSite=None; Secure cookies with proper CORS.',
+        { apiOrigin: apiUrl.origin, appOrigin: window.location.origin }
+      );
+    }
+  } catch {
+    // Ignore malformed API_BASE
+  }
+}
+
 const getCookie = (name) => {
   if (typeof document === 'undefined') return null;
   const value = `; ${document.cookie}`;
@@ -192,7 +207,14 @@ const setupRetryInterceptor = (client) => {
         if (process.env.NODE_ENV === 'development') {
           console.warn(
             `[API] Retry ${config.__retryCount}/${RETRY_CONFIG.maxRetries} after ${delay}ms:`,
-            error.message
+            error.message,
+            {
+              retrySource: 'api_client',
+              retryCount: config.__retryCount,
+              maxRetries: RETRY_CONFIG.maxRetries,
+              url: config.url,
+              method: config.method,
+            }
           );
         }
 
@@ -448,6 +470,7 @@ const cachedFetch = async (cacheKey, fetchFn, options = {}) => {
 // ===== Analytics API Functions =====
 
 export const getHealth = () => apiClient.get('/health');
+export const getAuthHealth = () => apiClient.get('/auth/health');
 
 export const getMetadata = (options = {}) => {
   const cacheKey = 'metadata';
@@ -863,6 +886,7 @@ export const createPortalSession = (returnUrl) => {
 export const __test__ = {
   queueRequest,
   processQueue,
+  isRetryableError,
   apiCache,
   addCacheEntry(key, value) {
     if (apiCache.size >= MAX_CACHE_ENTRIES) {
