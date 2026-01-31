@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Lock, Mail, Eye, EyeOff } from 'lucide-react';
@@ -48,38 +48,11 @@ function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [cursorVisible, setCursorVisible] = useState(true);
 
-  // P0 Fix 2: Track if sign-in was initiated (to gate navigation)
-  // REDIRECT FIX: Use sessionStorage to persist across page reload (redirect flow reloads page)
-  const signInInitiatedRef = useRef(
-    (() => {
-      try {
-        return sessionStorage.getItem('auth_sign_in_initiated') === 'true';
-      } catch {
-        return false;
-      }
-    })()
-  );
-
-  // P0 Fix 3: Track user UID when sign-in was initiated
-  // REDIRECT FIX: Use sessionStorage to persist across page reload
-  const uidAtInitRef = useRef(
-    (() => {
-      try {
-        return sessionStorage.getItem('auth_uid_at_init') || null;
-      } catch {
-        return null;
-      }
-    })()
-  );
-
   const from = location.state?.from?.pathname || '/market-overview';
 
-  // P0 FIX: Auto-redirect if user is already authenticated
-  // When Firebase has a persisted session, redirect immediately instead of
-  // making the user click "Continue with Google" again
+  // Auto-redirect if user is already authenticated (persisted Firebase session)
   useEffect(() => {
     if (initialized && isAuthenticated && user) {
-      console.warn('[Login] Auto-redirect: user already authenticated, navigating to:', from);
       navigate(from, { replace: true });
     }
   }, [initialized, isAuthenticated, user, from, navigate]);
@@ -92,37 +65,6 @@ function Login() {
     return () => clearInterval(interval);
   }, []);
 
-  // P0 Fix 4: Navigate based on auth TRUTH, not popup promise
-  // Rule: Navigation depends on isAuthenticated becoming true, not popup resolving
-  useEffect(() => {
-    if (!signInInitiatedRef.current) return;
-
-    // Check if this is a FRESH sign-in (user changed from when we started)
-    const currentUid = user?.uid || null;
-    const isFreshSignIn =
-      (uidAtInitRef.current === null && currentUid !== null) || // Was not authenticated, now is
-      (uidAtInitRef.current !== null && currentUid !== null && currentUid !== uidAtInitRef.current); // Different user
-
-    // Navigate when: authenticated with fresh sign-in
-    // Auth truth (onAuthStateChanged) is the source of truth, not popup promise
-    const shouldNavigate = isAuthenticated && currentUid && isFreshSignIn;
-
-    if (shouldNavigate) {
-      console.warn('[Login] Auth truth: fresh sign-in detected, navigating to:', from);
-      // Reset all refs
-      signInInitiatedRef.current = false;
-      uidAtInitRef.current = null;
-      // REDIRECT FIX: Clear sessionStorage after successful navigation
-      try {
-        sessionStorage.removeItem('auth_sign_in_initiated');
-        sessionStorage.removeItem('auth_uid_at_init');
-      } catch {
-        // sessionStorage unavailable - no-op
-      }
-      navigate(from, { replace: true });
-    }
-  }, [user, isAuthenticated, from, navigate]);
-
   const handleGoogleSignIn = async () => {
     if (isAuthenticated && user) {
       navigate(from, { replace: true });
@@ -133,24 +75,12 @@ function Login() {
 
     setIsSigningIn(true);
     setAuthError(null);
-    signInInitiatedRef.current = true;
-    uidAtInitRef.current = user?.uid || null;
 
     try {
-      sessionStorage.setItem('auth_sign_in_initiated', 'true');
-      sessionStorage.setItem('auth_uid_at_init', user?.uid || '');
-    } catch { /* sessionStorage unavailable */ }
-
-    try {
+      // signInWithGoogle uses popup (immediate) with redirect fallback
       await withTimeout(signInWithGoogle(), 20000);
+      // Popup resolved → onAuthStateChanged fires → auto-redirect effect navigates
     } catch (err) {
-      signInInitiatedRef.current = false;
-      uidAtInitRef.current = null;
-      try {
-        sessionStorage.removeItem('auth_sign_in_initiated');
-        sessionStorage.removeItem('auth_uid_at_init');
-      } catch { /* ignore */ }
-
       const isCancelled =
         err?.code === 'auth/popup-closed-by-user' ||
         err?.code === 'auth/cancelled-popup-request';

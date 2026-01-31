@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useCallback, useMemo, useRef } from 'react';
-import { signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from 'firebase/auth';
+import { signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from 'firebase/auth';
 import { getFirebaseAuth, getGoogleProvider, isFirebaseConfigured } from '../lib/firebase';
 import { queryClient } from '../lib/queryClient';
 import { useSubscription } from './SubscriptionContext';
@@ -105,7 +105,7 @@ export function AuthProvider({ children }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentional: refs provide stable access
   }, []);
 
-  // Sign in with Google (redirect flow)
+  // Sign in with Google (popup with redirect fallback)
   const signInWithGoogle = useCallback(async () => {
     if (!isFirebaseConfigured()) {
       throw new Error('Firebase not configured');
@@ -115,10 +115,15 @@ export function AuthProvider({ children }) {
     const provider = getGoogleProvider();
 
     try {
-      await signInWithRedirect(auth, provider);
-      return null; // Redirect navigates away
+      // Popup: immediate feedback, no page navigation, works on desktop
+      const result = await signInWithPopup(auth, provider);
+      return result;
     } catch (err) {
-      console.error('[Auth] Google sign-in redirect error:', err);
+      // Fallback to redirect if popup is blocked (common on mobile)
+      if (err?.code === 'auth/popup-blocked') {
+        await signInWithRedirect(auth, provider);
+        return null;
+      }
       throw err;
     }
   }, []);
