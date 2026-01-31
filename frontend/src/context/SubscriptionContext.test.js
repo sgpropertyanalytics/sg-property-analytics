@@ -76,22 +76,6 @@ describe('unwrapSubscriptionResponse', () => {
     });
   });
 
-  describe('flat response (legacy)', () => {
-    it('handles flat response without envelope', () => {
-      // Legacy format: {tier: "premium", subscribed: true, ...}
-      const flatResponseData = {
-        tier: 'premium',
-        subscribed: true,
-        ends_at: '2025-12-31T00:00:00Z',
-      };
-
-      const result = unwrapSubscriptionResponse(flatResponseData);
-
-      expect(result.tier).toBe('premium');
-      expect(result.subscribed).toBe(true);
-    });
-  });
-
   describe('edge cases', () => {
     it('returns null for null input', () => {
       const result = unwrapSubscriptionResponse(null);

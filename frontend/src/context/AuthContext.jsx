@@ -492,7 +492,7 @@ export function AuthProvider({ children }) {
             didSetInitialized = true;
           }
 
-          // === TOKEN STATUS STATE MACHINE ===
+          // === AUTH PHASE STATE MACHINE ===
           if (!firebaseUser) {
             // No user → token not needed (derives to 'present' automatically)
             logAuthEvent(AuthTimelineEvent.AUTH_NO_USER, {
@@ -533,7 +533,7 @@ export function AuthProvider({ children }) {
               authStateGuardRef.current.isStale
             );
 
-            // Update token status based on result
+            // Update auth phase based on result
             // Guard: Only update if this is still the current request
             if (!authStateGuardRef.current.isStale(requestId)) {
               if (result.aborted) {
@@ -782,7 +782,7 @@ export function AuthProvider({ children }) {
     // SINGLE-FLIGHT: This requestId now owns the sync
     syncOwnerRef.current = requestId;
 
-    // Update token status to refreshing via dispatch
+    // Update auth phase to syncing via dispatch
     dispatch({ type: 'TOKEN_SYNC_START', requestId });
 
     try {
