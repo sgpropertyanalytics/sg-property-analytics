@@ -37,7 +37,7 @@ from dataclasses import dataclass, field, asdict
 
 from sqlalchemy import text, bindparam
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy.orm import sessionmaker
 
 from services.ura_api_client import URAAPIClient, URADataError
 from services.ura_canonical_mapper import URACanonicalMapper, NATURAL_KEY_FIELDS
@@ -205,7 +205,7 @@ class URASyncEngine:
         try:
             # 2. Initialize database connection
             self.engine = get_database_engine()
-            Session = scoped_session(sessionmaker(bind=self.engine))
+            Session = sessionmaker(bind=self.engine)
             self.session = Session()
 
             # 3. Create sync run record
@@ -589,11 +589,21 @@ class URASyncEngine:
         try:
             comparator = URAShadowComparator(self.engine)
 
+            # Use overlap window: only compare months where both CSV and API
+            # have data. This avoids false negatives from CSV-only early months
+            # or API-only recent months.
+            from services.etl.fingerprint import get_overlap_window
+            overlap_range = get_overlap_window(self.session)
+            logger.info(
+                f"Using overlap window for comparison: "
+                f"{overlap_range[0]} to {overlap_range[1]}"
+            )
+
             # Compare this run against CSV data
             # For shadow mode, compare only Condo/Apt to match CSV scope
             report = comparator.compare_run_vs_csv(
                 run_id=self.run_id,
-                date_range=(get_cutoff_date(), date.today()),
+                date_range=overlap_range,
                 property_types=['Condominium', 'Apartment']
             )
 

@@ -244,21 +244,6 @@ def build_upsert_sql() -> str:
     return sql
 
 
-def build_batch_upsert_sql(batch_size: int) -> str:
-    """
-    Build SQL for batch upsert using VALUES clause.
-
-    Args:
-        batch_size: Number of rows in the batch
-
-    Returns:
-        SQL string for batch upsert
-    """
-    # This is more complex - for now, use individual upserts with executemany
-    # Could optimize later with psycopg2.extras.execute_values
-    return build_upsert_sql()
-
-
 # =============================================================================
 # Sync Result Tracking
 # =============================================================================

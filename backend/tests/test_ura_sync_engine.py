@@ -157,7 +157,7 @@ class TestURASyncEngineModes:
     @patch('services.ura_sync_engine.validate_sync_config')
     @patch('services.ura_sync_engine.get_database_engine')
     @patch('services.ura_sync_engine.URAAPIClient')
-    @patch('services.ura_sync_engine.scoped_session')
+    @patch('services.ura_sync_engine.sessionmaker')
     def test_dry_run_skips_writes(
         self, mock_session, mock_client, mock_engine, mock_validate
     ):
@@ -310,7 +310,7 @@ class TestSyncEngineFlow:
     @patch('services.ura_sync_engine.get_database_engine')
     @patch('services.ura_sync_engine.URAAPIClient')
     @patch('services.ura_sync_engine.URAShadowComparator')
-    @patch('services.ura_sync_engine.scoped_session')
+    @patch('services.ura_sync_engine.sessionmaker')
     def test_successful_sync_flow(
         self,
         mock_session,
@@ -378,7 +378,7 @@ class TestSyncEngineFlow:
     @patch('services.ura_sync_engine.get_database_engine')
     @patch('services.ura_sync_engine.URAAPIClient')
     @patch('services.ura_sync_engine.URAShadowComparator')
-    @patch('services.ura_sync_engine.scoped_session')
+    @patch('services.ura_sync_engine.sessionmaker')
     def test_threshold_exceeded_marks_failed(
         self,
         mock_session,
@@ -432,7 +432,7 @@ class TestSyncEngineFlow:
     @patch('services.ura_sync_engine.validate_sync_config')
     @patch('services.ura_sync_engine.get_database_engine')
     @patch('services.ura_sync_engine.URAAPIClient')
-    @patch('services.ura_sync_engine.scoped_session')
+    @patch('services.ura_sync_engine.sessionmaker')
     def test_baseline_missing_marks_failed(
         self,
         mock_session,
@@ -472,7 +472,7 @@ class TestSyncEngineFlow:
     @patch('services.ura_sync_engine.validate_sync_config')
     @patch('services.ura_sync_engine.get_database_engine')
     @patch('services.ura_sync_engine.URAAPIClient')
-    @patch('services.ura_sync_engine.scoped_session')
+    @patch('services.ura_sync_engine.sessionmaker')
     def test_baseline_too_small_marks_failed(
         self,
         mock_session,
@@ -513,7 +513,7 @@ class TestSyncEngineFlow:
     @patch('services.ura_sync_engine.validate_sync_config')
     @patch('services.ura_sync_engine.get_database_engine')
     @patch('services.ura_sync_engine.URAAPIClient')
-    @patch('services.ura_sync_engine.scoped_session')
+    @patch('services.ura_sync_engine.sessionmaker')
     def test_baseline_stale_marks_failed(
         self,
         mock_session,
@@ -670,7 +670,7 @@ class TestComparisonFailureHandling:
     @patch('services.ura_sync_engine.get_database_engine')
     @patch('services.ura_sync_engine.URAAPIClient')
     @patch('services.ura_sync_engine.URAShadowComparator')
-    @patch('services.ura_sync_engine.scoped_session')
+    @patch('services.ura_sync_engine.sessionmaker')
     def test_comparison_exception_fails_sync(
         self,
         mock_session,

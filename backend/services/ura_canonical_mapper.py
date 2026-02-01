@@ -83,10 +83,6 @@ TYPE_OF_SALE_MAP = {
 # Our DB stores area in square feet (sqft)
 SQM_TO_SQFT = 10.7639
 
-# Revision window: re-sync this many months on each run to catch URA corrections
-# URA may revise data retroactively; 3 months covers typical revision lag
-REVISION_WINDOW_MONTHS = 3
-
 # =============================================================================
 # Natural Key Fields for Transaction Identity
 # =============================================================================
