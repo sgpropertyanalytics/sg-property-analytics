@@ -1699,7 +1699,7 @@ def get_new_vs_resale_comparison(
             -- Projects that have at least one Resale transaction
             -- This excludes delayed construction projects still selling as "New Sale"
             SELECT DISTINCT project_name
-            FROM transactions
+            FROM transactions_primary
             WHERE sale_type = '{SALE_TYPE_RESALE}'
               AND {OUTLIER_FILTER}
         ),
@@ -1708,7 +1708,7 @@ def get_new_vs_resale_comparison(
                 DATE_TRUNC('{date_trunc_grain}', transaction_date) AS period,
                 AVG(price) AS median_price,
                 COUNT(*) AS transaction_count
-            FROM transactions
+            FROM transactions_primary
             WHERE sale_type = '{SALE_TYPE_NEW}'
               AND {OUTLIER_FILTER}
               AND {where_clause}
@@ -1719,7 +1719,7 @@ def get_new_vs_resale_comparison(
                 DATE_TRUNC('{date_trunc_grain}', transaction_date) AS period,
                 AVG(price) AS median_price,
                 COUNT(*) AS transaction_count
-            FROM transactions t
+            FROM transactions_primary t
             WHERE sale_type = '{SALE_TYPE_RESALE}'
               AND {OUTLIER_FILTER}
               AND lease_start_year IS NOT NULL

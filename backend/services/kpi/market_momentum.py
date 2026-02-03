@@ -117,7 +117,7 @@ def get_sql(params: Dict[str, Any]) -> str:
             SELECT
                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf) as median_psf,
                 COUNT(*) as txn_count
-            FROM transactions
+            FROM transactions_primary
             WHERE {base_filter}
               AND {resale_filter}
               AND transaction_date >= :current_start
@@ -127,7 +127,7 @@ def get_sql(params: Dict[str, Any]) -> str:
             SELECT
                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf) as median_psf,
                 COUNT(*) as txn_count
-            FROM transactions
+            FROM transactions_primary
             WHERE {base_filter}
               AND {resale_filter}
               AND transaction_date >= :prev_start
@@ -137,7 +137,7 @@ def get_sql(params: Dict[str, Any]) -> str:
             SELECT
                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf) as median_psf,
                 COUNT(*) as txn_count
-            FROM transactions
+            FROM transactions_primary
             WHERE {base_filter}
               AND {resale_filter}
               AND transaction_date >= :older_start
@@ -148,7 +148,7 @@ def get_sql(params: Dict[str, Any]) -> str:
                 DATE_TRUNC('quarter', transaction_date) as quarter,
                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf) as median_psf,
                 COUNT(*) as txn_count
-            FROM transactions
+            FROM transactions_primary
             WHERE {base_filter}
               AND {resale_filter}
               AND transaction_date >= :volatility_start
@@ -223,7 +223,7 @@ def _fetch_fallback_data(filters: Dict[str, Any], max_exclusive: date) -> Tuple[
             SELECT
                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf) as median_psf,
                 COUNT(*) as txn_count
-            FROM transactions
+            FROM transactions_primary
             WHERE {base_filter}
               AND {resale_filter}
               AND transaction_date >= :fallback_current_start
@@ -233,7 +233,7 @@ def _fetch_fallback_data(filters: Dict[str, Any], max_exclusive: date) -> Tuple[
             SELECT
                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf) as median_psf,
                 COUNT(*) as txn_count
-            FROM transactions
+            FROM transactions_primary
             WHERE {base_filter}
               AND {resale_filter}
               AND transaction_date >= :fallback_prev_start

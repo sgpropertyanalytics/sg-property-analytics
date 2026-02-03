@@ -68,7 +68,7 @@ def get_sql(params: Dict[str, Any]) -> str:
     return f"""
         WITH current_period AS (
             SELECT COUNT(*) as txn_count
-            FROM transactions
+            FROM transactions_primary
             WHERE {base_filter}
               AND sale_type = :sale_type_resale
               AND transaction_date >= :current_min_date
@@ -76,7 +76,7 @@ def get_sql(params: Dict[str, Any]) -> str:
         ),
         previous_period AS (
             SELECT COUNT(*) as txn_count
-            FROM transactions
+            FROM transactions_primary
             WHERE {base_filter}
               AND sale_type = :sale_type_resale
               AND transaction_date >= :prev_min_date

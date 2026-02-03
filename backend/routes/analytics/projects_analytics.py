@@ -195,7 +195,7 @@ def get_resale_projects():
                     district,
                     COUNT(*) as transaction_count,
                     COUNT(CASE WHEN sale_type = :sale_type_resale THEN 1 END) as resale_count
-                FROM transactions
+                FROM transactions_primary
                 WHERE {OUTLIER_FILTER}
                 GROUP BY project_name, district
                 ORDER BY project_name

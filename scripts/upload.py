@@ -33,7 +33,7 @@ import uuid
 import json
 import time
 import subprocess
-from datetime import datetime
+from datetime import datetime, date, timedelta
 from typing import Set, List, Tuple, Dict, Any, Optional
 
 from flask import Flask
@@ -114,6 +114,41 @@ def compute_transaction_row_hash(row: dict) -> str:
         return compute_row_hash(natural_key, NATURAL_KEY_FIELDS)
     except Exception:
         return None
+
+
+def _parse_month_range(range_str: str) -> Optional[Tuple[date, date]]:
+    """
+    Parse a month range string in the form YYYY-MM..YYYY-MM.
+    Returns (start_date, end_date) inclusive, or None if invalid.
+    """
+    if not range_str:
+        return None
+    try:
+        if '..' not in range_str:
+            return None
+        start_str, end_str = [s.strip() for s in range_str.split('..', 1)]
+        start_year, start_month = [int(x) for x in start_str.split('-', 1)]
+        end_year, end_month = [int(x) for x in end_str.split('-', 1)]
+        start_date = date(start_year, start_month, 1)
+        end_date = _month_end(date(end_year, end_month, 1))
+        if end_date < start_date:
+            return None
+        return start_date, end_date
+    except Exception:
+        return None
+
+
+def _month_end(first_of_month: date) -> date:
+    """Return last day of the given month."""
+    next_month = first_of_month.replace(day=28) + timedelta(days=4)
+    return next_month.replace(day=1) - timedelta(days=1)
+
+
+def _filter_files_by_pattern(files: List[str], pattern: Optional[str]) -> List[str]:
+    if not pattern:
+        return files
+    needle = pattern.lower()
+    return [f for f in files if needle in os.path.basename(f).lower()]
 
 # =============================================================================
 # ETL FEATURES (production defaults)
@@ -1182,7 +1217,13 @@ def _create_staging_table_schema(logger: UploadLogger):
     logger.log("✓ Staging table created")
 
 
-def insert_to_staging(csv_path: str, sale_type: str, logger: UploadLogger, batch_id: str = None) -> dict:
+def insert_to_staging(
+    csv_path: str,
+    sale_type: str,
+    logger: UploadLogger,
+    batch_id: str = None,
+    date_range: Optional[Tuple[date, date]] = None
+) -> dict:
     """
     Process a single CSV file and insert into staging table.
 
@@ -1228,6 +1269,16 @@ def insert_to_staging(csv_path: str, sale_type: str, logger: UploadLogger, batch
                 # Show sample rejected rows
                 for sample in diag.get('sample_rejected', [])[:3]:
                     logger.log(f"      Sample: {sample}")
+
+        # Optional date window filter (inclusive)
+        if date_range and not df.empty and 'transaction_date' in df.columns:
+            start_date, end_date = date_range
+            df['_txn_dt'] = pd.to_datetime(df['transaction_date'], errors='coerce')
+            before_filter = len(df)
+            df = df[(df['_txn_dt'].notna()) & (df['_txn_dt'] >= pd.Timestamp(start_date)) & (df['_txn_dt'] <= pd.Timestamp(end_date))].copy()
+            df = df.drop(columns=['_txn_dt'], errors='ignore')
+            after_filter = len(df)
+            logger.log(f"  📅 Date filter {start_date} to {end_date}: {after_filter:,}/{before_filter:,} rows kept")
 
         # Calculate rows skipped during cleaning
         rows_after_clean = len(df) if not df.empty else 0
@@ -2352,9 +2403,24 @@ def main():
         help='Preview changes without touching production (dry-run diff)'
     )
     parser.add_argument(
+        '--include-pattern',
+        type=str,
+        help='Only process CSV files whose filename contains this pattern (case-insensitive)'
+    )
+    parser.add_argument(
+        '--date-range',
+        type=str,
+        help='Filter rows by transaction month, inclusive. Format: YYYY-MM..YYYY-MM'
+    )
+    parser.add_argument(
         '--clear-staging',
         action='store_true',
         help='Clear staging table before loading (removes stale data from failed runs)'
+    )
+    parser.add_argument(
+        '--allow-staging-append',
+        action='store_true',
+        help='Allow new batch to append to non-empty staging (safe only with batch_id)'
     )
     parser.add_argument(
         '--resume-batch',
@@ -2388,10 +2454,25 @@ def main():
         print("\n❌ Data guard failed. Fix the CSV issues or set SKIP_DATA_GUARD=true to bypass.")
         sys.exit(1)
 
+    # Parse optional date range filter
+    date_range = None
+    if args.date_range:
+        date_range = _parse_month_range(args.date_range)
+        if not date_range:
+            print(f"\n❌ Invalid --date-range '{args.date_range}'. Expected format: YYYY-MM..YYYY-MM")
+            sys.exit(1)
+
     # Discover CSV files BEFORE touching the database
     # This prevents "no files found" errors after DB work has started
     if not args.check and not args.publish and not args.rollback:
         new_sale_files, resale_files, subsale_files = discover_csv_files(csv_folder)
+
+        # Optional filename filter
+        if args.include_pattern:
+            new_sale_files = _filter_files_by_pattern(new_sale_files, args.include_pattern)
+            resale_files = _filter_files_by_pattern(resale_files, args.include_pattern)
+            subsale_files = _filter_files_by_pattern(subsale_files, args.include_pattern)
+
         total_csv_files = len(new_sale_files) + len(resale_files) + len(subsale_files)
 
         if total_csv_files == 0 and not args.dry_run:
@@ -2403,6 +2484,10 @@ def main():
         print(f"   New Sale: {len(new_sale_files)} files")
         print(f"   Resale: {len(resale_files)} files")
         print(f"   Subsale: {len(subsale_files)} files")
+        if args.include_pattern:
+            print(f"   Filename filter: '{args.include_pattern}'")
+        if date_range:
+            print(f"   Date filter: {date_range[0]} to {date_range[1]}")
 
         # Step A: Contract-based header check (before loading)
         if CONTRACT_AVAILABLE:
@@ -2502,7 +2587,7 @@ def main():
             # Step B: Initialize RunContext for batch tracking
             run_ctx = None
             if RUN_CONTEXT_AVAILABLE:
-                all_csv_files = new_sale_files + resale_files
+                all_csv_files = new_sale_files + resale_files + subsale_files
                 run_ctx = initialize_run_context(
                     all_csv_files,
                     contract_report=contract_report if 'contract_report' in dir() else None,
@@ -2569,24 +2654,38 @@ def main():
                             logger.log(f"  ✓ Batch ownership verified: {args.resume_batch[:8]}...")
                             logger.log(f"    Existing rows in batch: {total_staging_rows:,}")
                     else:
-                        # New batch but staging has data - ABORT
-                        logger.log(f"❌ STAGING NOT EMPTY: Found {total_staging_rows:,} rows from previous run(s)")
-                        logger.log(f"")
-                        logger.log(f"   Existing batches in staging:")
-                        for b in existing_batches:
-                            bid = str(b[0])[:8] if b[0] else 'NULL'
-                            logger.log(f"     - {bid}...: {b[1]:,} rows (created {b[2]})")
-                        logger.log(f"")
-                        logger.log(f"   This is a safety check to prevent accidental data mixing.")
-                        logger.log(f"   You must explicitly choose:")
-                        logger.log(f"")
-                        logger.log(f"   Options:")
-                        logger.log(f"   1. --clear-staging              Start fresh (discard existing data)")
-                        if existing_batch_ids:
-                            logger.log(f"   2. --resume-batch {existing_batch_ids[0]}   Resume the previous batch")
-                        logger.log(f"")
-                        exit_code = 1
-                        raise SystemExit(exit_code)
+                        # New batch but staging has data
+                        if args.allow_staging_append:
+                            if not current_batch_id:
+                                logger.log("❌ --allow-staging-append requires batch tracking to be enabled")
+                                exit_code = 1
+                                raise SystemExit(exit_code)
+                            logger.log(f"⚠️  STAGING NOT EMPTY: Found {total_staging_rows:,} rows from previous run(s)")
+                            logger.log("   Proceeding due to --allow-staging-append")
+                            logger.log("   Existing batches in staging:")
+                            for b in existing_batches:
+                                bid = str(b[0])[:8] if b[0] else 'NULL'
+                                logger.log(f"     - {bid}...: {b[1]:,} rows (created {b[2]})")
+                        else:
+                            # Safety check to prevent accidental data mixing
+                            logger.log(f"❌ STAGING NOT EMPTY: Found {total_staging_rows:,} rows from previous run(s)")
+                            logger.log(f"")
+                            logger.log(f"   Existing batches in staging:")
+                            for b in existing_batches:
+                                bid = str(b[0])[:8] if b[0] else 'NULL'
+                                logger.log(f"     - {bid}...: {b[1]:,} rows (created {b[2]})")
+                            logger.log(f"")
+                            logger.log(f"   This is a safety check to prevent accidental data mixing.")
+                            logger.log(f"   You must explicitly choose:")
+                            logger.log(f"")
+                            logger.log(f"   Options:")
+                            logger.log(f"   1. --clear-staging              Start fresh (discard existing data)")
+                            if existing_batch_ids:
+                                logger.log(f"   2. --resume-batch {existing_batch_ids[0]}   Resume the previous batch")
+                            logger.log(f"   3. --allow-staging-append       Append a new batch safely")
+                            logger.log(f"")
+                            exit_code = 1
+                            raise SystemExit(exit_code)
 
             # Clear staging if requested (removes stale data from failed runs)
             if args.clear_staging:
@@ -2632,7 +2731,13 @@ def main():
             if new_sale_files:
                 logger.log("Processing New Sale data...")
                 for csv_path in new_sale_files:
-                    result = insert_to_staging(csv_path, 'New Sale', logger, batch_id=current_batch_id)
+                    result = insert_to_staging(
+                        csv_path,
+                        'New Sale',
+                        logger,
+                        batch_id=current_batch_id,
+                        date_range=date_range
+                    )
                     total_source_rows += result['source_rows']
                     total_loaded += result['rows_loaded']
                     total_rejected += result['rows_rejected']
@@ -2643,7 +2748,13 @@ def main():
             if resale_files:
                 logger.log("Processing Resale data...")
                 for csv_path in resale_files:
-                    result = insert_to_staging(csv_path, 'Resale', logger, batch_id=current_batch_id)
+                    result = insert_to_staging(
+                        csv_path,
+                        'Resale',
+                        logger,
+                        batch_id=current_batch_id,
+                        date_range=date_range
+                    )
                     total_source_rows += result['source_rows']
                     total_loaded += result['rows_loaded']
                     total_rejected += result['rows_rejected']
@@ -2654,7 +2765,13 @@ def main():
             if subsale_files:
                 logger.log("Processing Subsale data...")
                 for csv_path in subsale_files:
-                    result = insert_to_staging(csv_path, 'Sub Sale', logger, batch_id=current_batch_id)
+                    result = insert_to_staging(
+                        csv_path,
+                        'Sub Sale',
+                        logger,
+                        batch_id=current_batch_id,
+                        date_range=date_range
+                    )
                     total_source_rows += result['source_rows']
                     total_loaded += result['rows_loaded']
                     total_rejected += result['rows_rejected']

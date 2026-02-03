@@ -11,8 +11,9 @@ import hashlib
 import threading
 from datetime import datetime, timedelta
 from typing import Dict, Any, Optional
-from models.transaction import Transaction
 from models.database import db
+from db.sql import exclude_outliers
+from db.transaction_primary import get_transactions_primary_table
 from sqlalchemy import func, and_, or_, extract, case, literal
 from constants import CCR_DISTRICTS, RCR_DISTRICTS, DISTRICT_NAMES, SALE_TYPE_NEW, SALE_TYPE_RESALE
 from services.new_launch_units import get_district_units_for_resale
@@ -95,30 +96,37 @@ def build_property_age_filter(age_filter):
         return None
 
     # Property age = transaction year - lease start year
-    property_age = extract('year', Transaction.transaction_date) - Transaction.lease_start_year
+    property_age = extract('year', t.transaction_date) - t.lease_start_year
 
     if age_filter == "new":
         # 0-5 years: New Sale / Recently TOP
         return and_(
-            Transaction.lease_start_year.isnot(None),
+            t.lease_start_year.isnot(None),
             property_age >= 0,
             property_age <= 5
         )
     elif age_filter == "young":
         # 5-10 years: Young Resale
         return and_(
-            Transaction.lease_start_year.isnot(None),
+            t.lease_start_year.isnot(None),
             property_age > 5,
             property_age <= 10
         )
     elif age_filter == "resale":
         # >10 years: Mature Resale
         return and_(
-            Transaction.lease_start_year.isnot(None),
+            t.lease_start_year.isnot(None),
             property_age > 10
         )
 
     return None
+
+class _LazyPrimaryCols:
+    def __getattr__(self, name):
+        return getattr(get_transactions_primary_table(db).c, name)
+
+
+t = _LazyPrimaryCols()
 
 insights_bp = Blueprint('insights', __name__)
 
@@ -218,25 +226,25 @@ def district_psf():
     sale_type_filter = params.get("sale_type")  # DB format: "New Sale", "Resale", or None
 
     # Build base filter conditions (always exclude outliers)
-    filter_conditions = [Transaction.outlier_filter()]
+    filter_conditions = [exclude_outliers(t)]
 
     # Apply date filter using half-open interval [date_from, date_to_exclusive)
     if date_from:
-        filter_conditions.append(Transaction.transaction_date >= date_from)
+        filter_conditions.append(t.transaction_date >= date_from)
     if date_to_exclusive:
-        filter_conditions.append(Transaction.transaction_date < date_to_exclusive)
+        filter_conditions.append(t.transaction_date < date_to_exclusive)
 
     # Apply bedroom filter
     bedroom_filter_label = bed_filter
     if bed_filter != "all":
         if bed_filter == "1":
-            filter_conditions.append(Transaction.bedroom_count == 1)
+            filter_conditions.append(t.bedroom_count == 1)
         elif bed_filter == "2":
-            filter_conditions.append(Transaction.bedroom_count == 2)
+            filter_conditions.append(t.bedroom_count == 2)
         elif bed_filter == "3":
-            filter_conditions.append(Transaction.bedroom_count == 3)
+            filter_conditions.append(t.bedroom_count == 3)
         elif bed_filter in ["4", "4+", "5"]:
-            filter_conditions.append(Transaction.bedroom_count >= 4)
+            filter_conditions.append(t.bedroom_count >= 4)
 
     # Apply property age filter
     age_condition = build_property_age_filter(age_filter)
@@ -245,18 +253,18 @@ def district_psf():
 
     # Apply sale type filter (already in DB format: "New Sale", "Resale", or None)
     if sale_type_filter:
-        filter_conditions.append(Transaction.sale_type == sale_type_filter)
+        filter_conditions.append(t.sale_type == sale_type_filter)
 
     try:
         # Query current period data - grouped by district
         current_query = db.session.query(
-            Transaction.district,
-            func.count(Transaction.id).label("tx_count"),
-            func.percentile_cont(0.5).within_group(Transaction.psf).label("median_psf")
+            t.district,
+            func.count(t.id).label("tx_count"),
+            func.percentile_cont(0.5).within_group(t.psf).label("median_psf")
         ).filter(
             and_(*filter_conditions)
         ).group_by(
-            Transaction.district
+            t.district
         )
 
         current_results = {row.district: row for row in current_query.all()}
@@ -268,20 +276,20 @@ def district_psf():
             yoy_from = date_from - relativedelta(years=1)
             yoy_to_exclusive = date_to_exclusive - relativedelta(years=1)
 
-            yoy_conditions = [Transaction.outlier_filter()]
-            yoy_conditions.append(Transaction.transaction_date >= yoy_from)
-            yoy_conditions.append(Transaction.transaction_date < yoy_to_exclusive)
+            yoy_conditions = [exclude_outliers(t)]
+            yoy_conditions.append(t.transaction_date >= yoy_from)
+            yoy_conditions.append(t.transaction_date < yoy_to_exclusive)
 
             # Apply same bedroom filter for YoY
             if bed_filter != "all":
                 if bed_filter == "1":
-                    yoy_conditions.append(Transaction.bedroom_count == 1)
+                    yoy_conditions.append(t.bedroom_count == 1)
                 elif bed_filter == "2":
-                    yoy_conditions.append(Transaction.bedroom_count == 2)
+                    yoy_conditions.append(t.bedroom_count == 2)
                 elif bed_filter == "3":
-                    yoy_conditions.append(Transaction.bedroom_count == 3)
+                    yoy_conditions.append(t.bedroom_count == 3)
                 elif bed_filter in ["4", "4+", "5"]:
-                    yoy_conditions.append(Transaction.bedroom_count >= 4)
+                    yoy_conditions.append(t.bedroom_count >= 4)
 
             # Apply same property age filter for YoY
             if age_condition is not None:
@@ -289,15 +297,15 @@ def district_psf():
 
             # Apply same sale type filter for YoY (already in DB format)
             if sale_type_filter:
-                yoy_conditions.append(Transaction.sale_type == sale_type_filter)
+                yoy_conditions.append(t.sale_type == sale_type_filter)
 
             yoy_query = db.session.query(
-                Transaction.district,
-                func.percentile_cont(0.5).within_group(Transaction.psf).label("median_psf")
+                t.district,
+                func.percentile_cont(0.5).within_group(t.psf).label("median_psf")
             ).filter(
                 and_(*yoy_conditions)
             ).group_by(
-                Transaction.district
+                t.district
             )
 
             yoy_data = {row.district: row.median_psf for row in yoy_query.all()}
@@ -463,8 +471,8 @@ def district_liquidity():
     # Handle "all" timeframe specially (compute months from data)
     if months_in_period is None:
         # For "all", get the earliest transaction date
-        earliest = db.session.query(func.min(Transaction.transaction_date)).filter(
-            Transaction.outlier_filter()
+        earliest = db.session.query(func.min(t.transaction_date)).filter(
+            exclude_outliers(t)
         ).scalar()
         if earliest and date_to_exclusive:
             # Snap earliest to month boundary (1st of month)
@@ -481,30 +489,30 @@ def district_liquidity():
     sale_type_filter = params.get("sale_type")  # None means "all"
 
     # Build base filter conditions
-    filter_conditions = [Transaction.outlier_filter()]
+    filter_conditions = [exclude_outliers(t)]
 
     # Apply date filter using half-open interval [date_from, date_to_exclusive)
     if date_from:
-        filter_conditions.append(Transaction.transaction_date >= date_from)
+        filter_conditions.append(t.transaction_date >= date_from)
     if date_to_exclusive:
-        filter_conditions.append(Transaction.transaction_date < date_to_exclusive)
+        filter_conditions.append(t.transaction_date < date_to_exclusive)
 
     # Apply bedroom filter
     if bed_filter != "all":
         if bed_filter == "1":
-            filter_conditions.append(Transaction.bedroom_count == 1)
+            filter_conditions.append(t.bedroom_count == 1)
         elif bed_filter == "2":
-            filter_conditions.append(Transaction.bedroom_count == 2)
+            filter_conditions.append(t.bedroom_count == 2)
         elif bed_filter == "3":
-            filter_conditions.append(Transaction.bedroom_count == 3)
+            filter_conditions.append(t.bedroom_count == 3)
         elif bed_filter == "4":
-            filter_conditions.append(Transaction.bedroom_count == 4)
+            filter_conditions.append(t.bedroom_count == 4)
         elif bed_filter == "5":
-            filter_conditions.append(Transaction.bedroom_count >= 5)
+            filter_conditions.append(t.bedroom_count >= 5)
 
     # Apply sale type filter (already in DB format, None means "all")
     if sale_type_filter:
-        filter_conditions.append(Transaction.sale_type == sale_type_filter)
+        filter_conditions.append(t.sale_type == sale_type_filter)
 
     try:
         # =================================================================
@@ -512,15 +520,15 @@ def district_liquidity():
         # These show total market activity based on user's filter selection
         # =================================================================
         query = db.session.query(
-            Transaction.district,
-            func.count(Transaction.id).label("tx_count"),
-            func.count(case((Transaction.sale_type == SALE_TYPE_NEW, 1))).label("new_sale_count"),
-            func.count(case((Transaction.sale_type == SALE_TYPE_RESALE, 1))).label("resale_count"),
-            func.count(func.distinct(Transaction.project_name)).label("project_count"),
+            t.district,
+            func.count(t.id).label("tx_count"),
+            func.count(case((t.sale_type == SALE_TYPE_NEW, 1))).label("new_sale_count"),
+            func.count(case((t.sale_type == SALE_TYPE_RESALE, 1))).label("resale_count"),
+            func.count(func.distinct(t.project_name)).label("project_count"),
         ).filter(
             and_(*filter_conditions)
         ).group_by(
-            Transaction.district
+            t.district
         )
 
         results = query.all()
@@ -528,14 +536,14 @@ def district_liquidity():
 
         # Query bedroom breakdown per district (combined)
         bedroom_query = db.session.query(
-            Transaction.district,
-            Transaction.bedroom_count,
-            func.count(Transaction.id).label("count")
+            t.district,
+            t.bedroom_count,
+            func.count(t.id).label("count")
         ).filter(
             and_(*filter_conditions)
         ).group_by(
-            Transaction.district,
-            Transaction.bedroom_count
+            t.district,
+            t.bedroom_count
         )
 
         bedroom_results = bedroom_query.all()
@@ -554,34 +562,34 @@ def district_liquidity():
         # - New launch concentration is 100% by definition (one developer)
         # =================================================================
         resale_filter_conditions = [
-            Transaction.outlier_filter(),
-            Transaction.sale_type == SALE_TYPE_RESALE  # ALWAYS resale only for exit safety
+            exclude_outliers(t),
+            t.sale_type == SALE_TYPE_RESALE  # ALWAYS resale only for exit safety
         ]
         if date_from:
-            resale_filter_conditions.append(Transaction.transaction_date >= date_from)
+            resale_filter_conditions.append(t.transaction_date >= date_from)
         if date_to_exclusive:
-            resale_filter_conditions.append(Transaction.transaction_date < date_to_exclusive)
+            resale_filter_conditions.append(t.transaction_date < date_to_exclusive)
         # Apply bedroom filter to resale metrics too
         if bed_filter != "all":
             if bed_filter == "1":
-                resale_filter_conditions.append(Transaction.bedroom_count == 1)
+                resale_filter_conditions.append(t.bedroom_count == 1)
             elif bed_filter == "2":
-                resale_filter_conditions.append(Transaction.bedroom_count == 2)
+                resale_filter_conditions.append(t.bedroom_count == 2)
             elif bed_filter == "3":
-                resale_filter_conditions.append(Transaction.bedroom_count == 3)
+                resale_filter_conditions.append(t.bedroom_count == 3)
             elif bed_filter == "4":
-                resale_filter_conditions.append(Transaction.bedroom_count == 4)
+                resale_filter_conditions.append(t.bedroom_count == 4)
             elif bed_filter == "5":
-                resale_filter_conditions.append(Transaction.bedroom_count >= 5)
+                resale_filter_conditions.append(t.bedroom_count >= 5)
 
         # Query resale transaction counts for velocity/Z-score calculation
         resale_velocity_query = db.session.query(
-            Transaction.district,
-            func.count(Transaction.id).label("resale_tx_count"),
+            t.district,
+            func.count(t.id).label("resale_tx_count"),
         ).filter(
             and_(*resale_filter_conditions)
         ).group_by(
-            Transaction.district
+            t.district
         )
 
         resale_velocity_results = resale_velocity_query.all()
@@ -602,12 +610,12 @@ def district_liquidity():
         # Lower CV = more consistent pricing = healthier market
         # =================================================================
         psf_cv_query = db.session.query(
-            Transaction.district,
-            (func.stddev(Transaction.psf) / func.nullif(func.avg(Transaction.psf), 0)).label("psf_cv")
+            t.district,
+            (func.stddev(t.psf) / func.nullif(func.avg(t.psf), 0)).label("psf_cv")
         ).filter(
             and_(*resale_filter_conditions)
         ).group_by(
-            Transaction.district
+            t.district
         )
 
         psf_cv_results = psf_cv_query.all()
@@ -615,14 +623,14 @@ def district_liquidity():
 
         # Query project-level resale transaction counts for concentration calculation
         project_query = db.session.query(
-            Transaction.district,
-            Transaction.project_name,
-            func.count(Transaction.id).label("count")
+            t.district,
+            t.project_name,
+            func.count(t.id).label("count")
         ).filter(
             and_(*resale_filter_conditions)
         ).group_by(
-            Transaction.district,
-            Transaction.project_name
+            t.district,
+            t.project_name
         )
 
         project_results = project_query.all()

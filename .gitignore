@@ -58,6 +58,7 @@ ipython_config.py
 
 # Environments
 .env
+.env.bak
 .venv
 env/
 venv/

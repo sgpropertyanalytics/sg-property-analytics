@@ -154,7 +154,7 @@ def _build_multi_cte_query(filters: Dict[str, Any]) -> tuple[str, Dict[str, Any]
             SELECT
                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf) as median_psf,
                 COUNT(*) as txn_count
-            FROM transactions
+            FROM transactions_primary
             WHERE {base_filter}
               AND {resale_filter}
               AND transaction_date >= :q0_start
@@ -164,7 +164,7 @@ def _build_multi_cte_query(filters: Dict[str, Any]) -> tuple[str, Dict[str, Any]
             SELECT
                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf) as median_psf,
                 COUNT(*) as txn_count
-            FROM transactions
+            FROM transactions_primary
             WHERE {base_filter}
               AND {resale_filter}
               AND transaction_date >= :q1_start
@@ -176,7 +176,7 @@ def _build_multi_cte_query(filters: Dict[str, Any]) -> tuple[str, Dict[str, Any]
         -- ================================================================
         txn_current AS (
             SELECT COUNT(*) as txn_count
-            FROM transactions
+            FROM transactions_primary
             WHERE {base_filter}
               AND {resale_filter}
               AND transaction_date >= :q0_start
@@ -184,7 +184,7 @@ def _build_multi_cte_query(filters: Dict[str, Any]) -> tuple[str, Dict[str, Any]
         ),
         txn_prev AS (
             SELECT COUNT(*) as txn_count
-            FROM transactions
+            FROM transactions_primary
             WHERE {base_filter}
               AND {resale_filter}
               AND transaction_date >= :q1_start
@@ -198,7 +198,7 @@ def _build_multi_cte_query(filters: Dict[str, Any]) -> tuple[str, Dict[str, Any]
             SELECT
                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf) as median_psf,
                 COUNT(*) as txn_count
-            FROM transactions
+            FROM transactions_primary
             WHERE {base_filter}
               AND {resale_filter}
               AND transaction_date >= :q0_start
@@ -208,7 +208,7 @@ def _build_multi_cte_query(filters: Dict[str, Any]) -> tuple[str, Dict[str, Any]
             SELECT
                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf) as median_psf,
                 COUNT(*) as txn_count
-            FROM transactions
+            FROM transactions_primary
             WHERE {base_filter}
               AND {resale_filter}
               AND transaction_date >= :q1_start
@@ -218,7 +218,7 @@ def _build_multi_cte_query(filters: Dict[str, Any]) -> tuple[str, Dict[str, Any]
             SELECT
                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf) as median_psf,
                 COUNT(*) as txn_count
-            FROM transactions
+            FROM transactions_primary
             WHERE {base_filter}
               AND {resale_filter}
               AND transaction_date >= :q2_start
@@ -230,7 +230,7 @@ def _build_multi_cte_query(filters: Dict[str, Any]) -> tuple[str, Dict[str, Any]
                 DATE_TRUNC('quarter', transaction_date) as quarter,
                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf) as median_psf,
                 COUNT(*) as txn_count
-            FROM transactions
+            FROM transactions_primary
             WHERE {base_filter}
               AND {resale_filter}
               AND transaction_date >= :volatility_start

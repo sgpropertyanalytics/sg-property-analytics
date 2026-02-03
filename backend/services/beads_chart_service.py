@@ -74,7 +74,7 @@ def query_beads_chart(filters: Dict[str, Any], options: Dict[str, Any]) -> List[
                 ELSE 'OCR'
             END as region,
             CASE WHEN bedroom_count >= 5 THEN 5 ELSE bedroom_count END as bedroom
-        FROM transactions
+        FROM transactions_primary
         WHERE {where_clause}
           AND price IS NOT NULL
           AND price > 0

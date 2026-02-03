@@ -56,7 +56,7 @@ def get_sql(params: Dict[str, Any]) -> str:
             SELECT
                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf) as median_psf,
                 COUNT(*) as txn_count
-            FROM transactions
+            FROM transactions_primary
             WHERE {base_filter}
               AND {resale_filter}
               AND transaction_date >= :min_date
@@ -66,7 +66,7 @@ def get_sql(params: Dict[str, Any]) -> str:
             SELECT
                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf) as median_psf,
                 COUNT(*) as txn_count
-            FROM transactions
+            FROM transactions_primary
             WHERE {base_filter}
               AND {resale_filter}
               AND transaction_date >= :prev_min_date

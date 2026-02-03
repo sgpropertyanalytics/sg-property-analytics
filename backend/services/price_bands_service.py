@@ -194,7 +194,7 @@ def _get_project_info(project_name: str) -> Optional[Dict[str, Any]]:
     result = db.session.execute(
         text("""
             SELECT district, tenure
-            FROM transactions
+            FROM transactions_primary
             WHERE project_name = :project_name
               AND COALESCE(is_outlier, false) = false
             ORDER BY transaction_date DESC
@@ -339,7 +339,7 @@ def _compute_monthly_percentiles(
             PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY psf) as p25,
             PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY psf) as p50,
             PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY psf) as p75
-        FROM transactions
+        FROM transactions_primary
         WHERE {where_clause}
         GROUP BY TO_CHAR(transaction_date, 'YYYY-MM')
         HAVING COUNT(*) >= :min_trades

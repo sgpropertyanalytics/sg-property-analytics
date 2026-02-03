@@ -9,7 +9,7 @@ CRITICAL: All queries MUST include COALESCE(is_outlier, false) = false filter
 """
 from flask import Blueprint, request, jsonify, g
 from models.project_location import ProjectLocation
-from models.transaction import Transaction
+from db.transaction_primary import get_transactions_primary_table
 from models.database import db
 from services.school_distance import haversine
 from sqlalchemy import func, and_
@@ -20,6 +20,13 @@ from utils.normalize import (
     to_float,
     ValidationError as NormalizeValidationError, validation_error_response
 )
+
+class _LazyPrimaryCols:
+    def __getattr__(self, name):
+        return getattr(get_transactions_primary_table(db).c, name)
+
+
+t = _LazyPrimaryCols()
 
 deal_checker_bp = Blueprint('deal_checker', __name__)
 
@@ -207,8 +214,8 @@ def get_bedroom_filter(bedroom):
         SQLAlchemy filter condition
     """
     if bedroom >= 5:
-        return Transaction.bedroom_count >= 5
-    return Transaction.bedroom_count == bedroom
+        return t.bedroom_count >= 5
+    return t.bedroom_count == bedroom
 
 
 def compute_scope_stats(project_names, bedroom, buyer_price, sqft=None):
@@ -236,12 +243,12 @@ def compute_scope_stats(project_names, bedroom, buyer_price, sqft=None):
     # Query transactions for these projects
     # Note: bedroom >= 5 handles "5+ BR" option from frontend
     query = db.session.query(
-        Transaction.price,
-        Transaction.psf,
-        Transaction.area_sqft
+        t.price,
+        t.psf,
+        t.area_sqft
     ).filter(
-        exclude_outliers(Transaction),
-        Transaction.project_name.in_(project_names),
+        exclude_outliers(t),
+        t.project_name.in_(project_names),
         get_bedroom_filter(bedroom)
     )
 
@@ -251,8 +258,8 @@ def compute_scope_stats(project_names, bedroom, buyer_price, sqft=None):
         sqft_min = sqft * 0.85
         sqft_max = sqft * 1.15
         query = query.filter(
-            Transaction.area_sqft >= sqft_min,
-            Transaction.area_sqft <= sqft_max
+            t.area_sqft >= sqft_min,
+            t.area_sqft <= sqft_max
         )
 
     transactions = query.all()
@@ -380,7 +387,7 @@ def get_multi_scope_comparison():
             PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY :current_year - lease_start_year)
                 FILTER (WHERE lease_start_year IS NOT NULL) as median_age,
             BOOL_AND(lease_start_year IS NULL) as is_freehold
-        FROM transactions
+        FROM transactions_primary
         WHERE COALESCE(is_outlier, false) = false
           AND project_name = ANY(:project_names)
           AND (

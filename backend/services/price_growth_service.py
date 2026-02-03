@@ -164,7 +164,7 @@ def get_transaction_price_growth(
                     ORDER BY transaction_date, id
                 ) as txn_sequence
 
-            FROM transactions
+            FROM transactions_primary
             WHERE COALESCE(is_outlier, false) = false
               AND (:project_name IS NULL OR project_name ILIKE :project_name)
               AND (:bedroom_count IS NULL OR bedroom_count = :bedroom_count)
@@ -232,7 +232,7 @@ def get_transaction_price_growth(
     # Get total count for pagination
     count_query = text("""
         SELECT COUNT(*)
-        FROM transactions
+        FROM transactions_primary
         WHERE COALESCE(is_outlier, false) = false
           AND (:project_name IS NULL OR project_name ILIKE :project_name)
           AND (:bedroom_count IS NULL OR bedroom_count = :bedroom_count)
@@ -347,7 +347,7 @@ def get_segment_summary(
                     ORDER BY transaction_date, id
                 ) as txn_sequence
 
-            FROM transactions
+            FROM transactions_primary
             WHERE COALESCE(is_outlier, false) = false
               AND (:project_name IS NULL OR project_name ILIKE :project_name)
               AND (:district IS NULL OR district = :district)

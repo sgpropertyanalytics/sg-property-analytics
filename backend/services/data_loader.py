@@ -442,7 +442,7 @@ def clean_csv_data(df: pd.DataFrame, verbose: bool = False) -> pd.DataFrame:
         df['Type of Sale'] = df['sale_type']
 
     # Add source marker
-    df['source'] = 'csv_offline'
+    df['source'] = 'csv'
 
     # Drop the temporary datetime column used for classification
     df = df.drop(columns=['transaction_date_dt'], errors='ignore')
@@ -590,4 +590,3 @@ def load_all_csv_data():
                 print(f"       '{val}': {cnt:,}")
 
     return result_df
-

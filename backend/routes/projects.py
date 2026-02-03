@@ -187,7 +187,7 @@ def get_hot_projects():
     start = time.time()
 
     try:
-        from models.transaction import Transaction
+        from db.transaction_primary import get_transactions_primary_table
         from services.new_launch_units import get_units_for_project
         from sqlalchemy import func, case, text, literal_column
         from constants import get_region_for_district, get_districts_for_region
@@ -284,7 +284,7 @@ def get_hot_projects():
                     SUM(t.price) as total_value,
                     MIN(t.transaction_date) as first_new_sale,
                     MAX(t.transaction_date) as last_new_sale
-                FROM transactions t
+                FROM transactions_primary t
                 WHERE COALESCE(t.is_outlier, false) = false
                   AND t.sale_type = :sale_type_new
                 GROUP BY t.project_name, t.district
@@ -295,7 +295,7 @@ def get_hot_projects():
                     t.project_name,
                     t.district,
                     COUNT(*) as resale_count
-                FROM transactions t
+                FROM transactions_primary t
                 WHERE COALESCE(t.is_outlier, false) = false
                   AND t.sale_type = :sale_type_resale
                 GROUP BY t.project_name, t.district
@@ -310,7 +310,7 @@ def get_hot_projects():
                     AVG(CASE WHEN t.sale_type = :sale_type_new THEN t.psf END) as avg_psf,
                     PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CASE WHEN t.sale_type = :sale_type_new THEN t.price END) as median_price,
                     PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CASE WHEN t.sale_type = :sale_type_new THEN t.psf END) as median_psf
-                FROM transactions t
+                FROM transactions_primary t
                 WHERE COALESCE(t.is_outlier, false) = false
                   AND (
                     (:bedroom_exact IS NULL AND :bedroom_min IS NULL)
@@ -508,16 +508,17 @@ def get_inventory_status():
     start = time.time()
 
     try:
-        from models.transaction import Transaction
+        from db.transaction_primary import get_transactions_primary_table
         from services.new_launch_units import get_units_for_project, list_all_projects
         from sqlalchemy import func
+        t = get_transactions_primary_table(db).c
 
         # Count projects with New Sale transactions
         new_sale_projects = db.session.query(
-            func.distinct(Transaction.project_name)
+            func.distinct(t.project_name)
         ).filter(
-            Transaction.sale_type == SALE_TYPE_NEW,
-            exclude_outliers(Transaction)
+            t.sale_type == SALE_TYPE_NEW,
+            exclude_outliers(t)
         ).all()
 
         total_with_sales = len(new_sale_projects)

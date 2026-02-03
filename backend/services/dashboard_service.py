@@ -570,7 +570,7 @@ def query_price_histogram(filters: Dict[str, Any], options: Dict[str, Any]) -> D
             PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY price) as p95,
             MIN(price) as min_price,
             MAX(price) as max_price
-        FROM transactions
+        FROM transactions_primary
         WHERE {where_clause}
           AND price IS NOT NULL
           AND price > 0
@@ -654,7 +654,7 @@ def query_price_histogram(filters: Dict[str, Any], options: Dict[str, Any]) -> D
                 :num_bins
             ) as bin_num,
             COUNT(*) as count
-        FROM transactions
+        FROM transactions_primary
         WHERE {where_clause}
           AND price IS NOT NULL
           AND price > 0
@@ -1078,7 +1078,7 @@ def query_psf_by_price_band(
           WHEN bedroom_count >= 5 THEN 5
           ELSE bedroom_count
         END AS bedroom_group
-      FROM transactions
+      FROM transactions_primary
       WHERE COALESCE(is_outlier, false) = false
         AND (:date_from IS NULL OR transaction_date >= :date_from)
         AND (:date_to_exclusive IS NULL OR transaction_date < :date_to_exclusive)
@@ -1257,7 +1257,7 @@ def warm_kpi_cache():
     # Get max_date from database (same logic as kpi_v2 endpoint)
     result = db.session.execute(text(f"""
         SELECT MAX(transaction_date) as max_date
-        FROM transactions
+        FROM transactions_primary
         WHERE {OUTLIER_FILTER}
     """)).fetchone()
     max_date = result.max_date if result else None
