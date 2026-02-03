@@ -237,7 +237,7 @@ def _get_project_lease_info(project_name: str) -> Tuple[Optional[int], Optional[
                 lease_start_year,
                 tenure,
                 COUNT(*) as cnt
-            FROM transactions
+            FROM transactions_primary
             WHERE UPPER(project_name) = :project_name
               AND {OUTLIER_FILTER}
               AND lease_start_year IS NOT NULL

@@ -159,7 +159,7 @@ def _load_resale_projects() -> Set[str]:
             from constants import SALE_TYPE_RESALE
             result = db.session.execute(text(f"""
                 SELECT DISTINCT UPPER(project_name) as project_name
-                FROM transactions
+                FROM transactions_primary
                 WHERE sale_type = '{SALE_TYPE_RESALE}'
                   AND {OUTLIER_FILTER}
             """)).fetchall()
@@ -536,7 +536,7 @@ def get_district_units_for_resale(
         SELECT
             district,
             UPPER(TRIM(project_name)) as project_name
-        FROM transactions
+        FROM transactions_primary
         WHERE sale_type = :sale_type
           AND {OUTLIER_FILTER}
           AND district IS NOT NULL

@@ -230,7 +230,7 @@ def get_market_activity_heatmap(
                     WHEN t.tenure ILIKE '%freehold%' THEN NULL
                     ELSE DATE_PART('year', t.transaction_date) - t.lease_start_year
                 END as property_age
-            FROM transactions t
+            FROM transactions_primary t
             WHERE {where_clause}
         ),
         classified AS (

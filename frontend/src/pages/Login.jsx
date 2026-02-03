@@ -26,24 +26,22 @@ const withTimeout = (promise, ms) =>
     ),
   ]);
 
-// Data atmosphere - coordinates for mobile view
-const DATA_COORDS = ['01.3521°N', '103.8198°E', '0x7F3A', 'SGP_001', '01.2894°N'];
-
 function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { signInWithGoogle, isConfigured, isAuthenticated, initialized, user, getErrorMessage } = useAuth();
+  const {
+    signInWithGoogle,
+    isConfigured,
+    isAuthenticated,
+    initialized,
+    user,
+    logout,
+    getErrorMessage
+  } = useAuth();
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [cursorVisible, setCursorVisible] = useState(true);
 
   const from = location.state?.from?.pathname || '/market-overview';
-
-  // Auto-redirect if user is already authenticated (persisted Firebase session)
-  useEffect(() => {
-    if (initialized && isAuthenticated && user) {
-      navigate(from, { replace: true });
-    }
-  }, [initialized, isAuthenticated, user, from, navigate]);
 
   // Blinking cursor effect
   useEffect(() => {
@@ -54,10 +52,7 @@ function Login() {
   }, []);
 
   const handleGoogleSignIn = async () => {
-    if (isAuthenticated && user) {
-      navigate(from, { replace: true });
-      return;
-    }
+    if (isAuthenticated && user) return;
 
     if (!isConfigured) return;
 
@@ -84,7 +79,7 @@ function Login() {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 min-h-screen relative">
+    <div className="min-h-screen relative flex items-center justify-center px-6 py-12 bg-[#f5f5f7]">
 
       {/* ===== GLOBAL NOISE OVERLAY ===== */}
       <div
@@ -94,95 +89,9 @@ function Login() {
         }}
       />
 
-      {/* ===== CENTER VERTICAL RULER (Desktop only) ===== */}
-      <div className="hidden lg:block fixed left-1/2 top-0 bottom-0 -translate-x-1/2 z-40 pointer-events-none">
-        {/* Main vertical line with fade */}
-        <div
-          className="absolute left-1/2 top-0 bottom-0 w-px bg-black/10"
-          style={{
-            maskImage: 'linear-gradient(to bottom, transparent 0%, black 25%, black 75%, transparent 100%)',
-            WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 25%, black 75%, transparent 100%)'
-          }}
-        />
-        {/* Tick marks - from 15% to 85% of screen height */}
-        {[...Array(12)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute left-1/2 flex items-center"
-            style={{ top: `calc(15% + ${i * 60}px)` }}
-          >
-            <div className="w-2 h-px bg-black/30 -translate-x-1/2" />
-            <span className="font-mono text-[8px] text-black/30 ml-2">{String((i + 1) * 60).padStart(4, '0')}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* ===== MOBILE: Image Panel (stacks above on mobile) ===== */}
-      <div className="lg:hidden relative h-[280px] overflow-hidden bg-[#fafafa]">
-        {/* Data Atmosphere - Mobile */}
-        <div className="absolute inset-0 flex justify-around opacity-[0.04] overflow-hidden pointer-events-none">
-          <div className="flex flex-col items-center font-mono text-[8px] text-black tracking-wider">
-            {DATA_COORDS.map((item, idx) => (
-              <span key={idx} className="my-1">{item}</span>
-            ))}
-          </div>
-        </div>
-
-        <img
-          src="/ZG.png"
-          alt="Zyon Grand"
-          className="absolute bottom-0 right-0 h-[220%] object-contain object-right -translate-y-60"
-        />
-
-      </div>
-
-      {/* ===== LEFT COLUMN - Form/Content ===== */}
-      <div className="relative bg-[#fafafa] flex flex-col justify-center items-center px-6 md:px-12 py-12 overflow-hidden order-2 lg:order-1 lg:border-r border-neutral-200">
-
-        {/* Executive Pinstripe Background */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            backgroundColor: '#ffffff',
-            backgroundImage: `repeating-linear-gradient(
-              -45deg,
-              transparent,
-              transparent 4px,
-              #e5e5e5 4px,
-              #e5e5e5 5px
-            )`
-          }}
-        />
-
-        {/* ===== PASSIVE DATA BLOCKS ===== */}
-
-        {/* Version + Memory - Bottom Left */}
-        <div className="absolute bottom-4 left-4 font-mono text-[9px] text-black/25 uppercase tracking-widest z-20 space-y-1">
-          <div>v.2.0.4 [STABLE]</div>
-          <div>:: MEMORY_USAGE : 14%</div>
-          <div>:: CACHE_HIT : 0.97</div>
-        </div>
-
-        {/* System Hash - Bottom Right (on left panel) */}
-        <div className="absolute bottom-4 right-4 font-mono text-[8px] text-black/20 z-20 text-right space-y-0.5 hidden lg:block">
-          <div>0x7F3A9B2E</div>
-          <div>0x4C8D1F6A</div>
-          <div>0xE2B5A0C3</div>
-        </div>
-
-
-
-        {/* Back Button - Outside the frame */}
-        <button
-          onClick={() => navigate('/')}
-          className="absolute top-6 left-6 flex items-center gap-2 text-black/50 hover:text-black transition-colors group z-20"
-        >
-          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-          <span className="font-mono text-xs uppercase tracking-widest">Back</span>
-        </button>
-
+      <div className="relative w-full max-w-[560px]">
         {/* ===== TECHNICAL FRAME ===== */}
-        <div className="relative w-full max-w-[480px] bg-white border-2 border-black p-10 md:p-12 z-10 shadow-[8px_8px_0px_0px_#000000]">
+        <div className="relative bg-white border-2 border-black p-8 md:p-10 shadow-[8px_8px_0px_0px_#000000]">
 
           {/* Corner Accents - Registration Marks */}
           {/* Top-Left */}
@@ -223,6 +132,34 @@ function Login() {
           <p className="font-mono text-xs text-black/50 mb-10 tracking-wide">
             Evaluate with the latest data + market trends
           </p>
+
+          {/* Already Signed In State */}
+          {initialized && isAuthenticated && user ? (
+            <div className="mb-6 border border-black/10 bg-white/80 p-3">
+              <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-black/40">
+                Session Detected
+              </div>
+              <div className="mt-2 font-mono text-xs text-black/70">
+                Signed in as {user?.email || 'unknown'}
+              </div>
+              <div className="mt-3 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => navigate(from, { replace: true })}
+                  className="flex-1 h-10 bg-black text-white font-mono text-[10px] uppercase tracking-widest"
+                >
+                  Continue
+                </button>
+                <button
+                  type="button"
+                  onClick={logout}
+                  className="flex-1 h-10 border border-black/30 text-black font-mono text-[10px] uppercase tracking-widest hover:bg-black/[0.04]"
+                >
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          ) : null}
 
           {/* Google Sign In Button */}
           {isConfigured ? (
@@ -266,70 +203,15 @@ function Login() {
             {' '}and{' '}
             <a href="#" className="text-black/50 hover:text-black underline">Privacy</a>
           </p>
-
-          {/* Connector Line - extends from card to divider */}
-          <div className="hidden lg:block absolute top-1/2 -right-[6px] w-[calc(50vw-240px-48px)] h-px bg-black/10" />
         </div>
-      </div>
-
-      {/* ===== RIGHT COLUMN - Kaiju Towers (Desktop) ===== */}
-      <div className="hidden lg:block relative h-full overflow-hidden bg-[#F5F5F7] order-2">
-
-        {/* Kaiju Image - Sits BEHIND the grid (Schematic Approach) */}
-        <div
-          className="absolute bottom-0 left-0 right-0 h-[95%] z-0"
-          style={{
-            maskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 80%, transparent 100%), linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)',
-            WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 80%, transparent 100%), linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)',
-            maskComposite: 'intersect',
-            WebkitMaskComposite: 'source-in'
-          }}
+        {/* Back Button */}
+        <button
+          onClick={() => navigate('/')}
+          className="absolute -top-12 left-0 flex items-center gap-2 text-black/50 hover:text-black transition-colors group"
         >
-          <img
-            src="/ZG.png"
-            alt="Zyon Grand"
-            className="h-[200%] object-contain object-right ml-auto -translate-y-80 opacity-70"
-            style={{
-              filter: 'contrast(0.8) brightness(1.15) grayscale(100%)',
-              mixBlendMode: 'multiply'
-            }}
-          />
-        </div>
-
-        {/* Grid Sky - Now ABOVE the building (z-10) */}
-        <div
-          className="absolute inset-0 pointer-events-none opacity-[0.06] z-10"
-          style={{
-            backgroundImage: `
-              linear-gradient(to right, #000 1px, transparent 1px),
-              linear-gradient(to bottom, #000 1px, transparent 1px)
-            `,
-            backgroundSize: '60px 60px'
-          }}
-        />
-
-        {/* Perspective Grid Overlay - adds depth */}
-        <div
-          className="absolute inset-0 pointer-events-none opacity-[0.03] z-10"
-          style={{
-            backgroundImage: `radial-gradient(circle at 1px 1px, #000 1px, transparent 0)`,
-            backgroundSize: '20px 20px'
-          }}
-        />
-
-        {/* Directive Text Block - Data Column */}
-        <div className="absolute top-8 left-8 z-20 space-y-2">
-          {/* Primary Directive - Headline */}
-          <p className="font-mono text-sm leading-tight whitespace-nowrap tracking-wide">
-            <span className="font-normal text-black/50">{'>'} DIRECTIVE //</span>
-            <span className="font-semibold text-black"> INSTITUTIONAL-GRADE ANALYTICS</span>
-            <span className="font-normal text-black/50"> : SINGAPORE_PRIVATE_PROPERTY</span>
-          </p>
-          <p className="font-mono text-sm leading-tight whitespace-nowrap tracking-wide font-normal text-black/50">
-            {'>'} CCR [D09] // River Valley
-          </p>
-        </div>
-
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+          <span className="font-mono text-xs uppercase tracking-widest">Back</span>
+        </button>
       </div>
     </div>
   );

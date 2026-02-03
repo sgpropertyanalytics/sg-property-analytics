@@ -156,7 +156,7 @@ def get_new_launch_timeline(
             {PROJECT_KEY_EXPR} AS project_key,
             MIN(t.transaction_date) AS launch_date,
             MIN(t.district) AS district
-        FROM transactions t
+        FROM transactions_primary t
         WHERE t.sale_type = :sale_type_new
           AND {outlier_filter_t}
         GROUP BY {PROJECT_KEY_EXPR}
@@ -176,7 +176,7 @@ def get_new_launch_timeline(
           AND (
             :bedrooms_is_null OR EXISTS (
                 SELECT 1
-                FROM transactions tx
+                FROM transactions_primary tx
                 WHERE {PROJECT_KEY_EXPR} = pl.project_key
                   AND tx.sale_type = :sale_type_new
                   AND tx.bedroom_count = ANY(:bedrooms)
@@ -302,7 +302,7 @@ def get_new_launch_absorption(
             t.transaction_date AS launch_date,
             DATE_TRUNC('month', t.transaction_date) AS launch_month_start,
             t.district AS district
-        FROM transactions t
+        FROM transactions_primary t
         WHERE t.sale_type = :sale_type_new
           AND {outlier_filter_t}
         ORDER BY UPPER(TRIM(t.project_name)), t.transaction_date ASC, t.id ASC
@@ -317,7 +317,7 @@ def get_new_launch_absorption(
           AND (:districts_is_null OR pl.district = ANY(:districts))
           AND (
             :bedrooms_is_null OR EXISTS (
-                SELECT 1 FROM transactions tx
+                SELECT 1 FROM transactions_primary tx
                 WHERE UPPER(TRIM(tx.project_name)) = pl.project_key
                   AND tx.sale_type = :sale_type_new
                   AND tx.bedroom_count = ANY(:bedrooms)
@@ -330,7 +330,7 @@ def get_new_launch_absorption(
         SELECT
             UPPER(TRIM(t.project_name)) AS project_key,
             COUNT(*) AS units_sold
-        FROM transactions t
+        FROM transactions_primary t
         WHERE t.sale_type = :sale_type_new
           AND {outlier_filter_t}
           AND EXISTS (

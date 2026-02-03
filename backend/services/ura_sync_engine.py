@@ -47,6 +47,7 @@ from services.ura_sync_config import (
     get_cutoff_date,
     get_revision_window_months,
     get_revision_window_date,
+    is_compare_strict,
     validate_sync_config,
     log_sync_config,
     build_upsert_sql,
@@ -219,23 +220,29 @@ class URASyncEngine:
                 # 5. Run comparison
                 comparison_report = self._run_comparison()
 
-                # 6. Check thresholds
+                # 6. Check thresholds (optionally strict)
                 if comparison_report and not comparison_report.is_acceptable:
-                    self._mark_failed(
-                        error_message=f"Comparison thresholds exceeded: {comparison_report.issues}",
-                        error_stage='compare'
-                    )
-                    duration = (datetime.now(UTC) - start_time).total_seconds()
-                    return SyncResult(
-                        success=False,
-                        run_id=self.run_id,
-                        mode=self.mode,
-                        error_message=f"Thresholds exceeded: {comparison_report.issues}",
-                        error_stage='compare',
-                        stats=self.stats.to_dict(),
-                        comparison=comparison_report.to_dict() if comparison_report else None,
-                        duration_seconds=duration
-                    )
+                    if is_compare_strict():
+                        self._mark_failed(
+                            error_message=f"Comparison thresholds exceeded: {comparison_report.issues}",
+                            error_stage='compare'
+                        )
+                        duration = (datetime.now(UTC) - start_time).total_seconds()
+                        return SyncResult(
+                            success=False,
+                            run_id=self.run_id,
+                            mode=self.mode,
+                            error_message=f"Thresholds exceeded: {comparison_report.issues}",
+                            error_stage='compare',
+                            stats=self.stats.to_dict(),
+                            comparison=comparison_report.to_dict() if comparison_report else None,
+                            duration_seconds=duration
+                        )
+                    else:
+                        logger.warning(
+                            "Comparison thresholds exceeded (non-strict mode): "
+                            f"{comparison_report.issues}"
+                        )
 
                 # 7. Mark success
                 self._mark_succeeded(comparison_report)

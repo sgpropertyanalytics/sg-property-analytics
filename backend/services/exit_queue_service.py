@@ -132,7 +132,7 @@ def query_basic_stats(db, text, project_name: str, twelve_months_ago: date, sale
             COUNT(*) as total_resale_transactions,
             COUNT(*) FILTER (WHERE transaction_date >= :twelve_months_ago) as resales_12m,
             PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY price / NULLIF(area_sqft, 0)) as median_psf
-        FROM transactions
+        FROM transactions_primary
         WHERE project_name = :project_name
           AND COALESCE(is_outlier, false) = false
           AND sale_type = :sale_type_db
@@ -166,7 +166,7 @@ def query_bedroom_diversity(db, text, project_name: str, sale_type_db: str = Non
 
     result = db.session.execute(text("""
         SELECT COUNT(DISTINCT COALESCE(bedroom_count, 0)) as bedroom_types
-        FROM transactions
+        FROM transactions_primary
         WHERE project_name = :project_name
           AND COALESCE(is_outlier, false) = false
           AND sale_type = :sale_type_db

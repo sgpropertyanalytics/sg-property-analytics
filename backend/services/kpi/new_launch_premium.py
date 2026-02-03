@@ -39,7 +39,7 @@ def get_sql(params: Dict[str, Any]) -> str:
     return f"""
         WITH new_sales AS (
             SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf) as median_psf
-            FROM transactions
+            FROM transactions_primary
             WHERE {base_filter}
               AND sale_type = :sale_type_new
               AND transaction_date >= :min_date
@@ -47,7 +47,7 @@ def get_sql(params: Dict[str, Any]) -> str:
         ),
         young_resales AS (
             SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf) as median_psf
-            FROM transactions
+            FROM transactions_primary
             WHERE {base_filter}
               AND sale_type = :sale_type_resale
               AND transaction_date >= :min_date

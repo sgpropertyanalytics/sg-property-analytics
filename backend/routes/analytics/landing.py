@@ -62,7 +62,7 @@ def landing_recent_activity():
                 price,
                 district,
                 transaction_date
-            FROM transactions
+            FROM transactions_primary
             WHERE {OUTLIER_FILTER}
               AND price IS NOT NULL
               AND bedroom_count IS NOT NULL
@@ -127,7 +127,7 @@ def landing_district_stats():
                     MAX(transaction_date) as max_date,
                     MAX(transaction_date) - INTERVAL '3 months' as period_start,
                     MAX(transaction_date) - INTERVAL '6 months' as prior_start
-                FROM transactions
+                FROM transactions_primary
                 WHERE {OUTLIER_FILTER}
             ),
             current_period AS (
@@ -135,7 +135,7 @@ def landing_district_stats():
                     district,
                     COUNT(*) as tx_count,
                     PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf) as median_psf
-                FROM transactions, date_bounds
+                FROM transactions_primary, date_bounds
                 WHERE {OUTLIER_FILTER}
                   AND transaction_date > date_bounds.period_start
                   AND transaction_date <= date_bounds.max_date
@@ -147,7 +147,7 @@ def landing_district_stats():
                 SELECT
                     district,
                     PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf) as median_psf
-                FROM transactions, date_bounds
+                FROM transactions_primary, date_bounds
                 WHERE {OUTLIER_FILTER}
                   AND transaction_date > date_bounds.prior_start
                   AND transaction_date <= date_bounds.period_start

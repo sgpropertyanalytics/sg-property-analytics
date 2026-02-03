@@ -95,7 +95,20 @@ def get_cutoff_date() -> date:
     except ValueError:
         years = 5
 
-    return date.today() - relativedelta(years=years)
+    cutoff = date.today() - relativedelta(years=years)
+    # Align to month start to avoid partial-month comparison gaps
+    return cutoff.replace(day=1)
+
+
+def is_compare_strict() -> bool:
+    """
+    Check if comparison threshold breaches should fail the sync.
+
+    Environment:
+        URA_COMPARE_STRICT: 'true' (default) or 'false'
+    """
+    strict = os.environ.get('URA_COMPARE_STRICT', 'true').lower()
+    return strict not in ('false', '0', 'no', 'off', 'disabled')
 
 
 # =============================================================================

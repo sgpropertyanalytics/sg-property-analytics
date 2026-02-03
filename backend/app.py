@@ -271,6 +271,17 @@ def create_app():
     # Initialize SQLAlchemy
     db.init_app(app)
 
+    # Fail-fast check: ensure transactions_primary view exists
+    with app.app_context():
+        try:
+            view_exists = db.session.execute(text("""
+                SELECT to_regclass('public.transactions_primary') IS NOT NULL
+            """)).scalar()
+            if not view_exists:
+                print("WARNING: transactions_primary view not found. Run migrations to create it.")
+        except Exception as e:
+            print(f"WARNING: Unable to verify transactions_primary view: {e}")
+
     # Initialize Flask-Migrate for database migrations
     migrate.init_app(app, db)
 

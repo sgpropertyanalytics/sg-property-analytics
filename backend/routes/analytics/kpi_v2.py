@@ -51,7 +51,7 @@ def _get_max_transaction_date():
     """Get the latest transaction date from the database."""
     result = db.session.execute(text(f"""
         SELECT MAX(transaction_date) as max_date
-        FROM transactions
+        FROM transactions_primary
         WHERE {OUTLIER_FILTER}
     """)).fetchone()
     return result.max_date if result else None
