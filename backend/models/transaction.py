@@ -103,7 +103,7 @@ class Transaction(db.Model):
         return exclude_outliers(cls)
 
     def to_dict(self):
-        """Convert to dictionary for JSON serialization - FULL data for premium users"""
+        """Convert to dictionary for JSON serialization - full authenticated dataset."""
         return {
             # Core fields (existing - do not change keys for frontend compat)
             'id': self.id,
@@ -133,17 +133,17 @@ class Transaction(db.Model):
 
     def to_teaser_dict(self):
         """
-        Convert to dictionary for TEASER mode - masks sensitive fields for free users.
+        Convert to dictionary for teaser mode - masks sensitive fields for non-authenticated access.
 
         SECURITY PRINCIPLE: Server returns masked values, NOT real values that get blurred.
         Frontend receives pre-masked data - no CSS-based hiding of real values.
 
-        RESPONSE FORMAT (for each premium field):
+        RESPONSE FORMAT (for each protected field):
         - field_name → null (real value withheld)
         - field_name_masked → masked display value
         - field_name_bucket_min/max → numeric buckets for charts
 
-        PREMIUM FIELDS (null for free users, masked value provided):
+        PROTECTED FIELDS (null for non-authenticated users, masked value provided):
         - project_name → null, project_name_masked → "D09 Condo A"
         - price → null, price_masked → "$2.5M - $3.0M"
         - psf → null, psf_masked → "$2,000 - $2,500"
@@ -203,7 +203,7 @@ class Transaction(db.Model):
         return {
             'id': self.id,
 
-            # PREMIUM FIELDS - null for free, masked value provided separately
+        # PROTECTED FIELDS - null for non-authenticated, masked value provided separately
             # Frontend uses: value={txn.project_name} masked={txn.project_name_masked}
             'project_name': None,  # Real value withheld
             'project_name_masked': masked_project,  # Display this instead
@@ -231,7 +231,7 @@ class Transaction(db.Model):
             'floor_level': self.floor_level,
             'market_segment': self.market_segment,
 
-            # Explicitly NULL fields - never exposed to free users (no masked version)
+            # Explicitly NULL fields - never exposed to non-authenticated users (no masked version)
             'street_name': None,
             'floor_range': None,
             'contract_date': None,
@@ -240,4 +240,3 @@ class Transaction(db.Model):
             # Flag to indicate this is teaser data
             '_is_teaser': True,
         }
-

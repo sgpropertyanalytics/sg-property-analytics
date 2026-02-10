@@ -18,7 +18,7 @@ import {
   StatusCount,
   LegendDot,
 } from '../ui';
-import { useSubscription } from '../../context/SubscriptionContext';
+import { useAccess } from '../../context/AccessContext';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS, CHART_TOOLTIP } from '../../constants/chartOptions';
 import { CHART_COLORS, BEADS } from '../../constants/colors';
 import { REGIONS } from '../../constants';
@@ -78,8 +78,8 @@ function BeadsChartBase({
   // Extract filter values directly (simple, explicit)
   const timeframe = filters.timeFilter?.type === 'preset' ? filters.timeFilter.value : 'Y1';
   // bedroom/district excluded - this chart shows ALL bedroom types as separate bubbles
-  const { accessLevel: _accessLevel, accessSource: _accessSource } = useSubscription();
-  const isFreeTier = false;
+  const { accessLevel: _accessLevel, accessSource: _accessSource } = useAccess();
+  const isAccessRestricted = false;
 
   const chartRef = useRef(null);
   const { wrapApiCall, DebugOverlay, debugInfo } = useDebugOverlay('BeadsChart');
@@ -345,7 +345,7 @@ String Line — Price range for that region.`}
         />
 
         {/* KPI Strip: h-20 fixed */}
-        <DataCardToolbar columns={3} blur={isFreeTier}>
+        <DataCardToolbar columns={3} blur={isAccessRestricted}>
           <ToolbarStat
             label="Transactions"
             value={(stats?.totalTransactions || 0).toLocaleString()}

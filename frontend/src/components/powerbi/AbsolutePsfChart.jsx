@@ -12,7 +12,7 @@ import { getAggregate } from '../../api/client';
 // Phase 3.2: Migrated from usePowerBIFilters to useZustandFilters
 import { useZustandFilters } from '../../stores/filterStore';
 import { TIME_GROUP_BY } from '../../context/PowerBIFilter';
-import { useSubscription } from '../../context/SubscriptionContext';
+import { useAccess } from '../../context/AccessContext';
 import { getRegionForDistrict } from '../../constants';
 import {
   PreviewChartOverlay,
@@ -89,8 +89,8 @@ function AbsolutePsfChartBase({ height = 380, saleType = null, sharedData = null
     });
     return regions;
   }, [filters.districts]);
-  const { canAccessAuthenticated, accessLevel: _accessLevel, accessSource: _accessSource } = useSubscription();
-  const isFreeTier = false;
+  const { canAccessAuthenticated, accessLevel: _accessLevel, accessSource: _accessSource } = useAccess();
+  const isAccessRestricted = false;
   const chartRef = useRef(null);
   const [isAgentOpen, setIsAgentOpen] = useState(false);
 
@@ -353,7 +353,7 @@ OCR = Outside Central (suburban).`}
         />
 
         {/* KPI Strip: h-20 fixed - Pure metrics only */}
-        <DataCardToolbar columns={3} blur={isFreeTier}>
+        <DataCardToolbar columns={3} blur={isAccessRestricted}>
           <ToolbarStat
             label="CCR"
             value={latestData.ccr != null ? `$${Math.round(latestData.ccr).toLocaleString()}` : '—'}

@@ -71,8 +71,8 @@ LANDMINES = [
 
     # Subscription Caching Incident (Dec 30, 2025)
     ("frontend/src/context/SubscriptionContext.jsx", "Dec 30, 2025",
-     "Subscription Caching Incident: On API failure, keep existing cached subscription. "
-     "Never cache 'free' tier on error - it permanently downgrades premium users.",
+     "Access Caching Incident: On API failure, keep existing cached access state. "
+     "Never downgrade authenticated cache state on transient errors.",
      "critical"),
 
     # Endpoint Drift Incident (Dec 31, 2025)

@@ -1,5 +1,5 @@
 import { createContext, useContext, useMemo, useEffect, useRef, useState, useCallback } from 'react';
-import { useSubscription } from './SubscriptionContext';
+import { useAccess } from './AccessContext';
 // Phase 4: Migrated from useFilterState (Context) to useFilterStore (Zustand)
 // Using useFilterStore directly to access both state and forceDefaults action
 import { useFilterStore } from '../stores';
@@ -14,12 +14,12 @@ const BOOT_CRITICAL_THRESHOLD_MS = 10000; // Critical: Likely a bug
  * AppReadyContext - Global boot synchronization gate
  *
  * CRITICAL INVARIANT:
- * `proReady` = "Firebase auth state is KNOWN" AND "subscription thread resolved" AND "access known" AND "filters hydrated"
- * `proReady` ≠ "Backend API calls complete" (that's separate from boot)
+ * `authenticatedReady` = "Firebase auth state is known" AND "access thread resolved" AND "access known" AND "filters hydrated"
+ * `authenticatedReady` ≠ "Backend API calls complete" (that's separate from boot)
  *
  * The four conditions are:
  * 1. authInitialized: Firebase onAuthStateChanged has fired (user or null known)
- * 2. subscriptionResolved: Subscription thread completed (ready/degraded/error)
+ * 2. accessThreadResolved: Access thread completed (ready/degraded/error)
  * 3. accessResolved: Access state is known (server OR cache) - OR user not authenticated
  * 4. filtersReady: Filters are hydrated from storage (prevents stale params)
  */
@@ -38,7 +38,8 @@ export function useAppReadyOptional() {
   const context = useContext(AppReadyContext);
   return context ?? {
     publicReady: true,
-    proReady: true,
+    authenticatedReady: true,
+    proReady: true, // compatibility alias
     bootStatus: 'ready',
     banners: {},
   };
@@ -46,11 +47,11 @@ export function useAppReadyOptional() {
 
 export function AppReadyProvider({ children }) {
   const {
-    status: subscriptionStatus,
+    status: accessStatus,
     accessLevel,
     accessSource,
     coordState,
-  } = useSubscription();
+  } = useAccess();
 
   const authInitialized = coordState.initialized;
   const isAuthenticated = !!coordState.user;
@@ -61,10 +62,10 @@ export function AppReadyProvider({ children }) {
   const accessResolved = !isAuthenticated || accessSource !== 'none';
 
   const publicReady = authInitialized && (filtersReady || filtersDefaulted);
-  const subscriptionResolved = subscriptionStatus !== 'pending';
-  const proReady = publicReady && subscriptionResolved;
+  const accessThreadResolved = accessStatus !== 'pending';
+  const authenticatedReady = publicReady && accessThreadResolved;
 
-  const appReady = proReady;
+  const appReady = authenticatedReady;
   const usingCachedAccess = accessSource === 'cache' && isAuthenticated;
 
   const bootStartRef = useRef(Date.now());
@@ -78,21 +79,21 @@ export function AppReadyProvider({ children }) {
 
   const bootStatus = useMemo(() => ({
     authInitialized,
-    subscriptionResolved,
+    accessThreadResolved,
     accessResolved,
     accessSource,
     filtersReady,
     filtersDefaulted,
     publicReady,
-    proReady,
+    authenticatedReady,
     appReady,
-  }), [authInitialized, subscriptionResolved, accessResolved, accessSource, filtersReady, filtersDefaulted, publicReady, proReady, appReady]);
+  }), [authInitialized, accessThreadResolved, accessResolved, accessSource, filtersReady, filtersDefaulted, publicReady, authenticatedReady, appReady]);
 
   const buildTelemetryPayload = () => {
     const elapsed = Date.now() - bootStartRef.current;
     const blockedBy = [];
     if (!authInitialized) blockedBy.push('auth');
-    if (!subscriptionResolved) blockedBy.push('subscription');
+    if (!accessThreadResolved) blockedBy.push('access_thread');
     if (!accessResolved) blockedBy.push('access_unknown');
     if (!filtersReady) blockedBy.push('filters');
 
@@ -102,7 +103,7 @@ export function AppReadyProvider({ children }) {
       blocked_by: blockedBy,
       flags: {
         auth_initialized: authInitialized,
-        subscription_ready: subscriptionResolved,
+        access_thread_ready: accessThreadResolved,
         access_resolved: accessResolved,
         access_source: accessSource,
         using_cached_access: usingCachedAccess,
@@ -129,7 +130,7 @@ export function AppReadyProvider({ children }) {
         elapsed: bootDuration,
         accessLevelAfter: accessLevel,
         accessSourceAfter: accessSource,
-        statusAfter: subscriptionStatus,
+        statusAfter: accessStatus,
       });
       hasLoggedWarningRef.current = false;
       hasLoggedCriticalRef.current = false;
@@ -174,9 +175,9 @@ export function AppReadyProvider({ children }) {
           blockedBy: payload.blocked_by,
           accessLevelAfter: accessLevel,
           accessSourceAfter: accessSource,
-          statusAfter: subscriptionStatus,
+          statusAfter: accessStatus,
           authInitialized,
-          subscriptionResolved,
+          accessThreadResolved,
           accessResolved,
           filtersReady,
         });
@@ -190,7 +191,7 @@ export function AppReadyProvider({ children }) {
       clearTimeout(criticalTimeoutId);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- buildTelemetryPayload is stable
-  }, [appReady, authInitialized, subscriptionResolved, accessResolved, filtersReady, emitBootTelemetry]);
+  }, [appReady, authInitialized, accessThreadResolved, accessResolved, filtersReady, emitBootTelemetry]);
 
   useEffect(() => {
     if (isBootStuck && !filtersReady && !filtersDefaulted && !didForceDefaultsRef.current) {
@@ -204,8 +205,8 @@ export function AppReadyProvider({ children }) {
     if (process.env.NODE_ENV === 'development') {
       if (prevAppReadyRef.current !== appReady || !appReady) {
         console.warn('[AppReady] Boot status:', {
-          subscriptionStatus,
-          'publicReady/proReady': `${publicReady}/${proReady}`,
+          accessStatus,
+          'publicReady/authenticatedReady': `${publicReady}/${authenticatedReady}`,
           accessLevel,
           accessSource,
           usingCachedAccess,
@@ -215,7 +216,7 @@ export function AppReadyProvider({ children }) {
       }
       prevAppReadyRef.current = appReady;
     }
-  }, [bootStatus, appReady, subscriptionStatus, publicReady, proReady, accessLevel, accessSource, usingCachedAccess]);
+  }, [bootStatus, appReady, accessStatus, publicReady, authenticatedReady, accessLevel, accessSource, usingCachedAccess]);
 
   useEffect(() => {
     const isDev = process.env.NODE_ENV === 'development';
@@ -227,18 +228,15 @@ export function AppReadyProvider({ children }) {
     window.__APP_READY_DEBUG__ = {
       get status() {
         return {
-          subscriptionStatus,
+          accessStatus,
           accessLevel,
           accessSource,
           usingCachedAccess,
-          // Legacy aliases
-          tier: accessLevel,
-          tierSource: accessSource,
-          usingCachedTier: usingCachedAccess,
           appReady,
           publicReady,
-          proReady,
-          subscriptionResolved,
+          authenticatedReady,
+          proReady: authenticatedReady, // compatibility alias
+          accessThreadResolved,
           authInitialized,
           accessResolved,
           filtersReady,
@@ -253,7 +251,7 @@ export function AppReadyProvider({ children }) {
     return () => {
       delete window.__APP_READY_DEBUG__;
     };
-  }, [appReady, publicReady, proReady, subscriptionResolved, authInitialized, accessResolved, accessSource, usingCachedAccess, filtersReady, filtersDefaulted, isBootSlow, isBootStuck, subscriptionStatus, accessLevel]);
+  }, [appReady, publicReady, authenticatedReady, accessThreadResolved, authInitialized, accessResolved, accessSource, usingCachedAccess, filtersReady, filtersDefaulted, isBootSlow, isBootStuck, accessStatus, accessLevel]);
 
   const bootPhase = appReady
     ? 'ready'
@@ -261,28 +259,26 @@ export function AppReadyProvider({ children }) {
       ? 'stuck'
       : isBootSlow
         ? 'slow'
-        : subscriptionStatus === 'error'
+        : accessStatus === 'error'
           ? 'error'
           : 'booting';
 
   const value = useMemo(() => ({
     publicReady,
-    proReady,
+    authenticatedReady,
+    proReady: authenticatedReady, // compatibility alias
     bootStatus: bootPhase,
     banners: {
       usingCachedAccess,
-      // Legacy alias
-      usingCachedTier: usingCachedAccess,
     },
     debug: import.meta.env.DEV ? {
       authInitialized,
       filtersReady,
       filtersDefaulted,
-      subscriptionResolved,
+      accessThreadResolved,
       accessSource,
-      tierSource: accessSource,
     } : undefined,
-  }), [publicReady, proReady, bootPhase, usingCachedAccess, authInitialized, filtersReady, filtersDefaulted, subscriptionResolved, accessSource]);
+  }), [publicReady, authenticatedReady, bootPhase, usingCachedAccess, authInitialized, filtersReady, filtersDefaulted, accessThreadResolved, accessSource]);
 
   return (
     <AppReadyContext.Provider value={value}>

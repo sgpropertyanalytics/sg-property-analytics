@@ -124,12 +124,11 @@ def mock_user():
     mock = MagicMock(spec=User)
     mock.id = 999999
     mock.email = "smoke-test@test.com"
-    mock.plan_tier = "free"
-    mock.normalized_tier.return_value = "free"
+    mock.access_level = "authenticated"
     mock.is_subscribed.return_value = False
-    mock.entitlement_info.return_value = {
+    mock.access_info.return_value = {
         "has_access": False,
-        "entitlement_source": None,
+        "access_source": None,
         "access_expires_at": None,
     }
     mock.to_dict.return_value = {"id": 999999, "email": "smoke-test@test.com"}

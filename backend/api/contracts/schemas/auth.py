@@ -8,7 +8,7 @@ Endpoints:
 - POST /auth/login - User login
 - GET /auth/me - Get current user
 - POST /auth/firebase-sync - Sync Firebase OAuth user
-- GET /auth/subscription - Get subscription status
+- GET /auth/subscription - Get access status
 - DELETE /auth/delete-account - Delete user account
 """
 
@@ -111,7 +111,7 @@ FIREBASE_SYNC_RESPONSE_SCHEMA = ResponseSchema(
     data_fields={
         "message": FieldSpec(name="message", type=str, required=True),
         "user": FieldSpec(name="user", type=dict, required=True),
-        "subscription": FieldSpec(name="subscription", type=dict, required=True),
+        "access": FieldSpec(name="access", type=dict, required=True),
     },
     meta_fields=make_meta_fields(),
     required_meta=make_required_meta(),
@@ -129,15 +129,15 @@ register_contract(FIREBASE_SYNC_CONTRACT)
 
 
 # =============================================================================
-# SUBSCRIPTION ENDPOINT
+# ACCESS ENDPOINT
 # =============================================================================
 
 SUBSCRIPTION_RESPONSE_SCHEMA = ResponseSchema(
     data_fields={
-        "tier": FieldSpec(name="tier", type=str, required=True),
+        "accessLevel": FieldSpec(name="accessLevel", type=str, required=True),
+        "accessSource": FieldSpec(name="accessSource", type=str, required=True),
         "has_access": FieldSpec(name="has_access", type=bool, required=True),
         "subscribed": FieldSpec(name="subscribed", type=bool, required=True),
-        "entitlement_source": FieldSpec(name="entitlement_source", type=str, nullable=True),
         "access_expires_at": FieldSpec(name="access_expires_at", type=str, nullable=True),
         "ends_at": FieldSpec(name="ends_at", type=str, nullable=True),
     },

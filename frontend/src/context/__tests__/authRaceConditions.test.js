@@ -2,7 +2,7 @@
  * Auth Race Condition Tests (Anti-Whack-a-Mole)
  *
  * These tests verify critical timing scenarios that could cause:
- * - Premium users incorrectly seeing free tier
+ * - Authenticated users incorrectly seeing anonymous accessLevel
  * - Boot stuck forever
  * - State corruption on user switch
  *
@@ -20,7 +20,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
  */
 function createSubscriptionStateMachine() {
   let status = 'pending';
-  let tier = 'unknown';
+  let accessLevel = 'unknown';
   let activeRequestId = null;
   let lastFetchSuccess = 0;
   let requestCounter = 0; // Use counter instead of Date.now() for unique IDs
@@ -28,12 +28,12 @@ function createSubscriptionStateMachine() {
   const statusRef = { current: status };
 
   return {
-    getState: () => ({ status, tier, statusRef: statusRef.current }),
+    getState: () => ({ status, accessLevel, statusRef: statusRef.current }),
     setStatus: (newStatus) => {
       status = newStatus;
       statusRef.current = newStatus;
     },
-    setTier: (newTier) => { tier = newTier; },
+    setAccessLevel: (newAccessLevel) => { accessLevel = newAccessLevel; },
     startRequest: () => {
       requestCounter++;
       activeRequestId = requestCounter;
@@ -169,10 +169,10 @@ describe('Test 2: Timeout must NOT overwrite successful fetch', () => {
     vi.useRealTimers();
   });
 
-  it('should NOT overwrite premium when fetch succeeds just before timeout', () => {
+  it('should NOT overwrite authenticated when fetch succeeds just before timeout', () => {
     // Start in pending
     subMachine.setStatus('pending');
-    subMachine.setTier('unknown');
+    subMachine.setAccessLevel('unknown');
 
     // Schedule timeout (simulates the 15s pending timeout)
     let timeoutFired = false;
@@ -195,10 +195,10 @@ describe('Test 2: Timeout must NOT overwrite successful fetch', () => {
         return; // Abort - recent success
       }
 
-      // If all checks pass, set to free
+      // If all checks pass, set to anonymous
       timeoutFired = true;
       subMachine.setStatus('resolved');
-      subMachine.setTier('free');
+      subMachine.setAccessLevel('anonymous');
     };
 
     const timeoutId = setTimeout(timeoutCallback, PENDING_TIMEOUT_MS);
@@ -206,27 +206,27 @@ describe('Test 2: Timeout must NOT overwrite successful fetch', () => {
     // Advance to t=14.9s
     vi.advanceTimersByTime(14900);
 
-    // Fetch completes with premium at t=14.9s
+    // Fetch completes with authenticated at t=14.9s
     subMachine.markFetchSuccess();
     subMachine.setStatus('resolved');
-    subMachine.setTier('premium');
+    subMachine.setAccessLevel('authenticated');
     subMachine.clearRequest();
 
     // Advance to t=15s (timeout fires)
     vi.advanceTimersByTime(100);
 
-    // Verify: tier should still be premium, NOT free
-    expect(subMachine.getState().tier).toBe('premium');
+    // Verify: accessLevel should still be authenticated, NOT anonymous
+    expect(subMachine.getState().accessLevel).toBe('authenticated');
     expect(subMachine.getState().status).toBe('resolved');
     expect(timeoutFired).toBe(false);
 
     clearTimeout(timeoutId);
   });
 
-  it('should resolve to free when genuinely stuck in pending', () => {
+  it('should resolve to anonymous when genuinely stuck in pending', () => {
     // Start in pending with no activity
     subMachine.setStatus('pending');
-    subMachine.setTier('unknown');
+    subMachine.setAccessLevel('unknown');
 
     let timeoutFired = false;
     const timeoutCallback = () => {
@@ -240,7 +240,7 @@ describe('Test 2: Timeout must NOT overwrite successful fetch', () => {
 
       timeoutFired = true;
       subMachine.setStatus('resolved');
-      subMachine.setTier('free');
+      subMachine.setAccessLevel('anonymous');
     };
 
     setTimeout(timeoutCallback, PENDING_TIMEOUT_MS);
@@ -248,8 +248,8 @@ describe('Test 2: Timeout must NOT overwrite successful fetch', () => {
     // Advance full 15s with no fetch activity
     vi.advanceTimersByTime(PENDING_TIMEOUT_MS);
 
-    // Verify: should resolve to free
-    expect(subMachine.getState().tier).toBe('free');
+    // Verify: should resolve to anonymous
+    expect(subMachine.getState().accessLevel).toBe('anonymous');
     expect(subMachine.getState().status).toBe('resolved');
     expect(timeoutFired).toBe(true);
   });
@@ -265,7 +265,7 @@ describe('Test 2: Timeout must NOT overwrite successful fetch', () => {
         return; // Abort - request in progress
       }
       timeoutFired = true;
-      subMachine.setTier('free');
+      subMachine.setAccessLevel('anonymous');
     };
 
     setTimeout(timeoutCallback, PENDING_TIMEOUT_MS);
@@ -273,7 +273,7 @@ describe('Test 2: Timeout must NOT overwrite successful fetch', () => {
 
     // Timeout should have aborted due to active request
     expect(timeoutFired).toBe(false);
-    expect(subMachine.getState().tier).toBe('unknown');
+    expect(subMachine.getState().accessLevel).toBe('unknown');
   });
 });
 
@@ -345,17 +345,17 @@ describe('Test 3: Logout/login different user resets state', () => {
   });
 
   it('should clear subscription state on logout', () => {
-    // User A has premium subscription
+    // User A has authenticated subscription
     subMachine.setStatus('resolved');
-    subMachine.setTier('premium');
+    subMachine.setAccessLevel('authenticated');
 
     // Logout (clear subscription)
     subMachine.setStatus('resolved'); // Explicit resolved on logout
-    subMachine.setTier('free');
+    subMachine.setAccessLevel('anonymous');
     subMachine.clearRequest();
 
     // Verify clean state
-    expect(subMachine.getState().tier).toBe('free');
+    expect(subMachine.getState().accessLevel).toBe('anonymous');
     expect(subMachine.getState().status).toBe('resolved');
   });
 });
@@ -379,26 +379,26 @@ describe('Test 4: Two subscription fetches overlap - only latest applies', () =>
     // Start second request (cancels first)
     const request2Id = subMachine.startRequest();
 
-    // First request completes with premium (but it's stale)
+    // First request completes with authenticated (but it's stale)
     const request1Stale = subMachine.isStale(request1Id);
     expect(request1Stale).toBe(true);
 
     // Don't apply stale result
     if (!subMachine.isStale(request1Id)) {
-      subMachine.setTier('premium');
+      subMachine.setAccessLevel('authenticated');
     }
 
     // Tier should still be unknown (stale result rejected)
-    expect(subMachine.getState().tier).toBe('unknown');
+    expect(subMachine.getState().accessLevel).toBe('unknown');
 
-    // Second request completes with free
+    // Second request completes with anonymous
     if (!subMachine.isStale(request2Id)) {
-      subMachine.setTier('free');
+      subMachine.setAccessLevel('anonymous');
       subMachine.setStatus('resolved');
     }
 
     // Verify latest result applied
-    expect(subMachine.getState().tier).toBe('free');
+    expect(subMachine.getState().accessLevel).toBe('anonymous');
     expect(subMachine.getState().status).toBe('resolved');
   });
 
@@ -415,11 +415,11 @@ describe('Test 4: Two subscription fetches overlap - only latest applies', () =>
 
     // Only request 2 result should apply
     if (!subMachine.isStale(request2Id)) {
-      subMachine.setTier('premium');
+      subMachine.setAccessLevel('authenticated');
       subMachine.setStatus('resolved');
     }
 
-    expect(subMachine.getState().tier).toBe('premium');
+    expect(subMachine.getState().accessLevel).toBe('authenticated');
   });
 
   it('should handle rapid sequential requests', () => {
@@ -428,19 +428,19 @@ describe('Test 4: Two subscription fetches overlap - only latest applies', () =>
     // Rapid fire 5 requests
     for (let i = 0; i < 5; i++) {
       const reqId = subMachine.startRequest();
-      results.push({ reqId, tier: `tier-${i}` });
+      results.push({ reqId, accessLevel: `accessLevel-${i}` });
     }
 
     // Only last request should be valid
     for (let i = 0; i < results.length; i++) {
-      const { reqId, tier } = results[i];
+      const { reqId, accessLevel } = results[i];
       if (!subMachine.isStale(reqId)) {
-        subMachine.setTier(tier);
+        subMachine.setAccessLevel(accessLevel);
       }
     }
 
-    // Should have the last tier
-    expect(subMachine.getState().tier).toBe('tier-4');
+    // Should have the last accessLevel
+    expect(subMachine.getState().accessLevel).toBe('accessLevel-4');
   });
 });
 
@@ -459,13 +459,13 @@ describe('Test 5: Multi-tab - one tab logs out', () => {
     };
 
     // Tab A registers listener
-    let tabAState = { tier: 'premium', status: 'resolved' };
+    let tabAState = { accessLevel: 'authenticated', status: 'resolved' };
     mockAddEventListener('storage', (e) => {
       if (e.key?.startsWith('subscription:')) {
         // Parse the new value
         const newValue = JSON.parse(e.newValue);
-        if (newValue.tier === 'free') {
-          tabAState = { tier: 'free', status: 'resolved' };
+        if (newValue.accessLevel === 'anonymous') {
+          tabAState = { accessLevel: 'anonymous', status: 'resolved' };
         }
       }
     });
@@ -473,15 +473,15 @@ describe('Test 5: Multi-tab - one tab logs out', () => {
     // Tab B logs out and clears subscription
     const storageEvent = {
       key: 'subscription:user@example.com',
-      newValue: JSON.stringify({ tier: 'free', subscribed: false, version: 5 }),
-      oldValue: JSON.stringify({ tier: 'premium', subscribed: true, version: 5 }),
+      newValue: JSON.stringify({ accessLevel: 'anonymous', subscribed: false, version: 5 }),
+      oldValue: JSON.stringify({ accessLevel: 'authenticated', subscribed: true, version: 5 }),
     };
 
     // Dispatch to all listeners (simulates browser behavior)
     storageListeners.forEach((listener) => listener(storageEvent));
 
-    // Tab A should have converged to free
-    expect(tabAState.tier).toBe('free');
+    // Tab A should have converged to anonymous
+    expect(tabAState.accessLevel).toBe('anonymous');
   });
 
   it('should handle cache key format correctly', () => {
@@ -494,7 +494,7 @@ describe('Test 5: Multi-tab - one tab logs out', () => {
 
   it('should ignore storage events for different users', () => {
     let currentUserEmail = 'userA@example.com';
-    let tabState = { tier: 'premium' };
+    let tabState = { accessLevel: 'authenticated' };
 
     const handleStorageEvent = (e) => {
       const expectedKey = `subscription:${currentUserEmail}`;
@@ -502,27 +502,27 @@ describe('Test 5: Multi-tab - one tab logs out', () => {
         return; // Ignore events for other users
       }
       const newValue = JSON.parse(e.newValue);
-      tabState.tier = newValue.tier;
+      tabState.accessLevel = newValue.accessLevel;
     };
 
     // Event for different user
     const otherUserEvent = {
       key: 'subscription:userB@example.com',
-      newValue: JSON.stringify({ tier: 'free' }),
+      newValue: JSON.stringify({ accessLevel: 'anonymous' }),
     };
 
     handleStorageEvent(otherUserEvent);
 
     // Should not have changed
-    expect(tabState.tier).toBe('premium');
+    expect(tabState.accessLevel).toBe('authenticated');
   });
 });
 
 // ============================================================================
-// Test 6: Backend down resolves to free and stays stable
+// Test 6: Backend down resolves to anonymous and stays stable
 // ============================================================================
 
-describe('Test 6: Backend down - resolves to free and stays stable', () => {
+describe('Test 6: Backend down - resolves to anonymous and stays stable', () => {
   let subMachine;
   const PENDING_TIMEOUT_MS = 15000;
 
@@ -535,39 +535,39 @@ describe('Test 6: Backend down - resolves to free and stays stable', () => {
     vi.useRealTimers();
   });
 
-  it('should resolve to free after timeout when backend is down', () => {
+  it('should resolve to anonymous after timeout when backend is down', () => {
     subMachine.setStatus('pending');
-    subMachine.setTier('unknown');
+    subMachine.setAccessLevel('unknown');
 
     // Simulate backend returning gateway errors (502/503/504)
     const simulateBackendDown = () => {
       // Gateway error -> DEGRADED status (not resolved)
       subMachine.setStatus('degraded');
-      // But if no cache, tier remains unknown
+      // But if no cache, accessLevel remains unknown
     };
 
     simulateBackendDown();
 
-    // After 15s timeout, should resolve to free
+    // After 15s timeout, should resolve to anonymous
     const timeoutCallback = () => {
       if (subMachine.getState().status === 'pending' ||
-          (subMachine.getState().status === 'degraded' && subMachine.getState().tier === 'unknown')) {
+          (subMachine.getState().status === 'degraded' && subMachine.getState().accessLevel === 'unknown')) {
         subMachine.setStatus('resolved');
-        subMachine.setTier('free');
+        subMachine.setAccessLevel('anonymous');
       }
     };
 
     setTimeout(timeoutCallback, PENDING_TIMEOUT_MS);
     vi.advanceTimersByTime(PENDING_TIMEOUT_MS);
 
-    expect(subMachine.getState().tier).toBe('free');
+    expect(subMachine.getState().accessLevel).toBe('anonymous');
     expect(subMachine.getState().status).toBe('resolved');
   });
 
-  it('should stay stable after resolving to free', () => {
-    // Already resolved to free
+  it('should stay stable after resolving to anonymous', () => {
+    // Already resolved to anonymous
     subMachine.setStatus('resolved');
-    subMachine.setTier('free');
+    subMachine.setAccessLevel('anonymous');
 
     // Simulate multiple events that should NOT change resolved state
     const attemptStateChange = () => {
@@ -585,26 +585,26 @@ describe('Test 6: Backend down - resolves to free and stays stable', () => {
     expect(attemptStateChange()).toBe(false);
 
     // State should be unchanged
-    expect(subMachine.getState().tier).toBe('free');
+    expect(subMachine.getState().accessLevel).toBe('anonymous');
     expect(subMachine.getState().status).toBe('resolved');
   });
 
-  it('should preserve cached premium during degraded state', () => {
-    // User has cached premium
-    subMachine.setTier('premium');
+  it('should preserve cached authenticated during degraded state', () => {
+    // User has cached authenticated
+    subMachine.setAccessLevel('authenticated');
     subMachine.setStatus('resolved');
 
-    // Backend goes down - should enter DEGRADED, not change tier
+    // Backend goes down - should enter DEGRADED, not change accessLevel
     const simulateBackendDown = () => {
       // Gateway error during refresh
       subMachine.setStatus('degraded');
-      // DO NOT change tier - preserve cached premium
+      // DO NOT change accessLevel - preserve cached authenticated
     };
 
     simulateBackendDown();
 
-    // Tier should still be premium (cached)
-    expect(subMachine.getState().tier).toBe('premium');
+    // Tier should still be authenticated (cached)
+    expect(subMachine.getState().accessLevel).toBe('authenticated');
     expect(subMachine.getState().status).toBe('degraded');
   });
 
@@ -622,9 +622,9 @@ describe('Test 6: Backend down - resolves to free and stays stable', () => {
     subMachine.setStatus('loading');
     recordState();
 
-    // Resolved to free
+    // Resolved to anonymous
     subMachine.setStatus('resolved');
-    subMachine.setTier('free');
+    subMachine.setAccessLevel('anonymous');
     recordState();
 
     // Should NOT go back to pending
@@ -664,13 +664,13 @@ describe('Integration: Full auth flow timing', () => {
     subMachine.startRequest();
     subMachine.setStatus('loading');
     subMachine.markFetchSuccess();
-    subMachine.setTier('premium');
+    subMachine.setAccessLevel('authenticated');
     subMachine.setStatus('resolved');
     subMachine.clearRequest();
 
     // Verify final state
     expect(tokenMachine.getState().tokenStatus).toBe('present');
-    expect(subMachine.getState().tier).toBe('premium');
+    expect(subMachine.getState().accessLevel).toBe('authenticated');
     expect(subMachine.getState().status).toBe('resolved');
   });
 
@@ -695,12 +695,12 @@ describe('Integration: Full auth flow timing', () => {
 
     // 4. Subscription fetch succeeds
     subMachine.markFetchSuccess();
-    subMachine.setTier('premium');
+    subMachine.setAccessLevel('authenticated');
     subMachine.setStatus('resolved');
 
     // Verify recovery
     expect(tokenMachine.getState().tokenStatus).toBe('present');
-    expect(subMachine.getState().tier).toBe('premium');
+    expect(subMachine.getState().accessLevel).toBe('authenticated');
 
     vi.useRealTimers();
   });
@@ -709,242 +709,242 @@ describe('Integration: Full auth flow timing', () => {
 // ============================================================================
 // P0 Fix Tests: Monotonicity + Convergence (2026-01-14)
 // ============================================================================
-// These tests verify the fix for the P0 bug where premium users could get
-// stuck in boot forever if SUB_FETCH_FAIL was blocked by monotonicity check.
+// These tests verify the fix for the P0 bug where authenticated users could get
+// stuck in boot forever if ACCESS_FETCH_FAIL was blocked by monotonicity check.
 //
 // The fix ensures:
-// - Monotonicity: premium tier cannot be downgraded by errors
-// - Convergence: subPhase always reaches a terminal state (resolved/degraded)
+// - Monotonicity: authenticated accessLevel cannot be downgraded by errors
+// - Convergence: accessPhase always reaches a terminal state (resolved/degraded)
 
 import { authCoordinatorReducer, initialState } from '../authCoordinator.js';
 
 describe('P0 Fix: Monotonicity + Convergence', () => {
-  describe('Test 1: Premium user + backend 502 → degraded, tier stays premium', () => {
-    it('should transition to degraded and preserve premium tier on gateway error', () => {
-      // Premium user in loading state
+  describe('Test 1: Authenticated user + backend 502 → degraded, accessLevel stays authenticated', () => {
+    it('should transition to degraded and preserve authenticated accessLevel on gateway error', () => {
+      // Authenticated user in loading state
       const state = {
         ...initialState,
-        tier: 'premium',
-        tierSource: 'cache',
-        subPhase: 'loading',
-        subRequestId: 123,
+        accessLevel: 'authenticated',
+        accessSource: 'cache',
+        accessPhase: 'loading',
+        accessRequestId: 123,
       };
 
       // Backend returns 502
       const result = authCoordinatorReducer(state, {
-        type: 'SUB_FETCH_FAIL',
+        type: 'ACCESS_FETCH_FAIL',
         requestId: 123,
         error: new Error('502 Bad Gateway'),
         errorKind: 'GATEWAY',
       });
 
-      expect(result.subPhase).toBe('degraded'); // Terminal state reached
-      expect(result.tier).toBe('premium'); // Monotonicity preserved
+      expect(result.accessPhase).toBe('degraded'); // Terminal state reached
+      expect(result.accessLevel).toBe('authenticated'); // Monotonicity preserved
     });
   });
 
-  describe('Test 2: Premium user + SUB_FETCH_FAIL(non-gateway) → degraded, tier stays premium', () => {
-    it('should transition to degraded on 404 error for premium user', () => {
+  describe('Test 2: Authenticated user + ACCESS_FETCH_FAIL(non-gateway) → degraded, accessLevel stays authenticated', () => {
+    it('should transition to degraded on 404 error for authenticated user', () => {
       const state = {
         ...initialState,
-        tier: 'premium',
-        tierSource: 'cache',
-        subPhase: 'loading',
-        subRequestId: 123,
+        accessLevel: 'authenticated',
+        accessSource: 'cache',
+        accessPhase: 'loading',
+        accessRequestId: 123,
       };
 
       // Backend returns 404 "User not found"
       const result = authCoordinatorReducer(state, {
-        type: 'SUB_FETCH_FAIL',
+        type: 'ACCESS_FETCH_FAIL',
         requestId: 123,
         error: new Error('404 User not found'),
         errorKind: 'NOT_FOUND',
       });
 
-      expect(result.subPhase).toBe('degraded'); // Terminal state reached (not stuck in loading!)
-      expect(result.tier).toBe('premium'); // Monotonicity preserved
+      expect(result.accessPhase).toBe('degraded'); // Terminal state reached (not stuck in loading!)
+      expect(result.accessLevel).toBe('authenticated'); // Monotonicity preserved
     });
 
-    it('should transition to degraded on 500 error for premium user', () => {
+    it('should transition to degraded on 500 error for authenticated user', () => {
       const state = {
         ...initialState,
-        tier: 'premium',
-        tierSource: 'server',
-        subPhase: 'loading',
-        subRequestId: 456,
+        accessLevel: 'authenticated',
+        accessSource: 'server',
+        accessPhase: 'loading',
+        accessRequestId: 456,
       };
 
       // Backend returns 500
       const result = authCoordinatorReducer(state, {
-        type: 'SUB_FETCH_FAIL',
+        type: 'ACCESS_FETCH_FAIL',
         requestId: 456,
         error: new Error('500 Internal Server Error'),
         errorKind: 'SERVER_ERROR',
       });
 
-      expect(result.subPhase).toBe('degraded'); // Terminal state reached
-      expect(result.tier).toBe('premium'); // Monotonicity preserved
+      expect(result.accessPhase).toBe('degraded'); // Terminal state reached
+      expect(result.accessLevel).toBe('authenticated'); // Monotonicity preserved
     });
 
-    it('should transition to degraded on AUTH_REQUIRED error for premium user BUT block cached access', () => {
+    it('should transition to degraded on AUTH_REQUIRED error for authenticated user BUT block cached access', () => {
       const state = {
         ...initialState,
-        tier: 'premium',
-        tierSource: 'cache',
-        subPhase: 'loading',
-        subRequestId: 789,
+        accessLevel: 'authenticated',
+        accessSource: 'cache',
+        accessPhase: 'loading',
+        accessRequestId: 789,
       };
 
       // Backend returns 401
       const result = authCoordinatorReducer(state, {
-        type: 'SUB_FETCH_FAIL',
+        type: 'ACCESS_FETCH_FAIL',
         requestId: 789,
         error: new Error('401 Unauthorized'),
         errorKind: 'AUTH_REQUIRED',
       });
 
-      expect(result.subPhase).toBe('degraded'); // Terminal state reached
-      expect(result.tier).toBe('premium'); // Tier preserved (last-known)
-      expect(result.tierSource).toBe('none'); // KEY: Blocks hasCachedPremium
+      expect(result.accessPhase).toBe('degraded'); // Terminal state reached
+      expect(result.accessLevel).toBe('authenticated'); // Tier preserved (last-known)
+      expect(result.accessSource).toBe('none'); // KEY: Blocks hasCachedAuthenticatedAccess
     });
 
-    it('should block cached premium on 401 (Option C: fail-closed for entitlement)', () => {
+    it('should block cached authenticated on 401 (Option C: fail-closed for entitlement)', () => {
       const state = {
         ...initialState,
-        tier: 'premium',
-        tierSource: 'cache', // Has cached premium
-        subPhase: 'loading',
-        subRequestId: 123,
+        accessLevel: 'authenticated',
+        accessSource: 'cache', // Has cached authenticated
+        accessPhase: 'loading',
+        accessRequestId: 123,
       };
 
       // 401 auth error
       const result = authCoordinatorReducer(state, {
-        type: 'SUB_FETCH_FAIL',
+        type: 'ACCESS_FETCH_FAIL',
         requestId: 123,
         error: new Error('401'),
         errorKind: 'AUTH',
       });
 
-      // Verify: tier preserved but tierSource cleared
-      expect(result.tier).toBe('premium');
-      expect(result.tierSource).toBe('none');
-      expect(result.subPhase).toBe('degraded');
+      // Verify: accessLevel preserved but accessSource cleared
+      expect(result.accessLevel).toBe('authenticated');
+      expect(result.accessSource).toBe('none');
+      expect(result.accessPhase).toBe('degraded');
 
-      // Simulate derivation: hasCachedPremium should be FALSE
-      // hasCachedPremium = tierSource === 'cache' && tier === 'premium' && isPremiumActive
-      const hasCachedPremium = result.tierSource === 'cache'
-        && result.tier === 'premium';
-      expect(hasCachedPremium).toBe(false); // Blocked!
+      // Simulate derivation: hasCachedAuthenticatedAccess should be FALSE
+      // hasCachedAuthenticatedAccess = accessSource === 'cache' && accessLevel === 'authenticated' && hasActiveAccess
+      const hasCachedAuthenticatedAccess = result.accessSource === 'cache'
+        && result.accessLevel === 'authenticated';
+      expect(hasCachedAuthenticatedAccess).toBe(false); // Blocked!
     });
 
-    it('should KEEP cached premium on gateway error (Option C: fail-open for availability)', () => {
+    it('should KEEP cached authenticated on gateway error (Option C: fail-open for availability)', () => {
       const state = {
         ...initialState,
-        tier: 'premium',
-        tierSource: 'cache', // Has cached premium
-        subPhase: 'loading',
-        subRequestId: 456,
+        accessLevel: 'authenticated',
+        accessSource: 'cache', // Has cached authenticated
+        accessPhase: 'loading',
+        accessRequestId: 456,
       };
 
       // 502 gateway error
       const result = authCoordinatorReducer(state, {
-        type: 'SUB_FETCH_FAIL',
+        type: 'ACCESS_FETCH_FAIL',
         requestId: 456,
         error: new Error('502 Bad Gateway'),
         errorKind: 'GATEWAY',
       });
 
-      // Verify: tier AND tierSource preserved
-      expect(result.tier).toBe('premium');
-      expect(result.tierSource).toBe('cache'); // PRESERVED for availability
-      expect(result.subPhase).toBe('degraded');
+      // Verify: accessLevel AND accessSource preserved
+      expect(result.accessLevel).toBe('authenticated');
+      expect(result.accessSource).toBe('cache'); // PRESERVED for availability
+      expect(result.accessPhase).toBe('degraded');
 
-      // Simulate derivation: hasCachedPremium should be TRUE
-      const hasCachedPremium = result.tierSource === 'cache'
-        && result.tier === 'premium';
-      expect(hasCachedPremium).toBe(true); // Allowed!
+      // Simulate derivation: hasCachedAuthenticatedAccess should be TRUE
+      const hasCachedAuthenticatedAccess = result.accessSource === 'cache'
+        && result.accessLevel === 'authenticated';
+      expect(hasCachedAuthenticatedAccess).toBe(true); // Allowed!
     });
   });
 
-  describe('Test 3: Free/unknown user + SUB_FETCH_FAIL → resolved, tier free', () => {
-    it('should resolve to free on non-gateway error for free user', () => {
+  describe('Test 3: Free/unknown user + ACCESS_FETCH_FAIL → resolved, accessLevel anonymous', () => {
+    it('should resolve to anonymous on non-gateway error for anonymous user', () => {
       const state = {
         ...initialState,
-        tier: 'free',
-        tierSource: 'cache',
-        subPhase: 'loading',
-        subRequestId: 123,
+        accessLevel: 'anonymous',
+        accessSource: 'cache',
+        accessPhase: 'loading',
+        accessRequestId: 123,
       };
 
       const result = authCoordinatorReducer(state, {
-        type: 'SUB_FETCH_FAIL',
+        type: 'ACCESS_FETCH_FAIL',
         requestId: 123,
         error: new Error('404 Not found'),
         errorKind: 'NOT_FOUND',
       });
 
-      expect(result.subPhase).toBe('resolved'); // Terminal state
-      expect(result.tier).toBe('free'); // Stays free
+      expect(result.accessPhase).toBe('resolved'); // Terminal state
+      expect(result.accessLevel).toBe('anonymous'); // Stays anonymous
     });
 
-    it('should resolve to free on non-gateway error for unknown tier user', () => {
+    it('should resolve to anonymous on non-gateway error for unknown accessLevel user', () => {
       const state = {
         ...initialState,
-        tier: 'unknown',
-        tierSource: 'none',
-        subPhase: 'loading',
-        subRequestId: 123,
+        accessLevel: 'unknown',
+        accessSource: 'none',
+        accessPhase: 'loading',
+        accessRequestId: 123,
       };
 
       const result = authCoordinatorReducer(state, {
-        type: 'SUB_FETCH_FAIL',
+        type: 'ACCESS_FETCH_FAIL',
         requestId: 123,
         error: new Error('500 Server error'),
         errorKind: 'SERVER_ERROR',
       });
 
-      expect(result.subPhase).toBe('resolved'); // Terminal state
-      expect(result.tier).toBe('free'); // Resolves to free (fail-open)
+      expect(result.accessPhase).toBe('resolved'); // Terminal state
+      expect(result.accessLevel).toBe('anonymous'); // Resolves to anonymous (fail-open)
     });
   });
 
   describe('Test 4: No state remains loading/pending beyond timeout', () => {
-    it('SUB_PENDING_TIMEOUT resolves pending to free for non-premium', () => {
+    it('ACCESS_PENDING_TIMEOUT resolves pending to anonymous for non-authenticated', () => {
       const state = {
         ...initialState,
-        tier: 'unknown',
-        subPhase: 'pending',
+        accessLevel: 'unknown',
+        accessPhase: 'pending',
       };
 
-      const result = authCoordinatorReducer(state, { type: 'SUB_PENDING_TIMEOUT' });
+      const result = authCoordinatorReducer(state, { type: 'ACCESS_PENDING_TIMEOUT' });
 
-      expect(result.subPhase).toBe('resolved');
-      expect(result.tier).toBe('free');
+      expect(result.accessPhase).toBe('resolved');
+      expect(result.accessLevel).toBe('anonymous');
     });
 
-    it('SUB_PENDING_TIMEOUT is blocked when tier is already premium (monotonicity)', () => {
+    it('ACCESS_PENDING_TIMEOUT is blocked when accessLevel is already authenticated (monotonicity)', () => {
       const state = {
         ...initialState,
-        tier: 'premium',
-        tierSource: 'cache',
-        subPhase: 'pending', // Unusual state but possible
+        accessLevel: 'authenticated',
+        accessSource: 'cache',
+        accessPhase: 'pending', // Unusual state but possible
       };
 
-      const result = authCoordinatorReducer(state, { type: 'SUB_PENDING_TIMEOUT' });
+      const result = authCoordinatorReducer(state, { type: 'ACCESS_PENDING_TIMEOUT' });
 
-      // Timeout is blocked for premium users
-      expect(result.tier).toBe('premium');
-      // Note: subPhase stays pending here, but this edge case is handled by
-      // the 3-layer timeout guard in SubscriptionContext (statusRef, activeRequestRef, lastFetchSuccessRef)
+      // Timeout is blocked for authenticated users
+      expect(result.accessLevel).toBe('authenticated');
+      // Note: accessPhase stays pending here, but this edge case is handled by
+      // the 3-layer timeout guard in AccessContext (statusRef, activeRequestRef, lastFetchSuccessRef)
     });
 
-    it('loading state always reaches terminal on any SUB_FETCH_FAIL', () => {
-      // This is the key fix - loading must NEVER stay loading after SUB_FETCH_FAIL
+    it('loading state always reaches terminal on any ACCESS_FETCH_FAIL', () => {
+      // This is the key fix - loading must NEVER stay loading after ACCESS_FETCH_FAIL
       const loadingState = {
         ...initialState,
-        tier: 'premium',
-        subPhase: 'loading',
-        subRequestId: 999,
+        accessLevel: 'authenticated',
+        accessPhase: 'loading',
+        accessRequestId: 999,
       };
 
       // Try various error kinds - ALL must reach terminal state
@@ -952,45 +952,45 @@ describe('P0 Fix: Monotonicity + Convergence', () => {
 
       for (const errorKind of errorKinds) {
         const result = authCoordinatorReducer(loadingState, {
-          type: 'SUB_FETCH_FAIL',
+          type: 'ACCESS_FETCH_FAIL',
           requestId: 999,
           error: new Error(`Test error: ${errorKind}`),
           errorKind,
         });
 
         // Must NOT stay in loading
-        expect(result.subPhase).not.toBe('loading');
+        expect(result.accessPhase).not.toBe('loading');
         // Must be in a terminal state
-        expect(['resolved', 'degraded']).toContain(result.subPhase);
+        expect(['resolved', 'degraded']).toContain(result.accessPhase);
       }
     });
   });
 
   describe('Test 5: No action is silently blocked without terminal state', () => {
-    it('SUB_FETCH_FAIL always produces a state change for valid requestId', () => {
+    it('ACCESS_FETCH_FAIL always produces a state change for valid requestId', () => {
       const baseState = {
         ...initialState,
-        subPhase: 'loading',
-        subRequestId: 100,
+        accessPhase: 'loading',
+        accessRequestId: 100,
       };
 
-      // Test with different tiers
-      const tiers = ['unknown', 'free', 'premium'];
+      // Test with different accessLevels
+      const accessLevels = ['unknown', 'anonymous', 'authenticated'];
       const errorKinds = ['GATEWAY', 'NETWORK', 'AUTH_REQUIRED', 'NOT_FOUND'];
 
-      for (const tier of tiers) {
+      for (const accessLevel of accessLevels) {
         for (const errorKind of errorKinds) {
-          const state = { ...baseState, tier };
+          const state = { ...baseState, accessLevel };
           const result = authCoordinatorReducer(state, {
-            type: 'SUB_FETCH_FAIL',
+            type: 'ACCESS_FETCH_FAIL',
             requestId: 100,
             error: new Error('test'),
             errorKind,
           });
 
           // Action must NOT be silently blocked (state must change)
-          expect(result.subPhase).not.toBe('loading');
-          expect(result.subRequestId).toBeNull(); // Request cleared
+          expect(result.accessPhase).not.toBe('loading');
+          expect(result.accessRequestId).toBeNull(); // Request cleared
         }
       }
     });
@@ -998,127 +998,127 @@ describe('P0 Fix: Monotonicity + Convergence', () => {
     it('only stale requests are rejected (not valid ones)', () => {
       const state = {
         ...initialState,
-        tier: 'premium',
-        subPhase: 'loading',
-        subRequestId: 200, // Current request
+        accessLevel: 'authenticated',
+        accessPhase: 'loading',
+        accessRequestId: 200, // Current request
       };
 
       // Stale request (old requestId) - should be rejected
       const staleResult = authCoordinatorReducer(state, {
-        type: 'SUB_FETCH_FAIL',
+        type: 'ACCESS_FETCH_FAIL',
         requestId: 100, // Old request
         error: new Error('stale'),
         errorKind: 'SERVER_ERROR',
       });
-      expect(staleResult.subPhase).toBe('loading'); // Unchanged - stale rejected
+      expect(staleResult.accessPhase).toBe('loading'); // Unchanged - stale rejected
 
       // Current request - should be accepted
       const currentResult = authCoordinatorReducer(state, {
-        type: 'SUB_FETCH_FAIL',
+        type: 'ACCESS_FETCH_FAIL',
         requestId: 200, // Current request
         error: new Error('current'),
         errorKind: 'SERVER_ERROR',
       });
-      expect(currentResult.subPhase).toBe('degraded'); // Changed - current accepted
+      expect(currentResult.accessPhase).toBe('degraded'); // Changed - current accepted
     });
   });
 });
 
 // ============================================================================
-// P0 Fix: SUB_FETCH_ABORT Convergence (2026-01-14)
+// P0 Fix: ACCESS_FETCH_ABORT Convergence (2026-01-14)
 // ============================================================================
 // These tests verify that abort always reaches terminal state
 
-describe('P0 Fix: SUB_FETCH_ABORT Convergence', () => {
-  it('abort during loading transitions to degraded and clears subRequestId', () => {
+describe('P0 Fix: ACCESS_FETCH_ABORT Convergence', () => {
+  it('abort during loading transitions to degraded and clears accessRequestId', () => {
     const state = {
       ...initialState,
-      tier: 'premium',
-      tierSource: 'cache',
-      subPhase: 'loading',
-      subRequestId: 123,
+      accessLevel: 'authenticated',
+      accessSource: 'cache',
+      accessPhase: 'loading',
+      accessRequestId: 123,
     };
 
     const result = authCoordinatorReducer(state, {
-      type: 'SUB_FETCH_ABORT',
+      type: 'ACCESS_FETCH_ABORT',
       requestId: 123,
     });
 
     // Must reach terminal state
-    expect(result.subPhase).toBe('degraded');
+    expect(result.accessPhase).toBe('degraded');
     // Must clear requestId so future fetches work
-    expect(result.subRequestId).toBeNull();
-    // Must preserve tier (abort is not an error)
-    expect(result.tier).toBe('premium');
-    expect(result.tierSource).toBe('cache');
+    expect(result.accessRequestId).toBeNull();
+    // Must preserve accessLevel (abort is not an error)
+    expect(result.accessLevel).toBe('authenticated');
+    expect(result.accessSource).toBe('cache');
   });
 
-  it('abort during pending just clears subRequestId', () => {
+  it('abort during pending just clears accessRequestId', () => {
     const state = {
       ...initialState,
-      subPhase: 'pending',
-      subRequestId: 456,
+      accessPhase: 'pending',
+      accessRequestId: 456,
     };
 
     const result = authCoordinatorReducer(state, {
-      type: 'SUB_FETCH_ABORT',
+      type: 'ACCESS_FETCH_ABORT',
       requestId: 456,
     });
 
     // Pending stays pending (timeout will handle)
-    expect(result.subPhase).toBe('pending');
+    expect(result.accessPhase).toBe('pending');
     // But requestId is cleared
-    expect(result.subRequestId).toBeNull();
+    expect(result.accessRequestId).toBeNull();
   });
 
   it('every fetch attempt ends in terminal action (enumeration)', () => {
     // This test proves the convergence invariant:
-    // For any subPhase='loading' state, one of these MUST be dispatched:
-    const terminalActions = ['SUB_FETCH_OK', 'SUB_FETCH_FAIL', 'SUB_FETCH_ABORT'];
+    // For any accessPhase='loading' state, one of these MUST be dispatched:
+    const terminalActions = ['ACCESS_FETCH_OK', 'ACCESS_FETCH_FAIL', 'ACCESS_FETCH_ABORT'];
 
     const loadingState = {
       ...initialState,
-      subPhase: 'loading',
-      subRequestId: 999,
+      accessPhase: 'loading',
+      accessRequestId: 999,
     };
 
     for (const actionType of terminalActions) {
-      const action = actionType === 'SUB_FETCH_OK'
-        ? { type: actionType, requestId: 999, subscription: { tier: 'free', subscribed: false } }
-        : actionType === 'SUB_FETCH_FAIL'
+      const action = actionType === 'ACCESS_FETCH_OK'
+        ? { type: actionType, requestId: 999, subscription: { accessLevel: 'anonymous', subscribed: false } }
+        : actionType === 'ACCESS_FETCH_FAIL'
           ? { type: actionType, requestId: 999, error: new Error('test'), errorKind: 'GATEWAY' }
           : { type: actionType, requestId: 999 };
 
       const result = authCoordinatorReducer(loadingState, action);
 
       // All terminal actions must exit loading
-      expect(result.subPhase).not.toBe('loading');
+      expect(result.accessPhase).not.toBe('loading');
       // All terminal actions must clear requestId
-      expect(result.subRequestId).toBeNull();
+      expect(result.accessRequestId).toBeNull();
     }
   });
 });
 
 // ============================================================================
-// P0 Fix: Cache TTL for Premium (2026-01-14)
+// P0 Fix: Cache TTL for authenticated access (2026-01-14)
 // ============================================================================
-// Note: The actual cache TTL logic is in SubscriptionContext.jsx getCachedSubscription()
-// These tests verify the derivation logic doesn't grant premium without proper source
+// Note: The actual cache TTL logic is in AccessContext.jsx getCachedSubscription()
+// These tests verify the derivation logic doesn't grant authenticated without proper source
 
 describe('P0 Fix: Cache TTL Policy', () => {
-  it('cached premium with ends_at requires valid future date', () => {
-    // This tests the isPremiumActive derivation logic
+  it('cached authenticated with ends_at requires valid future date', () => {
+    // This tests the hasActiveAccess derivation logic
     // Subscription with expired ends_at should NOT be active
 
     const expiredSubscription = {
-      tier: 'premium',
+      accessLevel: 'authenticated',
       subscribed: true,
       ends_at: '2020-01-01T00:00:00Z', // Expired
     };
 
-    // Simulate isPremiumActive check
-    const isPremiumActive = (sub) => {
-      if (sub.tier !== 'premium') return false;
+    // Simulate hasActiveAccess check
+    const hasActiveAccess = (sub) => {
+      if (sub.accessLevel !== 'authenticated') return false;
       if (!sub.subscribed) return false;
       if (sub.ends_at) {
         const endsAt = new Date(sub.ends_at);
@@ -1127,39 +1127,39 @@ describe('P0 Fix: Cache TTL Policy', () => {
       return true;
     };
 
-    expect(isPremiumActive(expiredSubscription)).toBe(false);
+    expect(hasActiveAccess(expiredSubscription)).toBe(false);
   });
 
-  it('cached premium without ends_at relies on cache TTL (24h max)', () => {
-    // This documents the policy: if ends_at is null, cache TTL limits premium access
-    // The actual enforcement is in getCachedSubscription() with PREMIUM_CACHE_MAX_TTL_MS
+  it('cached authenticated without ends_at relies on cache TTL (24h max)', () => {
+    // This documents the policy: if ends_at is null, cache TTL limits authenticated access
+    // The actual enforcement is in getCachedSubscription() with ACCESS_CACHE_MAX_TTL_MS
 
-    // Test the derivation side: if tierSource is 'none', hasCachedPremium is false
-    const tierSourceNone = 'none';
-    const tierSourceCache = 'cache';
+    // Test the derivation side: if accessSource is 'none', hasCachedAuthenticatedAccess is false
+    const accessSourceNone = 'none';
+    const accessSourceCache = 'cache';
 
-    // hasCachedPremium = tierSource === 'cache' && tier === 'premium' && isPremiumActive
-    const hasCachedPremium = (tierSource, tier) => tierSource === 'cache' && tier === 'premium';
+    // hasCachedAuthenticatedAccess = accessSource === 'cache' && accessLevel === 'authenticated' && hasActiveAccess
+    const hasCachedAuthenticatedAccess = (accessSource, accessLevel) => accessSource === 'cache' && accessLevel === 'authenticated';
 
-    expect(hasCachedPremium(tierSourceNone, 'premium')).toBe(false);
-    expect(hasCachedPremium(tierSourceCache, 'premium')).toBe(true);
+    expect(hasCachedAuthenticatedAccess(accessSourceNone, 'authenticated')).toBe(false);
+    expect(hasCachedAuthenticatedAccess(accessSourceCache, 'authenticated')).toBe(true);
   });
 
   it('expired cache (by TTL) returns null from getCachedSubscription', () => {
     // This is a documentation test - the actual logic is:
-    // if (tier === 'premium' && !ends_at) {
+    // if (accessLevel === 'authenticated' && !ends_at) {
     //   if (Date.now() - cachedAt > 24h) return null;
     // }
     //
-    // Policy: Premium without ends_at cannot persist beyond 24 hours
-    // This prevents "immortal cached premium" from bad data or backend bugs
+    // Policy: authenticated cache without ends_at cannot persist beyond 24 hours
+    // This prevents "immortal cached authenticated" from bad data or backend bugs
 
-    const PREMIUM_CACHE_MAX_TTL_MS = 24 * 60 * 60 * 1000;
+    const ACCESS_CACHE_MAX_TTL_MS = 24 * 60 * 60 * 1000;
 
     // Simulate expired cache check
     const cachedAt = Date.now() - (25 * 60 * 60 * 1000); // 25 hours ago
     const cacheAge = Date.now() - cachedAt;
-    const isExpired = cacheAge > PREMIUM_CACHE_MAX_TTL_MS;
+    const isExpired = cacheAge > ACCESS_CACHE_MAX_TTL_MS;
 
     expect(isExpired).toBe(true);
   });

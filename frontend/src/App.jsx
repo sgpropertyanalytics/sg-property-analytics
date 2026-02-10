@@ -17,14 +17,13 @@ import './chartSetup';
 import { queryClient } from './lib/queryClient';
 import { DataProvider } from './context/DataContext';
 import { AuthProvider } from './context/AuthContext';
-import { SubscriptionProvider } from './context/SubscriptionContext';
+import { AccessProvider } from './context/AccessContext';
 // Phase 3.4: PowerBIFilterProvider removed - useZustandFilters is now self-contained
 import { AppReadyProvider } from './context/AppReadyContext';
 import { DebugProvider } from './context/DebugContext';
 import { ChartTimingProvider } from './context/ChartTimingContext';
 import LandingPage from './pages/LandingV3';
 import Login from './pages/Login';
-import Pricing from './pages/Pricing';
 import { DashboardLayout } from './components/layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PageHeader } from './components/ui';
@@ -116,7 +115,7 @@ const PerformanceDashboard = lazyWithRetry(() =>
  *
  * Layout Structure:
  * - Landing page at / and /landing (public)
- * - DashboardLayout wraps all dashboard pages (premium features)
+ * - DashboardLayout wraps all dashboard pages (authenticated features)
  * - GlobalNavRail (64px) provides primary navigation
  * - PowerBIFilterSidebar (280px) provides contextual filtering
  *
@@ -124,18 +123,18 @@ const PerformanceDashboard = lazyWithRetry(() =>
  * - /: Landing page (public)
  * - /landing: Landing page (public)
  * - /login: User authentication
- * - /market-overview: Resale market analytics dashboard (premium)
- * - /new-launch-market: New Sale vs Resale comparison (premium)
- * - /district-overview: District overview analysis (premium)
- * - /explore: Budget-based property search (premium)
- * - /value-check: Compare purchase to nearby transactions (premium)
- * - /exit-risk: Exit risk analysis (premium)
- * - /supply-inventory: Supply & inventory insights (premium)
+ * - /market-overview: Resale market analytics dashboard (authenticated)
+ * - /new-launch-market: New Sale vs Resale comparison (authenticated)
+ * - /district-overview: District overview analysis (authenticated)
+ * - /explore: Budget-based property search (authenticated)
+ * - /value-check: Compare purchase to nearby transactions (authenticated)
+ * - /exit-risk: Exit risk analysis (authenticated)
+ * - /supply-inventory: Supply & inventory insights (authenticated)
  */
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-    <SubscriptionProvider>
+    <AccessProvider>
       <AuthProvider>
         <DataProvider>
           <DebugProvider>
@@ -154,9 +153,6 @@ function App() {
 
               {/* Login - Authentication */}
               <Route path="/login" element={<Login />} />
-
-              {/* Pricing - Subscription plans */}
-              <Route path="/pricing" element={<Pricing />} />
 
           {/* ===== Dashboard Routes with Double-Sidebar Layout ===== */}
           {/* All dashboard routes share a single DashboardLayout to prevent nav rail flickering */}
@@ -232,7 +228,7 @@ function App() {
           </DebugProvider>
         </DataProvider>
       </AuthProvider>
-    </SubscriptionProvider>
+    </AccessProvider>
     {/* TanStack Query DevTools - lazy loaded, only in development */}
     {import.meta.env.DEV && (
       <Suspense fallback={null}>

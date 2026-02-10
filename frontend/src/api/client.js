@@ -82,7 +82,7 @@ const queueRequest = (executeFn, options = {}) => {
 };
 
 // Create axios instance
-// Timeout: 45s for initial cold-start requests (Render free tier spins down after 15 min idle)
+// Timeout: 45s for initial cold-start requests (Render service spins down after 15 min idle)
 // Most requests complete in <2s once server is warm
 const apiClient = axios.create({
   baseURL: API_BASE,
@@ -107,7 +107,7 @@ const RETRY_CONFIG = {
  * Check if an error is retryable
  *
  * STRICT POLICY: Only retry 502/503/504 gateway errors.
- * - Timeout/network errors → Let SubscriptionContext handle as DEGRADED
+ * - Timeout/network errors → Let AccessContext handle as DEGRADED
  * - 401/403 → Never retry (auth flow handles these)
  * - Other 5xx → Don't retry (server errors unlikely to self-resolve)
  *
@@ -136,7 +136,7 @@ const isRetryableError = (error, config) => {
 
   // STRICT: Only retry gateway errors (502, 503, 504)
   // Timeout, network, and HTML errors are NOT retried here
-  // They will be classified as DEGRADED by SubscriptionContext to preserve cache
+  // They will be classified as DEGRADED by AccessContext to preserve cache
   if (RETRY_CONFIG.retryableStatuses.includes(error?.response?.status)) {
     return true;
   }
@@ -253,7 +253,7 @@ const normalizeError = (error) => {
   } else if (status === 401) {
     error.userMessage = 'Session expired. Please sign in again.';
   } else if (status === 403) {
-    error.userMessage = 'Access denied. You may need to upgrade your subscription.';
+    error.userMessage = 'Access denied for this account.';
   } else if (status === 404) {
     error.userMessage = 'Resource not found. Please try again.';
   } else if (status === 429) {
@@ -319,7 +319,7 @@ apiClient.interceptors.response.use(
     // Normalize error FIRST - adds userMessage for UI consumption
     normalizeError(error);
     // Note: 401s are handled by Firebase SDK auto-refresh (getIdToken in request interceptor)
-    // Note: 403 = authenticated but not premium → show paywall, not re-auth
+    // Note: 403 = authenticated but forbidden by endpoint-level policy (not re-auth)
     return Promise.reject(error);
   }
 );
@@ -843,10 +843,6 @@ export const getDealCheckerMultiScope = (params = {}, options = {}) =>
 
 export const deleteAccount = () => {
   return apiClient.delete('/auth/delete-account');
-};
-
-export const createPortalSession = (returnUrl) => {
-  return apiClient.post('/payments/portal', { return_url: returnUrl });
 };
 
 export const __test__ = {

@@ -1,17 +1,15 @@
-import { useSubscription } from '../context/SubscriptionContext';
-
 /**
- * BlurredCell - Production-grade component for premium data visualization
+ * BlurredCell - Production-grade component for protected data visualization
  *
  * SECURITY PRINCIPLE:
  * - Server returns masked values, NOT real values that get CSS-blurred
- * - `value` prop is null for free users (server withholds it)
+ * - `value` prop is null for non-authenticated users (server withholds it)
  * - `masked` prop contains pre-computed masked display value
  * - No client-side masking/blurring of real data
  *
  * Usage:
  * <BlurredCell
- *   value={txn.project_name}          // null for free, real for premium
+ *   value={txn.project_name}          // null for non-authenticated, real for authenticated
  *   masked={txn.project_name_masked}  // "D09 Condo A" (always present)
  *   field="project name"              // For analytics/CTA copy
  *   variant="label"                   // "label" | "currency" | "number"
@@ -20,7 +18,7 @@ import { useSubscription } from '../context/SubscriptionContext';
  * />
  *
  * Props:
- * - value: Real value (null for free users, actual for premium)
+ * - value: Real value (null for non-authenticated users, actual for authenticated)
  * - masked: Pre-computed masked display value from server
  * - field: Human-readable field name for analytics ("project name", "price")
  * - variant: Display variant - "label" | "currency" | "number"
@@ -49,73 +47,17 @@ function formatValue(value, variant) {
 export function BlurredCell({
   value,
   masked,
-  field = 'data',
+  field: _field = 'data',
   variant = 'label',
-  district = null,
-  source = 'table',
+  district: _district = null,
+  source: _source = 'table',
   className = '',
 }) {
-  const { canAccessPremium, paywall } = useSubscription();
-
-  // Premium users see the real value (formatted)
-  if (canAccessPremium && value !== null && value !== undefined) {
-    return (
-      <span className={className}>
-        {formatValue(value, variant)}
-      </span>
-    );
-  }
-
-  // Free users see the masked value with blur effect and upgrade prompt
-  const displayValue = masked || '-';
-
-  // Handle click - triggers paywall with analytics context
-  const handleClick = (e) => {
-    e.stopPropagation();
-    paywall.open({
-      field,
-      source,
-      district,
-    });
-  };
-
-  // Handle keyboard - Enter/Space triggers same as click (a11y)
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      handleClick(e);
-    }
-  };
-
-  // Build contextual tooltip
-  const tooltipText = district
-    ? `Unlock exact ${field} for ${district} transactions`
-    : `Unlock exact ${field}`;
+  const displayValue = value ?? masked;
 
   return (
-    <span
-      className={`relative inline-flex items-center gap-1 cursor-pointer group ${className}`}
-      onClick={handleClick}
-      onKeyDown={handleKeyDown}
-      tabIndex={0}
-      role="button"
-      aria-label={`${displayValue} - ${tooltipText}`}
-      title={tooltipText}
-    >
-      {/* Masked value with blur effect */}
-      <span className="blur-[3px] group-hover:blur-[2px] transition-all select-none">
-        {displayValue}
-      </span>
-
-      {/* PRO badge - visible on hover */}
-      <span
-        className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity
-                   bg-brand-navy text-white text-[8px] font-bold px-1 py-0.5 rounded
-                   pointer-events-none"
-        aria-hidden="true"
-      >
-        PRO
-      </span>
+    <span className={className}>
+      {formatValue(displayValue, variant)}
     </span>
   );
 }

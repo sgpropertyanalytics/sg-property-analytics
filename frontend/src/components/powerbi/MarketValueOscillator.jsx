@@ -9,7 +9,7 @@ import { getAggregate } from '../../api/client';
 // Phase 3.2: Migrated from usePowerBIFilters to useZustandFilters
 import { useZustandFilters } from '../../stores';
 import { TIME_GROUP_BY } from '../../context/PowerBIFilter';
-import { useSubscription } from '../../context/SubscriptionContext';
+import { useAccess } from '../../context/AccessContext';
 import {
   PreviewChartOverlay,
   DataCard,
@@ -73,8 +73,8 @@ function MarketValueOscillatorBase({ height = 380, saleType = null, sharedRawDat
   // Extract filter values directly (simple, explicit)
   const timeframe = filters.timeFilter?.type === 'preset' ? filters.timeFilter.value : 'Y1';
   const bedroom = filters.bedroomTypes?.join(',') || '';
-  const { accessLevel: _accessLevel, accessSource: _accessSource } = useSubscription();
-  const isFreeTier = false;
+  const { accessLevel: _accessLevel, accessSource: _accessSource } = useAccess();
+  const isAccessRestricted = false;
 
   const chartRef = useRef(null);
 
@@ -375,7 +375,7 @@ Based on resale transactions only, with outliers excluded.
           />
 
           {/* KPI Row - using standard DataCardToolbar */}
-          <DataCardToolbar columns={3} blur={isFreeTier}>
+          <DataCardToolbar columns={3} blur={isAccessRestricted}>
             <ToolbarStat
               label="CCR-RCR Signal"
               value={

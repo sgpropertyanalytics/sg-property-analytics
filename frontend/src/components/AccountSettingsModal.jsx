@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { X, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useSubscription } from '../context/SubscriptionContext';
-import { deleteAccount, createPortalSession } from '../api/client';
+import { deleteAccount } from '../api/client';
 import { getInitials } from '../utils/formatters';
 
 /**
@@ -10,30 +9,14 @@ import { getInitials } from '../utils/formatters';
  *
  * Calm, professional layout with grid for Plan/Session
  */
-export function AccountSettingsModal({ isOpen, onClose, onShowPricing }) {
+export function AccountSettingsModal({ isOpen, onClose }) {
   const { user, logout } = useAuth();
-  const { tier, tierSource, canAccessPremium, expiry } = useSubscription();
 
   const [loading, setLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteError, setDeleteError] = useState(null);
 
   if (!isOpen || !user) return null;
-
-  const handleManageBilling = async () => {
-    setLoading(true);
-    try {
-      const response = await createPortalSession(window.location.href);
-      if (response.data.portal_url) {
-        window.location.href = response.data.portal_url;
-      }
-    } catch (error) {
-      console.error('Failed to create portal session:', error);
-      alert('Unable to open billing portal. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSignOut = async () => {
     setLoading(true);
@@ -62,11 +45,6 @@ export function AccountSettingsModal({ isOpen, onClose, onShowPricing }) {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleUpgrade = () => {
-    onClose();
-    onShowPricing?.();
   };
 
   const formatDate = (dateString) => {
@@ -169,48 +147,15 @@ export function AccountSettingsModal({ isOpen, onClose, onShowPricing }) {
                 <div>
                   <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Plan</h3>
                   <div className="flex items-center gap-2 mb-1">
-                    {tierSource === 'none' ? (
-                      <span className="inline-block h-5 w-20 bg-slate-700 rounded animate-pulse" />
-                    ) : (
-                      <>
-                        <span className="text-base font-bold text-white">
-                          {tier === 'premium' ? 'Premium' : 'Free'}
-                        </span>
-                        {canAccessPremium && (
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 uppercase">
-                            Active
-                          </span>
-                        )}
-                      </>
-                    )}
+                    <span className="text-base font-bold text-white">Standard Access</span>
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase">
+                      Active
+                    </span>
                   </div>
-                  {canAccessPremium && expiry?.endsAt ? (
-                    <p className="text-[11px] text-slate-500">
-                      Renews {formatDate(expiry.endsAt)}
-                    </p>
-                  ) : tierSource !== 'none' && tier === 'free' ? (
-                    <p className="text-[11px] text-slate-500">
-                      Limited access
-                    </p>
-                  ) : null}
+                  <p className="text-[11px] text-slate-500">
+                    Full access enabled for all signed-in users
+                  </p>
                 </div>
-
-                {canAccessPremium ? (
-                  <button
-                    onClick={handleManageBilling}
-                    disabled={loading}
-                    className="mt-4 text-xs text-blue-400 hover:text-blue-300 font-medium text-left disabled:opacity-50"
-                  >
-                    Manage Billing →
-                  </button>
-                ) : tierSource !== 'none' && tier === 'free' && (
-                  <button
-                    onClick={handleUpgrade}
-                    className="mt-4 text-xs text-amber-400 hover:text-amber-300 font-medium text-left"
-                  >
-                    Upgrade to Premium →
-                  </button>
-                )}
               </div>
 
               {/* Session Card (Neutral, Calm) */}

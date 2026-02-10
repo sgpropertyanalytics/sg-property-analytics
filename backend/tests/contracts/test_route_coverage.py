@@ -36,11 +36,6 @@ EXEMPT_ROUTES = [
     ("/districts", "Deprecated - use /api/filter-options"),
     ("/kpi-summary", "Legacy - use /api/kpi-summary-v2"),
 
-    # Payment webhooks - Stripe-specific, different validation
-    ("/create-checkout", "Stripe Checkout - validated by Stripe SDK"),
-    ("/webhook", "Stripe webhook - validated by Stripe signature"),
-    ("/portal", "Stripe portal - validated by Stripe SDK"),
-
     # Admin operations - require special auth, not public API
     ("/reset", "Admin reset operation"),
     ("/scrape", "Admin scrape operation"),

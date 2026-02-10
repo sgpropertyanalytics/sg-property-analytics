@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useCallback, useMemo, useRef } fr
 import { signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from 'firebase/auth';
 import { getFirebaseAuth, getGoogleProvider, isFirebaseConfigured } from '../lib/firebase';
 import { queryClient } from '../lib/queryClient';
-import { useSubscription } from './SubscriptionContext';
+import { useAccess } from './AccessContext';
 import { logAuthEvent, AuthTimelineEvent } from '../utils/authTimelineLogger';
 
 /**
@@ -42,14 +42,14 @@ export function AuthProvider({ children }) {
   const {
     coordState,
     dispatch,
-    actions: subscriptionActions,
-  } = useSubscription();
+    actions: accessActions,
+  } = useAccess();
 
-  const { ensure: ensureSubscription, clear: clearSubscription } = subscriptionActions;
+  const { ensure: ensureAccess, clear: clearAccess } = accessActions;
 
   // Refs for stable access in effect callbacks
-  const ensureSubscriptionRef = useRef(ensureSubscription);
-  ensureSubscriptionRef.current = ensureSubscription;
+  const ensureAccessRef = useRef(ensureAccess);
+  ensureAccessRef.current = ensureAccess;
   const authListenerRegisteredRef = useRef(false);
 
   // Initialize auth listener only if Firebase is configured
@@ -85,10 +85,10 @@ export function AuthProvider({ children }) {
         dispatch({ type: 'FIREBASE_USER_CHANGED', user: firebaseUser });
 
         if (firebaseUser) {
-          // Fetch subscription for authenticated user
-          ensureSubscriptionRef.current(firebaseUser.email, { reason: 'auth_listener' });
+          // Fetch access state for authenticated user
+          ensureAccessRef.current(firebaseUser.email, { reason: 'auth_listener' });
         } else {
-          // No user - subscription cleared by FIREBASE_USER_CHANGED(null) in reducer
+          // No user - access state cleared by FIREBASE_USER_CHANGED(null) in reducer
         }
       });
 
@@ -131,7 +131,7 @@ export function AuthProvider({ children }) {
   // Sign out
   const logout = useCallback(async () => {
     dispatch({ type: 'LOGOUT' });
-    clearSubscription();
+    clearAccess();
     queryClient.clear();
 
     if (isFirebaseConfigured()) {
@@ -143,7 +143,7 @@ export function AuthProvider({ children }) {
         throw err;
       }
     }
-  }, [dispatch, clearSubscription]);
+  }, [dispatch, clearAccess]);
 
   // Get user-friendly error message
   const getErrorMessage = (errorCode) => {

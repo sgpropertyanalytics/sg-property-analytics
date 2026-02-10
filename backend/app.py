@@ -239,12 +239,12 @@ def create_app():
 
         return response
 
-    # SECURITY: Prevent caching of tier-sensitive API responses
-    # This prevents premium data from being cached and served to free users
+    # SECURITY: Prevent caching of auth-sensitive API responses
+    # This prevents authenticated response variants from leaking across sessions.
     @app.after_request
     def add_cache_control(response):
-        # List of endpoints that vary by subscription tier
-        tier_sensitive_paths = [
+        # Endpoints that vary by authentication/access context.
+        auth_sensitive_paths = [
             '/api/transactions',
             '/api/dashboard',
             '/api/scatter-sample',
@@ -254,16 +254,16 @@ def create_app():
             '/api/comparable_value_analysis',
         ]
 
-        # Check if current path is tier-sensitive
+        # Check if current path is auth-sensitive
         path = request.path
-        is_tier_sensitive = any(path.startswith(p) for p in tier_sensitive_paths)
+        is_auth_sensitive = any(path.startswith(p) for p in auth_sensitive_paths)
 
-        if is_tier_sensitive:
-            # Prevent any caching of tier-sensitive responses
+        if is_auth_sensitive:
+            # Prevent any caching of auth-sensitive responses
             response.headers['Cache-Control'] = 'private, no-store, no-cache, must-revalidate'
             response.headers['Pragma'] = 'no-cache'
             response.headers['Expires'] = '0'
-            # Vary header ensures different responses for different auth states
+            # Vary header ensures different responses for different auth states.
             response.headers['Vary'] = 'Authorization'
 
         return response
@@ -444,10 +444,6 @@ def create_app():
     # Auth routes (Firebase-only authentication)
     from routes.auth import auth_bp
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
-
-    # Payment routes (Stripe integration)
-    from routes.payments import payments_bp
-    app.register_blueprint(payments_bp, url_prefix='/api/payments')
 
     # GLS (Government Land Sales) routes
     from routes.gls import gls_bp

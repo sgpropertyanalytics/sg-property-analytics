@@ -1253,11 +1253,11 @@
             "required": false,
             "type": "str"
           },
-          "entitlement_source": {
+          "accessSource": {
             "allowed_values": null,
             "default": null,
             "description": "",
-            "name": "entitlement_source",
+            "name": "accessSource",
             "nullable": true,
             "required": false,
             "type": "str"
@@ -1280,11 +1280,11 @@
             "required": true,
             "type": "bool"
           },
-          "tier": {
+          "accessLevel": {
             "allowed_values": null,
             "default": null,
             "description": "",
-            "name": "tier",
+            "name": "accessLevel",
             "nullable": true,
             "required": true,
             "type": "str"

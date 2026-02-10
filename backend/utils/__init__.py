@@ -3,9 +3,9 @@ Utility modules for the backend.
 """
 from .subscription import (
     get_user_from_request,
-    is_premium_user,
-    get_subscription_tier,
-    require_premium,
+    has_authenticated_access,
+    get_access_level,
+    require_authenticated_access,
     require_auth,
     serialize_transaction,
     serialize_transactions,
@@ -41,9 +41,9 @@ from .normalize import (
 
 __all__ = [
     'get_user_from_request',
-    'is_premium_user',
-    'get_subscription_tier',
-    'require_premium',
+    'has_authenticated_access',
+    'get_access_level',
+    'require_authenticated_access',
     'require_auth',
     'serialize_transaction',
     'serialize_transactions',

@@ -10,7 +10,7 @@ import { getAggregate } from '../../api/client';
 // Phase 3.2: Migrated from usePowerBIFilters to useZustandFilters
 import { useZustandFilters } from '../../stores';
 import { TIME_GROUP_BY } from '../../context/PowerBIFilter';
-import { useSubscription } from '../../context/SubscriptionContext';
+import { useAccess } from '../../context/AccessContext';
 import {
   PreviewChartOverlay,
   DataCard,
@@ -77,8 +77,8 @@ function PriceCompressionChartBase({ height = 380, saleType = null, sharedData =
   const [debouncedBedroom] = useDebounce(bedroom, 300);
 
   // district excluded - shows all regions for comparison
-  const { accessLevel: _accessLevel, accessSource: _accessSource } = useSubscription();
-  const isFreeTier = false;
+  const { accessLevel: _accessLevel, accessSource: _accessSource } = useAccess();
+  const isAccessRestricted = false;
 
   // UI state (not data state - that comes from useAbortableQuery)
   const chartRef = useRef(null);
@@ -291,7 +291,7 @@ Watch for lines dipping below $0 — that's a price inversion anomaly.`}
         />
 
         {/* Toolbar: h-20 fixed - 3 columns for score + spreads */}
-        <DataCardToolbar columns={3} blur={isFreeTier}>
+        <DataCardToolbar columns={3} blur={isAccessRestricted}>
           <ToolbarStat
             label="Compression Score"
             value={

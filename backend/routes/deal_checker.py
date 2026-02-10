@@ -301,14 +301,14 @@ def get_multi_scope_comparison():
     Returns:
         JSON with scopes data, map_data, and project info
     """
-    # SECURITY: Premium feature - require subscription
-    from utils.subscription import is_premium_user
-    if not is_premium_user():
+    # SECURITY: require authenticated access
+    from utils.subscription import has_authenticated_access
+    if not has_authenticated_access():
         return jsonify({
-            "error": "Premium subscription required",
-            "code": "PREMIUM_REQUIRED",
-            "message": "The Deal Checker is a premium feature. Subscribe to analyze your deals."
-        }), 403
+            "error": "Authentication required",
+            "code": "AUTH_REQUIRED",
+            "message": "Sign in with Google to analyze your deals."
+        }), 401
 
     start_time = time.time()
 

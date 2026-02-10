@@ -51,7 +51,7 @@ export const ChartFrame = React.memo(function ChartFrame({
   children,
 }) {
   // CENTRAL BOOT GATING: Use publicReady by default (matches useAppQuery default)
-  // Charts that need subscription resolution should use RequirePro wrapper
+  // Charts that need access-thread resolution should use RequireAccess wrapper
   const appReadyContext = useAppReadyOptional();
   const publicReady = appReadyContext?.publicReady ?? true;
 

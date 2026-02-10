@@ -1,6 +1,5 @@
 import React, { useState, useTransition } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useSubscription } from '../../context/SubscriptionContext';
 import { UserProfileMenu } from './UserProfileMenu';
 import { AccountSettingsModal } from '../AccountSettingsModal';
 import {
@@ -167,7 +166,6 @@ function NavItem({ item, isActive, onClick, collapsed = false }) {
 export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onPageChange, collapsed = false }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { paywall } = useSubscription();
   const [showAccountSettings, setShowAccountSettings] = useState(false);
 
   // useTransition for non-urgent navigation - prevents Suspense fallback flash
@@ -302,7 +300,6 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
       <AccountSettingsModal
         isOpen={showAccountSettings}
         onClose={() => setShowAccountSettings(false)}
-        onShowPricing={() => paywall.open({ source: 'account_settings' })}
       />
     </nav>
   );

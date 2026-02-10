@@ -429,7 +429,7 @@ def serialize_transaction(txn) -> Dict[str, Any]:
 def serialize_transaction_teaser(txn) -> Dict[str, Any]:
     """Convert DB Transaction to API v2 schema with masked/teaser values.
 
-    Used for free tier where sensitive data is hidden.
+    Used for access-restricted responses where sensitive data is hidden.
 
     Args:
         txn: Transaction ORM object

@@ -5,7 +5,7 @@ import {
   deriveCanAccessAuthenticated,
   deriveHasCachedAuthenticatedAccess,
   deriveIsAccessKnown,
-} from '../subscriptionDerivations';
+} from '../accessDerivations';
 
 describe('access derivations', () => {
   it('derives accessSource from status and cache presence', () => {
@@ -21,13 +21,13 @@ describe('access derivations', () => {
   });
 
   it('allows cached authenticated access when active', () => {
-    const subscription = { accessLevel: 'authenticated', subscribed: true, ends_at: null };
-    const hasCachedAuthenticatedAccess = deriveHasCachedAuthenticatedAccess(AccessSource.CACHE, subscription, true);
+    const accessState = { accessLevel: 'authenticated', subscribed: true, ends_at: null };
+    const hasCachedAuthenticatedAccess = deriveHasCachedAuthenticatedAccess(AccessSource.CACHE, accessState, true);
     expect(hasCachedAuthenticatedAccess).toBe(true);
     expect(deriveCanAccessAuthenticated(false, hasCachedAuthenticatedAccess)).toBe(true);
   });
 
-  it('does not allow authenticated access when source is unknown', () => {
+  it('does not allow access when source is unknown', () => {
     const accessSource = deriveAccessSource('pending', false);
     const hasCachedAuthenticatedAccess = deriveHasCachedAuthenticatedAccess(accessSource, null, false);
     expect(accessSource).toBe(AccessSource.NONE);

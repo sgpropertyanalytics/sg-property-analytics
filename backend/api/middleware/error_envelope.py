@@ -99,10 +99,6 @@ ERROR_CODES = {
     "CONTRACT_VIOLATION": 400,
     "RESPONSE_SCHEMA_MISMATCH": 500,
 
-    # Business logic errors
-    "PREMIUM_REQUIRED": 403,
-    "SUBSCRIPTION_EXPIRED": 403,
-
     # Server errors (5xx)
     "INTERNAL_ERROR": 500,
     "SERVICE_UNAVAILABLE": 503,

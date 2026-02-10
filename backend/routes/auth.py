@@ -3,7 +3,7 @@ Authentication Routes - Firebase-only authentication
 
 Includes:
 - Firebase/Google OAuth (primary auth flow)
-- Subscription status endpoints
+- Access status endpoints
 """
 from flask import Blueprint, jsonify, current_app
 import time
@@ -133,7 +133,7 @@ def firebase_sync():
     Sync Firebase user with backend User model.
 
     Called after successful Google OAuth sign-in on frontend.
-    Creates user if doesn't exist, returns subscription data.
+    Creates user if needed and returns access state.
     Firebase ID token is verified server-side via firebase_admin.
     """
     try:
@@ -145,19 +145,16 @@ def firebase_sync():
                 "error_code": "auth_required",
             }), 401
 
-        entitlement = user.entitlement_info()
-        access_expires_at = entitlement.get("access_expires_at")
-
         return jsonify({
             "message": "Sync successful",
             "user": user.to_dict(),
-            "subscription": {
-                "tier": user.normalized_tier(),
-                "has_access": entitlement.get("has_access", False),
-                "subscribed": entitlement.get("has_access", False),
-                "entitlement_source": entitlement.get("entitlement_source"),
-                "access_expires_at": access_expires_at.isoformat() if access_expires_at else None,
-                "ends_at": access_expires_at.isoformat() if access_expires_at else None,
+            "access": {
+                "accessLevel": "authenticated",
+                "accessSource": "authenticated_user",
+                "has_access": True,
+                "subscribed": True,
+                "access_expires_at": None,
+                "ends_at": None,
             }
         }), 200
 
@@ -170,43 +167,20 @@ def firebase_sync():
 @auth_bp.route("/subscription", methods=["GET"])
 @api_contract("auth/subscription")
 def get_subscription():
-    """Get current user's subscription status"""
+    """Get current user's access status."""
     try:
-        from services.schema_guard import check_user_entitlement_columns
-
-        guard_result = check_user_entitlement_columns()
-        missing_columns = guard_result.get("missing") or []
-        if missing_columns:
-            missing_str = "/".join(missing_columns)
-            print(
-                "DB migration 015_add_user_entitlements not applied; "
-                f"missing users.{missing_str}"
-            )
-            return jsonify({
-                "error": "Database schema out of date. Run migration 015_add_user_entitlements.",
-                "missing": missing_columns,
-                "meta": {
-                    "migration": "015_add_user_entitlements",
-                    "table": "users",
-                    "error": guard_result.get("error"),
-                },
-            }), 503
-
         from utils.subscription import get_user_from_request
         user = get_user_from_request()
         if not user:
             return jsonify({"error": "Authorization required"}), 401
 
-        entitlement = user.entitlement_info()
-        access_expires_at = entitlement.get("access_expires_at")
-
         return jsonify({
-            "tier": user.normalized_tier(),
-            "has_access": entitlement.get("has_access", False),
-            "subscribed": entitlement.get("has_access", False),
-            "entitlement_source": entitlement.get("entitlement_source"),
-            "access_expires_at": access_expires_at.isoformat() if access_expires_at else None,
-            "ends_at": access_expires_at.isoformat() if access_expires_at else None,
+            "accessLevel": "authenticated",
+            "accessSource": "authenticated_user",
+            "has_access": True,
+            "subscribed": True,
+            "access_expires_at": None,
+            "ends_at": None,
         }), 200
 
     except Exception as e:
@@ -218,33 +192,13 @@ def get_subscription():
 @api_contract("auth/delete-account")
 def delete_account():
     """
-    Delete user account and cancel any active Stripe subscription.
-
-    This permanently deletes the user and all associated data.
+    Delete user account and all associated data.
     """
     try:
         from utils.subscription import get_user_from_request
         user = get_user_from_request()
         if not user:
             return jsonify({"error": "Authorization required"}), 401
-
-        # If user has Stripe customer ID, cancel any active subscriptions
-        if user.stripe_customer_id:
-            try:
-                import stripe
-                stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
-                if stripe.api_key:
-                    # List and cancel all active subscriptions for this customer
-                    subscriptions = stripe.Subscription.list(
-                        customer=user.stripe_customer_id,
-                        status='active'
-                    )
-                    for sub in subscriptions.data:
-                        stripe.Subscription.delete(sub.id)
-                        print(f"Cancelled subscription {sub.id} for user {user.id}")
-            except Exception as stripe_error:
-                print(f"Failed to cancel Stripe subscription: {stripe_error}")
-                # Continue with account deletion even if Stripe cancellation fails
 
         # Delete user from database
         db.session.delete(user)

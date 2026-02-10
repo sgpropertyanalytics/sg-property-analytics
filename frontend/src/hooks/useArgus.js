@@ -145,12 +145,12 @@ export function useArgus() {
         signal,
       });
 
-      // Check for auth/premium errors
+      // Check for auth/authorization errors
       if (fetchResponse.status === 401) {
         throw new Error('Authentication required. Please sign in.');
       }
       if (fetchResponse.status === 403) {
-        throw new Error('Premium subscription required for AI insights.');
+        throw new Error('Access denied for AI insights.');
       }
       if (fetchResponse.status === 503) {
         throw new Error('AI service is not configured. Please try again later.');

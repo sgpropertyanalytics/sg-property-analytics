@@ -4,16 +4,16 @@
  * Phase 2 of filter system simplification.
  *
  * This hook wraps @tanstack/react-query's useQuery with:
- * 1. Progressive boot gating - publicReady for most charts, proReady for authenticated access
+ * 1. Progressive boot gating - publicReady for most charts, authenticatedReady for authenticated access
  * 2. Timing instrumentation - dev-only chart timing tracking
  * 3. Status compatibility - maps TanStack status to existing ChartFrame status
  *
  * PROGRESSIVE BOOT GATES (P0 Fix):
- * - requiresSubscription: false (default) → gates on publicReady (auth + filters)
- * - requiresSubscription: true → gates on proReady (publicReady + subscription resolution)
+ * - requiresAccess: false (default) → gates on publicReady (auth + filters)
+ * - requiresAccess: true → gates on authenticatedReady (publicReady + access-thread resolution)
  *
- * IMPORTANT: Auth-gated charts that require entitlement MUST be wrapped in <RequirePro>.
- * The requiresSubscription flag only gates on subscription resolution, not entitlement.
+ * IMPORTANT: Auth-gated charts that require access MUST be wrapped in <RequireAccess>.
+ * The requiresAccess flag only gates on access-thread resolution, not auth itself.
  *
  * MIGRATION GUIDE:
  * Replace useGatedAbortableQuery with useAppQuery using the same arguments.
@@ -55,7 +55,8 @@
  * @param {Object} options - Configuration options:
  *   - chartName: string - Name for timing tracking (dev-only)
  *   - enabled: boolean - ANDed with boot gate
- *   - requiresSubscription: boolean - Wait for subscription resolution (default: false)
+ *   - requiresAccess: boolean - Wait for access-thread resolution (default: false)
+ *   - requiresSubscription: boolean - Deprecated alias for requiresAccess
  *   - keepPreviousData: boolean - Show old data while fetching (uses placeholderData)
  *   - initialData: any - Initial data before first fetch
  *   - staleTime: number - Override default staleTime (30s) - controls cache freshness
@@ -74,13 +75,15 @@ const isDev = import.meta.env.DEV;
 
 export function useAppQuery(queryFn, deps = [], options = {}) {
   // Get progressive boot gates with safe defaults for components outside provider
-  const { publicReady, proReady } = useAppReadyOptional() ?? { publicReady: true, proReady: true };
+  const { publicReady, authenticatedReady, proReady } = useAppReadyOptional()
+    ?? { publicReady: true, authenticatedReady: true, proReady: true };
 
   // Extract our custom options
   const {
     chartName,
     enabled: userEnabled = true,
-    requiresSubscription = false, // P0 Fix: Choose gate based on subscription requirement
+    requiresAccess = false, // Preferred flag
+    requiresSubscription = false, // Deprecated alias
     keepPreviousData = false,
     initialData,
     staleTime,
@@ -94,10 +97,12 @@ export function useAppQuery(queryFn, deps = [], options = {}) {
   const hasTimingEnabled = isDev && chartName;
 
   // BOOT GATE SELECTION (P0 Fix):
-  // - requiresSubscription: false (default) → gates on publicReady (auth + filters)
-  // - requiresSubscription: true → gates on proReady (publicReady + subscription resolution)
-  // NOTE: Auth-gated charts that require entitlement MUST be wrapped in <RequirePro>
-  const bootReady = requiresSubscription ? proReady : publicReady;
+  // - requiresAccess: false (default) → gates on publicReady (auth + filters)
+  // - requiresAccess: true → gates on authenticatedReady (publicReady + access-thread resolution)
+  // NOTE: Auth-gated charts that require access MUST be wrapped in <RequireAccess>
+  const shouldRequireAccess = requiresAccess || requiresSubscription;
+  const accessReadyGate = authenticatedReady ?? proReady ?? true;
+  const bootReady = shouldRequireAccess ? accessReadyGate : publicReady;
   const effectiveEnabled = userEnabled && bootReady;
 
   // Query key from deps

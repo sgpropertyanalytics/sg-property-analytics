@@ -138,9 +138,19 @@ let mockAppReady = true;
 vi.mock('../../../context/AppReadyContext', () => ({
   useAppReadyOptional: () => ({
     publicReady: mockAppReady,
+    authenticatedReady: mockAppReady,
     proReady: mockAppReady,
     bootStatus: mockAppReady ? 'ready' : 'booting',
     banners: {},
+  }),
+}));
+
+vi.mock('../../../context/AccessContext', () => ({
+  useAccess: () => ({
+    accessLevel: 'authenticated',
+    accessSource: 'server',
+    coordState: { user: { uid: 'test-user' }, initialized: true },
+    actions: { refresh: vi.fn(), clear: vi.fn(), ensure: vi.fn() },
   }),
 }));
 

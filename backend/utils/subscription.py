@@ -1,17 +1,7 @@
 """
-Subscription Check Utility
+Access Check Utility
 
-Provides functions to check user subscription status from Firebase ID tokens.
-Use this for tier-aware API responses - return full data for premium users,
-teaser data for free users.
-
-SECURITY: This is the SERVER-SIDE enforcement layer. Frontend blur is UI only.
-
-Preview Dashboard Model (Blur Paywall):
-- Free users: ALL data returned, but frontend shows blurred UI
-- Premium users: Full access, no blur
-- NO time restrictions - all historical data available to everyone
-- Granularity restrictions: Free users cannot group by project-level fields
+Provides authentication and access helpers from Firebase ID tokens.
 """
 from flask import request
 from functools import wraps
@@ -74,10 +64,10 @@ def get_user_from_firebase_token():
             email=email.strip().lower() if email else None,
             firebase_uid=firebase_uid,
             password_hash='firebase_auth',
-            plan_tier='free',
             display_name=display_name,
             avatar_url=avatar_url,
         )
+        user.access_level = 'authenticated'
         db.session.add(user)
         db.session.commit()
     else:
@@ -107,102 +97,67 @@ def get_user_from_request():
     return get_user_from_firebase_token()
 
 
-def is_premium_user():
-    """
-    Check if current request is from a premium subscriber.
-
-    Returns:
-        True if user has active premium subscription, False otherwise
-        (including unauthenticated users)
-
-    Note: Users in PREMIUM_BYPASS_EMAILS env var always get premium access.
-    This is useful for preview/testing environments where the database
-    may not have the user's subscription synced.
-    """
+def has_authenticated_access():
+    """Return True when the current request is from an authenticated user."""
     user = get_user_from_request()
     if not user:
         return False
 
-    # Check bypass list first (for preview branches / testing)
-    from config import Config
-    if user.email and user.email.lower() in Config.PREMIUM_BYPASS_EMAILS:
-        return True
-
-    return user.is_subscribed()
+    return True
 
 
-def get_subscription_tier():
+def get_access_level():
     """
-    Get the subscription tier for current request.
+    Get access level for current request.
 
     Returns:
-        'premium' if active subscription (or in bypass list)
-        'free' if authenticated but no subscription
+        'authenticated' if authenticated
         'anonymous' if not authenticated
     """
     user = get_user_from_request()
     if not user:
         return 'anonymous'
 
-    # Check bypass list first (for preview branches / testing)
-    from config import Config
-    if user.email and user.email.lower() in Config.PREMIUM_BYPASS_EMAILS:
-        return 'premium'
-
-    if user.is_subscribed():
-        return 'premium'
-    return 'free'
+    return 'authenticated'
 
 
-def check_granularity_allowed(group_by, is_premium=None):
+def check_granularity_allowed(group_by, has_authenticated_access_override=None):
     """
-    Check if the requested grouping granularity is allowed for the user's tier.
-
-    Free users can only group by:
-    - district, region, segment (location)
-    - year, quarter, month (time)
-    - bedroom, sale_type (general dimensions)
-
-    Free users CANNOT group by:
-    - project (project-level precision)
-    - Any other granular identifiers
+    Check if requested grouping granularity is allowed.
 
     Args:
         group_by: Comma-separated grouping fields (e.g., 'district,quarter')
-        is_premium: Override tier check
+        has_authenticated_access_override: Override access check
 
     Returns:
         tuple: (allowed: bool, error_message: str or None)
     """
-    if is_premium is None:
-        is_premium = is_premium_user()
+    if has_authenticated_access_override is None:
+        has_authenticated_access_override = has_authenticated_access()
 
-    # Premium users can use any granularity
-    if is_premium:
+    # Authenticated users can use any granularity.
+    if has_authenticated_access_override:
         return (True, None)
 
-    # Free tier: check for project-level grouping
+    # Anonymous access: check for project-level grouping.
     BLOCKED_FIELDS = ['project', 'project_name', 'address', 'unit', 'floor']
 
     if group_by:
         fields = [f.strip().lower() for f in group_by.split(',')]
         for field in fields:
             if any(blocked in field for blocked in BLOCKED_FIELDS):
-                return (False, f"Project-level data requires premium subscription. Upgrade to see exact project names.")
+                return (False, "Project-level data requires authenticated access.")
 
     return (True, None)
 
 
-def require_premium(f):
+def require_authenticated_access(f):
     """
-    Decorator to require premium subscription for an endpoint.
+    Decorator to require authentication for an endpoint.
 
     Returns:
         - 200: OPTIONS preflight (CORS bypass)
-        - 401: Not authenticated (triggers token refresh)
-        - 403: Authenticated but not premium (known free tier)
-
-    Use for endpoints that should be completely blocked for free users.
+        - 401: Not authenticated
     """
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -220,20 +175,13 @@ def require_premium(f):
                 "code": "AUTH_REQUIRED"
             }), 401
 
-        # Step 2: Check premium status → 403 if authenticated but not premium
-        if not is_premium_user():
-            return jsonify({
-                "error": "Premium subscription required",
-                "code": "PREMIUM_REQUIRED"
-            }), 403
-
         return f(*args, **kwargs)
     return decorated_function
 
 
 def require_auth(f):
     """
-    Decorator to require authentication (any tier).
+    Decorator to require authentication.
 
     Returns 401 if user is not authenticated.
     """
@@ -250,45 +198,45 @@ def require_auth(f):
     return decorated_function
 
 
-def serialize_transaction(transaction, is_premium=None):
+def serialize_transaction(transaction, has_authenticated_access_override=None):
     """
-    Serialize a transaction based on user's subscription tier.
+    Serialize a transaction based on authenticated access.
 
     Args:
         transaction: Transaction model instance
-        is_premium: Override tier check (useful when checked once for batch)
+        has_authenticated_access_override: Override access check (useful when checked once for batch)
 
     Returns:
-        dict - full data for premium, masked data for free/anonymous
+        dict - full data for authenticated users, masked data for anonymous users
     """
-    if is_premium is None:
-        is_premium = is_premium_user()
+    if has_authenticated_access_override is None:
+        has_authenticated_access_override = has_authenticated_access()
 
-    if is_premium:
+    if has_authenticated_access_override:
         return transaction.to_dict()
     else:
         return transaction.to_teaser_dict()
 
 
-def serialize_transactions(transactions, is_premium=None):
+def serialize_transactions(transactions, has_authenticated_access_override=None):
     """
-    Serialize a list of transactions based on user's subscription tier.
+    Serialize a list of transactions based on authenticated access.
 
-    Optimized for batch serialization - checks tier once.
+    Optimized for batch serialization - checks access once.
 
     Args:
         transactions: List of Transaction model instances
-        is_premium: Override tier check
+        has_authenticated_access_override: Override access check
 
     Returns:
-        list of dicts - full data for premium, masked data for free/anonymous
+        list of dicts - full data for authenticated users, masked data for anonymous users
     """
     from api.contracts.contract_schema import serialize_transaction, serialize_transaction_teaser
 
-    if is_premium is None:
-        is_premium = is_premium_user()
+    if has_authenticated_access_override is None:
+        has_authenticated_access_override = has_authenticated_access()
 
-    if is_premium:
+    if has_authenticated_access_override:
         return [serialize_transaction(t) for t in transactions]
     else:
         return [serialize_transaction_teaser(t) for t in transactions]
@@ -298,8 +246,7 @@ def serialize_transactions(transactions, is_premium=None):
 # TIERED K-ANONYMITY FOR URA COMPLIANCE
 # ============================================================================
 #
-# Data privacy rules apply uniformly to ALL users regardless of subscription tier.
-# Premium access enhances analytical tools, NOT data granularity.
+# Data privacy rules apply uniformly to all users regardless of access level.
 #
 # Thresholds by granularity level:
 #   - Market/Segment: K ≥ 30 (broadest scope)
@@ -374,7 +321,7 @@ def check_k_anonymity(count, level=None, filters=None):
     """
     Tiered K-anonymity check.
 
-    CRITICAL: Same rules apply uniformly regardless of subscription tier.
+    CRITICAL: Same rules apply uniformly regardless of access level.
     Premium differentiation is in tooling, NOT data granularity.
 
     Args:
@@ -578,39 +525,34 @@ def suppress_if_needed(row: dict, count: int, level: str = "project") -> dict:
     return build_suppressed_row(level, count, identifiers)
 
 
-def enforce_filter_granularity(filters, is_premium=None):
+def enforce_filter_granularity(filters, has_authenticated_access_override=None):
     """
-    Limit filter granularity for free users to prevent re-identification.
-
-    Free tier restrictions:
-    - No exact project filter (can use district)
-    - No date filter more specific than quarter
-    - No exact price filter (can use ranges)
+    Limit filter granularity for anonymous access to prevent re-identification.
 
     Args:
         filters: Dict of filter parameters
-        is_premium: Override tier check
+        has_authenticated_access_override: Override access check
 
     Returns:
         tuple: (sanitized_filters: dict, warnings: list)
     """
-    if is_premium is None:
-        is_premium = is_premium_user()
+    if has_authenticated_access_override is None:
+        has_authenticated_access_override = has_authenticated_access()
 
-    # Premium users: no restrictions
-    if is_premium:
+    # Authenticated users: no restrictions.
+    if has_authenticated_access_override:
         return (filters, [])
 
     sanitized = dict(filters)
     warnings = []
 
-    # Block exact project filter for free users
+    # Block exact project filter for anonymous users.
     if 'project_exact' in sanitized:
         del sanitized['project_exact']
-        warnings.append("Exact project search requires premium subscription")
+        warnings.append("Exact project search requires authenticated access")
 
     if 'project' in sanitized:
         del sanitized['project']
-        warnings.append("Project search requires premium subscription")
+        warnings.append("Project search requires authenticated access")
 
     return (sanitized, warnings)

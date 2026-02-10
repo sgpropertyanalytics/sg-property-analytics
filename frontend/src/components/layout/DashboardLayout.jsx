@@ -2,10 +2,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useLocation, Outlet } from 'react-router-dom';
 import { GlobalNavRail, NAV_ITEMS, NAV_WIDTH_EXPANDED, NAV_WIDTH_COLLAPSED } from './GlobalNavRail';
 import { ErrorBoundary } from '../ui';
-import { UpgradeFooterCTA } from '../ui/UpgradeFooterCTA';
-import { useSubscription } from '../../context/SubscriptionContext';
 import { useData } from '../../context/DataContext';
-import { PricingModal } from '../PricingModal';
 import { DebugModeIndicator } from '../debug/DebugModeIndicator';
 
 // localStorage key for nav collapse state persistence
@@ -48,7 +45,6 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
   // This prevents nav rail from unmounting during page transitions
   const content = children || <Outlet />;
   const location = useLocation();
-  const { paywall } = useSubscription();
   const { apiMetadata } = useData();
 
   // Determine active page from URL or prop
@@ -345,13 +341,8 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
             </div>
           </div>
 
-          {/* Upgrade CTA - Sticky footer for free users */}
-          <UpgradeFooterCTA />
         </main>
       </div>
-
-      {/* Pricing Modal - Global paywall trigger */}
-      <PricingModal isOpen={paywall.isOpen} onClose={paywall.close} />
 
       {/* Debug Mode Indicator - Shows when Ctrl+Shift+D is pressed */}
       <DebugModeIndicator />

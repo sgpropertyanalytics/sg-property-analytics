@@ -17,7 +17,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import apiClient from '../../../api/client';
 // GeoJSON is lazy-loaded to reduce initial bundle size (~100KB savings)
 import { DISTRICT_CENTROIDS } from '../../../data/districtCentroids';
-import { useSubscription } from '../../../context/SubscriptionContext';
+import { useAccess } from '../../../context/AccessContext';
 // Phase 2: Using TanStack Query via useAppQuery wrapper
 import { useAppQuery, QueryStatus } from '../../../hooks';
 // Phase 3.4: Using standardized Zustand filters (same as Market Overview)
@@ -60,8 +60,8 @@ function DistrictLiquidityMapBase({
   onModeChange,
   enabled = true,
 }) {
-  const { accessLevel: _accessLevel, accessSource: _accessSource } = useSubscription();
-  const isFreeTier = false;
+  const { accessLevel: _accessLevel, accessSource: _accessSource } = useAccess();
+  const isAccessRestricted = false;
   const [hoveredDistrict, setHoveredDistrict] = useState(null);
 
   // Phase 4: Simplified filter access - read values directly from Zustand
@@ -324,8 +324,8 @@ function DistrictLiquidityMapBase({
 
       {/* Map container */}
       <div ref={mapContainerRef} className="relative h-[50vh] min-h-[400px] md:h-[60vh] md:min-h-[500px] lg:h-[65vh] lg:min-h-[550px]">
-        {/* Blur overlay for free users */}
-        {isFreeTier && !loading && (
+        {/* Blur overlay for non-authenticated users */}
+        {isAccessRestricted && !loading && (
           <div
             className="absolute inset-0 z-20 pointer-events-none"
             style={{
@@ -579,14 +579,14 @@ function DistrictLiquidityMapBase({
 
       {/* Region summary bar */}
       {!loading && !error && districtData.length > 0 && (
-        <div className={isFreeTier ? 'blur-sm grayscale-[40%]' : ''}>
+        <div className={isAccessRestricted ? 'blur-sm grayscale-[40%]' : ''}>
           <RegionSummaryBar districtData={districtData} meta={meta} />
         </div>
       )}
 
       {/* District Ranking Table */}
       {!loading && !error && districtData.length > 0 && (
-        <div className={isFreeTier ? 'blur-sm grayscale-[40%]' : ''}>
+        <div className={isAccessRestricted ? 'blur-sm grayscale-[40%]' : ''}>
           <LiquidityRankingTable
             districtData={districtData}
             selectedBed={selectedBed}

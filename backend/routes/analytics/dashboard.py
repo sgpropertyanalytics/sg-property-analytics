@@ -17,11 +17,11 @@ from utils.normalize import (
     ValidationError as NormalizeValidationError, validation_error_response
 )
 from api.contracts import api_contract
-from utils.subscription import require_premium
+from utils.subscription import require_authenticated_access
 
 
 @analytics_bp.route("/dashboard", methods=["GET", "POST"])
-@require_premium
+@require_authenticated_access
 @api_contract("dashboard")
 def dashboard():
     """
@@ -155,10 +155,10 @@ def dashboard():
             skip_cache=skip_cache
         )
 
-        # SECURITY: Mask project names in volume_by_location for free users
+        # SECURITY: Mask project names in volume_by_location for anonymous users
         # when location_grain=project (apply before serialization)
-        from utils.subscription import is_premium_user
-        if not is_premium_user() and options.get('location_grain') == 'project':
+        from utils.subscription import has_authenticated_access
+        if not has_authenticated_access() and options.get('location_grain') == 'project':
             if 'volume_by_location' in result.get('data', {}):
                 # Mask project names to generic format: "Project #1", "Project #2", etc.
                 for i, item in enumerate(result['data']['volume_by_location'], 1):
@@ -196,4 +196,3 @@ def dashboard():
         return jsonify({
             "error": str(e)
         }), 500
-

@@ -78,15 +78,6 @@ class Config:
     AI_MAX_TOKENS = int(os.getenv('AI_MAX_TOKENS', '1024'))
     AI_CACHE_TTL_SECONDS = int(os.getenv('AI_CACHE_TTL_SECONDS', '3600'))  # 1 hour
 
-    # Premium bypass for preview/testing environments
-    # Comma-separated list of emails that always get premium access
-    # Example: "admin@example.com,test@example.com"
-    PREMIUM_BYPASS_EMAILS = set(
-        email.strip().lower()
-        for email in os.getenv('PREMIUM_BYPASS_EMAILS', '').split(',')
-        if email.strip()
-    )
-
     CSV_FOLDER = os.getenv('CSV_FOLDER', 'rawdata')
     DEBUG = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
 

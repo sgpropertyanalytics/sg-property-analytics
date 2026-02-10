@@ -40,13 +40,13 @@ export const AuthTimelineEvent = {
 };
 
 const pickAccessLevel = (data, keyBefore, keyAfter) => ({
-  before: data[keyBefore] ?? data.tierBefore,
-  after: data[keyAfter] ?? data.tierAfter,
+  before: data[keyBefore],
+  after: data[keyAfter],
 });
 
 const pickAccessSource = (data, keyBefore, keyAfter) => ({
-  before: data[keyBefore] ?? data.tierSourceBefore,
-  after: data[keyAfter] ?? data.tierSourceAfter,
+  before: data[keyBefore],
+  after: data[keyAfter],
 });
 
 export const logAuthEvent = (event, data = {}) => {
@@ -131,8 +131,8 @@ if (import.meta.env.DEV) {
         const prev = history[i - 1];
         const curr = history[i];
 
-        const prevAccess = prev.accessLevelAfter ?? prev.tierAfter;
-        const currAccess = curr.accessLevelAfter ?? curr.tierAfter;
+        const prevAccess = prev.accessLevelAfter;
+        const currAccess = curr.accessLevelAfter;
 
         // Access regression from authenticated to anonymous.
         if (prevAccess === 'authenticated' && currAccess === 'anonymous') {
@@ -164,7 +164,7 @@ if (import.meta.env.DEV) {
 
       history.forEach((entry) => {
         eventCounts[entry.event] = (eventCounts[entry.event] || 0) + 1;
-        const accessLevel = entry.accessLevelAfter ?? entry.tierAfter;
+        const accessLevel = entry.accessLevelAfter;
         if (accessLevel && accessLevel !== lastAccessLevel) {
           accessLevelChanges++;
           lastAccessLevel = accessLevel;

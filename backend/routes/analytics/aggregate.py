@@ -22,7 +22,7 @@ from utils.normalize import (
 )
 from api.contracts import api_contract
 from api.contracts.contract_schema import PropertyAgeBucket
-from utils.subscription import require_premium
+from utils.subscription import require_authenticated_access
 
 
 # =============================================================================
@@ -295,7 +295,7 @@ def _build_aggregate_cache_key(params: dict) -> str:
 
 
 @analytics_bp.route("/aggregate", methods=["GET"])
-@require_premium
+@require_authenticated_access
 @api_contract("aggregate")
 def aggregate():
     """
@@ -394,19 +394,17 @@ def aggregate():
     if isinstance(metrics, str):
         metrics = [m.strip() for m in metrics.split(",") if m.strip()]
 
-    # SUBSCRIPTION CHECK: Granularity restriction for free users
-    # NOTE: 60-day time restriction removed - using blur paywall instead (all data visible but blurred)
-    from utils.subscription import check_granularity_allowed, is_premium_user
-    is_premium = is_premium_user()
+    # ACCESS CHECK: granularity restriction for anonymous access
+    from utils.subscription import check_granularity_allowed, has_authenticated_access
+    has_authenticated_access_override = has_authenticated_access()
 
     group_by_param = ",".join(group_by)
-    allowed, error_msg = check_granularity_allowed(group_by_param, is_premium=is_premium)
+    allowed, error_msg = check_granularity_allowed(group_by_param, has_authenticated_access_override=has_authenticated_access_override)
     if not allowed:
         return jsonify({
             "error": error_msg,
-            "code": "PREMIUM_REQUIRED",
-            "upgrade_prompt": "Unlock Unit-Level Precision"
-        }), 403
+            "code": "AUTH_REQUIRED",
+        }), 401
 
     # Build filter conditions (we'll reuse these)
     # ALWAYS exclude outliers first

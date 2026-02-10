@@ -4,19 +4,18 @@ import {
   initialState as coordinatorInitialState,
 } from './authCoordinator';
 
-const SubscriptionContext = createContext(null);
+const AccessContext = createContext(null);
 
-export function useSubscription() {
-  const context = useContext(SubscriptionContext);
+export function useAccess() {
+  const context = useContext(AccessContext);
   if (!context) {
-    throw new Error('useSubscription must be used within a SubscriptionProvider');
+    throw new Error('useAccess must be used within an AccessProvider');
   }
   return context;
 }
 
-const DEFAULT_SUBSCRIPTION = {
+const DEFAULT_ACCESS = {
   accessLevel: 'authenticated',
-  tier: 'free', // legacy alias
   subscribed: true,
   ends_at: null,
 };
@@ -25,13 +24,11 @@ const INITIAL_COORD_STATE = {
   ...coordinatorInitialState,
   accessLevel: 'authenticated',
   accessSource: 'server',
-  tier: 'free',
-  tierSource: 'server',
-  subPhase: 'resolved',
-  cachedSubscription: DEFAULT_SUBSCRIPTION,
+  accessPhase: 'resolved',
+  cachedAccess: DEFAULT_ACCESS,
 };
 
-export const SubscriptionStatus = {
+export const AccessStatus = {
   PENDING: 'pending',
   LOADING: 'loading',
   RESOLVED: 'resolved',
@@ -41,34 +38,31 @@ export const SubscriptionStatus = {
 
 const normalizeAccessLevel = (raw) => {
   if (raw === 'authenticated' || raw === 'anonymous' || raw === 'unknown') return raw;
-  if (raw === 'premium' || raw === 'free') return 'authenticated';
   return null;
 };
 
-export const unwrapSubscriptionResponse = (responseData) => {
+export const unwrapAccessResponse = (responseData) => {
   if (!responseData || typeof responseData !== 'object') {
-    return DEFAULT_SUBSCRIPTION;
+    return DEFAULT_ACCESS;
   }
 
   const payload = responseData.data && typeof responseData.data === 'object'
     ? responseData.data
     : responseData;
 
-  const rawAccessLevel = payload.accessLevel ?? payload.tier;
-  const accessLevel = normalizeAccessLevel(rawAccessLevel);
+  const accessLevel = normalizeAccessLevel(payload.accessLevel);
   if (!accessLevel) {
-    return DEFAULT_SUBSCRIPTION;
+    return DEFAULT_ACCESS;
   }
 
   return {
     accessLevel,
-    tier: payload.tier ?? (accessLevel === 'authenticated' ? 'free' : accessLevel),
     subscribed: payload.subscribed ?? accessLevel === 'authenticated',
     ends_at: payload.ends_at ?? null,
   };
 };
 
-export function SubscriptionProvider({ children }) {
+export function AccessProvider({ children }) {
   const [coordState, dispatch] = useReducer(authCoordinatorReducer, INITIAL_COORD_STATE);
 
   const refresh = useCallback(async () => {}, []);
@@ -85,12 +79,8 @@ export function SubscriptionProvider({ children }) {
     dispatch,
     accessLevel: 'authenticated',
     accessSource: coordState.user ? 'server' : 'none',
-    // Legacy aliases
-    tier: 'free',
-    tierSource: coordState.user ? 'server' : 'none',
     status: 'ready',
     canAccessAuthenticated,
-    canAccessPremium: canAccessAuthenticated, // legacy alias
     expiry: {
       endsAt: null,
       daysUntilExpiry: null,
@@ -108,20 +98,19 @@ export function SubscriptionProvider({ children }) {
       ensure,
     },
     debug: import.meta.env.DEV ? {
-      subscription: DEFAULT_SUBSCRIPTION,
-      status: SubscriptionStatus.RESOLVED,
+      access: DEFAULT_ACCESS,
+      status: AccessStatus.RESOLVED,
       fetchError: null,
-      subscriptionReady: true,
+      accessReady: true,
       accessSource: coordState.user ? 'server' : 'none',
-      tierSource: coordState.user ? 'server' : 'none', // legacy alias
-      hasCachedSubscription: false,
+      hasCachedAccess: false,
       model: 'authenticated-users-have-full-access',
     } : undefined,
   }), [coordState, canAccessAuthenticated, showPaywall, hidePaywall, refresh, clear, ensure]);
 
   return (
-    <SubscriptionContext.Provider value={value}>
+    <AccessContext.Provider value={value}>
       {children}
-    </SubscriptionContext.Provider>
+    </AccessContext.Provider>
   );
 }

@@ -2,11 +2,11 @@
 AI Routes - Chart Interpretation Endpoints
 
 Provides SSE streaming endpoint for AI-powered chart interpretation.
-Premium feature with rate limiting.
+Authenticated feature with rate limiting.
 
 Endpoint:
     POST /api/ai/interpret-chart
-    - Requires premium subscription
+    - Requires authenticated access
     - Rate limited to 10/minute per user
     - Returns SSE stream with token events
 """
@@ -17,7 +17,7 @@ import hashlib
 import os
 from flask import Blueprint, request, Response, jsonify, current_app, g
 
-from utils.subscription import require_premium, get_user_from_request
+from utils.subscription import require_authenticated_access, get_user_from_request
 from config import Config
 
 logger = logging.getLogger(__name__)
@@ -106,7 +106,7 @@ def _set_cached_response(cache_key: str, response: str, ttl: int = None):
 
 
 @ai_bp.route('/interpret-chart', methods=['POST'])
-@require_premium
+@require_authenticated_access
 def interpret_chart():
     """
     Interpret a chart using AI and stream the response.

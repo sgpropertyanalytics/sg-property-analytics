@@ -335,7 +335,7 @@ interface DataCardToolbarProps {
   columns?: number;
   /** Use dividers between cells (default: true for stats) */
   divided?: boolean;
-  /** Blur for non-premium users */
+  /** Blur for non-authenticated users */
   blur?: boolean;
   /** Additional className */
   className?: string;

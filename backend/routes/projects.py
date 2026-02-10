@@ -433,9 +433,9 @@ def get_hot_projects():
                 "last_new_sale": row.last_new_sale.isoformat() if row.last_new_sale else None,
             })
 
-        # SECURITY: Mask sensitive data for free users
-        from utils.subscription import is_premium_user
-        if not is_premium_user():
+        # SECURITY: Mask sensitive data for anonymous users
+        from utils.subscription import has_authenticated_access
+        if not has_authenticated_access():
             for i, proj in enumerate(projects, 1):
                 # Mask project name and developer
                 proj['project_name'] = f"{proj['district']} New Launch #{i}"

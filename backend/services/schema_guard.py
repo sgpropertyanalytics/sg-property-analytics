@@ -10,16 +10,15 @@ from sqlalchemy import text
 from models.database import db
 
 
-REQUIRED_USER_ENTITLEMENT_COLUMNS = [
+REQUIRED_USER_ACCESS_COLUMNS = [
     "access_override",
     "override_until",
-    "entitlement_source",
 ]
 
 
-def check_user_entitlement_columns() -> Dict[str, Optional[List[str]]]:
+def check_user_access_columns() -> Dict[str, Optional[List[str]]]:
     """
-    Check that required user entitlement columns exist.
+    Check that required user access columns exist.
 
     Returns:
         dict with:
@@ -37,13 +36,20 @@ def check_user_entitlement_columns() -> Dict[str, Optional[List[str]]]:
                   AND column_name = ANY(:columns)
                 """
             ),
-            {"columns": REQUIRED_USER_ENTITLEMENT_COLUMNS},
+            {"columns": REQUIRED_USER_ACCESS_COLUMNS + ["access_source"]},
         )
         existing = {row[0] for row in result.fetchall()}
-        missing = [
-            column for column in REQUIRED_USER_ENTITLEMENT_COLUMNS
-            if column not in existing
-        ]
+        missing = [column for column in REQUIRED_USER_ACCESS_COLUMNS if column not in existing]
+        if "access_source" not in existing:
+            missing.append("access_source")
         return {"missing": missing, "error": None}
     except Exception as exc:  # pragma: no cover - defensive guardrail
-        return {"missing": REQUIRED_USER_ENTITLEMENT_COLUMNS, "error": str(exc)}
+        return {
+            "missing": REQUIRED_USER_ACCESS_COLUMNS + ["access_source"],
+            "error": str(exc),
+        }
+
+
+def check_user_entitlement_columns() -> Dict[str, Optional[List[str]]]:
+    """Backward-compatible alias. Use check_user_access_columns()."""
+    return check_user_access_columns()

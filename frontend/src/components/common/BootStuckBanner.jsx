@@ -1,10 +1,10 @@
 import { useLocation } from 'react-router-dom';
 import { useAppReady } from '../../context/AppReadyContext';
-import { useSubscription } from '../../context/SubscriptionContext';
+import { useAccess } from '../../context/AccessContext';
 import { useAuth } from '../../context/AuthContext';
 
-// Public routes that don't need auth/subscription - don't show banner here
-const PUBLIC_ROUTES = ['/', '/landing', '/login', '/pricing'];
+// Public routes that don't need auth/access-state - don't show banner here
+const PUBLIC_ROUTES = ['/', '/landing', '/login'];
 
 /**
  * BootStuckBanner - Recovery UI when boot is slow or stuck
@@ -15,25 +15,25 @@ const PUBLIC_ROUTES = ['/', '/landing', '/login', '/pricing'];
  *
  * This provides better UX during Render cold starts, which can take 5-30s.
  *
- * The retry button triggers subscription refresh (re-fetches from server).
+ * The retry button triggers access refresh (re-fetches from server).
  *
  * Usage: Add to App.jsx layout, outside main content
  */
 export function BootStuckBanner() {
   const location = useLocation();
   const { bootStatus, banners } = useAppReady();
-  const { actions } = useSubscription();
+  const { actions } = useAccess();
   const { isAuthenticated } = useAuth();
 
-  // Don't show on public routes - they don't need auth/subscription
+  // Don't show on public routes - they don't need auth/access-state
   if (PUBLIC_ROUTES.includes(location.pathname)) return null;
 
-  const usingCachedTier = Boolean(banners?.usingCachedTier) && isAuthenticated;
+  const usingCachedAccess = Boolean(banners?.usingCachedAccess) && isAuthenticated;
   const isBootSlow = bootStatus === 'slow';
   const isBootStuck = bootStatus === 'stuck';
 
   // Show nothing if boot is normal (<5s) and not using cached access
-  if (!isBootSlow && !isBootStuck && !usingCachedTier) return null;
+  if (!isBootSlow && !isBootStuck && !usingCachedAccess) return null;
 
   const handleRetry = () => {
     actions.refresh();
@@ -54,7 +54,7 @@ export function BootStuckBanner() {
     );
   }
 
-  if (usingCachedTier && !isBootSlow && !isBootStuck) {
+  if (usingCachedAccess && !isBootSlow && !isBootStuck) {
     return (
       <div className="bg-blue-50 border-b border-blue-200 px-4 py-3 flex items-center justify-between">
         <span className="text-blue-800 text-sm flex items-center gap-2">

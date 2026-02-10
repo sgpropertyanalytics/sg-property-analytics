@@ -3,7 +3,7 @@ import { useInView } from 'react-intersection-observer';
 // Phase 2: Using TanStack Query via useAppQuery wrapper
 import { useAppQuery } from '../../hooks';
 import { getUpcomingLaunchesAll } from '../../api/client';
-import { useSubscription } from '../../context/SubscriptionContext';
+import { useAccess } from '../../context/AccessContext';
 import { getRegionBadgeClass } from '../../constants';
 import { assertKnownVersion } from '../../adapters';
 import { UpcomingLaunchesField, getUpcomingLaunchesField } from '../../schemas/apiContract';
@@ -34,8 +34,8 @@ export function UpcomingLaunchesTable({
   compact = false,   // Compact mode for embedding (no border)
   showHeader = true, // Show/hide header
 }) {
-  const { accessLevel: _accessLevel, accessSource: _accessSource } = useSubscription();
-  const isFreeTier = false;
+  const { accessLevel: _accessLevel, accessSource: _accessSource } = useAccess();
+  const isAccessRestricted = false;
   const [sortConfig, setSortConfig] = useState({
     column: 'project_name',
     order: 'asc',
@@ -262,7 +262,7 @@ export function UpcomingLaunchesTable({
                 ))}
               </tr>
             </thead>
-            <tbody className={isFreeTier ? 'blur-sm grayscale-[40%]' : ''}>
+            <tbody className={isAccessRestricted ? 'blur-sm grayscale-[40%]' : ''}>
               {isLoading ? (
                 <tr>
                   <td colSpan={columns.length} className="p-0">

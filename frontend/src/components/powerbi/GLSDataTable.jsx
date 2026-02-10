@@ -3,7 +3,7 @@ import { useInView } from 'react-intersection-observer';
 // Phase 2: Using TanStack Query via useAppQuery wrapper
 import { useAppQuery } from '../../hooks';
 import { getGLSAll } from '../../api/client';
-import { useSubscription } from '../../context/SubscriptionContext';
+import { useAccess } from '../../context/AccessContext';
 import { getRegionBadgeClass } from '../../constants';
 import { assertKnownVersion } from '../../adapters';
 import { GlsAllField, getGlsAllField } from '../../schemas/apiContract';
@@ -27,8 +27,8 @@ import { FrostOverlay } from '../common/loading';
  * - FACT (awarded): Capital committed, confirmed supply
  */
 export function GLSDataTable({ height = 400 }) {
-  const { accessLevel: _accessLevel, accessSource: _accessSource } = useSubscription();
-  const isFreeTier = false;
+  const { accessLevel: _accessLevel, accessSource: _accessSource } = useAccess();
+  const isAccessRestricted = false;
   const [filter, setFilter] = useState('all'); // 'all', 'launched', 'awarded'
   const [segmentFilter, setSegmentFilter] = useState(''); // '', 'CCR', 'RCR', 'OCR'
   const [sortConfig, setSortConfig] = useState({
@@ -270,7 +270,7 @@ export function GLSDataTable({ height = 400 }) {
             <p className="text-xs text-slate-400 mt-1">Data will be available once synchronized from URA.</p>
           </div>
         ) : (
-          <div className={isFreeTier ? 'blur-sm grayscale-[40%]' : ''}>
+          <div className={isAccessRestricted ? 'blur-sm grayscale-[40%]' : ''}>
             {safeData.map((tender, idx) => (
               <div key={tender.id || idx} className="p-3 bg-white rounded-lg border border-brand-sky/30">
                 {/* Header: Location + Status */}
@@ -357,7 +357,7 @@ export function GLSDataTable({ height = 400 }) {
                 ))}
               </tr>
             </thead>
-            <tbody className={isFreeTier ? 'blur-sm grayscale-[40%]' : ''}>
+            <tbody className={isAccessRestricted ? 'blur-sm grayscale-[40%]' : ''}>
               {isLoading ? (
                 <tr>
                   <td colSpan={columns.length} className="p-0">

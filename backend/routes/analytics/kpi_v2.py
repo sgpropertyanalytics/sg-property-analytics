@@ -24,7 +24,7 @@ from models.database import db
 from db.sql import OUTLIER_FILTER
 from utils.normalize import to_date
 from api.contracts import api_contract
-from utils.subscription import require_premium
+from utils.subscription import require_authenticated_access
 
 # Reuse existing cache infrastructure (CLAUDE.md Rule #4: Reuse-First)
 from services.dashboard_service import _dashboard_cache
@@ -58,7 +58,7 @@ def _get_max_transaction_date():
 
 
 @analytics_bp.route("/kpi-summary-v2", methods=["GET"])
-@require_premium
+@require_authenticated_access
 @api_contract("kpi-summary-v2")
 def kpi_summary_v2():
     """

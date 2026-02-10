@@ -18,7 +18,7 @@ from sqlalchemy import func, and_, or_, extract, case, literal
 from constants import CCR_DISTRICTS, RCR_DISTRICTS, DISTRICT_NAMES, SALE_TYPE_NEW, SALE_TYPE_RESALE
 from services.new_launch_units import get_district_units_for_resale
 from api.contracts import api_contract
-from utils.subscription import get_user_from_request, is_premium_user
+from utils.subscription import get_user_from_request
 
 # =============================================================================
 # TTL CACHE FOR INSIGHTS ENDPOINTS
@@ -134,7 +134,7 @@ insights_bp = Blueprint('insights', __name__)
 @insights_bp.before_request
 def _insights_auth_guard():
     """
-    P0 Security: Require premium subscription for all insights endpoints.
+    P0 Security: Require authenticated access for all insights endpoints.
 
     Server-side enforcement - frontend blur is NOT sufficient.
     CORS: OPTIONS requests must pass through for preflight.
@@ -146,8 +146,6 @@ def _insights_auth_guard():
     user = get_user_from_request()
     if not user:
         return jsonify({"error": "Authentication required", "code": "AUTH_REQUIRED"}), 401
-    if not is_premium_user():
-        return jsonify({"error": "Premium subscription required", "code": "PREMIUM_REQUIRED"}), 403
     return None
 
 
