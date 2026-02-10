@@ -40,8 +40,8 @@ export function HotProjectsTable({
   onDataLoad = null, // Callback with data count after loading
   excludeSoldOut = false, // When true, exclude projects with 0 unsold units
 }) {
-  const { tier, tierSource } = useSubscription();
-  const isFreeTier = tierSource !== 'none' && tier === 'free';
+  const { accessLevel: _accessLevel, accessSource: _accessSource } = useSubscription();
+  const isFreeTier = false;
   const [sortConfig, setSortConfig] = useState({
     column: 'first_new_sale',  // Default: sort by latest launch date
     order: 'desc',

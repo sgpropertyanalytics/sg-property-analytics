@@ -59,8 +59,8 @@ function TimeTrendChartBase({ height = 380, saleType = null, staggerIndex = 0, v
   const timeframe = filters.timeFilter?.type === 'preset' ? filters.timeFilter.value : 'Y1';
   const districts = filters.districts?.join(',') || '';
   // bedroom filtered client-side; districts passed to API for server-side filtering
-  const { tier, tierSource } = useSubscription();
-  const isFreeTier = tierSource !== 'none' && tier === 'free';
+  const { accessLevel: _accessLevel, accessSource: _accessSource } = useSubscription();
+  const isFreeTier = false;
 
   const chartRef = useRef(null);
 

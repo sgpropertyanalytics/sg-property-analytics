@@ -4,15 +4,15 @@
  * Phase 2 of filter system simplification.
  *
  * This hook wraps @tanstack/react-query's useQuery with:
- * 1. Progressive boot gating - publicReady for most charts, proReady for premium
+ * 1. Progressive boot gating - publicReady for most charts, proReady for authenticated access
  * 2. Timing instrumentation - dev-only chart timing tracking
  * 3. Status compatibility - maps TanStack status to existing ChartFrame status
  *
  * PROGRESSIVE BOOT GATES (P0 Fix):
  * - requiresSubscription: false (default) → gates on publicReady (auth + filters)
- * - requiresSubscription: true → gates on proReady (publicReady + subscription)
+ * - requiresSubscription: true → gates on proReady (publicReady + subscription resolution)
  *
- * IMPORTANT: Premium charts that require entitlement MUST be wrapped in <RequirePro>.
+ * IMPORTANT: Auth-gated charts that require entitlement MUST be wrapped in <RequirePro>.
  * The requiresSubscription flag only gates on subscription resolution, not entitlement.
  *
  * MIGRATION GUIDE:
@@ -95,8 +95,8 @@ export function useAppQuery(queryFn, deps = [], options = {}) {
 
   // BOOT GATE SELECTION (P0 Fix):
   // - requiresSubscription: false (default) → gates on publicReady (auth + filters)
-  // - requiresSubscription: true → gates on proReady (publicReady + subscription)
-  // NOTE: Premium charts that require entitlement MUST be wrapped in <RequirePro>
+  // - requiresSubscription: true → gates on proReady (publicReady + subscription resolution)
+  // NOTE: Auth-gated charts that require entitlement MUST be wrapped in <RequirePro>
   const bootReady = requiresSubscription ? proReady : publicReady;
   const effectiveEnabled = userEnabled && bootReady;
 

@@ -73,8 +73,8 @@ function MarketValueOscillatorBase({ height = 380, saleType = null, sharedRawDat
   // Extract filter values directly (simple, explicit)
   const timeframe = filters.timeFilter?.type === 'preset' ? filters.timeFilter.value : 'Y1';
   const bedroom = filters.bedroomTypes?.join(',') || '';
-  const { tier, tierSource } = useSubscription();
-  const isFreeTier = tierSource !== 'none' && tier === 'free';
+  const { accessLevel: _accessLevel, accessSource: _accessSource } = useSubscription();
+  const isFreeTier = false;
 
   const chartRef = useRef(null);
 

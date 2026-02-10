@@ -34,8 +34,8 @@ export function UpcomingLaunchesTable({
   compact = false,   // Compact mode for embedding (no border)
   showHeader = true, // Show/hide header
 }) {
-  const { tier, tierSource } = useSubscription();
-  const isFreeTier = tierSource !== 'none' && tier === 'free';
+  const { accessLevel: _accessLevel, accessSource: _accessSource } = useSubscription();
+  const isFreeTier = false;
   const [sortConfig, setSortConfig] = useState({
     column: 'project_name',
     order: 'asc',

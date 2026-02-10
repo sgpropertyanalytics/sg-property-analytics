@@ -1,32 +1,20 @@
 import { useNavigate } from 'react-router-dom';
-import { useSubscription } from '../../context/SubscriptionContext';
 import { useAppReady } from '../../context/AppReadyContext';
 import { useAuth } from '../../context/AuthContext';
 import Skeleton from '../primitives/Skeleton';
-import { Lock, AlertCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle, RefreshCw } from 'lucide-react';
 
 /**
- * RequirePro - Hard paywall gate for premium content
+ * RequirePro - Legacy gate retained as auth/boot guard.
  *
- * CRITICAL INVARIANT (P0 Fix):
- * Children are NOT mounted (and cannot fetch) unless:
- * 1. proReady = true (subscription resolved)
- * 2. User is premium
- *
- * This is NOT blur/overlay - children literally don't exist for free users.
- * This prevents premium API calls from executing before we know the user's tier.
- *
- * UI GATING RULES:
- * - status === 'pending': Show skeleton (NEVER paywall)
- * - !proReady: Show skeleton (boot not complete)
- * - status === 'error': Show retry UI (not paywall, not content)
- * - tier === 'free' with tierSource !== 'none': Show paywall (children never mount)
- * - canAccessPremium: Show content (children mount)
+ * All signed-in users have full access. This component now only ensures:
+ * - Boot is complete
+ * - User is authenticated
  *
  * Usage:
  * ```jsx
  * <RequirePro>
- *   <PremiumInsightsChart />
+ *   <InsightsChart />
  * </RequirePro>
  *
  * <RequirePro fallback={<CustomLoader />}>
@@ -34,65 +22,30 @@ import { Lock, AlertCircle, RefreshCw } from 'lucide-react';
  * </RequirePro>
  * ```
  *
- * @param {ReactNode} children - Premium content to render
+ * @param {ReactNode} children - Content to render
  * @param {ReactNode} [fallback] - Custom loading state (default: Skeleton)
- * @param {string} [feature] - Feature name for analytics
  */
-export function RequirePro({ children, fallback, feature = 'premium content' }) {
+export function RequirePro({ children, fallback }) {
   const navigate = useNavigate();
   const { proReady } = useAppReady();
   const { isAuthenticated } = useAuth();
-  const {
-    status,
-    tier,
-    tierSource,
-    canAccessPremium,
-    paywall,
-    actions,
-  } = useSubscription();
+  const status = proReady ? 'ready' : 'pending';
 
-  // SAFETY: Explicit pending check (robust even if proReady is true too early)
-  // UI INVARIANT: isPending = loading OR initial; use for safety guards
   if (status === 'pending') {
     return fallback ?? <DefaultSkeleton />;
   }
 
-  // Still booting - show skeleton (not paywall)
-  // This prevents paywall flash during auth/filter hydration
   if (!proReady) {
     return fallback ?? <DefaultSkeleton />;
   }
 
-  // Subscription error - show retry UI (not paywall, not content)
-  // SUBSCRIPTION INVARIANT: ERROR !== FREE. ERROR = unknown, show retry UI
-  if (status === 'error') {
+  if (!isAuthenticated) {
     return (
-      <SubscriptionErrorState
-        onRetry={actions.refresh}
-      />
+      <SubscriptionErrorState onRetry={() => navigate('/login')} />
     );
   }
 
-  // Free user - HARD PAYWALL (children never mount, never fetch)
-  if (tierSource !== 'none' && tier === 'free') {
-    return (
-      <Paywall
-        isAuthenticated={isAuthenticated}
-        feature={feature}
-        onUpgrade={() => paywall.open({ source: 'require-pro', field: feature })}
-        onSignIn={() => navigate('/login')}
-      />
-    );
-  }
-
-  // Premium user - mount children (they can now fetch)
-  if (canAccessPremium) {
-    return children;
-  }
-
-  // Fallback (should not reach if states are exhaustive)
-  // This handles any edge case where subscription state is unexpected
-  return fallback ?? <DefaultSkeleton />;
+  return children;
 }
 
 /**
@@ -107,8 +60,7 @@ function DefaultSkeleton() {
 }
 
 /**
- * Subscription error state with retry button
- * Shown when subscription fetch fails
+ * Auth state with sign-in retry button.
  */
 function SubscriptionErrorState({ onRetry }) {
   return (
@@ -117,10 +69,10 @@ function SubscriptionErrorState({ onRetry }) {
         <AlertCircle className="w-8 h-8 text-red-500" />
         <div>
           <p className="text-sm font-semibold text-mono-ink">
-            Unable to verify subscription
+            Sign in required
           </p>
           <p className="text-xs text-mono-mid mt-1">
-            Please check your connection and try again
+            Please sign in with Google to continue
           </p>
         </div>
         <button
@@ -130,40 +82,7 @@ function SubscriptionErrorState({ onRetry }) {
                      transition-colors"
         >
           <RefreshCw className="w-4 h-4" />
-          Retry
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/**
- * Paywall component for free users
- * Hard paywall - content is not rendered at all
- */
-function Paywall({ isAuthenticated, feature, onUpgrade, onSignIn }) {
-  return (
-    <div className="w-full p-6 rounded-lg bg-gradient-to-b from-brand-navy/5 to-brand-navy/10 border border-brand-navy/20">
-      <div className="flex flex-col items-center justify-center gap-4 text-center">
-        <div className="w-12 h-12 rounded-full bg-brand-navy/10 flex items-center justify-center">
-          <Lock className="w-6 h-6 text-brand-navy" />
-        </div>
-        <div>
-          <p className="text-base font-semibold text-mono-ink">
-            Premium Feature
-          </p>
-          <p className="text-sm text-mono-mid mt-1 max-w-xs">
-            Upgrade to access {feature} and unlock detailed analytics
-          </p>
-        </div>
-        <button
-          onClick={isAuthenticated ? onUpgrade : onSignIn}
-          className="flex items-center gap-2 px-6 py-2.5 bg-brand-navy text-white
-                     rounded-lg font-semibold text-sm hover:bg-brand-navy/90
-                     transition-colors shadow-md"
-        >
-          <Lock className="w-4 h-4" />
-          {isAuthenticated ? 'Upgrade to Pro' : 'Sign In to Unlock'}
+          Sign In
         </button>
       </div>
     </div>

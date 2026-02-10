@@ -60,8 +60,8 @@ function DistrictLiquidityMapBase({
   onModeChange,
   enabled = true,
 }) {
-  const { tier, tierSource } = useSubscription();
-  const isFreeTier = tierSource !== 'none' && tier === 'free';
+  const { accessLevel: _accessLevel, accessSource: _accessSource } = useSubscription();
+  const isFreeTier = false;
   const [hoveredDistrict, setHoveredDistrict] = useState(null);
 
   // Phase 4: Simplified filter access - read values directly from Zustand

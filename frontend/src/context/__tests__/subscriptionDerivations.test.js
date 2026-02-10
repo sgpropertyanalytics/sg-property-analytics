@@ -1,37 +1,37 @@
 import { describe, it, expect } from 'vitest';
 import {
-  TierSource,
-  deriveCanAccessPremium,
-  deriveHasCachedPremium,
-  deriveIsTierKnown,
-  deriveTierSource,
+  AccessSource,
+  deriveAccessSource,
+  deriveCanAccessAuthenticated,
+  deriveHasCachedAuthenticatedAccess,
+  deriveIsAccessKnown,
 } from '../subscriptionDerivations';
 
-describe('subscription derivations', () => {
-  it('derives tierSource from status and cache presence', () => {
-    expect(deriveTierSource('resolved', false)).toBe(TierSource.SERVER);
-    expect(deriveTierSource('degraded', true)).toBe(TierSource.CACHE);
-    expect(deriveTierSource('degraded', false)).toBe(TierSource.NONE);
-    expect(deriveTierSource('error', true)).toBe(TierSource.NONE);
+describe('access derivations', () => {
+  it('derives accessSource from status and cache presence', () => {
+    expect(deriveAccessSource('resolved', false)).toBe(AccessSource.SERVER);
+    expect(deriveAccessSource('degraded', true)).toBe(AccessSource.CACHE);
+    expect(deriveAccessSource('degraded', false)).toBe(AccessSource.NONE);
+    expect(deriveAccessSource('error', true)).toBe(AccessSource.NONE);
   });
 
-  it('treats cache tier as known', () => {
-    expect(deriveIsTierKnown(TierSource.CACHE)).toBe(true);
-    expect(deriveIsTierKnown(TierSource.NONE)).toBe(false);
+  it('treats cache access as known', () => {
+    expect(deriveIsAccessKnown(AccessSource.CACHE)).toBe(true);
+    expect(deriveIsAccessKnown(AccessSource.NONE)).toBe(false);
   });
 
-  it('allows cached premium access when active', () => {
-    const subscription = { tier: 'premium', subscribed: true, ends_at: null };
-    const hasCachedPremium = deriveHasCachedPremium(TierSource.CACHE, subscription, true);
-    expect(hasCachedPremium).toBe(true);
-    expect(deriveCanAccessPremium(false, hasCachedPremium)).toBe(true);
+  it('allows cached authenticated access when active', () => {
+    const subscription = { accessLevel: 'authenticated', subscribed: true, ends_at: null };
+    const hasCachedAuthenticatedAccess = deriveHasCachedAuthenticatedAccess(AccessSource.CACHE, subscription, true);
+    expect(hasCachedAuthenticatedAccess).toBe(true);
+    expect(deriveCanAccessAuthenticated(false, hasCachedAuthenticatedAccess)).toBe(true);
   });
 
-  it('does not allow premium access when tier is unknown', () => {
-    const tierSource = deriveTierSource('pending', false);
-    const hasCachedPremium = deriveHasCachedPremium(tierSource, null, false);
-    expect(tierSource).toBe(TierSource.NONE);
-    expect(hasCachedPremium).toBe(false);
-    expect(deriveCanAccessPremium(false, hasCachedPremium)).toBe(false);
+  it('does not allow authenticated access when source is unknown', () => {
+    const accessSource = deriveAccessSource('pending', false);
+    const hasCachedAuthenticatedAccess = deriveHasCachedAuthenticatedAccess(accessSource, null, false);
+    expect(accessSource).toBe(AccessSource.NONE);
+    expect(hasCachedAuthenticatedAccess).toBe(false);
+    expect(deriveCanAccessAuthenticated(false, hasCachedAuthenticatedAccess)).toBe(false);
   });
 });

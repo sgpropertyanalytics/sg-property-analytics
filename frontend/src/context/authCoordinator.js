@@ -1,11 +1,11 @@
 /**
- * Auth Coordinator - Single-writer reducer for auth + subscription state
+ * Auth Coordinator - Single-writer reducer for auth + access state
  *
  * Firebase-Only model: No token sync, no JWT, no cookies.
- * Firebase SDK handles auth; this reducer tracks auth state + subscription state.
+ * Firebase SDK handles auth; this reducer tracks auth state + access state.
  *
  * SINGLE-WRITER INVARIANT:
- * This reducer is the ONLY place auth/subscription state may be mutated.
+ * This reducer is the ONLY place auth/access state may be mutated.
  */
 
 // =============================================================================
@@ -17,9 +17,14 @@ export const initialState = {
   user: null,
   initialized: false,
 
-  // Subscription domain
-  tier: 'unknown', // unknown | free | premium
-  tierSource: 'none', // none | cache | server
+  // Access domain (neutral naming)
+  accessLevel: 'unknown', // unknown | anonymous | authenticated
+  accessSource: 'none', // none | cache | server | timeout
+
+  // Legacy aliases for backward compatibility
+  tier: 'unknown',
+  tierSource: 'none',
+
   subPhase: 'pending', // pending | loading | resolved | degraded
   subError: null,
   cachedSubscription: null,
@@ -28,19 +33,63 @@ export const initialState = {
   subRequestId: null,
 };
 
+const LEGACY_ACCESS_MAP = {
+  unknown: 'unknown',
+  free: 'authenticated',
+  premium: 'authenticated',
+  authenticated: 'authenticated',
+  anonymous: 'anonymous',
+};
+
+function normalizeAccessLevel(value) {
+  if (!value) return 'unknown';
+  return LEGACY_ACCESS_MAP[value] || 'unknown';
+}
+
+function withLegacyAliases(nextState) {
+  let normalizedAccessLevel = nextState.accessLevel;
+  let normalizedAccessSource = nextState.accessSource;
+
+  if (normalizedAccessLevel === undefined && nextState.tier !== undefined) {
+    normalizedAccessLevel = normalizeAccessLevel(nextState.tier);
+  }
+  if (normalizedAccessSource === undefined && nextState.tierSource !== undefined) {
+    normalizedAccessSource = nextState.tierSource;
+  }
+
+  normalizedAccessLevel = normalizeAccessLevel(normalizedAccessLevel ?? 'unknown');
+  normalizedAccessSource = normalizedAccessSource ?? 'none';
+
+  // Keep legacy keys stable during migration to neutral naming.
+  return {
+    ...nextState,
+    accessLevel: normalizedAccessLevel,
+    accessSource: normalizedAccessSource,
+    tier: normalizedAccessLevel === 'authenticated' ? 'free' : normalizedAccessLevel,
+    tierSource: normalizedAccessSource,
+  };
+}
+
+function getActionAccessLevel(action) {
+  const raw = action.subscription?.accessLevel ?? action.subscription?.tier;
+  return normalizeAccessLevel(raw);
+}
+
 // =============================================================================
 // REDUCER
 // =============================================================================
 
 export function authCoordinatorReducer(state, action) {
+  const normalizedState = withLegacyAliases(state);
+
   // 1. Staleness check - ignore responses from superseded requests
-  if (isStaleRequest(state, action)) {
-    return state;
+  if (isStaleRequest(normalizedState, action)) {
+    return normalizedState;
   }
 
-  // 2. Monotonicity check - prevent invalid tier downgrades
-  if (!checkMonotonicity(state, action)) {
-    return state;
+  // 2. Monotonicity check - prevent invalid access regressions
+  if (!checkMonotonicity(normalizedState, action)) {
+    return normalizedState;
   }
 
   // 3. Dev logging
@@ -50,12 +99,12 @@ export function authCoordinatorReducer(state, action) {
   }
 
   // 4. Compute next state
-  const nextState = computeNextState(state, action);
+  const nextState = withLegacyAliases(computeNextState(normalizedState, action));
 
   // 5. Post-check: initialized monotonicity (false → true only)
-  if (state.initialized && !nextState.initialized) {
+  if (normalizedState.initialized && !nextState.initialized) {
     console.error('[AuthCoordinator] INVARIANT VIOLATION: initialized went true → false');
-    return state;
+    return normalizedState;
   }
 
   return nextState;
@@ -87,20 +136,20 @@ function isStaleRequest(state, action) {
 // =============================================================================
 
 function checkMonotonicity(state, action) {
-  // Prevent timeout from overriding error or premium state
+  // Prevent timeout from overriding already-resolved authenticated access.
   if (action.type === 'SUB_PENDING_TIMEOUT') {
-    if (state.tier === 'premium') {
-      console.warn('[AuthCoordinator] Blocked: timeout cannot overwrite premium');
+    if (state.accessLevel === 'authenticated') {
+      console.warn('[AuthCoordinator] Blocked: timeout cannot overwrite authenticated access');
       return false;
     }
   }
 
-  // Rule: Premium can only be downgraded by LOGOUT or server success (SUB_FETCH_OK)
-  if (state.tier === 'premium' && action.type !== 'LOGOUT') {
-    const nextTier = action.subscription?.tier;
-    if (nextTier === 'free') {
+  // Rule: authenticated access can only be downgraded by LOGOUT or server success.
+  if (state.accessLevel === 'authenticated' && action.type !== 'LOGOUT') {
+    const nextAccessLevel = getActionAccessLevel(action);
+    if (nextAccessLevel === 'anonymous') {
       if (action.type !== 'SUB_FETCH_OK') {
-        console.warn(`[AuthCoordinator] Blocked: ${action.type} cannot downgrade premium`);
+        console.warn(`[AuthCoordinator] Blocked: ${action.type} cannot downgrade authenticated access`);
         return false;
       }
     }
@@ -125,8 +174,8 @@ function computeNextState(state, action) {
           ...initialState,
           initialized: true,
           subPhase: 'resolved',
-          tier: 'free',
-          tierSource: 'none',
+          accessLevel: 'anonymous',
+          accessSource: 'none',
         };
       }
       return {
@@ -136,7 +185,7 @@ function computeNextState(state, action) {
       };
 
     // -------------------------------------------------------------------------
-    // SUBSCRIPTION DOMAIN
+    // ACCESS DOMAIN
     // -------------------------------------------------------------------------
     case 'SUB_FETCH_START':
       return {
@@ -149,26 +198,26 @@ function computeNextState(state, action) {
       return {
         ...state,
         subPhase: 'resolved',
-        tier: action.subscription.tier,
-        tierSource: 'server',
+        accessLevel: getActionAccessLevel(action),
+        accessSource: 'server',
         cachedSubscription: action.subscription,
         subError: null,
         subRequestId: null,
       };
 
     case 'SUB_FETCH_FAIL':
-      // AUTH errors (401/403): Session invalid → block cached premium
+      // AUTH errors (401/403): session invalid -> block cached access source.
       if (action.errorKind === 'AUTH' || action.errorKind === 'AUTH_REQUIRED') {
         return {
           ...state,
           subPhase: 'degraded',
-          tierSource: 'none',
+          accessSource: 'none',
           subError: action.error,
           subRequestId: null,
         };
       }
 
-      // GATEWAY/NETWORK errors: Keep cached premium for availability
+      // GATEWAY/NETWORK errors: preserve last-known access level for availability.
       if (action.errorKind === 'GATEWAY' || action.errorKind === 'NETWORK') {
         return {
           ...state,
@@ -178,8 +227,7 @@ function computeNextState(state, action) {
         };
       }
 
-      // Other errors: depends on current tier
-      if (state.tier === 'premium') {
+      if (state.accessLevel === 'authenticated') {
         return {
           ...state,
           subPhase: 'degraded',
@@ -190,8 +238,8 @@ function computeNextState(state, action) {
       return {
         ...state,
         subPhase: 'resolved',
-        tier: 'free',
-        tierSource: 'none',
+        accessLevel: 'anonymous',
+        accessSource: 'none',
         subError: action.error,
         subRequestId: null,
       };
@@ -214,16 +262,16 @@ function computeNextState(state, action) {
       return {
         ...state,
         subPhase: 'resolved',
-        tier: 'free',
-        tierSource: 'timeout',
+        accessLevel: 'anonymous',
+        accessSource: 'timeout',
       };
 
     case 'SUB_CACHE_LOAD':
       return {
         ...state,
         subPhase: 'resolved',
-        tier: action.subscription.tier,
-        tierSource: 'cache',
+        accessLevel: getActionAccessLevel(action),
+        accessSource: 'cache',
         cachedSubscription: action.subscription,
       };
 
@@ -235,7 +283,8 @@ function computeNextState(state, action) {
         ...initialState,
         initialized: true,
         subPhase: 'resolved',
-        tier: 'free',
+        accessLevel: 'anonymous',
+        accessSource: 'none',
       };
 
     default:

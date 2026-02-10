@@ -77,8 +77,8 @@ function PriceCompressionChartBase({ height = 380, saleType = null, sharedData =
   const [debouncedBedroom] = useDebounce(bedroom, 300);
 
   // district excluded - shows all regions for comparison
-  const { tier, tierSource } = useSubscription();
-  const isFreeTier = tierSource !== 'none' && tier === 'free';
+  const { accessLevel: _accessLevel, accessSource: _accessSource } = useSubscription();
+  const isFreeTier = false;
 
   // UI state (not data state - that comes from useAbortableQuery)
   const chartRef = useRef(null);

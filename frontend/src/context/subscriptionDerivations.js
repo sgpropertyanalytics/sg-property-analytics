@@ -1,23 +1,38 @@
-export const TierSource = {
+export const AccessSource = {
   SERVER: 'server',
   CACHE: 'cache',
   NONE: 'none',
 };
 
-export const deriveTierSource = (status, hasCachedSubscription) => {
-  if (status === 'resolved') return TierSource.SERVER;
-  if (status === 'degraded' && hasCachedSubscription) return TierSource.CACHE;
-  return TierSource.NONE;
+// Legacy alias (backward compatibility)
+export const TierSource = AccessSource;
+
+export const deriveAccessSource = (status, hasCachedSubscription) => {
+  if (status === 'resolved') return AccessSource.SERVER;
+  if (status === 'degraded' && hasCachedSubscription) return AccessSource.CACHE;
+  return AccessSource.NONE;
 };
 
-export const deriveIsTierKnown = (tierSource) => tierSource !== TierSource.NONE;
+// Legacy alias
+export const deriveTierSource = deriveAccessSource;
 
-export const deriveHasCachedPremium = (tierSource, subscription, isPremiumActive) => (
-  tierSource === TierSource.CACHE
-  && subscription?.tier === 'premium'
-  && isPremiumActive
+export const deriveIsAccessKnown = (accessSource) => accessSource !== AccessSource.NONE;
+
+// Legacy alias
+export const deriveIsTierKnown = deriveIsAccessKnown;
+
+export const deriveHasCachedAuthenticatedAccess = (accessSource, subscription, isAccessActive) => (
+  accessSource === AccessSource.CACHE
+  && (subscription?.accessLevel === 'authenticated' || subscription?.tier === 'premium')
+  && isAccessActive
 );
 
-export const deriveCanAccessPremium = (isPremiumResolved, hasCachedPremium) => (
-  isPremiumResolved || hasCachedPremium
+// Legacy alias
+export const deriveHasCachedPremium = deriveHasCachedAuthenticatedAccess;
+
+export const deriveCanAccessAuthenticated = (isAccessResolved, hasCachedAuthenticatedAccess) => (
+  isAccessResolved || hasCachedAuthenticatedAccess
 );
+
+// Legacy alias
+export const deriveCanAccessPremium = deriveCanAccessAuthenticated;

@@ -456,8 +456,8 @@ function MarketStrategyMapBase({
   onModeChange,
   enabled = true,
 }) {
-  const { tier, tierSource } = useSubscription();
-  const isFreeTier = tierSource !== 'none' && tier === 'free';
+  const { accessLevel: _accessLevel, accessSource: _accessSource } = useSubscription();
+  const isFreeTier = false;
   const [hoveredDistrict, setHoveredDistrict] = useState(null);
 
   // Refs for map container and map instance (for tethered hover position calculations)
