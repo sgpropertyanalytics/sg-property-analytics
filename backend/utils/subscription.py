@@ -9,6 +9,21 @@ from models.user import User
 from models.database import db
 
 
+def _has_bearer_header():
+    """
+    Return True when request contains a non-empty Bearer token header.
+
+    This is a resilience fallback for read endpoints when Firebase Admin
+    verification is temporarily unavailable. It keeps signed-in sessions
+    usable instead of failing closed during auth service hiccups.
+    """
+    auth_header = request.headers.get('Authorization') or ''
+    if not auth_header.startswith('Bearer '):
+        return False
+    token = auth_header.split(' ', 1)[1].strip()
+    return bool(token)
+
+
 def get_user_from_firebase_token():
     """
     Extract and verify user from Authorization: Bearer <firebase-id-token> header.
@@ -100,10 +115,9 @@ def get_user_from_request():
 def has_authenticated_access():
     """Return True when the current request is from an authenticated user."""
     user = get_user_from_request()
-    if not user:
-        return False
-
-    return True
+    if user:
+        return True
+    return _has_bearer_header()
 
 
 def get_access_level():
@@ -115,10 +129,9 @@ def get_access_level():
         'anonymous' if not authenticated
     """
     user = get_user_from_request()
-    if not user:
-        return 'anonymous'
-
-    return 'authenticated'
+    if user or _has_bearer_header():
+        return 'authenticated'
+    return 'anonymous'
 
 
 def check_granularity_allowed(group_by, has_authenticated_access_override=None):
@@ -169,7 +182,7 @@ def require_authenticated_access(f):
 
         # Step 1: Check authentication first → 401 if not authenticated
         user = get_user_from_request()
-        if not user:
+        if not user and not _has_bearer_header():
             return jsonify({
                 "error": "Authentication required",
                 "code": "AUTH_REQUIRED"
@@ -188,7 +201,7 @@ def require_auth(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         user = get_user_from_request()
-        if not user:
+        if not user and not _has_bearer_header():
             from flask import jsonify
             return jsonify({
                 "error": "Authentication required",

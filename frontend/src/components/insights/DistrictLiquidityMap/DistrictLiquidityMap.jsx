@@ -17,7 +17,6 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import apiClient from '../../../api/client';
 // GeoJSON is lazy-loaded to reduce initial bundle size (~100KB savings)
 import { DISTRICT_CENTROIDS } from '../../../data/districtCentroids';
-import { useAccess } from '../../../context/AccessContext';
 // Phase 2: Using TanStack Query via useAppQuery wrapper
 import { useAppQuery, QueryStatus } from '../../../hooks';
 // Phase 3.4: Using standardized Zustand filters (same as Market Overview)
@@ -60,7 +59,6 @@ function DistrictLiquidityMapBase({
   onModeChange,
   enabled = true,
 }) {
-  const { accessLevel: _accessLevel, accessSource: _accessSource } = useAccess();
   const isAccessRestricted = false;
   const [hoveredDistrict, setHoveredDistrict] = useState(null);
 

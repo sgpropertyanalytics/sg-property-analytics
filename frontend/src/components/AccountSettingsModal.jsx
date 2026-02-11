@@ -7,7 +7,7 @@ import { getInitials } from '../utils/formatters';
 /**
  * AccountSettingsModal - Dark "Command Center" style modal
  *
- * Calm, professional layout with grid for Plan/Session
+ * Calm, professional layout with grid for Access/Session
  */
 export function AccountSettingsModal({ isOpen, onClose }) {
   const { user, logout } = useAuth();
@@ -139,15 +139,15 @@ export function AccountSettingsModal({ isOpen, onClose }) {
             {/* Separator */}
             <div className="h-px bg-slate-800 w-full" />
 
-            {/* Section: Subscription & Session Grid */}
+            {/* Section: Access & Session Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-              {/* Plan Card */}
+              {/* Access Card */}
               <div className="bg-slate-800/30 border border-slate-700/50 rounded-lg p-4 flex flex-col justify-between min-h-[140px]">
                 <div>
-                  <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Plan</h3>
+                  <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Access</h3>
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-base font-bold text-white">Standard Access</span>
+                    <span className="text-base font-bold text-white">Signed-In Access</span>
                     <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase">
                       Active
                     </span>

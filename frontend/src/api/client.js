@@ -9,6 +9,7 @@
  * Override only if absolutely necessary via VITE_API_URL.
  */
 import axios from 'axios';
+import { getFirebaseAuth, isFirebaseConfigured } from '../lib/firebase';
 
 // Determine API base URL (no environment branching)
 const getApiBase = () => {
@@ -217,17 +218,31 @@ if (!apiClient.__retryInterceptorInstalled) {
 }
 
 // Request interceptor - attach Firebase Bearer token
-apiClient.interceptors.request.use(async (config) => {
+async function getFirebaseIdToken({ forceRefresh = false } = {}) {
+  if (!isFirebaseConfigured()) return null;
+
   try {
-    const { getAuth } = await import('firebase/auth');
-    const auth = getAuth();
-    const currentUser = auth.currentUser;
-    if (currentUser) {
-      const idToken = await currentUser.getIdToken();
-      config.headers.Authorization = `Bearer ${idToken}`;
-    }
+    const auth = getFirebaseAuth();
+    const currentUser = auth?.currentUser;
+    if (!currentUser) return null;
+    return await currentUser.getIdToken(forceRefresh);
   } catch {
-    // Firebase not initialized or no user - proceed without token
+    // Fallback for edge cases where app bootstrap races
+    try {
+      const { getAuth } = await import('firebase/auth');
+      const currentUser = getAuth()?.currentUser;
+      if (!currentUser) return null;
+      return await currentUser.getIdToken(forceRefresh);
+    } catch {
+      return null;
+    }
+  }
+}
+
+apiClient.interceptors.request.use(async (config) => {
+  const idToken = await getFirebaseIdToken();
+  if (idToken) {
+    config.headers.Authorization = `Bearer ${idToken}`;
   }
   return config;
 });
@@ -315,7 +330,20 @@ apiClient.interceptors.response.use(
 
     return response;
   },
-  (error) => {
+  async (error) => {
+    // One-time auth recovery: refresh Firebase token and retry once on 401.
+    const status = error?.response?.status;
+    const config = error?.config;
+    if (status === 401 && config && !config.__authRetry && !config.signal?.aborted) {
+      config.__authRetry = true;
+      const refreshedToken = await getFirebaseIdToken({ forceRefresh: true });
+      if (refreshedToken) {
+        config.headers = config.headers || {};
+        config.headers.Authorization = `Bearer ${refreshedToken}`;
+        return apiClient.request(config);
+      }
+    }
+
     // Normalize error FIRST - adds userMessage for UI consumption
     normalizeError(error);
     // Note: 401s are handled by Firebase SDK auto-refresh (getIdToken in request interceptor)

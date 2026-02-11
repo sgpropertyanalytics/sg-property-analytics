@@ -21,7 +21,6 @@ import apiClient from '../../api/client';
 import { SINGAPORE_CENTER } from '../../data/singaporeDistrictsGeoJSON';
 import { DISTRICT_CENTROIDS } from '../../data/districtCentroids';
 import { REGIONS, CCR_DISTRICTS, RCR_DISTRICTS, OCR_DISTRICTS, getRegionBadgeClass, PERIOD_FILTER_OPTIONS } from '../../constants';
-import { useAccess } from '../../context/AccessContext';
 // Phase 2: Using TanStack Query via useAppQuery wrapper
 import { useAppQuery, QueryStatus } from '../../hooks';
 // Phase 3.4: Using standardized Zustand filters (same as Market Overview)
@@ -456,7 +455,6 @@ function MarketStrategyMapBase({
   onModeChange,
   enabled = true,
 }) {
-  const { accessLevel: _accessLevel, accessSource: _accessSource } = useAccess();
   const isAccessRestricted = false;
   const [hoveredDistrict, setHoveredDistrict] = useState(null);
 

@@ -12,7 +12,6 @@ import { getAggregate } from '../../api/client';
 // Phase 3.2: Migrated from usePowerBIFilters to useZustandFilters
 import { useZustandFilters } from '../../stores/filterStore';
 import { TIME_GROUP_BY } from '../../context/PowerBIFilter';
-import { useAccess } from '../../context/AccessContext';
 import { getRegionForDistrict } from '../../constants';
 import {
   PreviewChartOverlay,
@@ -89,7 +88,7 @@ function AbsolutePsfChartBase({ height = 380, saleType = null, sharedData = null
     });
     return regions;
   }, [filters.districts]);
-  const { canAccessAuthenticated, accessLevel: _accessLevel, accessSource: _accessSource } = useAccess();
+  const canAccessAuthenticated = true;
   const isAccessRestricted = false;
   const chartRef = useRef(null);
   const [isAgentOpen, setIsAgentOpen] = useState(false);

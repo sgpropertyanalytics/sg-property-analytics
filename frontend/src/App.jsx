@@ -134,8 +134,8 @@ const PerformanceDashboard = lazyWithRetry(() =>
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-    <AccessProvider>
       <AuthProvider>
+        <AccessProvider>
         <DataProvider>
           <DebugProvider>
           <ChartTimingProvider>
@@ -227,8 +227,8 @@ function App() {
           </ChartTimingProvider>
           </DebugProvider>
         </DataProvider>
+        </AccessProvider>
       </AuthProvider>
-    </AccessProvider>
     {/* TanStack Query DevTools - lazy loaded, only in development */}
     {import.meta.env.DEV && (
       <Suspense fallback={null}>

@@ -1,8 +1,7 @@
-import { createContext, useContext, useEffect, useCallback, useMemo, useRef } from 'react';
+import { createContext, useContext, useEffect, useCallback, useMemo, useRef, useReducer } from 'react';
 import { signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from 'firebase/auth';
 import { getFirebaseAuth, getGoogleProvider, isFirebaseConfigured } from '../lib/firebase';
 import { queryClient } from '../lib/queryClient';
-import { useAccess } from './AccessContext';
 import { logAuthEvent, AuthTimelineEvent } from '../utils/authTimelineLogger';
 
 /**
@@ -23,6 +22,28 @@ import { logAuthEvent, AuthTimelineEvent } from '../utils/authTimelineLogger';
 
 const AuthContext = createContext(null);
 
+const authInitialState = {
+  user: null,
+  initialized: false,
+};
+
+function authReducer(state, action) {
+  switch (action.type) {
+    case 'SET_AUTH':
+      return {
+        user: action.user ?? null,
+        initialized: true,
+      };
+    case 'LOGOUT_LOCAL':
+      return {
+        user: null,
+        initialized: true,
+      };
+    default:
+      return state;
+  }
+}
+
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
@@ -39,23 +60,13 @@ export const isAbortError = (err) => {
 };
 
 export function AuthProvider({ children }) {
-  const {
-    coordState,
-    dispatch,
-    actions: accessActions,
-  } = useAccess();
-
-  const { ensure: ensureAccess, clear: clearAccess } = accessActions;
-
-  // Refs for stable access in effect callbacks
-  const ensureAccessRef = useRef(ensureAccess);
-  ensureAccessRef.current = ensureAccess;
+  const [state, dispatch] = useReducer(authReducer, authInitialState);
   const authListenerRegisteredRef = useRef(false);
 
   // Initialize auth listener only if Firebase is configured
   useEffect(() => {
     if (!isFirebaseConfigured()) {
-      dispatch({ type: 'FIREBASE_USER_CHANGED', user: null });
+      dispatch({ type: 'SET_AUTH', user: null });
       return;
     }
 
@@ -81,15 +92,7 @@ export function AuthProvider({ children }) {
           email: firebaseUser?.email,
         });
 
-        // Set user immediately - this makes initialized=true
-        dispatch({ type: 'FIREBASE_USER_CHANGED', user: firebaseUser });
-
-        if (firebaseUser) {
-          // Fetch access state for authenticated user
-          ensureAccessRef.current(firebaseUser.email, { reason: 'auth_listener' });
-        } else {
-          // No user - access state cleared by FIREBASE_USER_CHANGED(null) in reducer
-        }
+        dispatch({ type: 'SET_AUTH', user: firebaseUser ?? null });
       });
 
       return () => {
@@ -100,9 +103,8 @@ export function AuthProvider({ children }) {
       };
     } catch (err) {
       console.error('[Auth] Failed to initialize Firebase auth:', err);
-      dispatch({ type: 'FIREBASE_USER_CHANGED', user: null });
+      dispatch({ type: 'SET_AUTH', user: null });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentional: refs provide stable access
   }, []);
 
   // Sign in with Google (popup with redirect fallback)
@@ -130,8 +132,7 @@ export function AuthProvider({ children }) {
 
   // Sign out
   const logout = useCallback(async () => {
-    dispatch({ type: 'LOGOUT' });
-    clearAccess();
+    dispatch({ type: 'LOGOUT_LOCAL' });
     queryClient.clear();
 
     if (isFirebaseConfigured()) {
@@ -143,7 +144,7 @@ export function AuthProvider({ children }) {
         throw err;
       }
     }
-  }, [dispatch, clearAccess]);
+  }, []);
 
   // Get user-friendly error message
   const getErrorMessage = (errorCode) => {
@@ -166,16 +167,16 @@ export function AuthProvider({ children }) {
   };
 
   const value = useMemo(() => ({
-    user: coordState.user,
-    initialized: coordState.initialized,
-    isAuthenticated: !!coordState.user,
+    user: state.user,
+    initialized: state.initialized,
+    isAuthenticated: !!state.user,
     isConfigured: isFirebaseConfigured(),
     signInWithGoogle,
     logout,
     getErrorMessage,
   }), [
-    coordState.user,
-    coordState.initialized,
+    state.user,
+    state.initialized,
     signInWithGoogle,
     logout,
   ]);
