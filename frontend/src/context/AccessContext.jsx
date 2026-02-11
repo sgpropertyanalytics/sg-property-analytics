@@ -1,8 +1,5 @@
-import { createContext, useContext, useReducer, useMemo, useCallback } from 'react';
-import {
-  authCoordinatorReducer,
-  initialState as coordinatorInitialState,
-} from './authCoordinator';
+import { createContext, useContext, useMemo, useCallback } from 'react';
+import { useAuth } from './AuthContext';
 
 const AccessContext = createContext(null);
 
@@ -18,14 +15,6 @@ const DEFAULT_ACCESS = {
   accessLevel: 'authenticated',
   subscribed: true,
   ends_at: null,
-};
-
-const INITIAL_COORD_STATE = {
-  ...coordinatorInitialState,
-  accessLevel: 'authenticated',
-  accessSource: 'server',
-  accessPhase: 'resolved',
-  cachedAccess: DEFAULT_ACCESS,
 };
 
 export const AccessStatus = {
@@ -63,22 +52,38 @@ export const unwrapAccessResponse = (responseData) => {
 };
 
 export function AccessProvider({ children }) {
-  const [coordState, dispatch] = useReducer(authCoordinatorReducer, INITIAL_COORD_STATE);
+  const { user, initialized, isAuthenticated } = useAuth();
 
-  const refresh = useCallback(async () => {}, []);
+  const refresh = useCallback(async () => {
+    if (typeof window !== 'undefined') {
+      window.location.reload();
+    }
+  }, []);
   const clear = useCallback(() => {}, []);
   const ensure = useCallback(() => {}, []);
 
   const showPaywall = useCallback(() => {}, []);
   const hidePaywall = useCallback(() => {}, []);
 
-  const canAccessAuthenticated = !!coordState.user;
+  const canAccessAuthenticated = !!user;
+  const accessSource = isAuthenticated ? 'server' : 'none';
+  const accessLevel = isAuthenticated ? 'authenticated' : 'anonymous';
+  const coordState = useMemo(() => ({
+    user: user ?? null,
+    initialized: !!initialized,
+    accessLevel,
+    accessSource,
+    accessPhase: 'resolved',
+    accessError: null,
+    cachedAccess: isAuthenticated ? DEFAULT_ACCESS : null,
+    accessRequestId: null,
+  }), [user, initialized, accessLevel, accessSource, isAuthenticated]);
 
   const value = useMemo(() => ({
     coordState,
-    dispatch,
-    accessLevel: 'authenticated',
-    accessSource: coordState.user ? 'server' : 'none',
+    dispatch: () => {}, // Compatibility stub for legacy test utilities.
+    accessLevel,
+    accessSource,
     status: 'ready',
     canAccessAuthenticated,
     expiry: {
@@ -102,11 +107,11 @@ export function AccessProvider({ children }) {
       status: AccessStatus.RESOLVED,
       fetchError: null,
       accessReady: true,
-      accessSource: coordState.user ? 'server' : 'none',
+      accessSource,
       hasCachedAccess: false,
       model: 'authenticated-users-have-full-access',
     } : undefined,
-  }), [coordState, canAccessAuthenticated, showPaywall, hidePaywall, refresh, clear, ensure]);
+  }), [coordState, accessLevel, accessSource, canAccessAuthenticated, showPaywall, hidePaywall, refresh, clear, ensure]);
 
   return (
     <AccessContext.Provider value={value}>

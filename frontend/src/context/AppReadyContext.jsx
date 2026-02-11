@@ -1,5 +1,5 @@
 import { createContext, useContext, useMemo, useEffect, useRef, useState, useCallback } from 'react';
-import { useAccess } from './AccessContext';
+import { useAuth } from './AuthContext';
 // Phase 4: Migrated from useFilterState (Context) to useFilterStore (Zustand)
 // Using useFilterStore directly to access both state and forceDefaults action
 import { useFilterStore } from '../stores';
@@ -46,27 +46,22 @@ export function useAppReadyOptional() {
 }
 
 export function AppReadyProvider({ children }) {
-  const {
-    status: accessStatus,
-    accessLevel,
-    accessSource,
-    coordState,
-  } = useAccess();
-
-  const authInitialized = coordState.initialized;
-  const isAuthenticated = !!coordState.user;
+  const { initialized: authInitialized, isAuthenticated } = useAuth();
+  const accessStatus = 'ready';
+  const accessLevel = isAuthenticated ? 'authenticated' : 'anonymous';
+  const accessSource = isAuthenticated ? 'server' : 'none';
 
   const filterStore = useFilterStore();
   const { filtersReady, filtersDefaulted, forceDefaults } = filterStore;
 
-  const accessResolved = !isAuthenticated || accessSource !== 'none';
+  const accessResolved = true;
 
   const publicReady = authInitialized && (filtersReady || filtersDefaulted);
-  const accessThreadResolved = accessStatus !== 'pending';
+  const accessThreadResolved = true;
   const authenticatedReady = publicReady && accessThreadResolved;
 
   const appReady = authenticatedReady;
-  const usingCachedAccess = accessSource === 'cache' && isAuthenticated;
+  const usingCachedAccess = false;
 
   const bootStartRef = useRef(Date.now());
   const hasLoggedWarningRef = useRef(false);
@@ -93,8 +88,6 @@ export function AppReadyProvider({ children }) {
     const elapsed = Date.now() - bootStartRef.current;
     const blockedBy = [];
     if (!authInitialized) blockedBy.push('auth');
-    if (!accessThreadResolved) blockedBy.push('access_thread');
-    if (!accessResolved) blockedBy.push('access_unknown');
     if (!filtersReady) blockedBy.push('filters');
 
     return {
@@ -259,9 +252,7 @@ export function AppReadyProvider({ children }) {
       ? 'stuck'
       : isBootSlow
         ? 'slow'
-        : accessStatus === 'error'
-          ? 'error'
-          : 'booting';
+        : 'booting';
 
   const value = useMemo(() => ({
     publicReady,

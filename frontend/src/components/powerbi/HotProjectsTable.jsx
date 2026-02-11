@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { useAppQuery } from '../../hooks';
 import { getHotProjects } from '../../api/client';
 import { BlurredProject, BlurredCurrency } from '../BlurredCell';
-import { useAccess } from '../../context/AccessContext';
 import { SuppressedValue } from '../SuppressedValue';
 import { getRegionBadgeClass } from '../../constants';
 import { assertKnownVersion } from '../../adapters';
@@ -40,7 +39,6 @@ export function HotProjectsTable({
   onDataLoad = null, // Callback with data count after loading
   excludeSoldOut = false, // When true, exclude projects with 0 unsold units
 }) {
-  const { accessLevel: _accessLevel, accessSource: _accessSource } = useAccess();
   const isAccessRestricted = false;
   const [sortConfig, setSortConfig] = useState({
     column: 'first_new_sale',  // Default: sort by latest launch date

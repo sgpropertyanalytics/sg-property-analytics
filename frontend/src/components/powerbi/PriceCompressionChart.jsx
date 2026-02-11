@@ -10,7 +10,6 @@ import { getAggregate } from '../../api/client';
 // Phase 3.2: Migrated from usePowerBIFilters to useZustandFilters
 import { useZustandFilters } from '../../stores';
 import { TIME_GROUP_BY } from '../../context/PowerBIFilter';
-import { useAccess } from '../../context/AccessContext';
 import {
   PreviewChartOverlay,
   DataCard,
@@ -77,7 +76,6 @@ function PriceCompressionChartBase({ height = 380, saleType = null, sharedData =
   const [debouncedBedroom] = useDebounce(bedroom, 300);
 
   // district excluded - shows all regions for comparison
-  const { accessLevel: _accessLevel, accessSource: _accessSource } = useAccess();
   const isAccessRestricted = false;
 
   // UI state (not data state - that comes from useAbortableQuery)

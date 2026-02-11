@@ -19,7 +19,6 @@ import {
   StatusCount,
   LegendLine,
 } from '../ui';
-import { useAccess } from '../../context/AccessContext';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS, CHART_TOOLTIP } from '../../constants/chartOptions';
 import { CHART_COLORS } from '../../constants/colors';
 // SaleType imports removed - Market Core is Resale-only
@@ -59,7 +58,6 @@ function TimeTrendChartBase({ height = 380, saleType = null, staggerIndex = 0, v
   const timeframe = filters.timeFilter?.type === 'preset' ? filters.timeFilter.value : 'Y1';
   const districts = filters.districts?.join(',') || '';
   // bedroom filtered client-side; districts passed to API for server-side filtering
-  const { accessLevel: _accessLevel, accessSource: _accessSource } = useAccess();
 
   const chartRef = useRef(null);
 

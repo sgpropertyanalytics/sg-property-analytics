@@ -2023,7 +2023,7 @@ export default function LandingV3() {
                 <div className="px-4 py-4 border-t border-black/05">
                   <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">Notes</div>
                   <div className="mt-2 text-sm leading-relaxed text-black/60">
-                    Preview signals are illustrative. Authenticate to unlock full district/project drilldowns, export, and
+                    Preview signals are illustrative. Sign in to access district/project drilldowns, export, and
                     full time windows.
                   </div>
                 </div>
@@ -2042,7 +2042,7 @@ export default function LandingV3() {
                       <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">ACCESS</div>
                       <div className="mt-2 text-base font-bold tracking-tight text-black">Terminal clearance required</div>
                       <div className="mt-2 text-sm leading-relaxed text-black/60">
-                        Login to unlock market overview, district heatmaps, exit risk, and valuation tools.
+                        Sign in to access market overview, district heatmaps, exit risk, and valuation tools.
                       </div>
                     </div>
                     <div className="border border-black/10 p-2">

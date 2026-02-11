@@ -3,7 +3,6 @@ import { useInView } from 'react-intersection-observer';
 // Phase 2: Using TanStack Query via useAppQuery wrapper
 import { useAppQuery } from '../../hooks';
 import { getGLSAll } from '../../api/client';
-import { useAccess } from '../../context/AccessContext';
 import { getRegionBadgeClass } from '../../constants';
 import { assertKnownVersion } from '../../adapters';
 import { GlsAllField, getGlsAllField } from '../../schemas/apiContract';
@@ -27,7 +26,6 @@ import { FrostOverlay } from '../common/loading';
  * - FACT (awarded): Capital committed, confirmed supply
  */
 export function GLSDataTable({ height = 400 }) {
-  const { accessLevel: _accessLevel, accessSource: _accessSource } = useAccess();
   const isAccessRestricted = false;
   const [filter, setFilter] = useState('all'); // 'all', 'launched', 'awarded'
   const [segmentFilter, setSegmentFilter] = useState(''); // '', 'CCR', 'RCR', 'OCR'
