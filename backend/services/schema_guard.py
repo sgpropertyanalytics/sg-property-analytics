@@ -11,8 +11,9 @@ from models.database import db
 
 
 REQUIRED_USER_ACCESS_COLUMNS = [
-    "access_override",
-    "override_until",
+    "access_override_enabled",
+    "access_override_until",
+    "access_tier",
 ]
 
 
@@ -36,16 +37,18 @@ def check_user_access_columns() -> Dict[str, Optional[List[str]]]:
                   AND column_name = ANY(:columns)
                 """
             ),
-            {"columns": REQUIRED_USER_ACCESS_COLUMNS + ["access_source"]},
+            {"columns": REQUIRED_USER_ACCESS_COLUMNS + ["access_source", "billing_customer_ref"]},
         )
         existing = {row[0] for row in result.fetchall()}
         missing = [column for column in REQUIRED_USER_ACCESS_COLUMNS if column not in existing]
         if "access_source" not in existing:
             missing.append("access_source")
+        if "billing_customer_ref" not in existing:
+            missing.append("billing_customer_ref")
         return {"missing": missing, "error": None}
     except Exception as exc:  # pragma: no cover - defensive guardrail
         return {
-            "missing": REQUIRED_USER_ACCESS_COLUMNS + ["access_source"],
+            "missing": REQUIRED_USER_ACCESS_COLUMNS + ["access_source", "billing_customer_ref"],
             "error": str(exc),
         }
 
