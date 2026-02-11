@@ -9,6 +9,7 @@ from flask import Blueprint, jsonify, current_app
 import time
 import os
 from models.database import db
+from models.user import User
 from api.contracts import api_contract
 
 auth_bp = Blueprint('auth', __name__)
@@ -200,7 +201,14 @@ def delete_account():
         if not user:
             return jsonify({"error": "Authorization required"}), 401
 
-        # Delete user from database
+        # Delete user only if a persisted DB row exists.
+        # During auth fallback mode, user may be a token principal.
+        if not isinstance(user, User):
+            return jsonify({
+                "error": "Account deletion temporarily unavailable. Please contact support.",
+                "code": "ACCOUNT_DELETE_UNAVAILABLE",
+            }), 503
+
         db.session.delete(user)
         db.session.commit()
         print(f"User account deleted: {user.id}")

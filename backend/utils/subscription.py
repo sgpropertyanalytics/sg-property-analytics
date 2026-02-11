@@ -9,6 +9,34 @@ from models.user import User
 from models.database import db
 
 
+class FirebasePrincipal:
+    """
+    Lightweight authenticated principal derived from a verified Firebase token.
+
+    Used when ORM user sync is unavailable (for example, schema drift during rollout).
+    Keeps authenticated request flow working without coupling runtime auth to DB writes.
+    """
+    def __init__(self, firebase_uid, email=None, display_name=None, avatar_url=None):
+        self.id = f"firebase:{firebase_uid}"
+        self.firebase_uid = firebase_uid
+        self.email = email
+        self.display_name = display_name
+        self.avatar_url = avatar_url
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "email": self.email,
+            "display_name": self.display_name,
+            "avatar_url": self.avatar_url,
+            "accessLevel": "authenticated",
+            "has_access": True,
+            "accessSource": "firebase_token",
+            "access_expires_at": None,
+            "created_at": None,
+        }
+
+
 def get_user_from_firebase_token():
     """
     Extract and verify user from Authorization: Bearer <firebase-id-token> header.
@@ -85,13 +113,18 @@ def get_user_from_firebase_token():
 
         return user
     except Exception:
-        # Fail safe: auth verification succeeded, but DB user sync failed.
-        # Return None so caller can degrade gracefully instead of returning 500.
+        # Fail-safe principal: token is valid even if user table sync fails.
+        # This prevents authenticated analytics endpoints from returning 500.
         try:
             db.session.rollback()
         except Exception:
             pass
-        return None
+        return FirebasePrincipal(
+            firebase_uid=firebase_uid,
+            email=(email.strip().lower() if email else None),
+            display_name=display_name,
+            avatar_url=avatar_url,
+        )
 
 
 def get_user_from_request():
