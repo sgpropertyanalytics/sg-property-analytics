@@ -19,8 +19,8 @@ def test_admin_override_sets_admin_source_and_expiry():
     future = now + timedelta(days=3)
     user = User(
         email='test@example.com',
-        access_override=True,
-        override_until=future,
+        access_override_enabled=True,
+        access_override_until=future,
         access_source='admin_override',
     )
 

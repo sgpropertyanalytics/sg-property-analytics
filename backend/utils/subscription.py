@@ -9,19 +9,32 @@ from models.user import User
 from models.database import db
 
 
-def _has_bearer_header():
+class FirebasePrincipal:
     """
-    Return True when request contains a non-empty Bearer token header.
+    Lightweight authenticated principal derived from a verified Firebase token.
 
-    This is a resilience fallback for read endpoints when Firebase Admin
-    verification is temporarily unavailable. It keeps signed-in sessions
-    usable instead of failing closed during auth service hiccups.
+    Used when ORM user sync is unavailable (for example, schema drift during rollout).
+    Keeps authenticated request flow working without coupling runtime auth to DB writes.
     """
-    auth_header = request.headers.get('Authorization') or ''
-    if not auth_header.startswith('Bearer '):
-        return False
-    token = auth_header.split(' ', 1)[1].strip()
-    return bool(token)
+    def __init__(self, firebase_uid, email=None, display_name=None, avatar_url=None):
+        self.id = f"firebase:{firebase_uid}"
+        self.firebase_uid = firebase_uid
+        self.email = email
+        self.display_name = display_name
+        self.avatar_url = avatar_url
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "email": self.email,
+            "display_name": self.display_name,
+            "avatar_url": self.avatar_url,
+            "accessLevel": "authenticated",
+            "has_access": True,
+            "accessSource": "firebase_token",
+            "access_expires_at": None,
+            "created_at": None,
+        }
 
 
 def get_user_from_firebase_token():
@@ -100,8 +113,18 @@ def get_user_from_firebase_token():
 
         return user
     except Exception:
-        db.session.rollback()
-        return None
+        # Fail-safe principal: token is valid even if user table sync fails.
+        # This prevents authenticated analytics endpoints from returning 500.
+        try:
+            db.session.rollback()
+        except Exception:
+            pass
+        return FirebasePrincipal(
+            firebase_uid=firebase_uid,
+            email=(email.strip().lower() if email else None),
+            display_name=display_name,
+            avatar_url=avatar_url,
+        )
 
 
 def get_user_from_request():
@@ -119,9 +142,10 @@ def get_user_from_request():
 def has_authenticated_access():
     """Return True when the current request is from an authenticated user."""
     user = get_user_from_request()
-    if user:
-        return True
-    return _has_bearer_header()
+    if not user:
+        return False
+
+    return True
 
 
 def get_access_level():
@@ -133,9 +157,10 @@ def get_access_level():
         'anonymous' if not authenticated
     """
     user = get_user_from_request()
-    if user or _has_bearer_header():
-        return 'authenticated'
-    return 'anonymous'
+    if not user:
+        return 'anonymous'
+
+    return 'authenticated'
 
 
 def check_granularity_allowed(group_by, has_authenticated_access_override=None):
@@ -186,7 +211,7 @@ def require_authenticated_access(f):
 
         # Step 1: Check authentication first → 401 if not authenticated
         user = get_user_from_request()
-        if not user and not _has_bearer_header():
+        if not user:
             return jsonify({
                 "error": "Authentication required",
                 "code": "AUTH_REQUIRED"
@@ -205,7 +230,7 @@ def require_auth(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         user = get_user_from_request()
-        if not user and not _has_bearer_header():
+        if not user:
             from flask import jsonify
             return jsonify({
                 "error": "Authentication required",
