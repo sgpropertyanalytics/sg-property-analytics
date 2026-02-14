@@ -311,23 +311,41 @@ def get_metadata():
         ).count()
         active_count = total_count - outlier_count
 
-        # Get last successful ETL batch info (most reliable source for "new records")
+        # Get last successful ingestion info from either ETL batches or URA sync runs
         last_batch_date = None
         last_batch_rows = 0
+
+        # Check ura_sync_runs first (URA API is now primary source)
         try:
-            batch_result = db.session.execute(text("""
-                SELECT completed_at, rows_promoted
-                FROM etl_batches
-                WHERE status = 'completed'
-                ORDER BY completed_at DESC
+            sync_result = db.session.execute(text("""
+                SELECT finished_at,
+                       (totals->>'inserted_rows')::int + (totals->>'updated_rows')::int AS rows_changed
+                FROM ura_sync_runs
+                WHERE status = 'succeeded'
+                ORDER BY finished_at DESC
                 LIMIT 1
             """)).fetchone()
-            if batch_result:
-                last_batch_date = batch_result[0].isoformat() if batch_result[0] else None
-                last_batch_rows = batch_result[1] or 0
+            if sync_result:
+                last_batch_date = sync_result[0].isoformat() if sync_result[0] else None
+                last_batch_rows = sync_result[1] or 0
         except Exception:
-            # etl_batches table may not exist yet
             pass
+
+        # Fall back to etl_batches if no URA sync data
+        if not last_batch_date:
+            try:
+                batch_result = db.session.execute(text("""
+                    SELECT completed_at, rows_promoted
+                    FROM etl_batches
+                    WHERE status = 'completed'
+                    ORDER BY completed_at DESC
+                    LIMIT 1
+                """)).fetchone()
+                if batch_result:
+                    last_batch_date = batch_result[0].isoformat() if batch_result[0] else None
+                    last_batch_rows = batch_result[1] or 0
+            except Exception:
+                pass
 
         # Use ETL batch info if available, fall back to stored metadata
         records_added = last_batch_rows if last_batch_rows > 0 else stored_metadata.get('records_added_last_ingestion', 0)
