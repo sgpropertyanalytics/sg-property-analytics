@@ -44,7 +44,6 @@ export const normalizeExitQueueResponse = (data) => {
       hasTotalUnits: false,
       completeness: 'no_resales',
       sampleWindowMonths: 0,
-      warnings: [],
       unitSource: null,
       unitConfidence: null,
       unitNote: null,
