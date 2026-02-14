@@ -2,7 +2,6 @@ import React, { useMemo } from 'react';
 // Chart.js components registered globally in chartSetup.js
 import { Bar } from 'react-chartjs-2';
 import { BASE_CHART_OPTIONS, CHART_AXIS_DEFAULTS } from '../constants/chartOptions';
-import { REGION_BADGE_CLASSES } from '../constants';
 import { REGION, CANVAS, INK } from '../constants/colors';
 
 /**
@@ -29,14 +28,6 @@ const LOC_DATA = [
   { label: 'Commit 169', loc: 101062, commitNum: 169 },
   { label: 'Current', loc: 102340, commitNum: 170 },
 ];
-
-const [ocrBackgroundClass, ocrTextClass] = REGION_BADGE_CLASSES.OCR.split(' ');
-const [rcrBackgroundClass] = REGION_BADGE_CLASSES.RCR.split(' ');
-const [sandBackgroundClass] = REGION_BADGE_CLASSES.SAND.split(' ');
-const borderClass = ocrBackgroundClass.replace('bg-', 'border-');
-const navyTextClass = ocrTextClass;
-const blueTextClass = rcrBackgroundClass.replace('bg-', 'text-');
-const withOpacity = (baseClass, opacity) => `${baseClass}/${opacity}`;
 
 export function LocTrendChart({ height = 280 }) {
   const chartData = useMemo(() => ({
@@ -127,25 +118,25 @@ export function LocTrendChart({ height = 280 }) {
   const totalCommits = LOC_DATA[LOC_DATA.length - 1].commitNum;
 
   return (
-    <div className={`bg-white rounded-xl border ${withOpacity(borderClass, '30')} shadow-sm overflow-hidden`}>
-      <div className={`px-4 py-3 ${withOpacity(sandBackgroundClass, '30')} border-b ${withOpacity(borderClass, '20')}`}>
-        <h3 className={`text-base font-semibold ${navyTextClass}`}>Codebase Growth</h3>
-        <p className={`text-xs ${blueTextClass} mt-0.5`}>Lines of code over commit history</p>
+    <div className="bg-white rounded-xl border border-slate-500/30 shadow-sm overflow-hidden">
+      <div className="px-4 py-3 bg-brand-sand/30 border-b border-slate-500/20">
+        <h3 className="text-base font-semibold text-white">Codebase Growth</h3>
+        <p className="text-xs text-slate-700 mt-0.5">Lines of code over commit history</p>
       </div>
 
       {/* Stats row */}
-      <div className={`grid grid-cols-3 gap-2 px-4 py-3 border-b ${withOpacity(borderClass, '20')}`}>
+      <div className="grid grid-cols-3 gap-2 px-4 py-3 border-b border-slate-500/20">
         <div className="text-center">
-          <div className={`text-lg font-bold ${navyTextClass}`}>{currentLoc.toLocaleString()}</div>
-          <div className={`text-[10px] ${blueTextClass} uppercase tracking-wide`}>Current LOC</div>
+          <div className="text-lg font-bold text-white">{currentLoc.toLocaleString()}</div>
+          <div className="text-[10px] text-slate-700 uppercase tracking-wide">Current LOC</div>
         </div>
         <div className="text-center">
           <div className="text-lg font-bold text-emerald-600">+{growth}%</div>
-          <div className={`text-[10px] ${blueTextClass} uppercase tracking-wide`}>Growth</div>
+          <div className="text-[10px] text-slate-700 uppercase tracking-wide">Growth</div>
         </div>
         <div className="text-center">
-          <div className={`text-lg font-bold ${navyTextClass}`}>{totalCommits}</div>
-          <div className={`text-[10px] ${blueTextClass} uppercase tracking-wide`}>Commits</div>
+          <div className="text-lg font-bold text-white">{totalCommits}</div>
+          <div className="text-[10px] text-slate-700 uppercase tracking-wide">Commits</div>
         </div>
       </div>
 
