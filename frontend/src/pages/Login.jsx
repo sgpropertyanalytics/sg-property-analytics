@@ -39,6 +39,7 @@ function Login() {
     getErrorMessage
   } = useAuth();
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [domainError, setDomainError] = useState(false);
   const [cursorVisible, setCursorVisible] = useState(true);
 
   const from = location.state?.from?.pathname || '/market-overview';
@@ -66,7 +67,9 @@ function Login() {
         err?.code === 'auth/popup-closed-by-user' ||
         err?.code === 'auth/cancelled-popup-request';
 
-      if (err?.code === 'auth/timeout') {
+      if (err?.code === 'auth/unauthorized-domain') {
+        setDomainError(true);
+      } else if (err?.code === 'auth/timeout') {
         toast.error('Sign-in is taking too long. Please try again.');
       } else if (isCancelled && isAuthenticated) {
         toast.info('Sign-in cancelled — staying on your current session.');
@@ -160,6 +163,21 @@ function Login() {
               </div>
             </div>
           ) : null}
+
+          {/* Domain Authorization Error */}
+          {domainError && (
+            <div className="mb-6 border border-red-300 bg-red-50 p-4">
+              <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-red-600/70 mb-2">
+                Domain Not Authorized
+              </div>
+              <p className="font-mono text-xs text-red-800 leading-relaxed">
+                <strong>{window.location.hostname}</strong> is not registered as an authorized domain in Firebase.
+              </p>
+              <p className="font-mono text-[10px] text-red-600/80 mt-2 leading-relaxed">
+                Fix: Firebase Console &rarr; Authentication &rarr; Settings &rarr; Authorized domains &rarr; Add this domain.
+              </p>
+            </div>
+          )}
 
           {/* Google Sign In Button */}
           {isConfigured ? (

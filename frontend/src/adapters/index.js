@@ -30,9 +30,6 @@ export {
   calculateCompressionScore,
   calculateHistoricalBaseline,
   calculateAverageSpreads,
-  detectMarketSignals,
-  calculateSpreadPercentiles,
-  detectInversionZones,
   // Distribution / histogram transformations
   transformDistributionSeries,
   formatPrice,
@@ -46,10 +43,8 @@ export {
   transformTransactionsList,
   // Observability
   logFetchDebug,
-  logTransformError,
   // Beads Chart
   transformBeadsChartSeries,
-  filterBedroomDatasets,
   // Z-Score Oscillator
   transformOscillatorSeries,
   calculateZScoreStats,

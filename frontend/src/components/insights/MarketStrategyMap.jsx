@@ -13,6 +13,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion';
 import Map, { Source, Layer, Marker } from 'react-map-gl/maplibre';
 import { BarChart3, DollarSign } from 'lucide-react';
+import { formatPsf } from '../../adapters/aggregate';
 import { HelpTooltip } from '../ui/HelpTooltip';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import apiClient from '../../api/client';
@@ -103,11 +104,6 @@ function polylabel(polygon) {
 
   sumArea *= 3;
   return { lng: sumX / sumArea, lat: sumY / sumArea };
-}
-
-function formatPsf(value) {
-  if (!value) return '-';
-  return `$${Math.round(value).toLocaleString()}`;
 }
 
 function getRegionForDistrict(districtId) {

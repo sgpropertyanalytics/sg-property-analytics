@@ -641,9 +641,6 @@ export const getKpiSummaryV2 = (params = {}, options = {}) => {
   );
 };
 
-// Legacy alias (deprecated) - use getKpiSummaryV2 instead
-export const getKpiSummary = getKpiSummaryV2;
-
 /**
  * Get available filter options based on current data
  */

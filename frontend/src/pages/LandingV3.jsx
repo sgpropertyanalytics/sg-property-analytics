@@ -21,6 +21,7 @@ import {
   MOMENTUM_GRID_DATA,
   MAX_DISTRICT_PRICE,
 } from './landingPreviewData';
+import { formatPrice } from '../adapters/aggregate';
 
 const CANVAS = '#fafafa';
 const INK = '#000000';
@@ -1146,14 +1147,6 @@ function coordsToPath(coords) {
     const [x, y] = projectToSVG([lng, lat]);
     return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
   }).join(' ') + ' Z';
-}
-
-// Format price for display (e.g., $1.85M, $850K)
-function formatPrice(price) {
-  if (price >= 1_000_000) {
-    return `$${(price / 1_000_000).toFixed(2)}M`;
-  }
-  return `$${(price / 1_000).toFixed(0)}K`;
 }
 
 // Format bedroom count (e.g., 2BR, 3BR)

@@ -10,12 +10,13 @@ Fetches key economic indicators and updates AI context:
 All data from SingStat via Data.gov.sg API.
 """
 
-import json
 import logging
 import requests
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, List
+
+from utils.manifest import update_manifest
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +36,6 @@ DATASETS = {
 
 # File paths
 INDICATORS_FILE = Path(__file__).parent.parent.parent / "docs" / "ai-context" / "snapshot" / "economic-indicators.md"
-MANIFEST_FILE = Path(__file__).parent.parent.parent / "docs" / "ai-context" / "manifest.json"
 
 
 def fetch_dataset(dataset_id: str, limit: int = 50) -> Optional[Dict]:
@@ -537,56 +537,22 @@ def generate_indicators_markdown(
     return markdown
 
 
-def update_manifest():
-    """Update manifest.json with new timestamp and entry."""
-    try:
-        if MANIFEST_FILE.exists():
-            with open(MANIFEST_FILE, "r") as f:
-                manifest = json.load(f)
-
-            today = datetime.now().strftime("%Y-%m-%d")
-
-            # Add or update economic-indicators.md entry
-            if "snapshot/economic-indicators.md" not in manifest.get("files", {}):
-                manifest["files"]["snapshot/economic-indicators.md"] = {
-                    "updated_at": today,
-                    "last_verified_at": today,
-                    "source_urls": [
-                        "https://data.gov.sg/datasets/d_bdaff844e3ef89d39fceb962ff8f0791/view",
-                        "https://data.gov.sg/datasets/d_b0da22a41f952764376a2b7b5b0f2533/view",
-                        "https://data.gov.sg/datasets/d_a5ff719648a0e6d4b4c623ee383ab686/view",
-                        "https://data.gov.sg/datasets/d_14f63e595975691e7c24a27ae4c07c79/view"
-                    ],
-                    "description": "Key economic indicators: CPI, unemployment, GDP, HDB price index, income",
-                    "injection": "conditional",
-                    "injection_triggers": [
-                        "economy",
-                        "economic",
-                        "inflation",
-                        "CPI",
-                        "unemployment",
-                        "GDP",
-                        "HDB price",
-                        "market conditions",
-                        "macro",
-                        "income",
-                        "salary",
-                        "affordability",
-                        "TDSR"
-                    ],
-                    "notes": "Inject for macroeconomic context, market conditions, and affordability discussions."
-                }
-            else:
-                manifest["files"]["snapshot/economic-indicators.md"]["updated_at"] = today
-                manifest["files"]["snapshot/economic-indicators.md"]["last_verified_at"] = today
-
-            with open(MANIFEST_FILE, "w") as f:
-                json.dump(manifest, f, indent=2)
-                f.write("\n")
-
-            logger.info(f"Updated manifest.json timestamp to {today}")
-    except Exception as e:
-        logger.warning(f"Failed to update manifest: {e}")
+_ECONOMIC_INDICATORS_MANIFEST_ENTRY = {
+    "source_urls": [
+        "https://data.gov.sg/datasets/d_bdaff844e3ef89d39fceb962ff8f0791/view",
+        "https://data.gov.sg/datasets/d_b0da22a41f952764376a2b7b5b0f2533/view",
+        "https://data.gov.sg/datasets/d_a5ff719648a0e6d4b4c623ee383ab686/view",
+        "https://data.gov.sg/datasets/d_14f63e595975691e7c24a27ae4c07c79/view"
+    ],
+    "description": "Key economic indicators: CPI, unemployment, GDP, HDB price index, income",
+    "injection": "conditional",
+    "injection_triggers": [
+        "economy", "economic", "inflation", "CPI", "unemployment",
+        "GDP", "HDB price", "market conditions", "macro",
+        "income", "salary", "affordability", "TDSR"
+    ],
+    "notes": "Inject for macroeconomic context, market conditions, and affordability discussions."
+}
 
 
 def refresh_economic_indicators() -> bool:
@@ -628,7 +594,7 @@ def refresh_economic_indicators() -> bool:
             f.write(markdown)
         logger.info(f"Updated {INDICATORS_FILE}")
 
-        update_manifest()
+        update_manifest("snapshot/economic-indicators.md", _ECONOMIC_INDICATORS_MANIFEST_ENTRY)
         return True
 
     except Exception as e:

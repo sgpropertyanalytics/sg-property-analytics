@@ -111,8 +111,6 @@ export {
 export {
   DashboardField,
   getDashboardField,
-  DashboardMetaField,
-  getDashboardMetaField,
   normalizeSummaryPanel,
   normalizeTimeSeriesRow,
   normalizeLocationRow,
@@ -136,10 +134,8 @@ export {
 export {
   BudgetHeatmapField,
   BudgetHeatmapRowField,
-  BudgetHeatmapMetaField,
   getBudgetHeatmapField,
   getBudgetHeatmapRowField,
-  getBudgetHeatmapMetaField,
 } from './budgetHeatmapFields';
 
 // =============================================================================
@@ -148,9 +144,7 @@ export {
 
 export {
   FloorLiquidityField,
-  FloorLiquidityMetaField,
   getFloorLiquidityField,
-  getFloorLiquidityMetaField,
 } from './floorLiquidityFields';
 
 // =============================================================================

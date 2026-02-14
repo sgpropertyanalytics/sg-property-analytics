@@ -7,16 +7,16 @@ services:
     name: sg-property-analyzer
     env: python
     region: singapore
-    plan: starter
+    plan: standard  # Always-on (no cold starts). 2GB RAM, 2 workers.
     buildCommand: pip install -r backend/requirements.txt
     # Run migrations ONCE per deploy, before starting web server
     # Tracks applied migrations in _migrations table (idempotent)
     releaseCommand: cd backend && python -m scripts.run_migrations
-    # Gunicorn flags for 512MB Starter plan:
-    # --workers 1    : Single worker fits memory budget
-    # --threads 2    : Light concurrency without memory bloat
+    # Gunicorn flags for Standard plan (2GB RAM):
+    # --workers 2    : Parallel request handling
+    # --threads 2    : Light concurrency per worker
     # --timeout 90   : Under Render's ~100s router timeout to avoid 504s
-    startCommand: cd backend && gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 90
+    startCommand: cd backend && gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --threads 2 --timeout 90
     healthCheckPath: /api/health
     envVars:
       - key: PYTHON_VERSION
@@ -54,7 +54,7 @@ services:
       - key: URA_SYNC_ENABLED
         value: "true"
       - key: URA_SYNC_MODE
-        value: "shadow"  # Start in shadow mode for 3-7 days
+        value: "production"  # Promoted from shadow after threshold fix (82094d1)
       - key: URA_REVISION_WINDOW_MONTHS
         value: "3"
       - key: URA_CUTOFF_YEARS

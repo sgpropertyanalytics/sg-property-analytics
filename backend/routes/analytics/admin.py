@@ -347,9 +347,24 @@ def get_metadata():
             except Exception:
                 pass
 
-        # Use ETL batch info if available, fall back to stored metadata
+        # Ultimate fallback: latest transaction date in the database.
+        # This ensures "last_updated" always reflects the actual data freshness,
+        # even when sync runs are failing (e.g. threshold violations).
+        latest_txn_date = None
+        if not last_batch_date:
+            try:
+                txn_result = db.session.execute(text("""
+                    SELECT MAX(transaction_date)
+                    FROM transactions_primary
+                """)).scalar()
+                if txn_result:
+                    latest_txn_date = txn_result.isoformat()
+            except Exception:
+                pass
+
+        # Use ETL batch info if available, fall back to stored metadata, then transaction date
         records_added = last_batch_rows if last_batch_rows > 0 else stored_metadata.get('records_added_last_ingestion', 0)
-        last_updated = last_batch_date or stored_metadata.get('last_updated')
+        last_updated = last_batch_date or stored_metadata.get('last_updated') or latest_txn_date
 
         return jsonify({
             "last_updated": last_updated,

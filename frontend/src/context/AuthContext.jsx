@@ -158,7 +158,7 @@ export function AuthProvider({ children }) {
       case 'auth/network-request-failed':
         return 'Network error. Please check your connection.';
       case 'auth/unauthorized-domain':
-        return 'This domain is not authorized for sign-in.';
+        return `This domain is not authorized for sign-in. Add "${window.location.hostname}" to Firebase Console → Authentication → Settings → Authorized domains.`;
       case 'auth/invalid-api-key':
         return 'Authentication is not configured. Please contact the administrator.';
       default:
