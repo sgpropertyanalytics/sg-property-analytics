@@ -92,14 +92,6 @@ def test_smoke_dashboard(client):
 
 
 @pytest.mark.smoke
-def test_smoke_auth_subscription_requires_auth(client):
-    """Subscription endpoint - should require auth (401 without token)."""
-    r = client.get("/api/auth/subscription")
-    # 401 is expected without auth token - endpoint EXISTS
-    assert r.status_code == 401
-
-
-@pytest.mark.smoke
 def test_smoke_projects_names(client):
     """Project names - used by Deal Checker dropdown."""
     r = client.get("/api/projects/names")

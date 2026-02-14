@@ -9,34 +9,6 @@ from models.user import User
 from models.database import db
 
 
-class FirebasePrincipal:
-    """
-    Lightweight authenticated principal derived from a verified Firebase token.
-
-    Used when ORM user sync is unavailable (for example, schema drift during rollout).
-    Keeps authenticated request flow working without coupling runtime auth to DB writes.
-    """
-    def __init__(self, firebase_uid, email=None, display_name=None, avatar_url=None):
-        self.id = f"firebase:{firebase_uid}"
-        self.firebase_uid = firebase_uid
-        self.email = email
-        self.display_name = display_name
-        self.avatar_url = avatar_url
-
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "email": self.email,
-            "display_name": self.display_name,
-            "avatar_url": self.avatar_url,
-            "accessLevel": "authenticated",
-            "has_access": True,
-            "accessSource": "firebase_token",
-            "access_expires_at": None,
-            "created_at": None,
-        }
-
-
 def get_user_from_firebase_token():
     """
     Extract and verify user from Authorization: Bearer <firebase-id-token> header.
@@ -113,18 +85,8 @@ def get_user_from_firebase_token():
 
         return user
     except Exception:
-        # Fail-safe principal: token is valid even if user table sync fails.
-        # This prevents authenticated analytics endpoints from returning 500.
-        try:
-            db.session.rollback()
-        except Exception:
-            pass
-        return FirebasePrincipal(
-            firebase_uid=firebase_uid,
-            email=(email.strip().lower() if email else None),
-            display_name=display_name,
-            avatar_url=avatar_url,
-        )
+        db.session.rollback()
+        return None
 
 
 def get_user_from_request():
@@ -219,69 +181,6 @@ def require_authenticated_access(f):
 
         return f(*args, **kwargs)
     return decorated_function
-
-
-def require_auth(f):
-    """
-    Decorator to require authentication.
-
-    Returns 401 if user is not authenticated.
-    """
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        user = get_user_from_request()
-        if not user:
-            from flask import jsonify
-            return jsonify({
-                "error": "Authentication required",
-                "code": "AUTH_REQUIRED"
-            }), 401
-        return f(*args, **kwargs)
-    return decorated_function
-
-
-def serialize_transaction(transaction, has_authenticated_access_override=None):
-    """
-    Serialize a transaction based on authenticated access.
-
-    Args:
-        transaction: Transaction model instance
-        has_authenticated_access_override: Override access check (useful when checked once for batch)
-
-    Returns:
-        dict - full data for authenticated users, masked data for anonymous users
-    """
-    if has_authenticated_access_override is None:
-        has_authenticated_access_override = has_authenticated_access()
-
-    if has_authenticated_access_override:
-        return transaction.to_dict()
-    else:
-        return transaction.to_teaser_dict()
-
-
-def serialize_transactions(transactions, has_authenticated_access_override=None):
-    """
-    Serialize a list of transactions based on authenticated access.
-
-    Optimized for batch serialization - checks access once.
-
-    Args:
-        transactions: List of Transaction model instances
-        has_authenticated_access_override: Override access check
-
-    Returns:
-        list of dicts - full data for authenticated users, masked data for anonymous users
-    """
-    from api.contracts.contract_schema import serialize_transaction, serialize_transaction_teaser
-
-    if has_authenticated_access_override is None:
-        has_authenticated_access_override = has_authenticated_access()
-
-    if has_authenticated_access_override:
-        return [serialize_transaction(t) for t in transactions]
-    else:
-        return [serialize_transaction_teaser(t) for t in transactions]
 
 
 # ============================================================================
