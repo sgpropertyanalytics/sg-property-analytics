@@ -5,12 +5,13 @@ Fetches Singapore population statistics and updates the AI context file.
 Data source: SingStat via Data.gov.sg API
 """
 
-import json
 import logging
 import requests
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
+
+from utils.manifest import update_manifest
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +21,6 @@ POPULATION_DATASET_ID = "d_3d227e5d9fdec73f3bcadce671c333a6"
 
 # AI context file path
 DEMOGRAPHICS_FILE = Path(__file__).parent.parent.parent / "docs" / "ai-context" / "snapshot" / "demographics.md"
-MANIFEST_FILE = Path(__file__).parent.parent.parent / "docs" / "ai-context" / "manifest.json"
 
 
 def fetch_population_data() -> Optional[dict]:
@@ -241,27 +241,6 @@ def generate_demographics_markdown(data: dict) -> str:
     return markdown
 
 
-def update_manifest():
-    """Update manifest.json with new timestamp."""
-    try:
-        if MANIFEST_FILE.exists():
-            with open(MANIFEST_FILE, "r") as f:
-                manifest = json.load(f)
-
-            today = datetime.now().strftime("%Y-%m-%d")
-            if "snapshot/demographics.md" in manifest.get("files", {}):
-                manifest["files"]["snapshot/demographics.md"]["updated_at"] = today
-                manifest["files"]["snapshot/demographics.md"]["last_verified_at"] = today
-
-            with open(MANIFEST_FILE, "w") as f:
-                json.dump(manifest, f, indent=2)
-                f.write("\n")
-
-            logger.info(f"Updated manifest.json timestamp to {today}")
-    except Exception as e:
-        logger.warning(f"Failed to update manifest: {e}")
-
-
 def refresh_demographics() -> bool:
     """
     Main function to refresh demographics data.
@@ -285,7 +264,7 @@ def refresh_demographics() -> bool:
             f.write(markdown)
         logger.info(f"Updated {DEMOGRAPHICS_FILE}")
 
-        update_manifest()
+        update_manifest("snapshot/demographics.md")
         return True
 
     except Exception as e:

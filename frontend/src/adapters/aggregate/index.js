@@ -50,9 +50,6 @@ import {
   calculateCompressionScore,
   calculateHistoricalBaseline,
   calculateAverageSpreads,
-  detectMarketSignals,
-  calculateSpreadPercentiles,
-  detectInversionZones,
 } from './compression';
 
 import {
@@ -69,11 +66,10 @@ import {
 
 import { transformTransactionsList } from './transactions';
 
-import { logFetchDebug, logTransformError } from './observability';
+import { logFetchDebug } from './observability';
 
 import {
   transformBeadsChartSeries,
-  filterBedroomDatasets,
 } from './beadsChart';
 
 import {
@@ -134,9 +130,6 @@ export {
   calculateCompressionScore,
   calculateHistoricalBaseline,
   calculateAverageSpreads,
-  detectMarketSignals,
-  calculateSpreadPercentiles,
-  detectInversionZones,
   // Distribution / Histogram
   formatPrice,
   formatPriceRange,
@@ -149,10 +142,8 @@ export {
   transformTransactionsList,
   // Observability
   logFetchDebug,
-  logTransformError,
   // Beads Chart
   transformBeadsChartSeries,
-  filterBedroomDatasets,
   // Z-Score Oscillator
   transformOscillatorSeries,
   calculateZScoreStats,
@@ -203,19 +194,14 @@ export default {
   // Compression analysis
   calculateCompressionScore,
   calculateAverageSpreads,
-  detectMarketSignals,
-  calculateSpreadPercentiles,
-  detectInversionZones,
   // Distribution helpers
   formatPrice,
   formatPriceRange,
   findBinIndex,
   // Observability
   logFetchDebug,
-  logTransformError,
   // Beads Chart
   transformBeadsChartSeries,
-  filterBedroomDatasets,
   // Z-Score Oscillator
   transformOscillatorSeries,
   calculateZScoreStats,

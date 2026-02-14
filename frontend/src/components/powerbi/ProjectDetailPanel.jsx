@@ -16,6 +16,7 @@ import {
 import { SuppressedValue } from '../SuppressedValue';
 import { CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 import { CHART_COLORS } from '../../constants/colors';
+import { formatPriceShort } from '../../adapters/aggregate';
 import { ErrorState } from '../common/ErrorState';
 import { getQueryErrorMessage } from '../common/QueryState';
 
@@ -320,19 +321,13 @@ function ProjectDetailPanelInner({
     ? Math.round(priceData.reduce((sum, d) => sum + (getAggField(d, AggField.MEDIAN_PSF) || 0) * (getAggField(d, AggField.COUNT) || 0), 0) / totalTransactions)
     : 0;
 
-  // Helper to format price labels (e.g., $1.2M, $800K)
-  const formatPriceLabel = (value) => {
-    if (value >= 1000000) {
-      return `$${(value / 1000000).toFixed(1)}M`;
-    }
-    return `$${(value / 1000).toFixed(0)}K`;
-  };
+  // formatPriceShort imported from adapters/aggregate
 
   // Process histogram data for chart
   const histogramBuckets = histogramData.map(h => ({
     start: h.bin_start,
     end: h.bin_end,
-    label: `${formatPriceLabel(h.bin_start)}-${formatPriceLabel(h.bin_end)}`,
+    label: `${formatPriceShort(h.bin_start)}-${formatPriceShort(h.bin_end)}`,
     count: h.count
   }));
 
@@ -373,7 +368,7 @@ function ProjectDetailPanelInner({
         callbacks: {
           title: (items) => {
             const bucket = histogramBuckets[items[0].dataIndex];
-            return `Price: ${formatPriceLabel(bucket.start)} - ${formatPriceLabel(bucket.end)}`;
+            return `Price: ${formatPriceShort(bucket.start)} - ${formatPriceShort(bucket.end)}`;
           },
           label: (context) => {
             const count = context.parsed.y;
@@ -622,7 +617,7 @@ function ProjectDetailPanelInner({
                 </div>
                 {histogramBuckets.length > 0 && (
                   <p className="text-xs text-brand-blue mb-3">
-                    {formatPriceLabel(histogramMinPrice)} - {formatPriceLabel(histogramMaxPrice)} ({histogramBuckets.length} bins @ {formatPriceLabel(histogramBucketSize)})
+                    {formatPriceShort(histogramMinPrice)} - {formatPriceShort(histogramMaxPrice)} ({histogramBuckets.length} bins @ {formatPriceShort(histogramBucketSize)})
                   </p>
                 )}
                 <div style={{ height: 200 }}>
