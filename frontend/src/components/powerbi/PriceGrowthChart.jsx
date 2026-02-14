@@ -360,7 +360,7 @@ function PriceGrowthChartBase({
 
       {/* Chart */}
       <ChartSlot>
-        <Line ref={chartRef} data={chartData} options={options} />
+        {chartData && <Line ref={chartRef} data={chartData} options={options} />}
       </ChartSlot>
 
       {/* Footer */}

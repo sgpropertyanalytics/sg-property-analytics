@@ -8,7 +8,6 @@ Fallback: housingloansg.com
 SORA replaced SIBOR as of 1 Jan 2025 for all home loans.
 """
 
-import json
 import logging
 import re
 import requests
@@ -17,11 +16,12 @@ from pathlib import Path
 from typing import Optional, Dict
 from bs4 import BeautifulSoup
 
+from utils.manifest import update_manifest
+
 logger = logging.getLogger(__name__)
 
 # File paths
 INTEREST_RATES_FILE = Path(__file__).parent.parent.parent / "docs" / "ai-context" / "snapshot" / "interest-rates.md"
-MANIFEST_FILE = Path(__file__).parent.parent.parent / "docs" / "ai-context" / "manifest.json"
 
 # URLs
 HOUSINGLOAN_SG_URL = "https://housingloansg.com/hl/charts/sibor-sor-daily-chart"
@@ -191,47 +191,19 @@ For a $1.5M property with 75% LTV ($1.125M loan), 30-year tenure:
     return markdown
 
 
-def update_manifest():
-    """Update manifest.json with new timestamp."""
-    try:
-        if MANIFEST_FILE.exists():
-            with open(MANIFEST_FILE, "r") as f:
-                manifest = json.load(f)
-
-            today = datetime.now().strftime("%Y-%m-%d")
-
-            # Add interest-rates.md entry if not exists
-            if "snapshot/interest-rates.md" not in manifest.get("files", {}):
-                manifest["files"]["snapshot/interest-rates.md"] = {
-                    "updated_at": today,
-                    "last_verified_at": today,
-                    "source_urls": [
-                        "https://www.mas.gov.sg/monetary-policy/sora",
-                        "https://housingloansg.com/hl/charts/sibor-sor-daily-chart"
-                    ],
-                    "description": "Current SORA interest rates and mortgage context",
-                    "injection": "conditional",
-                    "injection_triggers": [
-                        "interest rate",
-                        "SORA",
-                        "mortgage",
-                        "loan",
-                        "affordability",
-                        "financing"
-                    ],
-                    "notes": "Inject for affordability and financing discussions."
-                }
-            else:
-                manifest["files"]["snapshot/interest-rates.md"]["updated_at"] = today
-                manifest["files"]["snapshot/interest-rates.md"]["last_verified_at"] = today
-
-            with open(MANIFEST_FILE, "w") as f:
-                json.dump(manifest, f, indent=2)
-                f.write("\n")
-
-            logger.info(f"Updated manifest.json timestamp to {today}")
-    except Exception as e:
-        logger.warning(f"Failed to update manifest: {e}")
+_SORA_MANIFEST_ENTRY = {
+    "source_urls": [
+        "https://www.mas.gov.sg/monetary-policy/sora",
+        "https://housingloansg.com/hl/charts/sibor-sor-daily-chart"
+    ],
+    "description": "Current SORA interest rates and mortgage context",
+    "injection": "conditional",
+    "injection_triggers": [
+        "interest rate", "SORA", "mortgage", "loan",
+        "affordability", "financing"
+    ],
+    "notes": "Inject for affordability and financing discussions."
+}
 
 
 def refresh_sora_rates() -> bool:
@@ -257,7 +229,7 @@ def refresh_sora_rates() -> bool:
             f.write(markdown)
         logger.info(f"Updated {INTEREST_RATES_FILE}")
 
-        update_manifest()
+        update_manifest("snapshot/interest-rates.md", _SORA_MANIFEST_ENTRY)
         return True
 
     except Exception as e:

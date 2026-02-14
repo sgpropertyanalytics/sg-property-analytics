@@ -143,7 +143,9 @@ class URAShadowComparator:
     #   CSV and API sources (e.g. district normalization, sale_type mapping).
     # - Row count diff is higher because overlap window may not perfectly align.
     # - PSF diffs arise from source-specific outlier handling differences.
-    ROW_COUNT_DIFF_THRESHOLD_PCT = 10.0
+    # Raised to 25.0 after URA API became primary source: API consistently
+    # returns ~20% more rows than CSV baseline due to more complete coverage.
+    ROW_COUNT_DIFF_THRESHOLD_PCT = 25.0
     PSF_MEDIAN_DIFF_THRESHOLD_PCT = 5.0
     COVERAGE_THRESHOLD_PCT = 75.0
 

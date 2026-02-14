@@ -239,11 +239,18 @@ def create_app():
 
         return response
 
-    # SECURITY: Prevent caching of auth-sensitive API responses
-    # This prevents authenticated response variants from leaking across sessions.
+    # HTTP Cache-Control for API responses.
+    # Three tiers: auth-sensitive (no-cache), static (long TTL), dynamic (short TTL).
     @app.after_request
     def add_cache_control(response):
-        # Endpoints that vary by authentication/access context.
+        path = request.path
+
+        # Skip non-API paths and non-successful responses
+        if not path.startswith('/api/') or response.status_code >= 400:
+            return response
+
+        # Tier 1: Auth-sensitive — prevent caching entirely.
+        # These endpoints vary by user authentication/access context.
         auth_sensitive_paths = [
             '/api/transactions',
             '/api/dashboard',
@@ -252,19 +259,42 @@ def create_app():
             '/api/insights/',
             '/api/deal-checker/',
             '/api/comparable_value_analysis',
+            '/api/auth/',
         ]
 
-        # Check if current path is auth-sensitive
-        path = request.path
         is_auth_sensitive = any(path.startswith(p) for p in auth_sensitive_paths)
 
         if is_auth_sensitive:
-            # Prevent any caching of auth-sensitive responses
             response.headers['Cache-Control'] = 'private, no-store, no-cache, must-revalidate'
             response.headers['Pragma'] = 'no-cache'
             response.headers['Expires'] = '0'
-            # Vary header ensures different responses for different auth states.
             response.headers['Vary'] = 'Authorization'
+            return response
+
+        # Tier 2: Static/semi-static — rarely changes, cache aggressively.
+        # District lists, filter options, metadata change only on data ingestion.
+        static_paths = [
+            '/api/districts',
+            '/api/filter-options',
+            '/api/metadata',
+            '/api/gls/all',
+            '/api/upcoming-launches/all',
+            '/api/projects/locations',
+        ]
+
+        is_static = any(path == p or path.startswith(p + '/') for p in static_paths)
+
+        if is_static:
+            # 5 min client cache, 10 min CDN/proxy cache
+            response.headers['Cache-Control'] = 'public, max-age=300, s-maxage=600'
+            response.headers['Vary'] = 'Accept-Encoding'
+            return response
+
+        # Tier 3: Dynamic analytics — short cache for repeated queries.
+        # Aggregate, KPI, chart endpoints benefit from brief caching
+        # since underlying data only changes on daily sync.
+        response.headers['Cache-Control'] = 'public, max-age=60, s-maxage=120'
+        response.headers['Vary'] = 'Accept-Encoding'
 
         return response
 

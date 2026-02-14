@@ -229,12 +229,6 @@ class TestEndpointSmoke:
 
         monkeypatch.setattr(auth_module, "User", MockUser)
 
-        if "subscription" in url:
-            monkeypatch.setattr(
-                "services.schema_guard.check_user_entitlement_columns",
-                lambda: {"missing": [], "error": None}
-            )
-
         if method == "GET":
             response = client.get(url, headers=auth_headers, query_string=params)
         else:

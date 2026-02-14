@@ -7,16 +7,7 @@
  * - Within 2km: Broader area within 2km radius
  */
 import React from 'react';
-
-// Format price for display
-const formatPrice = (value) => {
-  if (value === null || value === undefined) return '-';
-  if (value >= 1000000) {
-    const millions = value / 1000000;
-    return `$${millions.toFixed(2)}M`;
-  }
-  return `$${(value / 1000).toFixed(0)}K`;
-};
+import { formatPrice } from '../../adapters/aggregate';
 
 // Get interpretation config for percentile
 const getInterpretationConfig = (interpretation) => {
