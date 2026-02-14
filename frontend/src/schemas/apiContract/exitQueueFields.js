@@ -32,5 +32,30 @@ export const ExitQueueField = {
 };
 
 export const normalizeExitQueueResponse = (data) => {
-  return data || null;
+  if (!data) return null;
+
+  // The 404 "no_resales" error response uses snake_case keys (data_quality)
+  // while the success response uses camelCase (dataQuality) from serialize_exit_queue_v2.
+  // Normalize both shapes into a consistent camelCase structure with safe defaults.
+  return {
+    projectName: data.projectName || data.project_name || null,
+    dataQuality: {
+      hasTopYear: false,
+      hasTotalUnits: false,
+      completeness: 'no_resales',
+      sampleWindowMonths: 0,
+      warnings: [],
+      unitSource: null,
+      unitConfidence: null,
+      unitNote: null,
+      // Overlay with actual data (success response = camelCase, 404 = snake_case)
+      ...(data.dataQuality || data.data_quality || {}),
+      // Ensure warnings is always an array (never null)
+      warnings: (data.dataQuality || data.data_quality || {}).warnings || [],
+    },
+    fundamentals: data.fundamentals || null,
+    resaleMetrics: data.resaleMetrics || data.resale_metrics || null,
+    riskAssessment: data.riskAssessment || data.risk_assessment || null,
+    gatingFlags: data.gatingFlags || data.gating_flags || null,
+  };
 };
