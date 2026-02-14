@@ -106,8 +106,6 @@ function polylabel(polygon) {
   return { lng: sumX / sumArea, lat: sumY / sumArea };
 }
 
-// formatPsf imported from adapters/aggregate
-
 function getRegionForDistrict(districtId) {
   if (CCR_DISTRICTS.includes(districtId)) return 'CCR';
   if (RCR_DISTRICTS.includes(districtId)) return 'RCR';

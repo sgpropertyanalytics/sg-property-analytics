@@ -1149,8 +1149,6 @@ function coordsToPath(coords) {
   }).join(' ') + ' Z';
 }
 
-// formatPrice imported from adapters/aggregate
-
 // Format bedroom count (e.g., 2BR, 3BR)
 function formatBedroom(bedroom) {
   if (bedroom === 5) return '5BR+';

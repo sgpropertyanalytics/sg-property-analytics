@@ -321,8 +321,6 @@ function ProjectDetailPanelInner({
     ? Math.round(priceData.reduce((sum, d) => sum + (getAggField(d, AggField.MEDIAN_PSF) || 0) * (getAggField(d, AggField.COUNT) || 0), 0) / totalTransactions)
     : 0;
 
-  // formatPriceShort imported from adapters/aggregate
-
   // Process histogram data for chart
   const histogramBuckets = histogramData.map(h => ({
     start: h.bin_start,
