@@ -105,22 +105,16 @@ function BeadsChartBase({
       const apiData = response.data || {};
       assertKnownVersion(apiData, '/api/dashboard');
 
-      // DEBUG: Log raw API data and transformed result
       const rawBeadsData = apiData.beads_chart;
-      console.warn('[BeadsChart] Raw API beads_chart data:', rawBeadsData);
-      console.warn('[BeadsChart] Sample row:', rawBeadsData?.[0]);
-
       const transformed = transformBeadsChartSeries(rawBeadsData);
-      console.warn('[BeadsChart] Transformed data:', {
-        datasetCount: transformed.datasets?.length,
-        datasets: transformed.datasets?.map(ds => ({
-          label: ds.label,
-          pointCount: ds.data?.length,
-          samplePoint: ds.data?.[0],
-        })),
-        stats: transformed.stats,
-        stringRanges: transformed.stringRanges,
-      });
+
+      if (import.meta.env.DEV) {
+        // eslint-disable-next-line no-console
+        console.warn('[BeadsChart] Transform diagnostics:', {
+          rawRows: rawBeadsData?.length || 0,
+          datasetCount: transformed.datasets?.length || 0,
+        });
+      }
 
       logFetchDebug('BeadsChart', {
         endpoint: '/api/dashboard?panels=beads_chart',

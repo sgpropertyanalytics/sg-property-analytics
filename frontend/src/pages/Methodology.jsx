@@ -107,6 +107,8 @@ function SectionCard({ title, children, id }) {
 }
 
 function DataTable({ headers, rows, className = '' }) {
+  const safeRows = Array.isArray(rows) ? rows : [];
+
   return (
     <>
       {/* Desktop: table view */}
@@ -125,25 +127,30 @@ function DataTable({ headers, rows, className = '' }) {
             </tr>
           </thead>
           <tbody>
-            {rows.map((row, i) => (
+            {safeRows.map((row, i) => {
+              const cells = Array.isArray(row) ? row : [];
+              return (
               <tr key={i} className="border-b border-brand-sky/20 last:border-0">
-                {row.map((cell, j) => (
+                {cells.map((cell, j) => (
                   <td key={j} className="px-3 py-2 text-brand-blue break-words">
                     {cell}
                   </td>
                 ))}
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>
 
       {/* Mobile: card view */}
       <div className={`sm:hidden space-y-2 ${className}`}>
-        {rows.map((row, i) => (
+        {safeRows.map((row, i) => {
+          const cells = Array.isArray(row) ? row : [];
+          return (
           <div key={i} className="p-3 bg-white rounded-lg border border-brand-sky/20">
-            {row.map((cell, j) => (
-              <div key={j} className={j < row.length - 1 ? 'mb-2' : ''}>
+            {cells.map((cell, j) => (
+              <div key={j} className={j < cells.length - 1 ? 'mb-2' : ''}>
                 <dt className="text-xs font-semibold text-brand-navy mb-0.5">
                   {headers[j]}
                 </dt>
@@ -151,7 +158,8 @@ function DataTable({ headers, rows, className = '' }) {
               </div>
             ))}
           </div>
-        ))}
+          );
+        })}
       </div>
     </>
   );

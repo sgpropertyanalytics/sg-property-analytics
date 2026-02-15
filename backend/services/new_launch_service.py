@@ -25,6 +25,7 @@ Usage:
 """
 from datetime import date
 from typing import Optional, List, Dict, Any
+from functools import lru_cache
 from sqlalchemy import text
 from models.database import db
 from db.sql import get_outlier_filter_sql
@@ -63,6 +64,12 @@ def _build_units_map() -> Dict[str, int]:
     except Exception as e:
         logger.warning(f"Failed to load project units map: {e}")
     return units_map
+
+
+@lru_cache(maxsize=1)
+def _get_units_map_cached() -> Dict[str, int]:
+    """Cache project units map to avoid repeated CSV parsing per request."""
+    return _build_units_map()
 
 
 def get_new_launch_timeline(
@@ -162,27 +169,27 @@ def get_new_launch_timeline(
         GROUP BY {PROJECT_KEY_EXPR}
     ),
 
+    bedroom_projects AS (
+        SELECT DISTINCT {PROJECT_KEY_EXPR} AS project_key
+        FROM transactions_primary tx
+        WHERE tx.sale_type = :sale_type_new
+          AND {outlier_filter_tx}
+          AND tx.bedroom_count = ANY(:bedrooms)
+    ),
+
     eligible_projects AS (
         -- Stage 2: Apply filters as cohort membership (not date shifts)
         SELECT pl.project_key
         FROM project_launch pl
+        LEFT JOIN bedroom_projects bp ON bp.project_key = pl.project_key
         WHERE 1=1
           -- Date range filter on launch_date
           AND (:date_from_is_null OR pl.launch_date >= :date_from)
           AND (:date_to_is_null OR pl.launch_date < :date_to_exclusive)
           -- District filter (includes segment-derived districts)
           AND (:districts_is_null OR pl.district = ANY(:districts))
-          -- Bedroom filter: EXISTS subquery (doesn't shift launch_date)
-          AND (
-            :bedrooms_is_null OR EXISTS (
-                SELECT 1
-                FROM transactions_primary tx
-                WHERE {PROJECT_KEY_EXPR} = pl.project_key
-                  AND tx.sale_type = :sale_type_new
-                  AND tx.bedroom_count = ANY(:bedrooms)
-                  AND {outlier_filter_tx}
-            )
-          )
+          -- Bedroom filter: precomputed project set (avoids correlated subquery)
+          AND (:bedrooms_is_null OR bp.project_key IS NOT NULL)
     ),
 
     launches AS (
@@ -208,7 +215,7 @@ def get_new_launch_timeline(
     result = db.session.execute(text(sql), params).fetchall()
 
     # Load units map ONCE for efficient lookups
-    units_map = _build_units_map()
+    units_map = _get_units_map_cached()
 
     # Post-process: sum total_units using canonical keys
     timeline = []
@@ -308,51 +315,50 @@ def get_new_launch_absorption(
         ORDER BY UPPER(TRIM(t.project_name)), t.transaction_date ASC, t.id ASC
     ),
 
+    bedroom_projects AS (
+        SELECT DISTINCT UPPER(TRIM(tx.project_name)) AS project_key
+        FROM transactions_primary tx
+        WHERE tx.sale_type = :sale_type_new
+          AND {outlier_filter_tx}
+          AND tx.bedroom_count = ANY(:bedrooms)
+    ),
+
     eligible_projects AS (
         SELECT pl.project_key, pl.launch_date, pl.launch_month_start,
                DATE_TRUNC(:time_grain, pl.launch_date) AS period_start
         FROM project_launch pl
+        LEFT JOIN bedroom_projects bp ON bp.project_key = pl.project_key
         WHERE (:date_from_is_null OR pl.launch_date >= :date_from)
           AND (:date_to_is_null OR pl.launch_date < :date_to_exclusive)
           AND (:districts_is_null OR pl.district = ANY(:districts))
-          AND (
-            :bedrooms_is_null OR EXISTS (
-                SELECT 1 FROM transactions_primary tx
-                WHERE UPPER(TRIM(tx.project_name)) = pl.project_key
-                  AND tx.sale_type = :sale_type_new
-                  AND tx.bedroom_count = ANY(:bedrooms)
-                  AND {outlier_filter_tx}
-            )
-          )
+          AND (:bedrooms_is_null OR bp.project_key IS NOT NULL)
     ),
 
     launch_month_sales AS (
         SELECT
-            UPPER(TRIM(t.project_name)) AS project_key,
-            COUNT(*) AS units_sold
-        FROM transactions_primary t
-        WHERE t.sale_type = :sale_type_new
-          AND {outlier_filter_t}
-          AND EXISTS (
-              SELECT 1 FROM eligible_projects ep
-              WHERE ep.project_key = UPPER(TRIM(t.project_name))
-                AND t.transaction_date >= ep.launch_month_start
-                AND t.transaction_date < ep.launch_month_start + INTERVAL '1 month'
-          )
-        GROUP BY UPPER(TRIM(t.project_name))
+            ep.period_start,
+            ep.project_key,
+            COUNT(t.id) AS units_sold
+        FROM eligible_projects ep
+        LEFT JOIN transactions_primary t
+          ON UPPER(TRIM(t.project_name)) = ep.project_key
+         AND t.sale_type = :sale_type_new
+         AND {outlier_filter_t}
+         AND t.transaction_date >= ep.launch_month_start
+         AND t.transaction_date < ep.launch_month_start + INTERVAL '1 month'
+        GROUP BY ep.period_start, ep.project_key
     )
 
-    SELECT ep.period_start, ep.project_key, COALESCE(lms.units_sold, 0) AS units_sold
-    FROM eligible_projects ep
-    LEFT JOIN launch_month_sales lms ON lms.project_key = ep.project_key
-    ORDER BY ep.period_start, ep.project_key;
+    SELECT lms.period_start, lms.project_key, COALESCE(lms.units_sold, 0) AS units_sold
+    FROM launch_month_sales lms
+    ORDER BY lms.period_start, lms.project_key;
     """
 
     logger.debug(f"Executing new_launch_absorption SQL with time_grain={time_grain}")
     result = db.session.execute(text(sql), params).fetchall()
 
     # Load units map ONCE - keys match SQL: UPPER(TRIM(name))
-    units_map = _build_units_map()
+    units_map = _get_units_map_cached()
 
     # Group by period
     periods: Dict[date, List[Dict[str, Any]]] = defaultdict(list)

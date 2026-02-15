@@ -39,13 +39,14 @@ function debugLog(stage, data) {
 }
 
 function debugWarn(stage, data) {
+  if (!DEBUG_NEW_VS_RESALE) return;
   const timestamp = new Date().toISOString().slice(11, 23);
   console.warn(`[NewVsResale ${timestamp}] ⚠️ ${stage}:`, data);
 }
 
 // Summary diagnostic - call this to get a quick status in console
 // Usage: window.__debugNewVsResale?.()
-if (typeof window !== 'undefined') {
+if (typeof window !== 'undefined' && DEBUG_NEW_VS_RESALE) {
   window.__debugNewVsResale = () => {
     /* eslint-disable no-console -- intentional debug utility for developers */
     console.warn('%c[NewVsResale] Debug enabled. Watch for these log stages:', 'color: blue; font-weight: bold');

@@ -21,6 +21,10 @@ from utils.normalize import (
     ValidationError as NormalizeValidationError, validation_error_response
 )
 from api.contracts.wrapper import api_contract
+from routes.analytics._route_utils import route_logger, log_success, log_error
+
+
+logger = route_logger("charts")
 
 
 @analytics_bp.route("/district-growth", methods=["GET"])
@@ -58,7 +62,7 @@ def district_growth():
     """
     from services.district_growth_service import get_district_growth
 
-    start = time.time()
+    start = time.perf_counter()
 
     try:
         # Use normalized params from Pydantic (via @api_contract decorator)
@@ -76,18 +80,32 @@ def district_growth():
             districts=districts
         )
 
-        elapsed = time.time() - start
-        result['meta']['elapsedMs'] = int(elapsed * 1000)
-
-        print(f"GET /api/district-growth took: {elapsed:.4f}s ({len(result['data'])} districts)")
+        elapsed_ms = int((time.perf_counter() - start) * 1000)
+        result['meta']['elapsedMs'] = elapsed_ms
+        log_success(
+            logger,
+            "/api/district-growth",
+            start,
+            {
+                "districts": len(result.get("data", [])),
+                "sale_type": sale_type,
+                "bedroom_count": len(bedrooms or []),
+            },
+        )
 
         return jsonify(result)
 
     except Exception as e:
-        elapsed = time.time() - start
-        print(f"GET /api/district-growth ERROR (took {elapsed:.4f}s): {e}")
-        import traceback
-        traceback.print_exc()
+        log_error(
+            logger,
+            "/api/district-growth",
+            start,
+            e,
+            {
+                "sale_type": sale_type,
+                "bedroom_count": len(bedrooms or []),
+            },
+        )
         return jsonify({'error': str(e)}), 500
 
 
@@ -163,17 +181,21 @@ def projects_by_district():
 
                 # Log warning if there's a significant discrepancy (> 1% or > $1000)
                 if volume_diff > max(1000, district_total * 0.01) or qty_diff > max(1, district_qty * 0.01):
-                    print(f"WARNING: District {d} aggregation mismatch - District total: ${district_total:,.0f}, Project sum: ${total_project_volume:,.0f}, Diff: ${volume_diff:,.0f}")
-                    print(f"         District qty: {district_qty}, Project sum: {total_project_quantity}, Diff: {qty_diff}")
-                else:
-                    print(f"District {d} validation passed - Volume: ${total_project_volume:,.0f}, Qty: {total_project_quantity}")
+                    logger.warning(
+                        "district_aggregation_mismatch district=%s district_total=%s project_total=%s volume_diff=%s district_qty=%s project_qty=%s qty_diff=%s",
+                        d, district_total, total_project_volume, volume_diff, district_qty, total_project_quantity, qty_diff
+                    )
 
         elapsed = time.time() - start
-        print(f"GET /api/projects_by_district took: {elapsed:.4f} seconds (returned {data.get('project_count', 0)} projects)")
+        log_success(
+            logger,
+            "/api/projects_by_district",
+            start,
+            {"project_count": data.get("project_count", 0)},
+        )
         return jsonify(data)
     except Exception as e:
-        elapsed = time.time() - start
-        print(f"GET /api/projects_by_district ERROR (took {elapsed:.4f}s): {e}")
+        log_error(logger, "/api/projects_by_district", start, e, {"district": d if 'd' in locals() else None})
         return jsonify({"error": str(e)}), 500
 
 
@@ -238,7 +260,7 @@ def price_projects_by_district():
 
         return jsonify({"projects": projects})
     except Exception as e:
-        print(f"GET /api/price_projects_by_district ERROR: {e}")
+        logger.exception("route_error {'route': '/api/price_projects_by_district'} err=%s", e)
         return jsonify({"error": str(e)}), 500
 
 
@@ -508,15 +530,17 @@ def floor_liquidity_heatmap():
 
         elapsed = time.time() - start
         result['meta']['elapsed_ms'] = int(elapsed * 1000)
-        print(f"GET /api/floor-liquidity-heatmap took: {elapsed:.4f}s ({len(projects)} projects)")
+        log_success(
+            logger,
+            "/api/floor-liquidity-heatmap",
+            start,
+            {"projects": len(projects), "cache_hit": False},
+        )
 
         return jsonify(result)
 
     except Exception as e:
-        elapsed = time.time() - start
-        print(f"GET /api/floor-liquidity-heatmap ERROR (took {elapsed:.4f}s): {e}")
-        import traceback
-        traceback.print_exc()
+        log_error(logger, "/api/floor-liquidity-heatmap", start, e)
         return jsonify({'error': str(e)}), 500
 
 

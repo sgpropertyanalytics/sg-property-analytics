@@ -9,10 +9,14 @@ Endpoints:
 """
 
 from datetime import date
-from flask import request, jsonify
+import time
+from flask import jsonify
 from routes.analytics import analytics_bp
+from routes.analytics._route_utils import route_logger, log_error
 from api.contracts import api_contract
 from services.dashboard_service import _dashboard_cache
+
+logger = route_logger("filters")
 
 # Cache key for filter-options (no params, so static key)
 FILTER_OPTIONS_CACHE_KEY = "filter-options:all"
@@ -41,6 +45,7 @@ def get_districts():
     Get list of all districts.
     Returns same data as filter-options.districts for backwards compatibility.
     """
+    start = time.perf_counter()
     try:
         districts = _get_districts_list()
         return jsonify({
@@ -49,7 +54,7 @@ def get_districts():
             "_message": "Use /filter-options instead. This endpoint will be removed in a future version."
         })
     except Exception as e:
-        print(f"GET /api/districts ERROR: {e}")
+        log_error(logger, "/api/districts", start, e)
         return jsonify({"error": str(e), "districts": []}), 500
 
 
@@ -63,6 +68,8 @@ def filter_options():
     Response is cached for 10 minutes (reference data doesn't change often).
     Cache status is indicated via X-Cache header (HIT/MISS).
     """
+    start = time.perf_counter()
+
     from models.transaction import Transaction
     from models.database import db
     from sqlalchemy import func, distinct
@@ -156,5 +163,5 @@ def filter_options():
         response.headers['X-Cache'] = 'MISS'
         return response
     except Exception as e:
-        print(f"GET /api/filter-options ERROR: {e}")
+        log_error(logger, "/api/filter-options", start, e)
         return jsonify({"error": str(e)}), 500

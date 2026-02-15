@@ -14,7 +14,7 @@
 import React, { useRef, useMemo, useState } from 'react';
 import { Chart } from 'react-chartjs-2';
 // Phase 2: Using TanStack Query via useAppQuery wrapper
-import { useAppQuery } from '../../hooks';
+import { useAppQuery, QueryStatus } from '../../hooks';
 import { ChartFrame } from '../common/ChartFrame';
 // Phase 3.2: Migrated from usePowerBIFilters to useZustandFilters
 import { useZustandFilters } from '../../stores';
@@ -52,7 +52,7 @@ function NewLaunchTimelineChartBase({ height = 300 }) {
   const chartRef = useRef(null);
 
   // Phase 4: Simplified data fetching - inline params, explicit query key
-  const { data, status, error, isFetching, refetch } = useAppQuery(
+  const { data: timelineRaw, status: timelineStatus, error: timelineError, isFetching: timelineFetching, refetch: refetchTimeline } = useAppQuery(
     async (signal) => {
       // Inline params - no buildApiParams abstraction
       const params = {
@@ -63,41 +63,20 @@ function NewLaunchTimelineChartBase({ height = 300 }) {
         segment: segments,
       };
 
-      // Fetch both APIs in parallel
-      const [timelineRes, absorptionRes] = await Promise.all([
-        getNewLaunchTimeline(params, { signal }),
-        getNewLaunchAbsorption(params, { signal }),
-      ]);
-
-      // Unwrap envelope (axios .data → response body → .data array)
+      const timelineRes = await getNewLaunchTimeline(params, { signal });
       const timelinePayload = timelineRes.data?.data || timelineRes.data || [];
-      const absorptionPayload = absorptionRes.data?.data || absorptionRes.data || [];
 
-      // Validate API contract versions (dev/test only)
+      // Validate API contract version (dev/test only)
       assertKnownVersion(timelineRes.data, '/api/new-launch-timeline');
-      assertKnownVersion(absorptionRes.data, '/api/new-launch-absorption');
 
       // Debug logging (dev only)
       logFetchDebug('NewLaunchTimelineChart', {
-        endpoint: '/api/new-launch-timeline + /api/new-launch-absorption',
+        endpoint: '/api/new-launch-timeline',
         timeGrain: timeGrouping,
         timelineRows: timelinePayload?.length || 0,
-        absorptionRows: absorptionPayload?.length || 0,
       });
 
-      // Transform each dataset
-      const timelineData = transformNewLaunchTimeline(timelinePayload, TIME_GROUP_BY[timeGrouping]);
-      const absorptionData = transformNewLaunchAbsorption(absorptionPayload, TIME_GROUP_BY[timeGrouping]);
-
-      // Merge by periodLabel (join on period)
-      return timelineData.map(t => {
-        const absorption = absorptionData.find(a => a.periodLabel === t.periodLabel);
-        return {
-          ...t,
-          avgAbsorption: absorption?.avgAbsorption ?? null,
-          projectsMissing: absorption?.projectsMissing ?? 0,
-        };
-      });
+      return transformNewLaunchTimeline(timelinePayload, TIME_GROUP_BY[timeGrouping]);
     },
     // Explicit query key - TanStack handles cache deduplication
     ['new-launch-timeline', timeframe, bedroom, districts, segments, timeGrouping],
@@ -107,6 +86,64 @@ function NewLaunchTimelineChartBase({ height = 300 }) {
       keepPreviousData: true,
     }
   );
+
+  const { data: absorptionRaw, status: absorptionStatus, error: absorptionError, isFetching: absorptionFetching, refetch: refetchAbsorption } = useAppQuery(
+    async (signal) => {
+      const params = {
+        time_grain: TIME_GROUP_BY[timeGrouping],
+        timeframe,
+        bedroom,
+        district: districts,
+        segment: segments,
+      };
+
+      const absorptionRes = await getNewLaunchAbsorption(params, { signal });
+      const absorptionPayload = absorptionRes.data?.data || absorptionRes.data || [];
+      assertKnownVersion(absorptionRes.data, '/api/new-launch-absorption');
+
+      logFetchDebug('NewLaunchTimelineChart', {
+        endpoint: '/api/new-launch-absorption',
+        timeGrain: timeGrouping,
+        absorptionRows: absorptionPayload?.length || 0,
+      });
+
+      return transformNewLaunchAbsorption(absorptionPayload, TIME_GROUP_BY[timeGrouping]);
+    },
+    ['new-launch-absorption', timeframe, bedroom, districts, segments, timeGrouping],
+    {
+      chartName: 'NewLaunchTimelineChart-Absorption',
+      initialData: null,
+      keepPreviousData: true,
+    }
+  );
+
+  const data = useMemo(() => {
+    const timelineData = Array.isArray(timelineRaw) ? timelineRaw : [];
+    const absorptionData = Array.isArray(absorptionRaw) ? absorptionRaw : [];
+    if (timelineData.length === 0) return [];
+
+    const absorptionByPeriod = new Map(
+      absorptionData.map(a => [a.periodLabel, a])
+    );
+
+    return timelineData.map(t => {
+      const absorption = absorptionByPeriod.get(t.periodLabel);
+      return {
+        ...t,
+        avgAbsorption: absorption?.avgAbsorption ?? null,
+        projectsMissing: absorption?.projectsMissing ?? 0,
+      };
+    });
+  }, [timelineRaw, absorptionRaw]);
+
+  const status = timelineStatus;
+  const error = timelineError || (timelineStatus === QueryStatus.SUCCESS ? absorptionError : null);
+  const isFetching = timelineFetching || absorptionFetching;
+
+  const refetch = () => {
+    refetchTimeline();
+    refetchAbsorption();
+  };
 
   // Default fallback for when data is null or unexpected type (initial load, edge cases)
   // Ensure safeData is always an array, even if API returns unexpected shape

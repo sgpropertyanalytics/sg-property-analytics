@@ -5,14 +5,17 @@ Only active endpoint:
 - /new-vs-resale - New sale vs resale comparison
 """
 
-import time
-from flask import request, jsonify, g
+from flask import jsonify, g
 from routes.analytics import analytics_bp
+from routes.analytics._filter_builders import extract_scope_filters
 from utils.normalize import (
-    to_date, to_list, clamp_date_to_today,
     ValidationError as NormalizeValidationError, validation_error_response
 )
 from api.contracts.wrapper import api_contract
+from routes.analytics._route_utils import route_logger, log_success, log_error
+
+
+logger = route_logger("trends")
 
 
 @analytics_bp.route("/new-vs-resale", methods=["GET"])
@@ -45,28 +48,22 @@ def new_vs_resale():
         "appliedFilters": {...}
       }
     """
-    start = time.time()
+    import time
+    start = time.perf_counter()
 
     # Parse GLOBAL filter parameters (from sidebar)
     params = getattr(g, "normalized_params", {}) or {}
 
-    districts = params.get("districts")
-
     try:
-        bedrooms = to_list(params.get("bedrooms"), item_type=int)
+        scope = extract_scope_filters(params, clamp_end_to_today=True)
     except NormalizeValidationError as e:
         return validation_error_response(e)
 
-    # Pydantic normalizes 'segment' → 'segments' (list)
-    segments = params.get("segments")
-    segment = segments[0] if segments else None
-
-    date_from = params.get("date_from")
-    # Use date_to_exclusive from normalizer (timeframe resolution) if available
-    # Fall back to date_to for explicit date params (converted +1 day by normalizer)
-    date_to = params.get("date_to_exclusive") or params.get("date_to")
-    if date_to:
-        date_to = clamp_date_to_today(date_to)
+    districts = scope["districts"] or []
+    bedrooms = scope["bedrooms"] or []
+    segment = scope["segment"]
+    date_from = scope["date_from"]
+    date_to = scope["date_to"]
 
     # Parse visual-local parameter (drill level)
     time_grain = params.get("time_grain", "quarter")
@@ -86,13 +83,30 @@ def new_vs_resale():
             time_grain=time_grain
         )
 
-        elapsed = time.time() - start
-        filter_info = f"districts={districts}, bedrooms={bedrooms}, segment={segment}, timeGrain={time_grain}"
-        print(f"GET /api/new-vs-resale took: {elapsed:.4f} seconds ({filter_info})")
+        log_success(
+            logger,
+            "/api/new-vs-resale",
+            start,
+            {
+                "district_count": len(districts or []),
+                "bedroom_count": len(bedrooms or []),
+                "segment": segment,
+                "time_grain": time_grain,
+                "points": len(result.get("chartData", [])),
+            },
+        )
         return jsonify(result)
     except Exception as e:
-        elapsed = time.time() - start
-        print(f"GET /api/new-vs-resale ERROR (took {elapsed:.4f}s): {e}")
-        import traceback
-        traceback.print_exc()
+        log_error(
+            logger,
+            "/api/new-vs-resale",
+            start,
+            e,
+            {
+                "district_count": len(districts or []),
+                "bedroom_count": len(bedrooms or []),
+                "segment": segment,
+                "time_grain": time_grain,
+            },
+        )
         return jsonify({"error": str(e)}), 500
