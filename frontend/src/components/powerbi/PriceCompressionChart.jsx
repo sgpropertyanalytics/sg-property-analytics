@@ -100,6 +100,7 @@ function PriceCompressionChartBase({ height = 380, saleType = null, sharedData =
       const params = {
         group_by: 'quarter,region',
         metrics: 'median_psf,count',
+        ...(saleType && { sale_type: saleType }),
       };
 
       const response = await getAggregate(params, { signal, priority: 'low' });
@@ -108,7 +109,7 @@ function PriceCompressionChartBase({ height = 380, saleType = null, sharedData =
       const transformed = transformCompressionSeries(rawData);
       return calculateHistoricalBaseline(transformed);
     },
-    ['priceCompressionBaseline'], // Explicit key to avoid collision with other fetch-once queries
+    ['priceCompressionBaseline', saleType], // Align with oscillator baseline to maximize cache reuse
     { chartName: 'PriceCompressionChart-baseline', initialData: null, enabled: inView, keepPreviousData: true }
   );
 

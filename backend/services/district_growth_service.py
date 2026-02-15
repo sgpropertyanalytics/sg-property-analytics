@@ -129,24 +129,16 @@ def get_district_growth(
         func.lpad(cast(month_expr, db.String), 2, '0')
     )
 
-    # Query: Get median PSF per district per month
-    query = db.session.query(
-        Transaction.district.label('district'),
-        period_expr.label('month'),
-        func.percentile_cont(0.5).within_group(Transaction.psf).label('median_psf'),
-        func.count(Transaction.id).label('txn_count')
+    # Query 1: get available months only (cheap), then compute start/end windows.
+    month_rows = db.session.query(
+        period_expr.label('month')
     ).filter(
         and_(*conditions)
-    ).group_by(
-        Transaction.district,
+    ).distinct().order_by(
         period_expr
-    ).order_by(
-        period_expr
-    )
+    ).all()
 
-    results = query.all()
-
-    if not results:
+    if not month_rows:
         return {
             "data": [],
             "meta": {
@@ -158,23 +150,9 @@ def get_district_growth(
             }
         }
 
-    # Build district -> month -> median_psf map
-    district_month_map: Dict[str, Dict[str, float]] = {}
-    all_months = set()
-
-    for row in results:
-        district = row.district
-        month = row.month
-        median_psf = float(row.median_psf) if row.median_psf else 0
-
-        if median_psf > 0:
-            if district not in district_month_map:
-                district_month_map[district] = {}
-            district_month_map[district][month] = median_psf
-            all_months.add(month)
-
     # Sort months chronologically
-    sorted_months = sorted(all_months)
+    sorted_months = [row.month for row in month_rows if row.month]
+    all_months = set(sorted_months)
 
     # Exclude current incomplete month
     current_month = get_current_month()
@@ -206,6 +184,30 @@ def get_district_growth(
 
     start_period_label = format_period_label(start_months)
     end_period_label = format_period_label(end_months)
+    target_months = sorted(set(start_months + end_months))
+
+    # Query 2: compute medians only for the 6 relevant months (not full history).
+    results = db.session.query(
+        Transaction.district.label('district'),
+        period_expr.label('month'),
+        func.percentile_cont(0.5).within_group(Transaction.psf).label('median_psf'),
+    ).filter(
+        and_(*conditions),
+        period_expr.in_(target_months)
+    ).group_by(
+        Transaction.district,
+        period_expr
+    ).all()
+
+    # Build district -> month -> median_psf map
+    district_month_map: Dict[str, Dict[str, float]] = {}
+    for row in results:
+        district = row.district
+        month = row.month
+        median_psf = float(row.median_psf) if row.median_psf else 0
+        if not district or not month or median_psf <= 0:
+            continue
+        district_month_map.setdefault(district, {})[month] = median_psf
 
     # Calculate growth for each district
     data = []

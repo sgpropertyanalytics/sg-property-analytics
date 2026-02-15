@@ -9,14 +9,16 @@ Endpoints:
 """
 
 import time
-from datetime import timedelta
 from flask import jsonify, g
 from routes.analytics import analytics_bp
+from routes.analytics._route_utils import route_logger, log_success, log_error
+from routes.analytics._filter_builders import extract_price_growth_params
 from utils.normalize import (
-    clamp_date_to_today,
     ValidationError as NormalizeValidationError, validation_error_response
 )
 from api.contracts import api_contract
+
+logger = route_logger("transactions")
 
 
 @analytics_bp.route("/transactions/price-growth", methods=["GET"])
@@ -51,45 +53,21 @@ def get_transaction_price_growth():
     Example:
         GET /api/transactions/price-growth?project=THE%20ORIE&bedroom=2&page=1
     """
-    start = time.time()
+    start = time.perf_counter()
     from services.price_growth_service import get_transaction_price_growth as compute_growth
 
     try:
         params = getattr(g, "normalized_params", {}) or {}
-
-        project_name = params.get("project")
-        bedrooms = params.get("bedrooms") or []
-        if isinstance(bedrooms, list):
-            bedroom_values = []
-            for item in bedrooms:
-                if isinstance(item, str) and "," in item:
-                    bedroom_values.extend([v.strip() for v in item.split(",") if v.strip()])
-                else:
-                    bedroom_values.append(item)
-            bedroom_count = bedroom_values[0] if bedroom_values else None
-        else:
-            bedroom_count = bedrooms
-        if bedroom_count is not None:
-            try:
-                bedroom_count = int(bedroom_count)
-            except (TypeError, ValueError):
-                bedroom_count = None
-        floor_level = params.get("floor_level")
-        sale_type = params.get("sale_type")
-
-        # floor_level and sale_type already normalized to DB format by Pydantic validator
-
-        districts = params.get("districts") or []
-        district = districts[0] if isinstance(districts, list) and districts else None
-
-        date_from = params.get("date_from")
-        date_to = None
-        date_to_exclusive = params.get("date_to_exclusive")
-        if date_to_exclusive:
-            date_to = clamp_date_to_today(date_to_exclusive - timedelta(days=1))
-
-        page = params.get("page", 1)
-        per_page = params.get("per_page", 50)
+        parsed = extract_price_growth_params(params)
+        project_name = parsed["project_name"]
+        bedroom_count = parsed["bedroom_count"]
+        floor_level = parsed["floor_level"]
+        sale_type = parsed["sale_type"]
+        district = parsed["district"]
+        date_from = parsed["date_from"]
+        date_to = parsed["date_to"]
+        page = parsed["page"]
+        per_page = parsed["per_page"]
 
     except NormalizeValidationError as e:
         return validation_error_response(e)
@@ -113,16 +91,30 @@ def get_transaction_price_growth():
         # Serialize via Pydantic response model (snake_case → camelCase)
         response = PriceGrowthResponse.from_service(result).model_dump(by_alias=True)
 
-        elapsed = time.time() - start
-        print(f"GET /api/transactions/price-growth completed in {elapsed:.4f}s")
+        log_success(
+            logger,
+            "/api/transactions/price-growth",
+            start,
+            {
+                "project": project_name,
+                "district": district,
+                "sale_type": sale_type,
+                "page": page,
+                "per_page": per_page,
+                "items": len(response.get("data", [])) if isinstance(response, dict) else None,
+            },
+        )
 
         return jsonify(response)
 
     except Exception as e:
-        elapsed = time.time() - start
-        print(f"GET /api/transactions/price-growth ERROR (took {elapsed:.4f}s): {e}")
-        import traceback
-        traceback.print_exc()
+        log_error(
+            logger,
+            "/api/transactions/price-growth",
+            start,
+            e,
+            {"project": project_name, "district": district, "sale_type": sale_type},
+        )
         return jsonify({"error": str(e)}), 500
 
 
@@ -141,18 +133,15 @@ def get_price_growth_segments():
     Example:
         GET /api/transactions/price-growth/segments?district=D09
     """
-    start = time.time()
+    start = time.perf_counter()
     from services.price_growth_service import get_segment_summary
 
     try:
         params = getattr(g, "normalized_params", {}) or {}
-
-        project_name = params.get("project")
-        # sale_type already normalized to DB format by Pydantic validator
-        sale_type = params.get("sale_type")
-
-        districts = params.get("districts") or []
-        district = districts[0] if isinstance(districts, list) and districts else None
+        parsed = extract_price_growth_params(params)
+        project_name = parsed["project_name"]
+        sale_type = parsed["sale_type"]
+        district = parsed["district"]
 
         from api.contracts.pydantic_models.transactions import SegmentSummaryResponse
 
@@ -166,14 +155,26 @@ def get_price_growth_segments():
         # Serialize via Pydantic response model (snake_case → camelCase)
         response = SegmentSummaryResponse.from_service(segments).model_dump(by_alias=True)
 
-        elapsed = time.time() - start
-        print(f"GET /api/transactions/price-growth/segments completed in {elapsed:.4f}s")
+        log_success(
+            logger,
+            "/api/transactions/price-growth/segments",
+            start,
+            {
+                "project": project_name,
+                "district": district,
+                "sale_type": sale_type,
+                "segments": len(segments or []),
+            },
+        )
 
         return jsonify(response)
 
     except Exception as e:
-        elapsed = time.time() - start
-        print(f"GET /api/transactions/price-growth/segments ERROR (took {elapsed:.4f}s): {e}")
-        import traceback
-        traceback.print_exc()
+        log_error(
+            logger,
+            "/api/transactions/price-growth/segments",
+            start,
+            e,
+            {"project": project_name, "district": district, "sale_type": sale_type},
+        )
         return jsonify({"error": str(e)}), 500

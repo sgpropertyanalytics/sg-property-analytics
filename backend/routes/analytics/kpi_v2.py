@@ -17,12 +17,12 @@ import time
 import threading
 import logging
 from datetime import date, timedelta
-from flask import request, jsonify, g
+from flask import jsonify, g
 from sqlalchemy import text
 from routes.analytics import analytics_bp
+from routes.analytics._route_utils import log_error
 from models.database import db
 from db.sql import OUTLIER_FILTER
-from utils.normalize import to_date
 from api.contracts import api_contract
 from utils.subscription import require_authenticated_access
 
@@ -187,10 +187,7 @@ def kpi_summary_v2():
             return jsonify(result)
 
     except Exception as e:
-        elapsed = time.time() - start
-        print(f"GET /api/kpi-summary-v2 ERROR (took {elapsed:.4f}s): {e}")
-        import traceback
-        traceback.print_exc()
+        log_error(logger, "/api/kpi-summary-v2", start, e)
         return jsonify({"error": str(e)}), 500
 
 

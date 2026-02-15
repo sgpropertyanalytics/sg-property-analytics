@@ -1678,14 +1678,13 @@ def get_new_vs_resale_comparison(
     # Determine DATE_TRUNC parameter based on time_grain
     date_trunc_grain = time_grain  # 'year', 'quarter', 'month'
 
-    # Raw SQL query using PostgreSQL's DATE_TRUNC for time granularity
-    # Using avg as approximation for true median (memory-efficient)
-    # Returns median PRICE (total quantum) instead of PSF
+    # Raw SQL query using PostgreSQL's DATE_TRUNC for time granularity.
+    # Uses AVG as approximation for true median (keeps existing output semantics).
+    # Returns median PRICE (total quantum) instead of PSF.
     #
     # Recently TOP definition (canonical from PropertyAgeBucket.AGE_RANGES):
     # - Property age = YEAR(transaction_date) - lease_start_year
     # - Age range: [min_age, max_age) using exclusive upper bound
-    # - Project must have at least one Resale transaction (excludes delayed construction projects)
     # - Excludes NULL lease_start_year (require known age for precise filtering)
     # Import outlier filter constant for raw SQL
     from db.sql import OUTLIER_FILTER
@@ -1694,24 +1693,25 @@ def get_new_vs_resale_comparison(
     recently_top_range = PropertyAgeBucket.get_age_range(PropertyAgeBucket.RECENTLY_TOP)
     age_min, age_max = recently_top_range  # (4, 8) = ages 4, 5, 6, 7
 
+    params["sale_type_new"] = SALE_TYPE_NEW
+    params["sale_type_resale"] = SALE_TYPE_RESALE
+    params["age_min"] = age_min
+    params["age_max"] = age_max
+
     sql = text(f"""
-        WITH projects_with_resale AS (
-            -- Projects that have at least one Resale transaction
-            -- This excludes delayed construction projects still selling as "New Sale"
-            SELECT DISTINCT project_name
+        WITH filtered_tx AS (
+            SELECT transaction_date, sale_type, price, lease_start_year
             FROM transactions_primary
-            WHERE sale_type = '{SALE_TYPE_RESALE}'
-              AND {OUTLIER_FILTER}
+            WHERE {OUTLIER_FILTER}
+              AND {where_clause}
         ),
         new_sales AS (
             SELECT
                 DATE_TRUNC('{date_trunc_grain}', transaction_date) AS period,
                 AVG(price) AS median_price,
                 COUNT(*) AS transaction_count
-            FROM transactions_primary
-            WHERE sale_type = '{SALE_TYPE_NEW}'
-              AND {OUTLIER_FILTER}
-              AND {where_clause}
+            FROM filtered_tx
+            WHERE sale_type = :sale_type_new
             GROUP BY DATE_TRUNC('{date_trunc_grain}', transaction_date)
         ),
         young_resale AS (
@@ -1719,14 +1719,11 @@ def get_new_vs_resale_comparison(
                 DATE_TRUNC('{date_trunc_grain}', transaction_date) AS period,
                 AVG(price) AS median_price,
                 COUNT(*) AS transaction_count
-            FROM transactions_primary t
-            WHERE sale_type = '{SALE_TYPE_RESALE}'
-              AND {OUTLIER_FILTER}
+            FROM filtered_tx
+            WHERE sale_type = :sale_type_resale
               AND lease_start_year IS NOT NULL
-              AND (EXTRACT(YEAR FROM transaction_date) - lease_start_year) >= {age_min}
-              AND (EXTRACT(YEAR FROM transaction_date) - lease_start_year) < {age_max}
-              AND project_name IN (SELECT project_name FROM projects_with_resale)
-              AND {where_clause}
+              AND (EXTRACT(YEAR FROM transaction_date) - lease_start_year) >= :age_min
+              AND (EXTRACT(YEAR FROM transaction_date) - lease_start_year) < :age_max
             GROUP BY DATE_TRUNC('{date_trunc_grain}', transaction_date)
         )
         SELECT

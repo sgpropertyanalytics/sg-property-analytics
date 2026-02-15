@@ -8,11 +8,14 @@ Provides aggregated data about new launch projects over time:
 Endpoint: GET /api/new-launch-timeline
 """
 
-import time
 from flask import jsonify, g
 from routes.analytics import analytics_bp
 from api.contracts import api_contract
 from services.new_launch_service import get_new_launch_timeline, get_new_launch_absorption
+from routes.analytics._route_utils import route_logger, log_success, log_error
+
+
+logger = route_logger("new_launch")
 
 
 @analytics_bp.route("/new-launch-timeline", methods=["GET"])
@@ -42,28 +45,46 @@ def new_launch_timeline():
             }
         }
     """
-    start = time.time()
+    import time
+    start = time.perf_counter()
 
     # Get normalized params from @api_contract decorator
     params = getattr(g, "normalized_params", {}) or {}
 
-    # Extract service params (already normalized: districts, segments, bedrooms, date_to_exclusive)
-    result = get_new_launch_timeline(
-        time_grain=params.get("time_grain", "quarter"),
-        districts=params.get("districts"),
-        segments=params.get("segments"),
-        bedrooms=params.get("bedrooms"),
-        date_from=params.get("date_from"),
-        date_to_exclusive=params.get("date_to_exclusive"),
-    )
-
-    elapsed = (time.time() - start) * 1000  # Convert to ms
-    print(f"GET /api/new-launch-timeline completed in {elapsed:.1f}ms ({len(result)} periods)")
-
-    # Return data - @api_contract decorator injects meta fields
-    return jsonify({
-        "data": result,
-    })
+    try:
+        # Extract service params (already normalized: districts, segments, bedrooms, date_to_exclusive)
+        result = get_new_launch_timeline(
+            time_grain=params.get("time_grain", "quarter"),
+            districts=params.get("districts"),
+            segments=params.get("segments"),
+            bedrooms=params.get("bedrooms"),
+            date_from=params.get("date_from"),
+            date_to_exclusive=params.get("date_to_exclusive"),
+        )
+        log_success(
+            logger,
+            "/api/new-launch-timeline",
+            start,
+            {
+                "periods": len(result),
+                "district_count": len(params.get("districts") or []),
+                "bedroom_count": len(params.get("bedrooms") or []),
+            },
+        )
+        # Return data - @api_contract decorator injects meta fields
+        return jsonify({"data": result})
+    except Exception as e:
+        log_error(
+            logger,
+            "/api/new-launch-timeline",
+            start,
+            e,
+            {
+                "district_count": len(params.get("districts") or []),
+                "bedroom_count": len(params.get("bedrooms") or []),
+            },
+        )
+        return jsonify({"error": str(e)}), 500
 
 
 @analytics_bp.route("/new-launch-absorption", methods=["GET"])
@@ -84,13 +105,38 @@ def new_launch_absorption():
     """
     params = getattr(g, "normalized_params", {}) or {}
 
-    result = get_new_launch_absorption(
-        time_grain=params["time_grain"],
-        districts=params.get("districts"),
-        segments=params.get("segments"),
-        bedrooms=params.get("bedrooms"),
-        date_from=params.get("date_from"),
-        date_to_exclusive=params.get("date_to_exclusive"),
-    )
+    import time
+    start = time.perf_counter()
 
-    return jsonify({"data": result})
+    try:
+        result = get_new_launch_absorption(
+            time_grain=params["time_grain"],
+            districts=params.get("districts"),
+            segments=params.get("segments"),
+            bedrooms=params.get("bedrooms"),
+            date_from=params.get("date_from"),
+            date_to_exclusive=params.get("date_to_exclusive"),
+        )
+        log_success(
+            logger,
+            "/api/new-launch-absorption",
+            start,
+            {
+                "periods": len(result),
+                "district_count": len(params.get("districts") or []),
+                "bedroom_count": len(params.get("bedrooms") or []),
+            },
+        )
+        return jsonify({"data": result})
+    except Exception as e:
+        log_error(
+            logger,
+            "/api/new-launch-absorption",
+            start,
+            e,
+            {
+                "district_count": len(params.get("districts") or []),
+                "bedroom_count": len(params.get("bedrooms") or []),
+            },
+        )
+        return jsonify({"error": str(e)}), 500

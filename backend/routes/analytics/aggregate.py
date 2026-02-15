@@ -10,9 +10,10 @@ Endpoints:
 import time
 from flask import jsonify, g
 from routes.analytics import analytics_bp
+from routes.analytics._route_utils import route_logger, log_success
+from routes.analytics._filter_builders import build_aggregate_sqlalchemy_filters
 from constants import (
     SALE_TYPE_NEW, SALE_TYPE_RESALE,
-    TENURE_FREEHOLD, TENURE_99_YEAR, TENURE_999_YEAR
 )
 from datetime import timedelta, date, datetime
 from typing import Optional, Tuple
@@ -23,6 +24,8 @@ from utils.normalize import (
 from api.contracts import api_contract
 from api.contracts.contract_schema import PropertyAgeBucket
 from utils.subscription import require_authenticated_access
+
+logger = route_logger("aggregate")
 
 
 # =============================================================================
@@ -383,7 +386,12 @@ def aggregate():
             elapsed = time.time() - start
             cached['meta']['cacheHit'] = True
             cached['meta']['elapsedMs'] = int(elapsed * 1000)
-            print(f"GET /api/aggregate CACHE HIT in {elapsed:.4f} seconds")
+            log_success(
+                logger,
+                "/api/aggregate",
+                start,
+                {"cache_hit": True, "groups": len(cached.get("data", []))},
+            )
             return jsonify(cached)
 
     # Parse parameters
@@ -406,59 +414,22 @@ def aggregate():
             "code": "AUTH_REQUIRED",
         }), 401
 
-    # Build filter conditions (we'll reuse these)
-    # ALWAYS exclude outliers first
-    filter_conditions = [Transaction.outlier_filter()]
-    filters_applied = {}
-
-    # District filter
-    districts = params.get("districts") or []
-    if districts:
-        filter_conditions.append(Transaction.district.in_(districts))
-        filters_applied["district"] = districts
-
-    # Bedroom filter
+    # Build reusable filter conditions
     try:
-        bedrooms = to_list(params.get("bedrooms"), item_type=int)
-        if bedrooms:
-            filter_conditions.append(Transaction.bedroom_count.in_(bedrooms))
-            filters_applied["bedroom"] = bedrooms
+        aggregate_filters = build_aggregate_sqlalchemy_filters(
+            params=params,
+            Transaction=Transaction,
+            func=func,
+            and_=and_,
+            or_=or_,
+        )
     except NormalizeValidationError as e:
         return validation_error_response(e)
 
-    # Segment filter (supports comma-separated values e.g., "CCR,RCR")
-    # OPTIMIZED: Use pre-computed district→segment mapping from constants
-    segments = to_list(params.get("segments"))
-    if segments:
-        from constants import get_districts_for_region
-        segments = [s.strip().upper() for s in segments]
-        segment_districts = []
-        for seg in segments:
-            segment_districts.extend(get_districts_for_region(seg))
-        if segment_districts:
-            filter_conditions.append(Transaction.district.in_(segment_districts))
-        filters_applied["segment"] = segments
-
-    # Sale type filter (case-insensitive to handle data variations)
-    # sale_type already normalized to DB format by Pydantic validator
-    sale_type = params.get("sale_type")
-    if sale_type:
-        filter_conditions.append(func.lower(Transaction.sale_type) == sale_type.lower())
-        filters_applied["sale_type"] = sale_type
-
-    # Date range filter
-    from_dt = params.get("date_from")
-    if from_dt:
-        filter_conditions.append(Transaction.transaction_date >= from_dt)
-        filters_applied["date_from"] = from_dt.isoformat()
-
-    to_dt_exclusive = params.get("date_to_exclusive")
-    to_dt = None
-    if to_dt_exclusive:
-        # Use exclusive upper bound to include all transactions on the end date
-        filter_conditions.append(Transaction.transaction_date < to_dt_exclusive)
-        to_dt = to_dt_exclusive - timedelta(days=1)
-        filters_applied["date_to"] = to_dt.isoformat()
+    filter_conditions = aggregate_filters["filter_conditions"]
+    filters_applied = aggregate_filters["filters_applied"]
+    from_dt = aggregate_filters["from_dt"]
+    to_dt = aggregate_filters["to_dt"]
 
     # MULTI-DIMENSIONAL GROUP BY VALIDATION + AUTO-DOWNSAMPLING
     # For 3+ dim queries, auto-coarsens time grain if range exceeds limit
@@ -479,60 +450,6 @@ def aggregate():
     if was_downsampled:
         group_by = [g.strip() for g in effective_group_by.split(",") if g.strip()]
         group_by_param = effective_group_by
-
-    # PSF range filter
-    if params.get("psf_min") is not None:
-        psf_min = params.get("psf_min")
-        filter_conditions.append(Transaction.psf >= psf_min)
-        filters_applied["psf_min"] = psf_min
-
-    if params.get("psf_max") is not None:
-        psf_max = params.get("psf_max")
-        filter_conditions.append(Transaction.psf <= psf_max)
-        filters_applied["psf_max"] = psf_max
-
-    # Size range filter
-    if params.get("size_min") is not None:
-        size_min = params.get("size_min")
-        filter_conditions.append(Transaction.area_sqft >= size_min)
-        filters_applied["size_min"] = size_min
-
-    if params.get("size_max") is not None:
-        size_max = params.get("size_max")
-        filter_conditions.append(Transaction.area_sqft <= size_max)
-        filters_applied["size_max"] = size_max
-
-    # Tenure filter
-    tenure = params.get("tenure")
-    if tenure:
-        tenure_lower = tenure.lower()
-        if tenure_lower == TENURE_FREEHOLD.lower():
-            filter_conditions.append(or_(
-                Transaction.tenure.ilike("%freehold%"),
-                Transaction.remaining_lease == 999
-            ))
-        elif tenure_lower in [TENURE_99_YEAR.lower(), "99"]:
-            filter_conditions.append(and_(
-                Transaction.remaining_lease < 999,
-                Transaction.remaining_lease > 0
-            ))
-        elif tenure_lower in [TENURE_999_YEAR.lower(), "999"]:
-            filter_conditions.append(Transaction.remaining_lease == 999)
-        filters_applied["tenure"] = tenure
-
-    # Project filter - supports both partial match (search) and exact match (drill-through)
-    # Use project_exact for drill-through views (ProjectDetailPanel)
-    # Use project for search functionality (sidebar filter)
-    project_exact = params.get("project_exact")
-    project = params.get("project")
-    if project_exact:
-        # EXACT match - for ProjectDetailPanel drill-through
-        filter_conditions.append(Transaction.project_name == project_exact)
-        filters_applied["project_exact"] = project_exact
-    elif project:
-        # PARTIAL match - for search functionality
-        filter_conditions.append(Transaction.project_name.ilike(f"%{project}%"))
-        filters_applied["project"] = project
 
     # Get total count first (fast query)
     count_query = db.session.query(func.count(Transaction.id))
@@ -790,7 +707,12 @@ def aggregate():
                 )
 
     elapsed = time.time() - start
-    print(f"GET /api/aggregate took: {elapsed:.4f} seconds (returned {len(data)} groups from {total_records} records)")
+    log_success(
+        logger,
+        "/api/aggregate",
+        start,
+        {"cache_hit": False, "groups": len(data), "total_records": total_records},
+    )
 
     # Build meta for response
     warnings = []

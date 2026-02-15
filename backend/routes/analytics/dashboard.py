@@ -9,15 +9,21 @@ Endpoints:
 """
 
 import time
-from datetime import timedelta
-from flask import request, jsonify, g
+from flask import jsonify, g
 from routes.analytics import analytics_bp
+from routes.analytics._route_utils import route_logger, log_success, log_error
+from routes.analytics._filter_builders import (
+    build_dashboard_filters,
+    build_dashboard_options,
+    build_panels_param,
+)
 from utils.normalize import (
-    to_list,
     ValidationError as NormalizeValidationError, validation_error_response
 )
 from api.contracts import api_contract
 from utils.subscription import require_authenticated_access
+
+logger = route_logger("dashboard")
 
 
 @analytics_bp.route("/dashboard", methods=["GET", "POST"])
@@ -78,72 +84,13 @@ def dashboard():
     from services.dashboard_service import get_dashboard_data, ValidationError, get_cache_stats
     from api.contracts.contract_schema import serialize_dashboard_response
 
-    start = time.time()
+    start = time.perf_counter()
 
     try:
         params = getattr(g, "normalized_params", {}) or {}
-        filters = {}
-        options = {}
-        panels_param = None
-
-        date_from = params.get("date_from")
-        date_to_exclusive = params.get("date_to_exclusive")
-        if date_from:
-            filters["date_from"] = date_from
-        if date_to_exclusive:
-            filters["date_to"] = date_to_exclusive - timedelta(days=1)
-
-        districts = params.get("districts") or []
-        if districts:
-            filters["districts"] = districts
-
-        bedrooms = to_list(params.get("bedrooms"), item_type=int)
-        if bedrooms:
-            filters["bedrooms"] = bedrooms
-
-        segments = to_list(params.get("segments"))
-        if segments:
-            filters["segments"] = [s.upper() for s in segments]
-
-        # sale_type already normalized to DB format by Pydantic validator
-        sale_type = params.get("sale_type")
-        if sale_type:
-            filters["sale_type"] = sale_type
-
-        if params.get("psf_min") is not None:
-            filters["psf_min"] = params.get("psf_min")
-        if params.get("psf_max") is not None:
-            filters["psf_max"] = params.get("psf_max")
-        if params.get("size_min") is not None:
-            filters["size_min"] = params.get("size_min")
-        if params.get("size_max") is not None:
-            filters["size_max"] = params.get("size_max")
-        # tenure already normalized to DB format by Pydantic validator
-        tenure = params.get("tenure")
-        if tenure:
-            filters["tenure"] = tenure
-        if params.get("property_age_min") is not None:
-            filters["property_age_min"] = params.get("property_age_min")
-        if params.get("property_age_max") is not None:
-            filters["property_age_max"] = params.get("property_age_max")
-        if params.get("property_age_bucket"):
-            filters["property_age_bucket"] = params.get("property_age_bucket")
-        if params.get("project_exact"):
-            filters["project_exact"] = params.get("project_exact")
-        elif params.get("project"):
-            filters["project"] = params.get("project")
-
-        panels_param = to_list(params.get("panels"))
-        if not panels_param:
-            panels_param = None
-
-        if params.get("time_grain"):
-            options["time_grain"] = params.get("time_grain")
-        if params.get("location_grain"):
-            options["location_grain"] = params.get("location_grain")
-        if params.get("histogram_bins") is not None:
-            options["histogram_bins"] = params.get("histogram_bins")
-        options["show_full_range"] = params.get("show_full_range", False)
+        filters = build_dashboard_filters(params)
+        options = build_dashboard_options(params)
+        panels_param = build_panels_param(params)
 
         skip_cache = params.get("skip_cache", False)
 
@@ -172,8 +119,15 @@ def dashboard():
             meta=result.get('meta', {})
         )
 
-        elapsed = time.time() - start
-        print(f"GET /api/dashboard took: {elapsed:.4f} seconds (cache_hit: {result['meta'].get('cache_hit', False)})")
+        log_success(
+            logger,
+            "/api/dashboard",
+            start,
+            {
+                "cache_hit": bool(result.get("meta", {}).get("cache_hit", False)),
+                "panels": len(serialized.get("data", {})),
+            },
+        )
 
         return jsonify(serialized)
 
@@ -181,18 +135,14 @@ def dashboard():
         return validation_error_response(e)
 
     except ValidationError as e:
-        elapsed = time.time() - start
-        print(f"GET /api/dashboard validation error (took {elapsed:.4f}s): {e}")
+        log_error(logger, "/api/dashboard", start, e, {"error_type": "validation"})
         return jsonify({
             "error": "Validation error",
             "details": e.args[0] if e.args else str(e)
         }), 400
 
     except Exception as e:
-        elapsed = time.time() - start
-        print(f"GET /api/dashboard ERROR (took {elapsed:.4f}s): {e}")
-        import traceback
-        traceback.print_exc()
+        log_error(logger, "/api/dashboard", start, e)
         return jsonify({
             "error": str(e)
         }), 500

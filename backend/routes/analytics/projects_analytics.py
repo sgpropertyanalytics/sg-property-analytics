@@ -11,14 +11,13 @@ Endpoints:
 """
 
 import time
-from flask import request, jsonify, g
+from flask import jsonify, g
 from routes.analytics import analytics_bp
 from constants import SALE_TYPE_NEW, SALE_TYPE_RESALE
-from utils.normalize import (
-    to_int, to_float,
-    ValidationError as NormalizeValidationError, validation_error_response
-)
+from routes.analytics._route_utils import route_logger, log_success, log_error
 from api.contracts.wrapper import api_contract
+
+logger = route_logger("projects_analytics")
 
 
 @analytics_bp.route("/projects/<path:project_name>/inventory", methods=["GET"])
@@ -35,7 +34,7 @@ def get_project_inventory(project_name):
         - cumulative_new_sales: Units sold by developer (from transactions)
         - estimated_unsold: total_units - cumulative_new_sales
     """
-    start = time.time()
+    start = time.perf_counter()
     from models.transaction import Transaction
     from models.database import db
     from services.new_launch_units import get_units_for_project
@@ -83,15 +82,22 @@ def get_project_inventory(project_name):
                 "message": "Total units not available. Add to rawdata/new_launch_units.csv"
             })
 
-        elapsed = time.time() - start
-        print(f"GET /api/projects/{project_name}/inventory took: {elapsed:.4f}s")
+        log_success(
+            logger,
+            "/api/projects/:project_name/inventory",
+            start,
+            {"project_name": project_name, "has_total_units": bool(total_units)},
+        )
 
         return jsonify(result)
     except Exception as e:
-        elapsed = time.time() - start
-        print(f"GET /api/projects/{project_name}/inventory ERROR (took {elapsed:.4f}s): {e}")
-        import traceback
-        traceback.print_exc()
+        log_error(
+            logger,
+            "/api/projects/:project_name/inventory",
+            start,
+            e,
+            {"project_name": project_name},
+        )
         return jsonify({"error": str(e)}), 500
 
 
@@ -124,7 +130,7 @@ def get_project_price_bands(project_name):
             "apiContractVersion": "v2"
         }
     """
-    start = time.time()
+    start = time.perf_counter()
     from services.price_bands_service import get_project_price_bands as compute_bands
     from api.contracts.contract_schema import serialize_price_bands_v2
 
@@ -155,16 +161,23 @@ def get_project_price_bands(project_name):
         response = serialize_price_bands_v2(result)
         response['apiContractVersion'] = 'v2'
 
-        elapsed = time.time() - start
-        print(f"GET /api/projects/{project_name}/price-bands completed in {elapsed:.4f}s")
+        log_success(
+            logger,
+            "/api/projects/:project_name/price-bands",
+            start,
+            {"project_name": project_name, "window_months": window_months},
+        )
 
         return jsonify(response)
 
     except Exception as e:
-        elapsed = time.time() - start
-        print(f"GET /api/projects/{project_name}/price-bands ERROR (took {elapsed:.4f}s): {e}")
-        import traceback
-        traceback.print_exc()
+        log_error(
+            logger,
+            "/api/projects/:project_name/price-bands",
+            start,
+            e,
+            {"project_name": project_name, "window_months": window_months},
+        )
         return jsonify({"error": str(e)}), 500
 
 
@@ -179,7 +192,7 @@ def get_resale_projects():
     Get list of all projects from transactions table for dropdown.
     Returns project name, district, transaction counts, and data availability flags.
     """
-    start = time.time()
+    start = time.perf_counter()
 
     try:
         from models.database import db
@@ -224,8 +237,12 @@ def get_resale_projects():
                 "has_top_year": has_top_year
             })
 
-        elapsed = time.time() - start
-        print(f"GET /projects/resale-projects completed in {elapsed:.4f}s ({len(projects)} projects)")
+        log_success(
+            logger,
+            "/api/projects/resale-projects",
+            start,
+            {"projects": len(projects)},
+        )
 
         return jsonify({
             "projects": projects,
@@ -233,10 +250,7 @@ def get_resale_projects():
         })
 
     except Exception as e:
-        elapsed = time.time() - start
-        print(f"GET /projects/resale-projects ERROR (took {elapsed:.4f}s): {e}")
-        import traceback
-        traceback.print_exc()
+        log_error(logger, "/api/projects/resale-projects", start, e)
         return jsonify({"error": str(e)}), 500
 
 
@@ -256,7 +270,7 @@ def get_project_exit_queue(project_name):
     Query params:
     - None (v2-only response)
     """
-    start = time.time()
+    start = time.perf_counter()
 
     try:
         from models.database import db
@@ -274,8 +288,12 @@ def get_project_exit_queue(project_name):
             get_units_for_project=get_project_units  # Hybrid lookup with confidence
         )
 
-        elapsed = time.time() - start
-        print(f"GET /projects/{project_name}/exit-queue completed in {elapsed:.4f}s")
+        log_success(
+            logger,
+            "/api/projects/:project_name/exit-queue",
+            start,
+            {"project_name": project_name},
+        )
 
         # Handle error case
         if error_response:
@@ -286,8 +304,11 @@ def get_project_exit_queue(project_name):
         return jsonify(response)
 
     except Exception as e:
-        elapsed = time.time() - start
-        print(f"GET /projects/{project_name}/exit-queue ERROR (took {elapsed:.4f}s): {e}")
-        import traceback
-        traceback.print_exc()
+        log_error(
+            logger,
+            "/api/projects/:project_name/exit-queue",
+            start,
+            e,
+            {"project_name": project_name},
+        )
         return jsonify({"error": str(e)}), 500

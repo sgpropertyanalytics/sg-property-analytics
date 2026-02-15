@@ -107,7 +107,7 @@ export function ExitRiskContent() {
   const validProject = selectedProject && typeof selectedProject.name === 'string' && selectedProject.name.trim();
 
   // --- Query 1: Project options (fetch once) ---
-  const { data: projectOptions = [], status: projectsStatus } = useAppQuery(
+  const { data: projectOptionsData, status: projectsStatus } = useAppQuery(
     async (signal) => {
       const response = await getProjectNames({ signal });
       return asArray(getProjectNamesField(response.data || {}, ProjectNamesField.PROJECTS));
@@ -115,69 +115,65 @@ export function ExitRiskContent() {
     ['exitRisk-projects'],
     { chartName: 'ExitRisk-projects', staleTime: Infinity }
   );
+  const projectOptions = useMemo(
+    () => asArray(projectOptionsData),
+    [projectOptionsData]
+  );
   const projectOptionsLoading = projectsStatus === 'pending';
 
-  // --- Query 2: Exit queue + price growth (when project selected) ---
-  const { data: projectData, status: projectDataStatus, error: projectDataError } = useAppQuery(
+  // --- Query 2: Exit queue (critical path, when project selected) ---
+  const { data: exitQueueRawData, status: exitQueueStatus, error: exitQueueQueryError } = useAppQuery(
     async (signal) => {
-      const [exitQueueRes, priceGrowthRes] = await Promise.allSettled([
-        getProjectExitQueue(selectedProject.name, { signal }),
-        getProjectPriceGrowth(selectedProject.name, { signal }),
-      ]);
-
-      // Process exitQueue result
-      let exitQueueData = null;
-      let exitQueueError = null;
-
-      if (exitQueueRes.status === 'fulfilled') {
-        exitQueueData = exitQueueRes.value.data;
-      } else {
-        const err = exitQueueRes.reason;
+      try {
+        const response = await getProjectExitQueue(selectedProject.name, { signal });
+        return response.data;
+      } catch (err) {
         if (err.response?.status === 404) {
           const errorData = err.response?.data;
           if (errorData?.data_quality?.completeness === 'no_resales') {
             // Project exists but no resales - treat as data
-            exitQueueData = errorData;
+            return errorData;
           } else {
             // Project doesn't exist - throw to trigger error state
             throw new Error('Project not found. It may have been removed from the database.');
           }
-        } else {
-          exitQueueError = err.response?.data?.error || 'Failed to load project data';
         }
+        throw err;
       }
-
-      // Process priceGrowth result
-      let priceGrowthData = null;
-      let priceGrowthError = null;
-
-      if (priceGrowthRes.status === 'fulfilled') {
-        priceGrowthData = priceGrowthRes.value.data;
-      } else {
-        const err = priceGrowthRes.reason;
-        if (err.response?.status === 404) {
-          priceGrowthError = 'Price growth data coming soon';
-        } else {
-          priceGrowthError = err.response?.data?.error || 'Failed to load price growth data';
-        }
-      }
-
-      // Return with embedded errors for partial success handling
-      return { exitQueue: exitQueueData, exitQueueError, priceGrowth: priceGrowthData, priceGrowthError };
     },
-    ['exitRisk-data', selectedProject?.name],
-    { chartName: 'ExitRisk-data', enabled: !!validProject }
+    ['exitRisk-exitQueue', selectedProject?.name],
+    { chartName: 'ExitRisk-exitQueue', enabled: !!validProject }
+  );
+  const hasNoResales =
+    exitQueueRawData?.data_quality?.completeness === 'no_resales'
+    || exitQueueRawData?.dataQuality?.completeness === 'no_resales';
+  const enableSecondaryQueries = !!validProject && exitQueueStatus === 'success' && !hasNoResales;
+
+  // --- Query 3: Price growth (independent, can load after core data) ---
+  const { data: priceGrowthRawData = null, status: priceGrowthStatus, error: priceGrowthQueryError } = useAppQuery(
+    async (signal) => {
+      const response = await getProjectPriceGrowth(selectedProject.name, { signal });
+      return response.data;
+    },
+    ['exitRisk-priceGrowth', selectedProject?.name],
+    { chartName: 'ExitRisk-priceGrowth', enabled: enableSecondaryQueries }
   );
 
-  // Derive state from projectData query
-  const loading = projectDataStatus === 'pending';
-  const error = projectDataStatus === 'error' ? projectDataError?.message : projectData?.exitQueueError;
-  const exitQueueData = projectData?.exitQueue ?? null;
-  const priceGrowthData = projectData?.priceGrowth ?? null;
-  const priceGrowthError = projectData?.priceGrowthError ?? null;
-  const priceGrowthLoading = loading;
+  // Derive state from queries
+  const loading = exitQueueStatus === 'pending';
+  const error = exitQueueStatus === 'error'
+    ? (exitQueueQueryError?.message || exitQueueQueryError?.response?.data?.error || 'Failed to load project data')
+    : null;
+  const exitQueueData = exitQueueRawData ?? null;
+  const priceGrowthData = priceGrowthRawData ?? null;
+  const priceGrowthLoading = priceGrowthStatus === 'pending';
+  const priceGrowthError = priceGrowthStatus === 'error'
+    ? (priceGrowthQueryError?.response?.status === 404
+      ? 'Price growth data coming soon'
+      : (priceGrowthQueryError?.response?.data?.error || 'Failed to load price growth data'))
+    : null;
 
-  // --- Query 3: Price bands (when project selected) ---
+  // --- Query 4: Price bands (when project selected) ---
   const { data: priceBandsData = null, status: priceBandsStatus, error: priceBandsQueryError } = useAppQuery(
     async (signal) => {
       const params = unitPsf ? { unit_psf: unitPsf } : {};
@@ -185,7 +181,7 @@ export function ExitRiskContent() {
       return response.data;
     },
     ['exitRisk-bands', selectedProject?.name, unitPsf],
-    { chartName: 'ExitRisk-bands', enabled: !!validProject }
+    { chartName: 'ExitRisk-bands', enabled: enableSecondaryQueries }
   );
   const priceBandsLoading = priceBandsStatus === 'pending';
   const priceBandsError = priceBandsQueryError?.response?.data?.error || (priceBandsQueryError ? 'Failed to load price bands' : null);
@@ -226,11 +222,11 @@ export function ExitRiskContent() {
 
   // Handle "project not found" error by clearing selection
   useEffect(() => {
-    if (projectDataError?.message === 'Project not found. It may have been removed from the database.') {
+    if (exitQueueQueryError?.message === 'Project not found. It may have been removed from the database.') {
       setSelectedProject(null);
       sessionStorage.removeItem(STORAGE_KEY_PROJECT);
     }
-  }, [projectDataError]);
+  }, [exitQueueQueryError]);
 
   // Handle click outside to close dropdown
   useEffect(() => {
