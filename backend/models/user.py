@@ -1,7 +1,9 @@
 """
 User model with neutral access terminology.
 
-This model targets the finalized neutral schema from migration 025.
+Column mappings use legacy DB names (stripe_customer_id, access_override, etc.)
+that exist before AND after migration 024. Migration 024's sync trigger keeps
+neutral columns in parity. This avoids crashes if migration 025 hasn't run yet.
 """
 from datetime import datetime
 
@@ -19,11 +21,11 @@ class User(db.Model):
 
     # Neutral DB column names for access state.
     access_level_storage = db.Column('access_tier', db.String(20), default='authenticated')
-    billing_customer_ref_storage = db.Column('billing_customer_ref', db.String(255))
+    billing_customer_ref_storage = db.Column('stripe_customer_id', db.String(255))
     access_status_storage = db.Column('access_status', db.String(50), default=None)
     access_expires_at_storage = db.Column('access_expires_at', db.DateTime)
-    access_override_enabled_storage = db.Column('access_override_enabled', db.Boolean, default=False)
-    access_override_until_storage = db.Column('access_override_until', db.DateTime)
+    access_override_enabled_storage = db.Column('access_override', db.Boolean, default=False)
+    access_override_until_storage = db.Column('override_until', db.DateTime)
     access_source_storage = db.Column('access_source', db.String(50))
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

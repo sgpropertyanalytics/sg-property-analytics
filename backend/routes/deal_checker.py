@@ -285,8 +285,6 @@ def get_multi_scope_comparison():
     """
     Enhanced endpoint with multi-scope comparison.
 
-    PREMIUM FEATURE: Requires active subscription.
-
     Returns data for three comparison scopes:
     - same_project: Transactions in the exact same project
     - radius_1km: Transactions within 1km radius (includes same project)

@@ -171,20 +171,23 @@ def is_transaction_pooler_url(url: str) -> bool:
 
 
 def main():
-    # REQUIRE direct connection for migrations - do NOT fall back to pooler
-    # Supabase pooler (port 6543) wraps queries in transactions, which can break DDL
+    # Prefer DATABASE_URL_MIGRATIONS (direct/session pooler) for safety.
+    # Fall back to DATABASE_URL so deploys don't silently skip migrations.
     db_url = os.environ.get('DATABASE_URL_MIGRATIONS')
     if not db_url:
-        print("=" * 60)
-        print("ERROR: DATABASE_URL_MIGRATIONS environment variable required")
-        print("=" * 60)
-        print("\nMigrations require a DIRECT database connection (not pooler).")
-        print("Supabase pooler wraps queries in transactions, breaking some DDL.")
-        print("\nSet DATABASE_URL_MIGRATIONS to your direct Supabase endpoint:")
-        print("  postgresql://postgres:[PASSWORD]@db.<project>.supabase.co:5432/postgres")
-        print("\nNOTE: Use port 5432 (direct), NOT port 6543 (pooler)")
-        print("=" * 60)
-        sys.exit(1)
+        db_url = os.environ.get('DATABASE_URL')
+        if not db_url:
+            print("=" * 60)
+            print("ERROR: No database URL found")
+            print("=" * 60)
+            print("\nSet DATABASE_URL_MIGRATIONS or DATABASE_URL.")
+            print("=" * 60)
+            sys.exit(1)
+        # Handle Render's postgres:// format
+        if db_url.startswith('postgres://'):
+            db_url = db_url.replace('postgres://', 'postgresql://', 1)
+        print("WARNING: DATABASE_URL_MIGRATIONS not set, falling back to DATABASE_URL")
+        print("  Set DATABASE_URL_MIGRATIONS for optimal migration safety.")
 
     # Guard against accidentally using TRANSACTION pooler (port 6543)
     # Session pooler (port 5432) is fine - it doesn't wrap queries in transactions

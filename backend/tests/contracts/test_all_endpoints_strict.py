@@ -91,16 +91,11 @@ PUBLIC_ENDPOINTS = [
 ]
 
 AUTH_REQUIRED_ENDPOINTS = [
-    # Auth endpoints that require JWT
-    ("auth/me", "/api/auth/me", "GET", {}),
-    ("auth/subscription", "/api/auth/subscription", "GET", {}),
+    ("auth/delete-account", "/api/auth/delete-account", "DELETE", {}),
 ]
 
 # Endpoints requiring POST with specific body
 POST_ENDPOINTS = [
-    ("auth/register", "/api/auth/register", "POST", {"email": "test@example.com", "password": "testpass123"}),
-    ("auth/login", "/api/auth/login", "POST", {"email": "test@example.com", "password": "testpass123"}),
-    ("auth/firebase-sync", "/api/auth/firebase-sync", "POST", {"idToken": "mock_token", "email": "test@example.com"}),
 ]
 
 # Endpoints with path parameters

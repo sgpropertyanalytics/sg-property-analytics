@@ -27,6 +27,8 @@ services:
         value: "false"  # Explicit: secure cookies in production
       - key: DATABASE_URL
         sync: false  # Set manually in Render dashboard (Supabase connection string)
+      - key: DATABASE_URL_MIGRATIONS
+        sync: false  # Optional: session pooler or direct URL for DDL. Falls back to DATABASE_URL.
       - key: URA_ACCESS_KEY
         sync: false  # Set manually in Render dashboard
 

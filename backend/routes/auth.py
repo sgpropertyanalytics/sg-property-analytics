@@ -1,15 +1,13 @@
 """
 Authentication Routes - Firebase-only authentication
 
-Includes:
-- Firebase/Google OAuth (primary auth flow)
-- Access status endpoints
+Provides account deletion and auth health diagnostics.
+Firebase token verification happens in utils/subscription.py.
 """
 from flask import Blueprint, jsonify, current_app
 import time
 import os
 from models.database import db
-from models.user import User
 from api.contracts import api_contract
 
 auth_bp = Blueprint('auth', __name__)
@@ -108,87 +106,6 @@ def get_firebase_app():
         return None
 
 
-@auth_bp.route("/me", methods=["GET"])
-@api_contract("auth/me")
-def get_current_user():
-    """Get current user info (requires authentication)"""
-    try:
-        from utils.subscription import get_user_from_request
-        user = get_user_from_request()
-        if not user:
-            return jsonify({"error": "Authorization required"}), 401
-
-        return jsonify({
-            "user": user.to_dict()
-        }), 200
-
-    except Exception as e:
-        current_app.logger.exception("Get current user failed")
-        return jsonify({"error": "Internal server error"}), 500
-
-
-@auth_bp.route("/firebase-sync", methods=["POST"])
-@api_contract("auth/firebase-sync")
-def firebase_sync():
-    """
-    Sync Firebase user with backend User model.
-
-    Called after successful Google OAuth sign-in on frontend.
-    Creates user if needed and returns access state.
-    Firebase ID token is verified server-side via firebase_admin.
-    """
-    try:
-        from utils.subscription import get_user_from_request
-        user = get_user_from_request()
-        if not user:
-            return jsonify({
-                "error": "Authorization required",
-                "error_code": "auth_required",
-            }), 401
-
-        return jsonify({
-            "message": "Sync successful",
-            "user": user.to_dict(),
-            "access": {
-                "accessLevel": "authenticated",
-                "accessSource": "authenticated_user",
-                "has_access": True,
-                "subscribed": True,
-                "access_expires_at": None,
-                "ends_at": None,
-            }
-        }), 200
-
-    except Exception as e:
-        db.session.rollback()
-        print(f"Firebase sync error: {e}")
-        return jsonify({"error": "Internal server error"}), 500
-
-
-@auth_bp.route("/subscription", methods=["GET"])
-@api_contract("auth/subscription")
-def get_subscription():
-    """Get current user's access status."""
-    try:
-        from utils.subscription import get_user_from_request
-        user = get_user_from_request()
-        if not user:
-            return jsonify({"error": "Authorization required"}), 401
-
-        return jsonify({
-            "accessLevel": "authenticated",
-            "accessSource": "authenticated_user",
-            "has_access": True,
-            "subscribed": True,
-            "access_expires_at": None,
-            "ends_at": None,
-        }), 200
-
-    except Exception as e:
-        current_app.logger.exception("Get subscription failed")
-        return jsonify({"error": "Internal server error"}), 500
-
-
 @auth_bp.route("/delete-account", methods=["DELETE"])
 @api_contract("auth/delete-account")
 def delete_account():
@@ -200,14 +117,6 @@ def delete_account():
         user = get_user_from_request()
         if not user:
             return jsonify({"error": "Authorization required"}), 401
-
-        # Delete user only if a persisted DB row exists.
-        # During auth fallback mode, user may be a token principal.
-        if not isinstance(user, User):
-            return jsonify({
-                "error": "Account deletion temporarily unavailable. Please contact support.",
-                "code": "ACCOUNT_DELETE_UNAVAILABLE",
-            }), 503
 
         db.session.delete(user)
         db.session.commit()
@@ -221,11 +130,6 @@ def delete_account():
         db.session.rollback()
         current_app.logger.exception("Account deletion failed")
         return jsonify({"error": "Internal server error"}), 500
-
-
-@auth_bp.route("/logout", methods=["POST"])
-def logout():
-    return jsonify({"message": "Logged out"}), 200
 
 
 @auth_bp.route("/health", methods=["GET"])

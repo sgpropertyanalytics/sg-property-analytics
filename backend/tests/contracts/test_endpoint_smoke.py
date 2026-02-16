@@ -87,8 +87,7 @@ PUBLIC_ENDPOINTS = [
 ]
 
 AUTH_ENDPOINTS = [
-    ("/api/auth/me", "GET", {}, True),
-    ("/api/auth/subscription", "GET", {}, True),
+    ("/api/auth/delete-account", "DELETE", {}, True),
 ]
 
 
