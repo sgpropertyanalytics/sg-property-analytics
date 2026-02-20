@@ -465,6 +465,9 @@ class URASyncEngine:
         """
         Upsert a chunk of rows.
 
+        Uses savepoints so a single row failure doesn't poison the
+        transaction for the rest of the chunk.
+
         Returns:
             (inserted_count, updated_count)
         """
@@ -479,6 +482,7 @@ class URASyncEngine:
             row_data = self._prepare_row_for_insert(row)
 
             try:
+                nested = self.session.begin_nested()
                 result = self.session.execute(text(upsert_sql), row_data)
                 row_result = result.fetchone()
 
@@ -488,7 +492,10 @@ class URASyncEngine:
                     else:
                         updated += 1
 
+                nested.commit()
+
             except Exception as e:
+                nested.rollback()
                 logger.warning(f"Failed to upsert row: {e}")
                 self.stats.failed_rows += 1
 
