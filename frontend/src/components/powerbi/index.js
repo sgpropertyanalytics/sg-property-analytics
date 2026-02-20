@@ -12,3 +12,4 @@ export { AbsolutePsfChart } from './AbsolutePsfChart';
 export { MarketMomentumGrid } from './MarketMomentumGrid';
 export { DistrictMicroChart } from './DistrictMicroChart';
 export { GrowthDumbbellChart } from './GrowthDumbbellChart';
+export { HdbMillionDollarChart } from './HdbMillionDollarChart';

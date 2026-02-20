@@ -500,6 +500,11 @@ def create_app():
     app.register_blueprint(ai_bp, url_prefix='/api/ai')
     print("   ✓ AI routes registered")
 
+    # HDB Resale routes (external data.gov.sg proxy - public)
+    from routes.hdb import hdb_bp
+    app.register_blueprint(hdb_bp, url_prefix='/api/hdb')
+    print("   ✓ HDB routes registered")
+
     # Supply Pipeline routes (waterfall chart data)
     try:
         from routes.supply import supply_bp

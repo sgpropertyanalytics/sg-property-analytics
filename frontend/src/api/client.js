@@ -990,4 +990,25 @@ export const getSupplySummary = async (params = {}, options = {}) => {
   return response.data;
 };
 
+/**
+ * Get monthly count and total quantum of HDB resale transactions >= $1M.
+ * Proxies data.gov.sg public HDB dataset. Backend caches for 6 hours.
+ *
+ * @param {Object} options - Request options
+ * @param {AbortSignal} [options.signal] - AbortController signal
+ * @returns {Promise<{
+ *   data: Array<{month: string, count: number, total_quantum: number}>,
+ *   meta: {total_transactions: number, cache_hit: boolean, source: string}
+ * }>}
+ */
+export const getHdbMillionDollarTrend = (options = {}) => {
+  const cacheKey = 'hdb:million-dollar-trend';
+  const { signal } = options;
+  return cachedFetch(
+    cacheKey,
+    () => apiClient.get('/hdb/million-dollar-trend', { signal }),
+    { signal }
+  );
+};
+
 export default apiClient;

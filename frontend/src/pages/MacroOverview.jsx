@@ -4,6 +4,7 @@ import { useInView } from 'react-intersection-observer';
 import { TIME_GROUP_BY } from '../context/PowerBIFilter';
 import { useZustandFilters } from '../stores/filterStore';
 import { TimeTrendChart } from '../components/powerbi/TimeTrendChart';
+import { HdbMillionDollarChart } from '../components/powerbi/HdbMillionDollarChart';
 import { PriceDistributionChart } from '../components/powerbi/PriceDistributionChart';
 import { BeadsChart } from '../components/powerbi/BeadsChart';
 // NewVsResaleChart moved to Primary Market page
@@ -411,6 +412,21 @@ export function MacroOverviewContent() {
                     </ChartWatermark>
                   </ErrorBoundary>
                 </ChartPanel>
+          </div>
+        </DataSection>
+
+        {/* HDB $1M+ Resale Intelligence — external data.gov.sg source, standalone indicator */}
+        <DataSection title="HDB RESALE · $1M+ MARKET">
+          <div className="grid grid-cols-1">
+            <ChartPanel>
+              <ErrorBoundary name="HDB Million Dollar Chart" compact>
+                <HdbMillionDollarChart
+                  height={chartHeight}
+                  staggerIndex={6}
+                  variant="dashboard"
+                />
+              </ErrorBoundary>
+            </ChartPanel>
           </div>
         </DataSection>
       </div>
