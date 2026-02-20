@@ -48,10 +48,12 @@ function HdbMillionDollarChartBase({ height = 380, staggerIndex = 0, variant = '
     async (signal) => {
       const response = await getHdbMillionDollarTrend({ signal });
       // 202 = background fetch in progress; return loading sentinel
-      if (response.status === 202 || response.data?.meta?.loading) {
+      // response.meta comes from unwrapEnvelope (axios interceptor strips the outer envelope)
+      if (response.status === 202 || response.meta?.loading) {
         return { records: [], loading: true };
       }
-      return { records: response.data?.data ?? [], loading: false };
+      // response.data is the records array after unwrapEnvelope (not response.data.data)
+      return { records: Array.isArray(response.data) ? response.data : [], loading: false };
     },
     ['hdb-million-dollar-trend'],
     {

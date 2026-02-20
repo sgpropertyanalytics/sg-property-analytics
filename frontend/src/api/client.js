@@ -1002,13 +1002,12 @@ export const getSupplySummary = async (params = {}, options = {}) => {
  * }>}
  */
 export const getHdbMillionDollarTrend = (options = {}) => {
-  const cacheKey = 'hdb:million-dollar-trend';
+  // NOTE: intentionally bypasses cachedFetch — the backend uses a 202/polling pattern
+  // while the background fetch runs (up to ~20s with API key). Caching a 202 response
+  // would block subsequent polls from reaching the backend.
+  // Once the backend cache is warm (6h TTL), every request returns 200 instantly.
   const { signal } = options;
-  return cachedFetch(
-    cacheKey,
-    () => apiClient.get('/hdb/million-dollar-trend', { signal }),
-    { signal }
-  );
+  return apiClient.get('/hdb/million-dollar-trend', { signal });
 };
 
 export default apiClient;
