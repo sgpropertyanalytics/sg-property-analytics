@@ -132,7 +132,9 @@ function HdbMillionDollarChartBase({ height = 380, staggerIndex = 0, variant = '
   const embedded = isDashboard;
   const cinema = isDashboard;
 
-  const { timeGrouping } = useZustandFilters();
+  const { filters, timeGrouping } = useZustandFilters();
+  const selectedDistricts = filters.districts || [];
+  const isFiltering = selectedDistricts.length > 0;
   const chartRef = useRef(null);
 
   const { data: queryResult, status, error, refetch } = useAppQuery(
@@ -152,7 +154,14 @@ function HdbMillionDollarChartBase({ height = 380, staggerIndex = 0, variant = '
   );
 
   const isBackgroundLoading = queryResult?.loading === true;
-  const rawData = isBackgroundLoading ? [] : (queryResult?.records ?? []);
+  const allData = isBackgroundLoading ? [] : (queryResult?.records ?? []);
+
+  // Client-side district filtering (same pattern as other charts)
+  const rawData = useMemo(() => {
+    if (!selectedDistricts.length) return allData;
+    const selected = new Set(selectedDistricts.map(d => d.toUpperCase()));
+    return allData.filter(row => selected.has((row.district || row.region || '').toUpperCase()));
+  }, [allData, selectedDistricts]);
 
   // Pivot into per-district stacked structure
   const { labels, districtSeries, quantum, districts } = useMemo(
@@ -293,7 +302,7 @@ function HdbMillionDollarChartBase({ height = 380, staggerIndex = 0, variant = '
   return (
     <ChartFrame
       status={isBackgroundLoading ? 'pending' : status}
-      isFiltering={false}
+      isFiltering={isFiltering}
       error={error}
       onRetry={refetch}
       empty={!isBackgroundLoading && labels.length === 0}
