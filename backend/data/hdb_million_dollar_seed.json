@@ -1,0 +1,472 @@
+[
+    {
+        "month": "2018-01",
+        "count": 1,
+        "total_quantum": 1068000.0
+    },
+    {
+        "month": "2018-04",
+        "count": 1,
+        "total_quantum": 1100000.0
+    },
+    {
+        "month": "2018-07",
+        "count": 3,
+        "total_quantum": 3228000.0
+    },
+    {
+        "month": "2018-08",
+        "count": 3,
+        "total_quantum": 3208000.0
+    },
+    {
+        "month": "2018-09",
+        "count": 3,
+        "total_quantum": 3124000.0
+    },
+    {
+        "month": "2018-10",
+        "count": 2,
+        "total_quantum": 2088888.0
+    },
+    {
+        "month": "2018-11",
+        "count": 2,
+        "total_quantum": 2068000.0
+    },
+    {
+        "month": "2018-12",
+        "count": 4,
+        "total_quantum": 4338000.0
+    },
+    {
+        "month": "2019-01",
+        "count": 6,
+        "total_quantum": 6633000.0
+    },
+    {
+        "month": "2019-02",
+        "count": 4,
+        "total_quantum": 4071000.0
+    },
+    {
+        "month": "2019-03",
+        "count": 7,
+        "total_quantum": 7524000.0
+    },
+    {
+        "month": "2019-04",
+        "count": 5,
+        "total_quantum": 5314000.0
+    },
+    {
+        "month": "2019-05",
+        "count": 8,
+        "total_quantum": 8394776.0
+    },
+    {
+        "month": "2019-06",
+        "count": 6,
+        "total_quantum": 6434800.0
+    },
+    {
+        "month": "2019-07",
+        "count": 8,
+        "total_quantum": 8678000.0
+    },
+    {
+        "month": "2019-08",
+        "count": 9,
+        "total_quantum": 9506801.0
+    },
+    {
+        "month": "2019-09",
+        "count": 4,
+        "total_quantum": 4110000.0
+    },
+    {
+        "month": "2019-10",
+        "count": 1,
+        "total_quantum": 1100000.0
+    },
+    {
+        "month": "2019-11",
+        "count": 4,
+        "total_quantum": 4184888.0
+    },
+    {
+        "month": "2019-12",
+        "count": 2,
+        "total_quantum": 2066800.0
+    },
+    {
+        "month": "2020-01",
+        "count": 4,
+        "total_quantum": 4041888.0
+    },
+    {
+        "month": "2020-02",
+        "count": 4,
+        "total_quantum": 4178000.0
+    },
+    {
+        "month": "2020-03",
+        "count": 5,
+        "total_quantum": 5439000.0
+    },
+    {
+        "month": "2020-04",
+        "count": 1,
+        "total_quantum": 1010000.88
+    },
+    {
+        "month": "2020-05",
+        "count": 2,
+        "total_quantum": 2170000.0
+    },
+    {
+        "month": "2020-06",
+        "count": 8,
+        "total_quantum": 8683076.0
+    },
+    {
+        "month": "2020-07",
+        "count": 9,
+        "total_quantum": 9490000.0
+    },
+    {
+        "month": "2020-08",
+        "count": 5,
+        "total_quantum": 5423000.0
+    },
+    {
+        "month": "2020-09",
+        "count": 8,
+        "total_quantum": 8984888.0
+    },
+    {
+        "month": "2020-10",
+        "count": 13,
+        "total_quantum": 14117888.0
+    },
+    {
+        "month": "2020-11",
+        "count": 13,
+        "total_quantum": 13964964.0
+    },
+    {
+        "month": "2020-12",
+        "count": 10,
+        "total_quantum": 10807664.0
+    },
+    {
+        "month": "2021-01",
+        "count": 13,
+        "total_quantum": 13906888.0
+    },
+    {
+        "month": "2021-02",
+        "count": 23,
+        "total_quantum": 24473800.0
+    },
+    {
+        "month": "2021-03",
+        "count": 17,
+        "total_quantum": 18136664.0
+    },
+    {
+        "month": "2021-04",
+        "count": 21,
+        "total_quantum": 22597888.0
+    },
+    {
+        "month": "2021-05",
+        "count": 13,
+        "total_quantum": 14280388.0
+    },
+    {
+        "month": "2021-06",
+        "count": 19,
+        "total_quantum": 20942188.0
+    },
+    {
+        "month": "2021-07",
+        "count": 19,
+        "total_quantum": 19996000.0
+    },
+    {
+        "month": "2021-08",
+        "count": 26,
+        "total_quantum": 28265776.0
+    },
+    {
+        "month": "2021-09",
+        "count": 23,
+        "total_quantum": 25059888.0
+    },
+    {
+        "month": "2021-10",
+        "count": 20,
+        "total_quantum": 22216888.0
+    },
+    {
+        "month": "2021-11",
+        "count": 29,
+        "total_quantum": 32380000.0
+    },
+    {
+        "month": "2021-12",
+        "count": 36,
+        "total_quantum": 40190191.0
+    },
+    {
+        "month": "2022-01",
+        "count": 27,
+        "total_quantum": 30498464.0
+    },
+    {
+        "month": "2022-02",
+        "count": 29,
+        "total_quantum": 32721888.0
+    },
+    {
+        "month": "2022-03",
+        "count": 27,
+        "total_quantum": 30127830.88
+    },
+    {
+        "month": "2022-04",
+        "count": 22,
+        "total_quantum": 24014000.0
+    },
+    {
+        "month": "2022-05",
+        "count": 30,
+        "total_quantum": 33384864.88
+    },
+    {
+        "month": "2022-06",
+        "count": 31,
+        "total_quantum": 34476664.0
+    },
+    {
+        "month": "2022-07",
+        "count": 33,
+        "total_quantum": 36825441.0
+    },
+    {
+        "month": "2022-08",
+        "count": 33,
+        "total_quantum": 36322189.0
+    },
+    {
+        "month": "2022-09",
+        "count": 45,
+        "total_quantum": 50405754.0
+    },
+    {
+        "month": "2022-10",
+        "count": 38,
+        "total_quantum": 42108276.0
+    },
+    {
+        "month": "2022-11",
+        "count": 26,
+        "total_quantum": 29013888.0
+    },
+    {
+        "month": "2022-12",
+        "count": 28,
+        "total_quantum": 31043488.0
+    },
+    {
+        "month": "2023-01",
+        "count": 40,
+        "total_quantum": 44555776.0
+    },
+    {
+        "month": "2023-02",
+        "count": 24,
+        "total_quantum": 26638464.0
+    },
+    {
+        "month": "2023-03",
+        "count": 39,
+        "total_quantum": 43839888.0
+    },
+    {
+        "month": "2023-04",
+        "count": 37,
+        "total_quantum": 41707240.0
+    },
+    {
+        "month": "2023-05",
+        "count": 34,
+        "total_quantum": 37241440.0
+    },
+    {
+        "month": "2023-06",
+        "count": 34,
+        "total_quantum": 38253776.0
+    },
+    {
+        "month": "2023-07",
+        "count": 32,
+        "total_quantum": 35446000.0
+    },
+    {
+        "month": "2023-08",
+        "count": 54,
+        "total_quantum": 61296576.0
+    },
+    {
+        "month": "2023-09",
+        "count": 42,
+        "total_quantum": 48571603.0
+    },
+    {
+        "month": "2023-10",
+        "count": 40,
+        "total_quantum": 45163664.0
+    },
+    {
+        "month": "2023-11",
+        "count": 45,
+        "total_quantum": 49001164.0
+    },
+    {
+        "month": "2023-12",
+        "count": 48,
+        "total_quantum": 53376328.0
+    },
+    {
+        "month": "2024-01",
+        "count": 74,
+        "total_quantum": 83834547.0
+    },
+    {
+        "month": "2024-02",
+        "count": 49,
+        "total_quantum": 54045416.0
+    },
+    {
+        "month": "2024-03",
+        "count": 60,
+        "total_quantum": 67075504.0
+    },
+    {
+        "month": "2024-04",
+        "count": 68,
+        "total_quantum": 75434040.0
+    },
+    {
+        "month": "2024-05",
+        "count": 73,
+        "total_quantum": 80723119.0
+    },
+    {
+        "month": "2024-06",
+        "count": 95,
+        "total_quantum": 108257456.0
+    },
+    {
+        "month": "2024-07",
+        "count": 120,
+        "total_quantum": 134354668.88
+    },
+    {
+        "month": "2024-08",
+        "count": 105,
+        "total_quantum": 117719010.0
+    },
+    {
+        "month": "2024-09",
+        "count": 106,
+        "total_quantum": 118057168.0
+    },
+    {
+        "month": "2024-10",
+        "count": 103,
+        "total_quantum": 116529248.0
+    },
+    {
+        "month": "2024-11",
+        "count": 87,
+        "total_quantum": 96516376.0
+    },
+    {
+        "month": "2024-12",
+        "count": 95,
+        "total_quantum": 107406477.0
+    },
+    {
+        "month": "2025-01",
+        "count": 119,
+        "total_quantum": 133241320.0
+    },
+    {
+        "month": "2025-02",
+        "count": 121,
+        "total_quantum": 138882875.0
+    },
+    {
+        "month": "2025-03",
+        "count": 108,
+        "total_quantum": 122463741.0
+    },
+    {
+        "month": "2025-04",
+        "count": 141,
+        "total_quantum": 159153368.0
+    },
+    {
+        "month": "2025-05",
+        "count": 142,
+        "total_quantum": 163098494.0
+    },
+    {
+        "month": "2025-06",
+        "count": 132,
+        "total_quantum": 151358772.0
+    },
+    {
+        "month": "2025-07",
+        "count": 167,
+        "total_quantum": 188877162.0
+    },
+    {
+        "month": "2025-08",
+        "count": 141,
+        "total_quantum": 163225592.88
+    },
+    {
+        "month": "2025-09",
+        "count": 172,
+        "total_quantum": 194534976.88
+    },
+    {
+        "month": "2025-10",
+        "count": 86,
+        "total_quantum": 99375232.0
+    },
+    {
+        "month": "2025-11",
+        "count": 120,
+        "total_quantum": 140238544.88
+    },
+    {
+        "month": "2025-12",
+        "count": 145,
+        "total_quantum": 169391000.0
+    },
+    {
+        "month": "2026-01",
+        "count": 146,
+        "total_quantum": 167299644.0
+    },
+    {
+        "month": "2026-02",
+        "count": 72,
+        "total_quantum": 81470516.0
+    }
+]
