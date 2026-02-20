@@ -12,7 +12,6 @@ import urllib.parse
 import urllib.error
 
 # HDB town → URA district mapping
-# Source: constants.py PLANNING_AREA_TO_DISTRICT
 HDB_TOWN_TO_DISTRICT = {
     'ANG MO KIO': 'D20',
     'BEDOK': 'D16',
@@ -63,19 +62,19 @@ def fetch_page(offset):
     if API_KEY:
         req.add_header('Authorization', API_KEY)
 
-    for attempt in range(5):
+    for attempt in range(8):  # More retries with longer waits
         try:
             with urllib.request.urlopen(req, timeout=30) as resp:
                 data = json.loads(resp.read())
                 return data.get('result', {}).get('records', [])
         except urllib.error.HTTPError as e:
             if e.code == 429:
-                wait = 15 * (2 ** attempt)
-                print(f"  429 rate limited - waiting {wait}s (attempt {attempt+1}/5)")
+                wait = 20 * (2 ** min(attempt, 4))  # 20, 40, 80, 160, 320s max
+                print(f"  429 rate limited - waiting {wait}s (attempt {attempt+1}/8)")
                 time.sleep(wait)
                 continue
             raise
-    raise Exception("Rate limited after 5 attempts")
+    return None  # Give up gracefully instead of raising
 
 
 def main():
@@ -83,12 +82,14 @@ def main():
     monthly = {}  # key: (month, district)
     offset = 0
     total = 0
-    delay = 0.5 if API_KEY else 10.0
+    # Use long delay between pages to avoid 429
+    delay = 15.0
 
     for page in range(100):
         print(f"  Page {page+1} (offset {offset})...")
         records = fetch_page(offset)
         if not records:
+            print(f"  No records returned on page {page+1}, stopping.")
             break
 
         done = False
@@ -111,10 +112,15 @@ def main():
             total += 1
 
         if done:
-            print(f"  Reached prices < $1M. Done.")
+            print(f"  Reached prices < $1M after {total} transactions. Done.")
             break
         offset += PAGE_LIMIT
+        print(f"  Processed {total} txns so far. Waiting {delay}s...")
         time.sleep(delay)
+
+    if not monthly:
+        print("ERROR: No data collected. File not updated.")
+        return
 
     data = sorted(
         [{'month': k[0], 'district': k[1], 'count': v['count'], 'total_quantum': v['total_quantum']}

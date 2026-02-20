@@ -1,1610 +1,6530 @@
 [
   {
     "month": "2017-01",
-    "region": "CCR",
+    "district": "D08",
     "count": 1,
-    "total_quantum": 1108000.0
+    "total_quantum": 277000.0
   },
   {
     "month": "2017-01",
-    "region": "RCR",
+    "district": "D19",
     "count": 1,
-    "total_quantum": 1005000.0
+    "total_quantum": 50250.0
   },
   {
     "month": "2017-02",
-    "region": "RCR",
+    "district": "D19",
     "count": 1,
-    "total_quantum": 1180000.0
+    "total_quantum": 59000.0
   },
   {
     "month": "2017-03",
-    "region": "CCR",
-    "count": 2,
-    "total_quantum": 2162000.0
+    "district": "D01",
+    "count": 1,
+    "total_quantum": 864800.0
   },
   {
     "month": "2017-03",
-    "region": "RCR",
+    "district": "D03",
+    "count": 1,
+    "total_quantum": 756700.0
+  },
+  {
+    "month": "2017-03",
+    "district": "D19",
     "count": 2,
-    "total_quantum": 2088000.0
+    "total_quantum": 104400.0
   },
   {
     "month": "2017-04",
-    "region": "RCR",
+    "district": "D19",
     "count": 2,
-    "total_quantum": 2060000.0
+    "total_quantum": 103000.0
   },
   {
     "month": "2017-05",
-    "region": "CCR",
-    "count": 3,
-    "total_quantum": 3166000.0
-  },
-  {
-    "month": "2017-05",
-    "region": "OCR",
+    "district": "D01",
     "count": 1,
-    "total_quantum": 1015000.0
+    "total_quantum": 1266400.0
   },
   {
     "month": "2017-05",
-    "region": "RCR",
+    "district": "D03",
+    "count": 1,
+    "total_quantum": 1108100.0
+  },
+  {
+    "month": "2017-05",
+    "district": "D08",
+    "count": 1,
+    "total_quantum": 791500.0
+  },
+  {
+    "month": "2017-05",
+    "district": "D19",
     "count": 2,
-    "total_quantum": 2006000.0
+    "total_quantum": 100300.0
+  },
+  {
+    "month": "2017-05",
+    "district": "D24",
+    "count": 1,
+    "total_quantum": 50750.0
   },
   {
     "month": "2017-06",
-    "region": "CCR",
-    "count": 2,
-    "total_quantum": 2080000.0
+    "district": "D01",
+    "count": 1,
+    "total_quantum": 832000.0
   },
   {
     "month": "2017-06",
-    "region": "RCR",
-    "count": 3,
-    "total_quantum": 3038888.0
+    "district": "D03",
+    "count": 1,
+    "total_quantum": 728000.0
+  },
+  {
+    "month": "2017-06",
+    "district": "D19",
+    "count": 2,
+    "total_quantum": 151944.39999999982
+  },
+  {
+    "month": "2017-06",
+    "district": "D20",
+    "count": 1,
+    "total_quantum": 759722.0
   },
   {
     "month": "2017-07",
-    "region": "RCR",
-    "count": 9,
-    "total_quantum": 9516888.0
+    "district": "D03",
+    "count": 1,
+    "total_quantum": 1427533.2
+  },
+  {
+    "month": "2017-07",
+    "district": "D05",
+    "count": 1,
+    "total_quantum": 761351.04
+  },
+  {
+    "month": "2017-07",
+    "district": "D12",
+    "count": 1,
+    "total_quantum": 1142026.56
+  },
+  {
+    "month": "2017-07",
+    "district": "D13",
+    "count": 1,
+    "total_quantum": 951688.8
+  },
+  {
+    "month": "2017-07",
+    "district": "D14",
+    "count": 1,
+    "total_quantum": 951688.8
+  },
+  {
+    "month": "2017-07",
+    "district": "D15",
+    "count": 1,
+    "total_quantum": 951688.8
+  },
+  {
+    "month": "2017-07",
+    "district": "D19",
+    "count": 1,
+    "total_quantum": 475844.4000000005
+  },
+  {
+    "month": "2017-07",
+    "district": "D20",
+    "count": 2,
+    "total_quantum": 2379222.0
   },
   {
     "month": "2017-08",
-    "region": "CCR",
+    "district": "D08",
     "count": 1,
-    "total_quantum": 1000000.0
+    "total_quantum": 250000.0
   },
   {
     "month": "2017-08",
-    "region": "RCR",
+    "district": "D19",
     "count": 2,
-    "total_quantum": 2033000.0
+    "total_quantum": 101650.0
   },
   {
     "month": "2017-09",
-    "region": "OCR",
+    "district": "D19",
+    "count": 2,
+    "total_quantum": 102750.0
+  },
+  {
+    "month": "2017-09",
+    "district": "D24",
     "count": 1,
-    "total_quantum": 1018888.0
-  },
-  {
-    "month": "2017-09",
-    "region": "RCR",
-    "count": 2,
-    "total_quantum": 2055000.0
+    "total_quantum": 50944.40000000009
   },
   {
     "month": "2017-10",
-    "region": "RCR",
+    "district": "D19",
     "count": 2,
-    "total_quantum": 2085000.0
+    "total_quantum": 104250.0
   },
   {
     "month": "2017-11",
-    "region": "CCR",
+    "district": "D03",
     "count": 1,
-    "total_quantum": 1138000.0
+    "total_quantum": 621270.0
   },
   {
     "month": "2017-11",
-    "region": "RCR",
-    "count": 4,
-    "total_quantum": 4141800.0
+    "district": "D08",
+    "count": 1,
+    "total_quantum": 284500.0
+  },
+  {
+    "month": "2017-11",
+    "district": "D19",
+    "count": 2,
+    "total_quantum": 207090.0
+  },
+  {
+    "month": "2017-11",
+    "district": "D20",
+    "count": 1,
+    "total_quantum": 1035450.0
   },
   {
     "month": "2017-12",
-    "region": "RCR",
-    "count": 4,
-    "total_quantum": 4083888.0
+    "district": "D03",
+    "count": 1,
+    "total_quantum": 612583.2
+  },
+  {
+    "month": "2017-12",
+    "district": "D19",
+    "count": 2,
+    "total_quantum": 204194.39999999964
+  },
+  {
+    "month": "2017-12",
+    "district": "D20",
+    "count": 1,
+    "total_quantum": 1020972.0
   },
   {
     "month": "2018-01",
-    "region": "OCR",
+    "district": "D24",
     "count": 1,
-    "total_quantum": 1000000.0
+    "total_quantum": 50000.0
   },
   {
     "month": "2018-02",
-    "region": "CCR",
+    "district": "D01",
+    "count": 1,
+    "total_quantum": 887555.2
+  },
+  {
+    "month": "2018-02",
+    "district": "D03",
+    "count": 1,
+    "total_quantum": 776610.8
+  },
+  {
+    "month": "2018-02",
+    "district": "D19",
+    "count": 1,
+    "total_quantum": 51400.0
+  },
+  {
+    "month": "2018-03",
+    "district": "D01",
     "count": 2,
-    "total_quantum": 2218888.0
+    "total_quantum": 1749200.0
   },
   {
-    "month": "2018-02",
-    "region": "RCR",
+    "month": "2018-03",
+    "district": "D03",
+    "count": 2,
+    "total_quantum": 2167493.2
+  },
+  {
+    "month": "2018-03",
+    "district": "D08",
     "count": 1,
-    "total_quantum": 1028000.0
+    "total_quantum": 1093250.0
   },
   {
     "month": "2018-03",
-    "region": "CCR",
-    "count": 4,
-    "total_quantum": 4373000.0
+    "district": "D19",
+    "count": 2,
+    "total_quantum": 212314.39999999964
   },
   {
     "month": "2018-03",
-    "region": "RCR",
-    "count": 4,
-    "total_quantum": 4246288.0
+    "district": "D20",
+    "count": 1,
+    "total_quantum": 1061572.0
   },
   {
     "month": "2018-04",
-    "region": "RCR",
-    "count": 5,
-    "total_quantum": 5218888.0
+    "district": "D03",
+    "count": 1,
+    "total_quantum": 782833.2
+  },
+  {
+    "month": "2018-04",
+    "district": "D12",
+    "count": 1,
+    "total_quantum": 626266.56
+  },
+  {
+    "month": "2018-04",
+    "district": "D19",
+    "count": 2,
+    "total_quantum": 260944.39999999964
+  },
+  {
+    "month": "2018-04",
+    "district": "D20",
+    "count": 1,
+    "total_quantum": 1304722.0
   },
   {
     "month": "2018-05",
-    "region": "CCR",
+    "district": "D08",
     "count": 1,
-    "total_quantum": 1080000.0
+    "total_quantum": 270000.0
   },
   {
     "month": "2018-06",
-    "region": "CCR",
+    "district": "D01",
+    "count": 1,
+    "total_quantum": 833200.0
+  },
+  {
+    "month": "2018-06",
+    "district": "D03",
     "count": 2,
-    "total_quantum": 2083000.0
+    "total_quantum": 2006296.4
   },
   {
     "month": "2018-06",
-    "region": "OCR",
+    "district": "D05",
     "count": 1,
-    "total_quantum": 1038000.0
+    "total_quantum": 681198.08
   },
   {
     "month": "2018-06",
-    "region": "RCR",
-    "count": 8,
-    "total_quantum": 8514976.0
+    "district": "D12",
+    "count": 1,
+    "total_quantum": 1021797.12
+  },
+  {
+    "month": "2018-06",
+    "district": "D13",
+    "count": 1,
+    "total_quantum": 851497.6
+  },
+  {
+    "month": "2018-06",
+    "district": "D14",
+    "count": 1,
+    "total_quantum": 851497.6
+  },
+  {
+    "month": "2018-06",
+    "district": "D15",
+    "count": 1,
+    "total_quantum": 851497.6
+  },
+  {
+    "month": "2018-06",
+    "district": "D20",
+    "count": 2,
+    "total_quantum": 2128744.0
+  },
+  {
+    "month": "2018-06",
+    "district": "D24",
+    "count": 1,
+    "total_quantum": 51900.0
   },
   {
     "month": "2018-07",
-    "region": "CCR",
-    "count": 2,
-    "total_quantum": 2020000.0
+    "district": "D01",
+    "count": 1,
+    "total_quantum": 808000.0
   },
   {
     "month": "2018-07",
-    "region": "RCR",
-    "count": 4,
-    "total_quantum": 4276000.0
-  },
-  {
-    "month": "2018-08",
-    "region": "CCR",
-    "count": 3,
-    "total_quantum": 3122888.0
-  },
-  {
-    "month": "2018-08",
-    "region": "OCR",
-    "count": 1,
-    "total_quantum": 1058000.0
-  },
-  {
-    "month": "2018-08",
-    "region": "RCR",
-    "count": 5,
-    "total_quantum": 5440888.0
-  },
-  {
-    "month": "2018-09",
-    "region": "CCR",
-    "count": 1,
-    "total_quantum": 1100000.0
-  },
-  {
-    "month": "2018-09",
-    "region": "RCR",
-    "count": 6,
-    "total_quantum": 6406000.0
-  },
-  {
-    "month": "2018-10",
-    "region": "CCR",
-    "count": 1,
-    "total_quantum": 1168000.0
-  },
-  {
-    "month": "2018-10",
-    "region": "RCR",
-    "count": 7,
-    "total_quantum": 7420888.0
-  },
-  {
-    "month": "2018-11",
-    "region": "CCR",
+    "district": "D03",
     "count": 2,
-    "total_quantum": 2027888.0
+    "total_quantum": 1348400.0
   },
   {
-    "month": "2018-11",
-    "region": "OCR",
+    "month": "2018-07",
+    "district": "D19",
+    "count": 2,
+    "total_quantum": 213800.0
+  },
+  {
+    "month": "2018-07",
+    "district": "D20",
     "count": 1,
-    "total_quantum": 1000000.0
+    "total_quantum": 1069000.0
+  },
+  {
+    "month": "2018-08",
+    "district": "D01",
+    "count": 1,
+    "total_quantum": 1249155.2
+  },
+  {
+    "month": "2018-08",
+    "district": "D03",
+    "count": 2,
+    "total_quantum": 1909144.0
+  },
+  {
+    "month": "2018-08",
+    "district": "D08",
+    "count": 1,
+    "total_quantum": 780722.0
+  },
+  {
+    "month": "2018-08",
+    "district": "D12",
+    "count": 1,
+    "total_quantum": 652906.56
+  },
+  {
+    "month": "2018-08",
+    "district": "D19",
+    "count": 2,
+    "total_quantum": 272044.39999999956
+  },
+  {
+    "month": "2018-08",
+    "district": "D20",
+    "count": 1,
+    "total_quantum": 1360222.0
+  },
+  {
+    "month": "2018-08",
+    "district": "D24",
+    "count": 1,
+    "total_quantum": 52900.0
+  },
+  {
+    "month": "2018-09",
+    "district": "D03",
+    "count": 1,
+    "total_quantum": 960900.0
+  },
+  {
+    "month": "2018-09",
+    "district": "D08",
+    "count": 1,
+    "total_quantum": 275000.0
+  },
+  {
+    "month": "2018-09",
+    "district": "D12",
+    "count": 1,
+    "total_quantum": 768720.0
+  },
+  {
+    "month": "2018-09",
+    "district": "D13",
+    "count": 1,
+    "total_quantum": 640600.0
+  },
+  {
+    "month": "2018-09",
+    "district": "D14",
+    "count": 1,
+    "total_quantum": 640600.0
+  },
+  {
+    "month": "2018-09",
+    "district": "D15",
+    "count": 1,
+    "total_quantum": 640600.0
+  },
+  {
+    "month": "2018-09",
+    "district": "D20",
+    "count": 2,
+    "total_quantum": 1601500.0
+  },
+  {
+    "month": "2018-10",
+    "district": "D03",
+    "count": 1,
+    "total_quantum": 1113133.2
+  },
+  {
+    "month": "2018-10",
+    "district": "D05",
+    "count": 1,
+    "total_quantum": 593671.04
+  },
+  {
+    "month": "2018-10",
+    "district": "D08",
+    "count": 1,
+    "total_quantum": 292000.0
+  },
+  {
+    "month": "2018-10",
+    "district": "D12",
+    "count": 1,
+    "total_quantum": 890506.56
+  },
+  {
+    "month": "2018-10",
+    "district": "D13",
+    "count": 1,
+    "total_quantum": 742088.8
+  },
+  {
+    "month": "2018-10",
+    "district": "D14",
+    "count": 1,
+    "total_quantum": 742088.8
+  },
+  {
+    "month": "2018-10",
+    "district": "D15",
+    "count": 1,
+    "total_quantum": 742088.8
+  },
+  {
+    "month": "2018-10",
+    "district": "D20",
+    "count": 2,
+    "total_quantum": 1855222.0
   },
   {
     "month": "2018-11",
-    "region": "RCR",
-    "count": 5,
-    "total_quantum": 5076888.0
+    "district": "D01",
+    "count": 1,
+    "total_quantum": 811155.2
+  },
+  {
+    "month": "2018-11",
+    "district": "D03",
+    "count": 2,
+    "total_quantum": 1471294.0
+  },
+  {
+    "month": "2018-11",
+    "district": "D12",
+    "count": 1,
+    "total_quantum": 609226.56
+  },
+  {
+    "month": "2018-11",
+    "district": "D19",
+    "count": 2,
+    "total_quantum": 253844.39999999964
+  },
+  {
+    "month": "2018-11",
+    "district": "D20",
+    "count": 1,
+    "total_quantum": 1269222.0
+  },
+  {
+    "month": "2018-11",
+    "district": "D24",
+    "count": 1,
+    "total_quantum": 50000.0
   },
   {
     "month": "2018-12",
-    "region": "RCR",
-    "count": 4,
-    "total_quantum": 4338000.0
+    "district": "D03",
+    "count": 1,
+    "total_quantum": 650700.0
+  },
+  {
+    "month": "2018-12",
+    "district": "D19",
+    "count": 2,
+    "total_quantum": 216900.0
+  },
+  {
+    "month": "2018-12",
+    "district": "D20",
+    "count": 1,
+    "total_quantum": 1084500.0
   },
   {
     "month": "2019-01",
-    "region": "CCR",
-    "count": 3,
-    "total_quantum": 3198000.0
+    "district": "D01",
+    "count": 1,
+    "total_quantum": 1279200.0
   },
   {
     "month": "2019-01",
-    "region": "RCR",
-    "count": 3,
-    "total_quantum": 3435000.0
+    "district": "D03",
+    "count": 1,
+    "total_quantum": 1119300.0
+  },
+  {
+    "month": "2019-01",
+    "district": "D08",
+    "count": 1,
+    "total_quantum": 799500.0
+  },
+  {
+    "month": "2019-01",
+    "district": "D19",
+    "count": 2,
+    "total_quantum": 171750.0
+  },
+  {
+    "month": "2019-01",
+    "district": "D20",
+    "count": 1,
+    "total_quantum": 858750.0
   },
   {
     "month": "2019-02",
-    "region": "RCR",
-    "count": 4,
-    "total_quantum": 4071000.0
-  },
-  {
-    "month": "2019-03",
-    "region": "CCR",
-    "count": 2,
-    "total_quantum": 2153000.0
-  },
-  {
-    "month": "2019-03",
-    "region": "OCR",
+    "district": "D03",
     "count": 1,
-    "total_quantum": 1038000.0
+    "total_quantum": 610650.0
+  },
+  {
+    "month": "2019-02",
+    "district": "D19",
+    "count": 2,
+    "total_quantum": 203550.0
+  },
+  {
+    "month": "2019-02",
+    "district": "D20",
+    "count": 1,
+    "total_quantum": 1017750.0
   },
   {
     "month": "2019-03",
-    "region": "RCR",
-    "count": 4,
-    "total_quantum": 4333000.0
+    "district": "D01",
+    "count": 1,
+    "total_quantum": 861200.0
+  },
+  {
+    "month": "2019-03",
+    "district": "D03",
+    "count": 2,
+    "total_quantum": 1403500.0
+  },
+  {
+    "month": "2019-03",
+    "district": "D19",
+    "count": 2,
+    "total_quantum": 216650.0
+  },
+  {
+    "month": "2019-03",
+    "district": "D20",
+    "count": 1,
+    "total_quantum": 1083250.0
+  },
+  {
+    "month": "2019-03",
+    "district": "D24",
+    "count": 1,
+    "total_quantum": 51900.0
   },
   {
     "month": "2019-04",
-    "region": "CCR",
-    "count": 2,
-    "total_quantum": 2050000.0
+    "district": "D01",
+    "count": 1,
+    "total_quantum": 820000.0
   },
   {
     "month": "2019-04",
-    "region": "RCR",
-    "count": 3,
-    "total_quantum": 3264000.0
-  },
-  {
-    "month": "2019-05",
-    "region": "CCR",
-    "count": 2,
-    "total_quantum": 2030000.0
-  },
-  {
-    "month": "2019-05",
-    "region": "OCR",
+    "district": "D03",
     "count": 1,
-    "total_quantum": 1000000.0
+    "total_quantum": 717500.0
+  },
+  {
+    "month": "2019-04",
+    "district": "D19",
+    "count": 2,
+    "total_quantum": 163200.0
+  },
+  {
+    "month": "2019-04",
+    "district": "D20",
+    "count": 1,
+    "total_quantum": 816000.0
   },
   {
     "month": "2019-05",
-    "region": "RCR",
-    "count": 5,
-    "total_quantum": 5364776.0
+    "district": "D01",
+    "count": 1,
+    "total_quantum": 812000.0
+  },
+  {
+    "month": "2019-05",
+    "district": "D03",
+    "count": 2,
+    "total_quantum": 1515216.4
+  },
+  {
+    "month": "2019-05",
+    "district": "D12",
+    "count": 1,
+    "total_quantum": 643773.12
+  },
+  {
+    "month": "2019-05",
+    "district": "D19",
+    "count": 2,
+    "total_quantum": 268238.7999999999
+  },
+  {
+    "month": "2019-05",
+    "district": "D20",
+    "count": 1,
+    "total_quantum": 1341194.0
+  },
+  {
+    "month": "2019-05",
+    "district": "D24",
+    "count": 1,
+    "total_quantum": 50000.0
   },
   {
     "month": "2019-06",
-    "region": "CCR",
-    "count": 3,
-    "total_quantum": 3334800.0
+    "district": "D01",
+    "count": 1,
+    "total_quantum": 1333920.0
   },
   {
     "month": "2019-06",
-    "region": "RCR",
-    "count": 3,
-    "total_quantum": 3100000.0
-  },
-  {
-    "month": "2019-07",
-    "region": "CCR",
-    "count": 2,
-    "total_quantum": 2120000.0
-  },
-  {
-    "month": "2019-07",
-    "region": "RCR",
-    "count": 6,
-    "total_quantum": 6558000.0
-  },
-  {
-    "month": "2019-08",
-    "region": "CCR",
-    "count": 4,
-    "total_quantum": 4291801.0
-  },
-  {
-    "month": "2019-08",
-    "region": "RCR",
-    "count": 5,
-    "total_quantum": 5215000.0
-  },
-  {
-    "month": "2019-09",
-    "region": "CCR",
+    "district": "D03",
     "count": 1,
-    "total_quantum": 1040000.0
+    "total_quantum": 1167180.0
+  },
+  {
+    "month": "2019-06",
+    "district": "D08",
+    "count": 1,
+    "total_quantum": 833700.0
+  },
+  {
+    "month": "2019-06",
+    "district": "D19",
+    "count": 2,
+    "total_quantum": 155000.0
+  },
+  {
+    "month": "2019-06",
+    "district": "D20",
+    "count": 1,
+    "total_quantum": 775000.0
+  },
+  {
+    "month": "2019-07",
+    "district": "D01",
+    "count": 1,
+    "total_quantum": 848000.0
+  },
+  {
+    "month": "2019-07",
+    "district": "D03",
+    "count": 2,
+    "total_quantum": 1725700.0
+  },
+  {
+    "month": "2019-07",
+    "district": "D12",
+    "count": 1,
+    "total_quantum": 786960.0
+  },
+  {
+    "month": "2019-07",
+    "district": "D13",
+    "count": 1,
+    "total_quantum": 655800.0
+  },
+  {
+    "month": "2019-07",
+    "district": "D14",
+    "count": 1,
+    "total_quantum": 655800.0
+  },
+  {
+    "month": "2019-07",
+    "district": "D15",
+    "count": 1,
+    "total_quantum": 655800.0
+  },
+  {
+    "month": "2019-07",
+    "district": "D20",
+    "count": 2,
+    "total_quantum": 1639500.0
+  },
+  {
+    "month": "2019-08",
+    "district": "D01",
+    "count": 2,
+    "total_quantum": 1716720.4
+  },
+  {
+    "month": "2019-08",
+    "district": "D03",
+    "count": 2,
+    "total_quantum": 2284380.35
+  },
+  {
+    "month": "2019-08",
+    "district": "D08",
+    "count": 1,
+    "total_quantum": 1072950.25
+  },
+  {
+    "month": "2019-08",
+    "district": "D12",
+    "count": 1,
+    "total_quantum": 625800.0
+  },
+  {
+    "month": "2019-08",
+    "district": "D19",
+    "count": 2,
+    "total_quantum": 260750.0
+  },
+  {
+    "month": "2019-08",
+    "district": "D20",
+    "count": 1,
+    "total_quantum": 1303750.0
   },
   {
     "month": "2019-09",
-    "region": "RCR",
-    "count": 3,
-    "total_quantum": 3070000.0
+    "district": "D08",
+    "count": 1,
+    "total_quantum": 260000.0
+  },
+  {
+    "month": "2019-09",
+    "district": "D19",
+    "count": 2,
+    "total_quantum": 153500.0
+  },
+  {
+    "month": "2019-09",
+    "district": "D20",
+    "count": 1,
+    "total_quantum": 767500.0
   },
   {
     "month": "2019-10",
-    "region": "CCR",
+    "district": "D08",
     "count": 1,
-    "total_quantum": 1100000.0
+    "total_quantum": 275000.0
   },
   {
     "month": "2019-11",
-    "region": "CCR",
+    "district": "D08",
     "count": 1,
-    "total_quantum": 1068000.0
+    "total_quantum": 267000.0
   },
   {
     "month": "2019-11",
-    "region": "OCR",
-    "count": 1,
-    "total_quantum": 1020000.0
-  },
-  {
-    "month": "2019-11",
-    "region": "RCR",
+    "district": "D19",
     "count": 2,
-    "total_quantum": 2096888.0
+    "total_quantum": 104844.3999999999
+  },
+  {
+    "month": "2019-11",
+    "district": "D24",
+    "count": 1,
+    "total_quantum": 51000.0
   },
   {
     "month": "2019-12",
-    "region": "CCR",
+    "district": "D08",
     "count": 1,
-    "total_quantum": 1056800.0
+    "total_quantum": 264200.0
   },
   {
     "month": "2019-12",
-    "region": "RCR",
+    "district": "D19",
     "count": 1,
-    "total_quantum": 1010000.0
+    "total_quantum": 50500.0
   },
   {
     "month": "2020-01",
-    "region": "RCR",
-    "count": 4,
-    "total_quantum": 4041888.0
+    "district": "D03",
+    "count": 1,
+    "total_quantum": 606283.2
+  },
+  {
+    "month": "2020-01",
+    "district": "D19",
+    "count": 2,
+    "total_quantum": 202094.39999999964
+  },
+  {
+    "month": "2020-01",
+    "district": "D20",
+    "count": 1,
+    "total_quantum": 1010472.0
   },
   {
     "month": "2020-02",
-    "region": "RCR",
-    "count": 4,
-    "total_quantum": 4178000.0
+    "district": "D03",
+    "count": 1,
+    "total_quantum": 626700.0
   },
   {
-    "month": "2020-03",
-    "region": "CCR",
+    "month": "2020-02",
+    "district": "D19",
     "count": 2,
-    "total_quantum": 2262000.0
+    "total_quantum": 208900.0
+  },
+  {
+    "month": "2020-02",
+    "district": "D20",
+    "count": 1,
+    "total_quantum": 1044500.0
   },
   {
     "month": "2020-03",
-    "region": "RCR",
-    "count": 3,
-    "total_quantum": 3177000.0
+    "district": "D01",
+    "count": 1,
+    "total_quantum": 904800.0
+  },
+  {
+    "month": "2020-03",
+    "district": "D03",
+    "count": 1,
+    "total_quantum": 791700.0
+  },
+  {
+    "month": "2020-03",
+    "district": "D19",
+    "count": 2,
+    "total_quantum": 158850.0
+  },
+  {
+    "month": "2020-03",
+    "district": "D20",
+    "count": 1,
+    "total_quantum": 794250.0
   },
   {
     "month": "2020-04",
-    "region": "RCR",
+    "district": "D19",
     "count": 1,
-    "total_quantum": 1010000.88
+    "total_quantum": 50500.0400000001
   },
   {
     "month": "2020-05",
-    "region": "RCR",
+    "district": "D19",
     "count": 2,
-    "total_quantum": 2170000.0
+    "total_quantum": 108500.0
   },
   {
     "month": "2020-06",
-    "region": "CCR",
-    "count": 4,
-    "total_quantum": 4417076.0
+    "district": "D01",
+    "count": 2,
+    "total_quantum": 1766830.4
   },
   {
     "month": "2020-06",
-    "region": "RCR",
-    "count": 4,
-    "total_quantum": 4266000.0
+    "district": "D03",
+    "count": 2,
+    "total_quantum": 2185876.6
   },
   {
-    "month": "2020-07",
-    "region": "CCR",
-    "count": 3,
-    "total_quantum": 3155000.0
-  },
-  {
-    "month": "2020-07",
-    "region": "RCR",
-    "count": 6,
-    "total_quantum": 6335000.0
-  },
-  {
-    "month": "2020-08",
-    "region": "CCR",
+    "month": "2020-06",
+    "district": "D08",
     "count": 1,
-    "total_quantum": 1185000.0
+    "total_quantum": 1104269.0
+  },
+  {
+    "month": "2020-06",
+    "district": "D19",
+    "count": 2,
+    "total_quantum": 213300.0
+  },
+  {
+    "month": "2020-06",
+    "district": "D20",
+    "count": 1,
+    "total_quantum": 1066500.0
+  },
+  {
+    "month": "2020-07",
+    "district": "D01",
+    "count": 1,
+    "total_quantum": 1262000.0
+  },
+  {
+    "month": "2020-07",
+    "district": "D03",
+    "count": 2,
+    "total_quantum": 2054500.0
+  },
+  {
+    "month": "2020-07",
+    "district": "D08",
+    "count": 1,
+    "total_quantum": 788750.0
+  },
+  {
+    "month": "2020-07",
+    "district": "D12",
+    "count": 1,
+    "total_quantum": 760200.0
+  },
+  {
+    "month": "2020-07",
+    "district": "D13",
+    "count": 1,
+    "total_quantum": 633500.0
+  },
+  {
+    "month": "2020-07",
+    "district": "D14",
+    "count": 1,
+    "total_quantum": 633500.0
+  },
+  {
+    "month": "2020-07",
+    "district": "D15",
+    "count": 1,
+    "total_quantum": 633500.0
+  },
+  {
+    "month": "2020-07",
+    "district": "D20",
+    "count": 2,
+    "total_quantum": 1583750.0
   },
   {
     "month": "2020-08",
-    "region": "RCR",
-    "count": 4,
-    "total_quantum": 4238000.0
+    "district": "D03",
+    "count": 1,
+    "total_quantum": 635700.0
+  },
+  {
+    "month": "2020-08",
+    "district": "D08",
+    "count": 1,
+    "total_quantum": 296250.0
+  },
+  {
+    "month": "2020-08",
+    "district": "D19",
+    "count": 2,
+    "total_quantum": 211900.0
+  },
+  {
+    "month": "2020-08",
+    "district": "D20",
+    "count": 1,
+    "total_quantum": 1059500.0
   },
   {
     "month": "2020-09",
-    "region": "CCR",
+    "district": "D01",
+    "count": 1,
+    "total_quantum": 1426400.0
+  },
+  {
+    "month": "2020-09",
+    "district": "D03",
+    "count": 2,
+    "total_quantum": 2060933.2
+  },
+  {
+    "month": "2020-09",
+    "district": "D08",
+    "count": 1,
+    "total_quantum": 891500.0
+  },
+  {
+    "month": "2020-09",
+    "district": "D12",
+    "count": 1,
+    "total_quantum": 650266.56
+  },
+  {
+    "month": "2020-09",
+    "district": "D19",
+    "count": 2,
+    "total_quantum": 270944.39999999956
+  },
+  {
+    "month": "2020-09",
+    "district": "D20",
+    "count": 1,
+    "total_quantum": 1354722.0
+  },
+  {
+    "month": "2020-10",
+    "district": "D01",
+    "count": 2,
+    "total_quantum": 1732000.0
+  },
+  {
+    "month": "2020-10",
+    "district": "D03",
+    "count": 2,
+    "total_quantum": 2983683.2
+  },
+  {
+    "month": "2020-10",
+    "district": "D05",
+    "count": 1,
+    "total_quantum": 783031.04
+  },
+  {
+    "month": "2020-10",
+    "district": "D08",
+    "count": 1,
+    "total_quantum": 1082500.0
+  },
+  {
+    "month": "2020-10",
+    "district": "D12",
+    "count": 1,
+    "total_quantum": 1174546.56
+  },
+  {
+    "month": "2020-10",
+    "district": "D13",
+    "count": 1,
+    "total_quantum": 978788.8
+  },
+  {
+    "month": "2020-10",
+    "district": "D14",
+    "count": 1,
+    "total_quantum": 978788.8
+  },
+  {
+    "month": "2020-10",
+    "district": "D15",
+    "count": 1,
+    "total_quantum": 978788.8
+  },
+  {
+    "month": "2020-10",
+    "district": "D19",
+    "count": 1,
+    "total_quantum": 489394.4000000005
+  },
+  {
+    "month": "2020-10",
+    "district": "D20",
+    "count": 2,
+    "total_quantum": 2446972.0
+  },
+  {
+    "month": "2020-11",
+    "district": "D01",
+    "count": 2,
+    "total_quantum": 2239200.0
+  },
+  {
+    "month": "2020-11",
+    "district": "D03",
     "count": 3,
-    "total_quantum": 3566000.0
-  },
-  {
-    "month": "2020-09",
-    "region": "RCR",
-    "count": 5,
-    "total_quantum": 5418888.0
-  },
-  {
-    "month": "2020-10",
-    "region": "CCR",
-    "count": 4,
-    "total_quantum": 4330000.0
-  },
-  {
-    "month": "2020-10",
-    "region": "RCR",
-    "count": 9,
-    "total_quantum": 9787888.0
+    "total_quantum": 3214344.6
   },
   {
     "month": "2020-11",
-    "region": "CCR",
-    "count": 5,
-    "total_quantum": 5598000.0
+    "district": "D05",
+    "count": 1,
+    "total_quantum": 669357.12
   },
   {
     "month": "2020-11",
-    "region": "RCR",
-    "count": 8,
-    "total_quantum": 8366964.0
+    "district": "D08",
+    "count": 1,
+    "total_quantum": 1399500.0
+  },
+  {
+    "month": "2020-11",
+    "district": "D12",
+    "count": 1,
+    "total_quantum": 1004035.68
+  },
+  {
+    "month": "2020-11",
+    "district": "D13",
+    "count": 1,
+    "total_quantum": 836696.4
+  },
+  {
+    "month": "2020-11",
+    "district": "D14",
+    "count": 1,
+    "total_quantum": 836696.4
+  },
+  {
+    "month": "2020-11",
+    "district": "D15",
+    "count": 1,
+    "total_quantum": 836696.4
+  },
+  {
+    "month": "2020-11",
+    "district": "D20",
+    "count": 2,
+    "total_quantum": 2091741.0
   },
   {
     "month": "2020-12",
-    "region": "RCR",
-    "count": 10,
-    "total_quantum": 10807664.0
+    "district": "D03",
+    "count": 2,
+    "total_quantum": 1621149.6
+  },
+  {
+    "month": "2020-12",
+    "district": "D05",
+    "count": 1,
+    "total_quantum": 864613.12
+  },
+  {
+    "month": "2020-12",
+    "district": "D12",
+    "count": 1,
+    "total_quantum": 1296919.68
+  },
+  {
+    "month": "2020-12",
+    "district": "D13",
+    "count": 1,
+    "total_quantum": 1080766.4
+  },
+  {
+    "month": "2020-12",
+    "district": "D14",
+    "count": 1,
+    "total_quantum": 1080766.4
+  },
+  {
+    "month": "2020-12",
+    "district": "D15",
+    "count": 1,
+    "total_quantum": 1080766.4
+  },
+  {
+    "month": "2020-12",
+    "district": "D19",
+    "count": 1,
+    "total_quantum": 540383.2000000009
+  },
+  {
+    "month": "2020-12",
+    "district": "D20",
+    "count": 2,
+    "total_quantum": 2701916.0
   },
   {
     "month": "2021-01",
-    "region": "CCR",
-    "count": 4,
-    "total_quantum": 4331000.0
+    "district": "D01",
+    "count": 2,
+    "total_quantum": 1732400.0
   },
   {
     "month": "2021-01",
-    "region": "RCR",
-    "count": 9,
-    "total_quantum": 9575888.0
-  },
-  {
-    "month": "2021-02",
-    "region": "CCR",
-    "count": 6,
-    "total_quantum": 6181000.0
-  },
-  {
-    "month": "2021-02",
-    "region": "OCR",
+    "district": "D03",
     "count": 2,
-    "total_quantum": 2338000.0
+    "total_quantum": 2952233.2
+  },
+  {
+    "month": "2021-01",
+    "district": "D05",
+    "count": 1,
+    "total_quantum": 766071.04
+  },
+  {
+    "month": "2021-01",
+    "district": "D08",
+    "count": 1,
+    "total_quantum": 1082750.0
+  },
+  {
+    "month": "2021-01",
+    "district": "D12",
+    "count": 1,
+    "total_quantum": 1149106.56
+  },
+  {
+    "month": "2021-01",
+    "district": "D13",
+    "count": 1,
+    "total_quantum": 957588.8
+  },
+  {
+    "month": "2021-01",
+    "district": "D14",
+    "count": 1,
+    "total_quantum": 957588.8
+  },
+  {
+    "month": "2021-01",
+    "district": "D15",
+    "count": 1,
+    "total_quantum": 957588.8
+  },
+  {
+    "month": "2021-01",
+    "district": "D19",
+    "count": 1,
+    "total_quantum": 478794.4000000005
+  },
+  {
+    "month": "2021-01",
+    "district": "D20",
+    "count": 2,
+    "total_quantum": 2393972.0
   },
   {
     "month": "2021-02",
-    "region": "RCR",
-    "count": 15,
-    "total_quantum": 15954800.0
+    "district": "D01",
+    "count": 2,
+    "total_quantum": 2472400.0
   },
   {
-    "month": "2021-03",
-    "region": "CCR",
+    "month": "2021-02",
+    "district": "D03",
     "count": 4,
-    "total_quantum": 4248888.0
+    "total_quantum": 4556570.0
   },
   {
-    "month": "2021-03",
-    "region": "OCR",
+    "month": "2021-02",
+    "district": "D05",
+    "count": 1,
+    "total_quantum": 1276384.0
+  },
+  {
+    "month": "2021-02",
+    "district": "D08",
+    "count": 3,
+    "total_quantum": 2342990.0
+  },
+  {
+    "month": "2021-02",
+    "district": "D12",
+    "count": 2,
+    "total_quantum": 1914576.0
+  },
+  {
+    "month": "2021-02",
+    "district": "D13",
+    "count": 2,
+    "total_quantum": 1595480.0
+  },
+  {
+    "month": "2021-02",
+    "district": "D14",
+    "count": 2,
+    "total_quantum": 1595480.0
+  },
+  {
+    "month": "2021-02",
+    "district": "D15",
+    "count": 2,
+    "total_quantum": 1595480.0
+  },
+  {
+    "month": "2021-02",
+    "district": "D20",
     "count": 4,
-    "total_quantum": 4108000.0
+    "total_quantum": 3988700.0
+  },
+  {
+    "month": "2021-02",
+    "district": "D24",
+    "count": 2,
+    "total_quantum": 116900.0
   },
   {
     "month": "2021-03",
-    "region": "RCR",
-    "count": 9,
-    "total_quantum": 9779776.0
+    "district": "D01",
+    "count": 2,
+    "total_quantum": 1699555.2
   },
   {
-    "month": "2021-04",
-    "region": "CCR",
-    "count": 7,
-    "total_quantum": 7535000.0
+    "month": "2021-03",
+    "district": "D03",
+    "count": 2,
+    "total_quantum": 2954077.2
   },
   {
-    "month": "2021-04",
-    "region": "OCR",
+    "month": "2021-03",
+    "district": "D05",
     "count": 1,
-    "total_quantum": 1160000.0
+    "total_quantum": 782382.08
+  },
+  {
+    "month": "2021-03",
+    "district": "D08",
+    "count": 1,
+    "total_quantum": 1062221.9999999998
+  },
+  {
+    "month": "2021-03",
+    "district": "D12",
+    "count": 1,
+    "total_quantum": 1173573.12
+  },
+  {
+    "month": "2021-03",
+    "district": "D13",
+    "count": 1,
+    "total_quantum": 977977.6
+  },
+  {
+    "month": "2021-03",
+    "district": "D14",
+    "count": 1,
+    "total_quantum": 977977.6
+  },
+  {
+    "month": "2021-03",
+    "district": "D15",
+    "count": 1,
+    "total_quantum": 977977.6
+  },
+  {
+    "month": "2021-03",
+    "district": "D18",
+    "count": 1,
+    "total_quantum": 616200.0
+  },
+  {
+    "month": "2021-03",
+    "district": "D19",
+    "count": 2,
+    "total_quantum": 1515988.7999999993
+  },
+  {
+    "month": "2021-03",
+    "district": "D20",
+    "count": 2,
+    "total_quantum": 2444944.0
+  },
+  {
+    "month": "2021-03",
+    "district": "D24",
+    "count": 2,
+    "total_quantum": 205400.0
   },
   {
     "month": "2021-04",
-    "region": "RCR",
-    "count": 13,
-    "total_quantum": 13902888.0
+    "district": "D01",
+    "count": 3,
+    "total_quantum": 3014000.0
   },
   {
-    "month": "2021-05",
-    "region": "CCR",
-    "count": 5,
-    "total_quantum": 5416000.0
+    "month": "2021-04",
+    "district": "D03",
+    "count": 4,
+    "total_quantum": 4722683.2
   },
   {
-    "month": "2021-05",
-    "region": "OCR",
+    "month": "2021-04",
+    "district": "D05",
     "count": 1,
-    "total_quantum": 1060000.0
+    "total_quantum": 1112231.04
+  },
+  {
+    "month": "2021-04",
+    "district": "D08",
+    "count": 3,
+    "total_quantum": 2578894.4
+  },
+  {
+    "month": "2021-04",
+    "district": "D12",
+    "count": 2,
+    "total_quantum": 1668346.56
+  },
+  {
+    "month": "2021-04",
+    "district": "D13",
+    "count": 1,
+    "total_quantum": 1390288.8
+  },
+  {
+    "month": "2021-04",
+    "district": "D14",
+    "count": 1,
+    "total_quantum": 1390288.8
+  },
+  {
+    "month": "2021-04",
+    "district": "D15",
+    "count": 1,
+    "total_quantum": 1390288.8
+  },
+  {
+    "month": "2021-04",
+    "district": "D19",
+    "count": 1,
+    "total_quantum": 695144.4000000007
+  },
+  {
+    "month": "2021-04",
+    "district": "D20",
+    "count": 3,
+    "total_quantum": 3475722.0
+  },
+  {
+    "month": "2021-04",
+    "district": "D24",
+    "count": 1,
+    "total_quantum": 58000.0
   },
   {
     "month": "2021-05",
-    "region": "RCR",
-    "count": 7,
-    "total_quantum": 7804388.0
+    "district": "D01",
+    "count": 2,
+    "total_quantum": 2166400.0
+  },
+  {
+    "month": "2021-05",
+    "district": "D03",
+    "count": 3,
+    "total_quantum": 3066258.2
+  },
+  {
+    "month": "2021-05",
+    "district": "D05",
+    "count": 1,
+    "total_quantum": 624351.04
+  },
+  {
+    "month": "2021-05",
+    "district": "D08",
+    "count": 1,
+    "total_quantum": 1354000.0
+  },
+  {
+    "month": "2021-05",
+    "district": "D12",
+    "count": 1,
+    "total_quantum": 936526.56
+  },
+  {
+    "month": "2021-05",
+    "district": "D13",
+    "count": 1,
+    "total_quantum": 780438.8
+  },
+  {
+    "month": "2021-05",
+    "district": "D14",
+    "count": 1,
+    "total_quantum": 780438.8
+  },
+  {
+    "month": "2021-05",
+    "district": "D15",
+    "count": 1,
+    "total_quantum": 780438.8
+  },
+  {
+    "month": "2021-05",
+    "district": "D20",
+    "count": 2,
+    "total_quantum": 1951097.0
+  },
+  {
+    "month": "2021-05",
+    "district": "D24",
+    "count": 1,
+    "total_quantum": 53000.0
   },
   {
     "month": "2021-06",
-    "region": "CCR",
-    "count": 4,
-    "total_quantum": 4303000.0
+    "district": "D01",
+    "count": 2,
+    "total_quantum": 1721200.0
   },
   {
     "month": "2021-06",
-    "region": "RCR",
-    "count": 15,
-    "total_quantum": 16639188.0
+    "district": "D03",
+    "count": 3,
+    "total_quantum": 4001928.2
+  },
+  {
+    "month": "2021-06",
+    "district": "D05",
+    "count": 1,
+    "total_quantum": 1331135.04
+  },
+  {
+    "month": "2021-06",
+    "district": "D08",
+    "count": 2,
+    "total_quantum": 1907709.4
+  },
+  {
+    "month": "2021-06",
+    "district": "D12",
+    "count": 2,
+    "total_quantum": 1996702.56
+  },
+  {
+    "month": "2021-06",
+    "district": "D13",
+    "count": 2,
+    "total_quantum": 1663918.8
+  },
+  {
+    "month": "2021-06",
+    "district": "D14",
+    "count": 2,
+    "total_quantum": 1663918.8
+  },
+  {
+    "month": "2021-06",
+    "district": "D15",
+    "count": 2,
+    "total_quantum": 1663918.8
+  },
+  {
+    "month": "2021-06",
+    "district": "D20",
+    "count": 4,
+    "total_quantum": 4159797.0
   },
   {
     "month": "2021-07",
-    "region": "CCR",
+    "district": "D01",
+    "count": 2,
+    "total_quantum": 2126000.0
+  },
+  {
+    "month": "2021-07",
+    "district": "D03",
+    "count": 4,
+    "total_quantum": 3904900.0
+  },
+  {
+    "month": "2021-07",
+    "district": "D05",
+    "count": 1,
+    "total_quantum": 1090480.0
+  },
+  {
+    "month": "2021-07",
+    "district": "D08",
+    "count": 2,
+    "total_quantum": 2010300.0
+  },
+  {
+    "month": "2021-07",
+    "district": "D12",
+    "count": 2,
+    "total_quantum": 1635720.0
+  },
+  {
+    "month": "2021-07",
+    "district": "D13",
+    "count": 1,
+    "total_quantum": 1363100.0
+  },
+  {
+    "month": "2021-07",
+    "district": "D14",
+    "count": 1,
+    "total_quantum": 1363100.0
+  },
+  {
+    "month": "2021-07",
+    "district": "D15",
+    "count": 1,
+    "total_quantum": 1363100.0
+  },
+  {
+    "month": "2021-07",
+    "district": "D19",
+    "count": 1,
+    "total_quantum": 681550.0
+  },
+  {
+    "month": "2021-07",
+    "district": "D20",
+    "count": 3,
+    "total_quantum": 3407750.0
+  },
+  {
+    "month": "2021-07",
+    "district": "D24",
+    "count": 1,
+    "total_quantum": 52500.0
+  },
+  {
+    "month": "2021-08",
+    "district": "D01",
+    "count": 3,
+    "total_quantum": 3527510.4
+  },
+  {
+    "month": "2021-08",
+    "district": "D03",
+    "count": 6,
+    "total_quantum": 5847921.6
+  },
+  {
+    "month": "2021-08",
+    "district": "D05",
+    "count": 1,
+    "total_quantum": 1472720.0
+  },
+  {
+    "month": "2021-08",
+    "district": "D08",
+    "count": 3,
+    "total_quantum": 3125143.9999999995
+  },
+  {
+    "month": "2021-08",
+    "district": "D12",
+    "count": 2,
+    "total_quantum": 2209080.0
+  },
+  {
+    "month": "2021-08",
+    "district": "D13",
+    "count": 2,
+    "total_quantum": 1840900.0
+  },
+  {
+    "month": "2021-08",
+    "district": "D14",
+    "count": 2,
+    "total_quantum": 1840900.0
+  },
+  {
+    "month": "2021-08",
+    "district": "D15",
+    "count": 2,
+    "total_quantum": 1840900.0
+  },
+  {
+    "month": "2021-08",
+    "district": "D20",
+    "count": 4,
+    "total_quantum": 4602250.0
+  },
+  {
+    "month": "2021-08",
+    "district": "D24",
+    "count": 1,
+    "total_quantum": 51900.0
+  },
+  {
+    "month": "2021-09",
+    "district": "D01",
+    "count": 2,
+    "total_quantum": 2261200.0
+  },
+  {
+    "month": "2021-09",
+    "district": "D03",
     "count": 5,
-    "total_quantum": 5315000.0
-  },
-  {
-    "month": "2021-07",
-    "region": "OCR",
-    "count": 1,
-    "total_quantum": 1050000.0
-  },
-  {
-    "month": "2021-07",
-    "region": "RCR",
-    "count": 13,
-    "total_quantum": 13631000.0
-  },
-  {
-    "month": "2021-08",
-    "region": "CCR",
-    "count": 8,
-    "total_quantum": 8818776.0
-  },
-  {
-    "month": "2021-08",
-    "region": "OCR",
-    "count": 1,
-    "total_quantum": 1038000.0
-  },
-  {
-    "month": "2021-08",
-    "region": "RCR",
-    "count": 17,
-    "total_quantum": 18409000.0
+    "total_quantum": 4738083.2
   },
   {
     "month": "2021-09",
-    "region": "CCR",
-    "count": 5,
-    "total_quantum": 5653000.0
-  },
-  {
-    "month": "2021-09",
-    "region": "OCR",
+    "district": "D05",
     "count": 1,
-    "total_quantum": 1010000.0
+    "total_quantum": 1471751.04
   },
   {
     "month": "2021-09",
-    "region": "RCR",
-    "count": 17,
-    "total_quantum": 18396888.0
+    "district": "D08",
+    "count": 2,
+    "total_quantum": 2333094.4
+  },
+  {
+    "month": "2021-09",
+    "district": "D12",
+    "count": 2,
+    "total_quantum": 2207626.56
+  },
+  {
+    "month": "2021-09",
+    "district": "D13",
+    "count": 2,
+    "total_quantum": 1839688.8
+  },
+  {
+    "month": "2021-09",
+    "district": "D14",
+    "count": 2,
+    "total_quantum": 1839688.8
+  },
+  {
+    "month": "2021-09",
+    "district": "D15",
+    "count": 2,
+    "total_quantum": 1839688.8
+  },
+  {
+    "month": "2021-09",
+    "district": "D20",
+    "count": 4,
+    "total_quantum": 4599222.0
+  },
+  {
+    "month": "2021-09",
+    "district": "D24",
+    "count": 1,
+    "total_quantum": 50500.0
   },
   {
     "month": "2021-10",
-    "region": "CCR",
-    "count": 8,
-    "total_quantum": 8650000.0
+    "district": "D01",
+    "count": 3,
+    "total_quantum": 3460000.0
   },
   {
     "month": "2021-10",
-    "region": "RCR",
-    "count": 12,
-    "total_quantum": 13566888.0
+    "district": "D03",
+    "count": 5,
+    "total_quantum": 5062533.2
+  },
+  {
+    "month": "2021-10",
+    "district": "D05",
+    "count": 1,
+    "total_quantum": 1085351.04
+  },
+  {
+    "month": "2021-10",
+    "district": "D08",
+    "count": 3,
+    "total_quantum": 2840844.4
+  },
+  {
+    "month": "2021-10",
+    "district": "D12",
+    "count": 1,
+    "total_quantum": 1628026.56
+  },
+  {
+    "month": "2021-10",
+    "district": "D13",
+    "count": 1,
+    "total_quantum": 1356688.8
+  },
+  {
+    "month": "2021-10",
+    "district": "D14",
+    "count": 1,
+    "total_quantum": 1356688.8
+  },
+  {
+    "month": "2021-10",
+    "district": "D15",
+    "count": 1,
+    "total_quantum": 1356688.8
+  },
+  {
+    "month": "2021-10",
+    "district": "D19",
+    "count": 1,
+    "total_quantum": 678344.4000000007
+  },
+  {
+    "month": "2021-10",
+    "district": "D20",
+    "count": 3,
+    "total_quantum": 3391722.0
   },
   {
     "month": "2021-11",
-    "region": "CCR",
+    "district": "D01",
+    "count": 4,
+    "total_quantum": 4012800.0
+  },
+  {
+    "month": "2021-11",
+    "district": "D03",
+    "count": 6,
+    "total_quantum": 6863400.0
+  },
+  {
+    "month": "2021-11",
+    "district": "D05",
+    "count": 2,
+    "total_quantum": 1787840.0
+  },
+  {
+    "month": "2021-11",
+    "district": "D08",
+    "count": 3,
+    "total_quantum": 3625400.0
+  },
+  {
+    "month": "2021-11",
+    "district": "D12",
+    "count": 2,
+    "total_quantum": 2681760.0
+  },
+  {
+    "month": "2021-11",
+    "district": "D13",
+    "count": 2,
+    "total_quantum": 2234800.0
+  },
+  {
+    "month": "2021-11",
+    "district": "D14",
+    "count": 2,
+    "total_quantum": 2234800.0
+  },
+  {
+    "month": "2021-11",
+    "district": "D15",
+    "count": 2,
+    "total_quantum": 2234800.0
+  },
+  {
+    "month": "2021-11",
+    "district": "D19",
+    "count": 1,
+    "total_quantum": 1117400.0
+  },
+  {
+    "month": "2021-11",
+    "district": "D20",
+    "count": 5,
+    "total_quantum": 5587000.0
+  },
+  {
+    "month": "2021-12",
+    "district": "D01",
+    "count": 4,
+    "total_quantum": 4559600.0
+  },
+  {
+    "month": "2021-12",
+    "district": "D03",
+    "count": 8,
+    "total_quantum": 7953878.65
+  },
+  {
+    "month": "2021-12",
+    "district": "D05",
+    "count": 2,
+    "total_quantum": 2114255.28
+  },
+  {
+    "month": "2021-12",
+    "district": "D08",
+    "count": 3,
+    "total_quantum": 4171159.55
+  },
+  {
+    "month": "2021-12",
+    "district": "D12",
+    "count": 3,
+    "total_quantum": 3171382.92
+  },
+  {
+    "month": "2021-12",
+    "district": "D13",
+    "count": 2,
+    "total_quantum": 2642819.1
+  },
+  {
+    "month": "2021-12",
+    "district": "D14",
+    "count": 2,
+    "total_quantum": 2642819.1
+  },
+  {
+    "month": "2021-12",
+    "district": "D15",
+    "count": 2,
+    "total_quantum": 2642819.1
+  },
+  {
+    "month": "2021-12",
+    "district": "D19",
+    "count": 2,
+    "total_quantum": 1321409.550000001
+  },
+  {
+    "month": "2021-12",
+    "district": "D20",
+    "count": 6,
+    "total_quantum": 6607047.75
+  },
+  {
+    "month": "2021-12",
+    "district": "D24",
+    "count": 2,
+    "total_quantum": 118150.0
+  },
+  {
+    "month": "2022-01",
+    "district": "D01",
+    "count": 2,
+    "total_quantum": 1816400.0
+  },
+  {
+    "month": "2022-01",
+    "district": "D03",
+    "count": 4,
+    "total_quantum": 5302669.6
+  },
+  {
+    "month": "2022-01",
+    "district": "D05",
+    "count": 2,
+    "total_quantum": 1980437.12
+  },
+  {
+    "month": "2022-01",
+    "district": "D08",
+    "count": 2,
+    "total_quantum": 2373023.2
+  },
+  {
+    "month": "2022-01",
+    "district": "D12",
+    "count": 3,
+    "total_quantum": 2970655.68
+  },
+  {
+    "month": "2022-01",
+    "district": "D13",
+    "count": 2,
+    "total_quantum": 2475546.4
+  },
+  {
+    "month": "2022-01",
+    "district": "D14",
+    "count": 2,
+    "total_quantum": 2475546.4
+  },
+  {
+    "month": "2022-01",
+    "district": "D15",
+    "count": 2,
+    "total_quantum": 2475546.4
+  },
+  {
+    "month": "2022-01",
+    "district": "D19",
+    "count": 1,
+    "total_quantum": 1237773.1999999995
+  },
+  {
+    "month": "2022-01",
+    "district": "D20",
+    "count": 6,
+    "total_quantum": 6188866.0
+  },
+  {
+    "month": "2022-01",
+    "district": "D24",
+    "count": 1,
+    "total_quantum": 60100.0
+  },
+  {
+    "month": "2022-02",
+    "district": "D01",
+    "count": 3,
+    "total_quantum": 3378400.0
+  },
+  {
+    "month": "2022-02",
+    "district": "D03",
+    "count": 5,
+    "total_quantum": 6273783.2
+  },
+  {
+    "month": "2022-02",
+    "district": "D05",
+    "count": 2,
+    "total_quantum": 1769431.04
+  },
+  {
+    "month": "2022-02",
+    "district": "D08",
+    "count": 3,
+    "total_quantum": 3217394.4
+  },
+  {
+    "month": "2022-02",
+    "district": "D12",
+    "count": 2,
+    "total_quantum": 2654146.56
+  },
+  {
+    "month": "2022-02",
+    "district": "D13",
+    "count": 2,
+    "total_quantum": 2211788.8
+  },
+  {
+    "month": "2022-02",
+    "district": "D14",
+    "count": 2,
+    "total_quantum": 2211788.8
+  },
+  {
+    "month": "2022-02",
+    "district": "D15",
+    "count": 2,
+    "total_quantum": 2211788.8
+  },
+  {
+    "month": "2022-02",
+    "district": "D19",
+    "count": 1,
+    "total_quantum": 1105894.4000000018
+  },
+  {
+    "month": "2022-02",
+    "district": "D20",
+    "count": 5,
+    "total_quantum": 5529472.0
+  },
+  {
+    "month": "2022-02",
+    "district": "D24",
+    "count": 2,
+    "total_quantum": 107900.0
+  },
+  {
+    "month": "2022-03",
+    "district": "D01",
+    "count": 2,
+    "total_quantum": 2039110.75
+  },
+  {
+    "month": "2022-03",
+    "district": "D03",
+    "count": 4,
+    "total_quantum": 5198530.01
+  },
+  {
+    "month": "2022-03",
+    "district": "D05",
+    "count": 2,
+    "total_quantum": 1820964.32
+  },
+  {
+    "month": "2022-03",
+    "district": "D08",
+    "count": 2,
+    "total_quantum": 2412546.92
+  },
+  {
+    "month": "2022-03",
+    "district": "D12",
+    "count": 3,
+    "total_quantum": 2731446.48
+  },
+  {
+    "month": "2022-03",
+    "district": "D13",
+    "count": 2,
+    "total_quantum": 2276205.4
+  },
+  {
+    "month": "2022-03",
+    "district": "D14",
+    "count": 2,
+    "total_quantum": 2276205.4
+  },
+  {
+    "month": "2022-03",
+    "district": "D15",
+    "count": 2,
+    "total_quantum": 2276205.4
+  },
+  {
+    "month": "2022-03",
+    "district": "D19",
+    "count": 1,
+    "total_quantum": 1138102.6999999995
+  },
+  {
+    "month": "2022-03",
+    "district": "D20",
+    "count": 5,
+    "total_quantum": 5690513.5
+  },
+  {
+    "month": "2022-03",
+    "district": "D24",
+    "count": 2,
+    "total_quantum": 113400.0
+  },
+  {
+    "month": "2022-04",
+    "district": "D01",
+    "count": 2,
+    "total_quantum": 2362400.0
+  },
+  {
+    "month": "2022-04",
+    "district": "D03",
+    "count": 5,
+    "total_quantum": 4783300.0
+  },
+  {
+    "month": "2022-04",
+    "district": "D05",
+    "count": 1,
+    "total_quantum": 1448640.0
+  },
+  {
+    "month": "2022-04",
+    "district": "D08",
+    "count": 2,
+    "total_quantum": 2381900.0
+  },
+  {
+    "month": "2022-04",
+    "district": "D12",
+    "count": 2,
+    "total_quantum": 2172960.0
+  },
+  {
+    "month": "2022-04",
+    "district": "D13",
+    "count": 2,
+    "total_quantum": 1810800.0
+  },
+  {
+    "month": "2022-04",
+    "district": "D14",
+    "count": 2,
+    "total_quantum": 1810800.0
+  },
+  {
+    "month": "2022-04",
+    "district": "D15",
+    "count": 2,
+    "total_quantum": 1810800.0
+  },
+  {
+    "month": "2022-04",
+    "district": "D20",
+    "count": 4,
+    "total_quantum": 4527000.0
+  },
+  {
+    "month": "2022-05",
+    "district": "D01",
+    "count": 1,
+    "total_quantum": 1479235.55
+  },
+  {
+    "month": "2022-05",
+    "district": "D03",
+    "count": 4,
+    "total_quantum": 5115881.11
+  },
+  {
+    "month": "2022-05",
+    "district": "D05",
+    "count": 2,
+    "total_quantum": 2038160.0
+  },
+  {
+    "month": "2022-05",
+    "district": "D08",
+    "count": 2,
+    "total_quantum": 2198372.2199999997
+  },
+  {
+    "month": "2022-05",
+    "district": "D12",
+    "count": 3,
+    "total_quantum": 3057240.0
+  },
+  {
+    "month": "2022-05",
+    "district": "D13",
+    "count": 2,
+    "total_quantum": 2547700.0
+  },
+  {
+    "month": "2022-05",
+    "district": "D14",
+    "count": 2,
+    "total_quantum": 2547700.0
+  },
+  {
+    "month": "2022-05",
+    "district": "D15",
+    "count": 2,
+    "total_quantum": 2547700.0
+  },
+  {
+    "month": "2022-05",
+    "district": "D18",
+    "count": 1,
+    "total_quantum": 631466.4
+  },
+  {
+    "month": "2022-05",
+    "district": "D19",
+    "count": 3,
+    "total_quantum": 2326294.0
+  },
+  {
+    "month": "2022-05",
+    "district": "D20",
+    "count": 6,
+    "total_quantum": 6369250.0
+  },
+  {
+    "month": "2022-05",
+    "district": "D24",
+    "count": 2,
+    "total_quantum": 210488.7999999997
+  },
+  {
+    "month": "2022-06",
+    "district": "D01",
+    "count": 2,
+    "total_quantum": 2132310.4
+  },
+  {
+    "month": "2022-06",
+    "district": "D03",
+    "count": 6,
+    "total_quantum": 6087654.800000001
+  },
+  {
+    "month": "2022-06",
+    "district": "D05",
+    "count": 2,
+    "total_quantum": 2251671.04
+  },
+  {
+    "month": "2022-06",
+    "district": "D08",
+    "count": 2,
+    "total_quantum": 2739988.4
+  },
+  {
+    "month": "2022-06",
+    "district": "D12",
+    "count": 3,
+    "total_quantum": 3377506.56
+  },
+  {
+    "month": "2022-06",
+    "district": "D13",
+    "count": 2,
+    "total_quantum": 2814588.8
+  },
+  {
+    "month": "2022-06",
+    "district": "D14",
+    "count": 2,
+    "total_quantum": 2814588.8
+  },
+  {
+    "month": "2022-06",
+    "district": "D15",
+    "count": 2,
+    "total_quantum": 2814588.8
+  },
+  {
+    "month": "2022-06",
+    "district": "D19",
+    "count": 3,
+    "total_quantum": 1407294.4000000018
+  },
+  {
+    "month": "2022-06",
+    "district": "D20",
+    "count": 6,
+    "total_quantum": 7036472.0
+  },
+  {
+    "month": "2022-06",
+    "district": "D24",
+    "count": 1,
+    "total_quantum": 50000.0
+  },
+  {
+    "month": "2022-07",
+    "district": "D01",
+    "count": 1,
+    "total_quantum": 955200.0
+  },
+  {
+    "month": "2022-07",
+    "district": "D03",
+    "count": 5,
+    "total_quantum": 5365916.4
+  },
+  {
+    "month": "2022-07",
+    "district": "D05",
+    "count": 2,
+    "total_quantum": 2416062.08
+  },
+  {
+    "month": "2022-07",
+    "district": "D08",
+    "count": 1,
+    "total_quantum": 1510038.8
+  },
+  {
+    "month": "2022-07",
+    "district": "D12",
+    "count": 3,
+    "total_quantum": 3624093.12
+  },
+  {
+    "month": "2022-07",
+    "district": "D13",
+    "count": 3,
+    "total_quantum": 3020077.6
+  },
+  {
+    "month": "2022-07",
+    "district": "D14",
+    "count": 3,
+    "total_quantum": 3020077.6
+  },
+  {
+    "month": "2022-07",
+    "district": "D15",
+    "count": 3,
+    "total_quantum": 3020077.6
+  },
+  {
+    "month": "2022-07",
+    "district": "D18",
+    "count": 1,
+    "total_quantum": 635499.75
+  },
+  {
+    "month": "2022-07",
+    "district": "D19",
+    "count": 2,
+    "total_quantum": 2569205.0500000017
+  },
+  {
+    "month": "2022-07",
+    "district": "D20",
+    "count": 7,
+    "total_quantum": 7550194.0
+  },
+  {
+    "month": "2022-07",
+    "district": "D24",
+    "count": 2,
+    "total_quantum": 211833.24999999994
+  },
+  {
+    "month": "2022-08",
+    "district": "D01",
+    "count": 2,
+    "total_quantum": 1808400.0
+  },
+  {
+    "month": "2022-08",
+    "district": "D03",
+    "count": 5,
+    "total_quantum": 6199528.35
+  },
+  {
+    "month": "2022-08",
+    "district": "D05",
+    "count": 2,
+    "total_quantum": 2462495.12
+  },
+  {
+    "month": "2022-08",
+    "district": "D08",
+    "count": 2,
+    "total_quantum": 2669309.45
+  },
+  {
+    "month": "2022-08",
+    "district": "D12",
+    "count": 3,
+    "total_quantum": 3693742.68
+  },
+  {
+    "month": "2022-08",
+    "district": "D13",
+    "count": 3,
+    "total_quantum": 3078118.9
+  },
+  {
+    "month": "2022-08",
+    "district": "D14",
+    "count": 3,
+    "total_quantum": 3078118.9
+  },
+  {
+    "month": "2022-08",
+    "district": "D15",
+    "count": 3,
+    "total_quantum": 3078118.9
+  },
+  {
+    "month": "2022-08",
+    "district": "D19",
+    "count": 2,
+    "total_quantum": 1539059.4499999976
+  },
+  {
+    "month": "2022-08",
+    "district": "D20",
+    "count": 7,
+    "total_quantum": 7695297.25
+  },
+  {
+    "month": "2022-08",
+    "district": "D24",
+    "count": 1,
+    "total_quantum": 51000.0
+  },
+  {
+    "month": "2022-09",
+    "district": "D01",
+    "count": 1,
+    "total_quantum": 1478755.2
+  },
+  {
+    "month": "2022-09",
+    "district": "D03",
+    "count": 6,
+    "total_quantum": 7128725.55
+  },
+  {
+    "month": "2022-09",
+    "district": "D05",
+    "count": 3,
+    "total_quantum": 3111901.2
+  },
+  {
+    "month": "2022-09",
+    "district": "D08",
+    "count": 3,
+    "total_quantum": 2869160.25
+  },
+  {
+    "month": "2022-09",
+    "district": "D12",
+    "count": 4,
+    "total_quantum": 4667851.8
+  },
+  {
+    "month": "2022-09",
+    "district": "D13",
+    "count": 4,
+    "total_quantum": 3889876.5
+  },
+  {
+    "month": "2022-09",
+    "district": "D14",
+    "count": 4,
+    "total_quantum": 3889876.5
+  },
+  {
+    "month": "2022-09",
+    "district": "D15",
+    "count": 4,
+    "total_quantum": 3889876.5
+  },
+  {
+    "month": "2022-09",
+    "district": "D16",
+    "count": 1,
+    "total_quantum": 781010.1
+  },
+  {
+    "month": "2022-09",
+    "district": "D18",
+    "count": 1,
+    "total_quantum": 1171515.15
+  },
+  {
+    "month": "2022-09",
+    "district": "D19",
+    "count": 2,
+    "total_quantum": 1952525.25
+  },
+  {
+    "month": "2022-09",
+    "district": "D20",
     "count": 9,
-    "total_quantum": 10032000.0
-  },
-  {
-    "month": "2021-11",
-    "region": "RCR",
-    "count": 20,
-    "total_quantum": 22348000.0
-  },
-  {
-    "month": "2021-12",
-    "region": "CCR",
-    "count": 10,
-    "total_quantum": 11399000.0
-  },
-  {
-    "month": "2021-12",
-    "region": "OCR",
-    "count": 2,
-    "total_quantum": 2363000.0
-  },
-  {
-    "month": "2021-12",
-    "region": "RCR",
-    "count": 24,
-    "total_quantum": 26428191.0
-  },
-  {
-    "month": "2022-01",
-    "region": "CCR",
-    "count": 4,
-    "total_quantum": 4541000.0
-  },
-  {
-    "month": "2022-01",
-    "region": "OCR",
-    "count": 1,
-    "total_quantum": 1202000.0
-  },
-  {
-    "month": "2022-01",
-    "region": "RCR",
-    "count": 22,
-    "total_quantum": 24755464.0
-  },
-  {
-    "month": "2022-02",
-    "region": "CCR",
-    "count": 7,
-    "total_quantum": 8446000.0
-  },
-  {
-    "month": "2022-02",
-    "region": "OCR",
-    "count": 2,
-    "total_quantum": 2158000.0
-  },
-  {
-    "month": "2022-02",
-    "region": "RCR",
-    "count": 20,
-    "total_quantum": 22117888.0
-  },
-  {
-    "month": "2022-03",
-    "region": "CCR",
-    "count": 4,
-    "total_quantum": 5097776.88
-  },
-  {
-    "month": "2022-03",
-    "region": "OCR",
-    "count": 2,
-    "total_quantum": 2268000.0
-  },
-  {
-    "month": "2022-03",
-    "region": "RCR",
-    "count": 21,
-    "total_quantum": 22762054.0
-  },
-  {
-    "month": "2022-04",
-    "region": "CCR",
-    "count": 5,
-    "total_quantum": 5906000.0
-  },
-  {
-    "month": "2022-04",
-    "region": "RCR",
-    "count": 17,
-    "total_quantum": 18108000.0
-  },
-  {
-    "month": "2022-05",
-    "region": "CCR",
-    "count": 3,
-    "total_quantum": 3698088.88
-  },
-  {
-    "month": "2022-05",
-    "region": "OCR",
-    "count": 4,
-    "total_quantum": 4209776.0
-  },
-  {
-    "month": "2022-05",
-    "region": "RCR",
-    "count": 23,
-    "total_quantum": 25477000.0
-  },
-  {
-    "month": "2022-06",
-    "region": "CCR",
-    "count": 5,
-    "total_quantum": 5330776.0
-  },
-  {
-    "month": "2022-06",
-    "region": "OCR",
-    "count": 1,
-    "total_quantum": 1000000.0
-  },
-  {
-    "month": "2022-06",
-    "region": "RCR",
-    "count": 25,
-    "total_quantum": 28145888.0
-  },
-  {
-    "month": "2022-07",
-    "region": "CCR",
-    "count": 2,
-    "total_quantum": 2388000.0
-  },
-  {
-    "month": "2022-07",
-    "region": "OCR",
-    "count": 4,
-    "total_quantum": 4236665.0
-  },
-  {
-    "month": "2022-07",
-    "region": "RCR",
-    "count": 27,
-    "total_quantum": 30200776.0
-  },
-  {
-    "month": "2022-08",
-    "region": "CCR",
-    "count": 4,
-    "total_quantum": 4521000.0
-  },
-  {
-    "month": "2022-08",
-    "region": "OCR",
-    "count": 1,
-    "total_quantum": 1020000.0
-  },
-  {
-    "month": "2022-08",
-    "region": "RCR",
-    "count": 28,
-    "total_quantum": 30781189.0
+    "total_quantum": 9724691.25
   },
   {
     "month": "2022-09",
-    "region": "CCR",
-    "count": 3,
-    "total_quantum": 3696888.0
+    "district": "D22",
+    "count": 1,
+    "total_quantum": 624808.08
   },
   {
     "month": "2022-09",
-    "region": "OCR",
-    "count": 7,
-    "total_quantum": 7810101.0
+    "district": "D23",
+    "count": 1,
+    "total_quantum": 937212.12
   },
   {
     "month": "2022-09",
-    "region": "RCR",
-    "count": 35,
-    "total_quantum": 38898765.0
+    "district": "D25",
+    "count": 1,
+    "total_quantum": 624808.08
+  },
+  {
+    "month": "2022-09",
+    "district": "D27",
+    "count": 1,
+    "total_quantum": 937212.12
   },
   {
     "month": "2022-10",
-    "region": "CCR",
-    "count": 5,
-    "total_quantum": 6005000.0
+    "district": "D01",
+    "count": 2,
+    "total_quantum": 2402000.0
   },
   {
     "month": "2022-10",
-    "region": "OCR",
+    "district": "D03",
+    "count": 6,
+    "total_quantum": 6858833.2
+  },
+  {
+    "month": "2022-10",
+    "district": "D05",
+    "count": 2,
+    "total_quantum": 2537111.04
+  },
+  {
+    "month": "2022-10",
+    "district": "D08",
+    "count": 2,
+    "total_quantum": 3086944.4
+  },
+  {
+    "month": "2022-10",
+    "district": "D12",
+    "count": 3,
+    "total_quantum": 3805666.56
+  },
+  {
+    "month": "2022-10",
+    "district": "D13",
+    "count": 3,
+    "total_quantum": 3171388.8
+  },
+  {
+    "month": "2022-10",
+    "district": "D14",
+    "count": 3,
+    "total_quantum": 3171388.8
+  },
+  {
+    "month": "2022-10",
+    "district": "D15",
+    "count": 3,
+    "total_quantum": 3171388.8
+  },
+  {
+    "month": "2022-10",
+    "district": "D18",
+    "count": 1,
+    "total_quantum": 658408.2
+  },
+  {
+    "month": "2022-10",
+    "district": "D19",
     "count": 4,
-    "total_quantum": 4389388.0
+    "total_quantum": 2683041.400000001
   },
   {
     "month": "2022-10",
-    "region": "RCR",
-    "count": 29,
-    "total_quantum": 31713888.0
-  },
-  {
-    "month": "2022-11",
-    "region": "CCR",
-    "count": 5,
-    "total_quantum": 5668000.0
-  },
-  {
-    "month": "2022-11",
-    "region": "OCR",
-    "count": 8,
-    "total_quantum": 8569888.0
-  },
-  {
-    "month": "2022-11",
-    "region": "RCR",
-    "count": 13,
-    "total_quantum": 14776000.0
-  },
-  {
-    "month": "2022-12",
-    "region": "CCR",
-    "count": 3,
-    "total_quantum": 3738000.0
-  },
-  {
-    "month": "2022-12",
-    "region": "OCR",
-    "count": 5,
-    "total_quantum": 5645600.0
-  },
-  {
-    "month": "2022-12",
-    "region": "RCR",
-    "count": 20,
-    "total_quantum": 21659888.0
-  },
-  {
-    "month": "2023-01",
-    "region": "CCR",
-    "count": 5,
-    "total_quantum": 5918000.0
-  },
-  {
-    "month": "2023-01",
-    "region": "OCR",
-    "count": 5,
-    "total_quantum": 5678000.0
-  },
-  {
-    "month": "2023-01",
-    "region": "RCR",
-    "count": 30,
-    "total_quantum": 32959776.0
-  },
-  {
-    "month": "2023-02",
-    "region": "CCR",
-    "count": 3,
-    "total_quantum": 3662000.0
-  },
-  {
-    "month": "2023-02",
-    "region": "OCR",
+    "district": "D20",
     "count": 7,
-    "total_quantum": 7221000.0
+    "total_quantum": 7928472.0
+  },
+  {
+    "month": "2022-10",
+    "district": "D24",
+    "count": 2,
+    "total_quantum": 219469.39999999964
+  },
+  {
+    "month": "2022-11",
+    "district": "D01",
+    "count": 2,
+    "total_quantum": 2267200.0
+  },
+  {
+    "month": "2022-11",
+    "district": "D03",
+    "count": 4,
+    "total_quantum": 4200200.0
+  },
+  {
+    "month": "2022-11",
+    "district": "D05",
+    "count": 1,
+    "total_quantum": 1182080.0
+  },
+  {
+    "month": "2022-11",
+    "district": "D08",
+    "count": 2,
+    "total_quantum": 2155800.0
+  },
+  {
+    "month": "2022-11",
+    "district": "D12",
+    "count": 2,
+    "total_quantum": 1773120.0
+  },
+  {
+    "month": "2022-11",
+    "district": "D13",
+    "count": 1,
+    "total_quantum": 1477600.0
+  },
+  {
+    "month": "2022-11",
+    "district": "D14",
+    "count": 1,
+    "total_quantum": 1477600.0
+  },
+  {
+    "month": "2022-11",
+    "district": "D15",
+    "count": 1,
+    "total_quantum": 1477600.0
+  },
+  {
+    "month": "2022-11",
+    "district": "D16",
+    "count": 1,
+    "total_quantum": 856988.8
+  },
+  {
+    "month": "2022-11",
+    "district": "D18",
+    "count": 1,
+    "total_quantum": 1285483.2
+  },
+  {
+    "month": "2022-11",
+    "district": "D19",
+    "count": 3,
+    "total_quantum": 2881272.0
+  },
+  {
+    "month": "2022-11",
+    "district": "D20",
+    "count": 3,
+    "total_quantum": 3694000.0
+  },
+  {
+    "month": "2022-11",
+    "district": "D22",
+    "count": 1,
+    "total_quantum": 685591.04
+  },
+  {
+    "month": "2022-11",
+    "district": "D23",
+    "count": 1,
+    "total_quantum": 1028386.56
+  },
+  {
+    "month": "2022-11",
+    "district": "D25",
+    "count": 1,
+    "total_quantum": 685591.04
+  },
+  {
+    "month": "2022-11",
+    "district": "D27",
+    "count": 1,
+    "total_quantum": 1028386.56
+  },
+  {
+    "month": "2022-12",
+    "district": "D01",
+    "count": 1,
+    "total_quantum": 1495200.0
+  },
+  {
+    "month": "2022-12",
+    "district": "D03",
+    "count": 4,
+    "total_quantum": 4557283.2
+  },
+  {
+    "month": "2022-12",
+    "district": "D05",
+    "count": 2,
+    "total_quantum": 1732791.04
+  },
+  {
+    "month": "2022-12",
+    "district": "D08",
+    "count": 2,
+    "total_quantum": 2017494.4
+  },
+  {
+    "month": "2022-12",
+    "district": "D12",
+    "count": 2,
+    "total_quantum": 2599186.56
+  },
+  {
+    "month": "2022-12",
+    "district": "D13",
+    "count": 2,
+    "total_quantum": 2165988.8
+  },
+  {
+    "month": "2022-12",
+    "district": "D14",
+    "count": 2,
+    "total_quantum": 2165988.8
+  },
+  {
+    "month": "2022-12",
+    "district": "D15",
+    "count": 2,
+    "total_quantum": 2165988.8
+  },
+  {
+    "month": "2022-12",
+    "district": "D18",
+    "count": 1,
+    "total_quantum": 846840.0
+  },
+  {
+    "month": "2022-12",
+    "district": "D19",
+    "count": 2,
+    "total_quantum": 2494394.400000001
+  },
+  {
+    "month": "2022-12",
+    "district": "D20",
+    "count": 5,
+    "total_quantum": 5414972.0
+  },
+  {
+    "month": "2022-12",
+    "district": "D23",
+    "count": 1,
+    "total_quantum": 677472.0
+  },
+  {
+    "month": "2022-12",
+    "district": "D24",
+    "count": 1,
+    "total_quantum": 282280.0
+  },
+  {
+    "month": "2022-12",
+    "district": "D27",
+    "count": 1,
+    "total_quantum": 677472.0
+  },
+  {
+    "month": "2023-01",
+    "district": "D01",
+    "count": 2,
+    "total_quantum": 2367200.0
+  },
+  {
+    "month": "2023-01",
+    "district": "D03",
+    "count": 6,
+    "total_quantum": 7015266.4
+  },
+  {
+    "month": "2023-01",
+    "district": "D05",
+    "count": 2,
+    "total_quantum": 2636782.08
+  },
+  {
+    "month": "2023-01",
+    "district": "D08",
+    "count": 3,
+    "total_quantum": 3127488.8
+  },
+  {
+    "month": "2023-01",
+    "district": "D12",
+    "count": 4,
+    "total_quantum": 3955173.12
+  },
+  {
+    "month": "2023-01",
+    "district": "D13",
+    "count": 3,
+    "total_quantum": 3295977.6
+  },
+  {
+    "month": "2023-01",
+    "district": "D14",
+    "count": 3,
+    "total_quantum": 3295977.6
+  },
+  {
+    "month": "2023-01",
+    "district": "D15",
+    "count": 3,
+    "total_quantum": 3295977.6
+  },
+  {
+    "month": "2023-01",
+    "district": "D18",
+    "count": 1,
+    "total_quantum": 851700.0
+  },
+  {
+    "month": "2023-01",
+    "district": "D19",
+    "count": 2,
+    "total_quantum": 3067488.8000000017
+  },
+  {
+    "month": "2023-01",
+    "district": "D20",
+    "count": 8,
+    "total_quantum": 8239944.0
+  },
+  {
+    "month": "2023-01",
+    "district": "D23",
+    "count": 1,
+    "total_quantum": 681360.0
+  },
+  {
+    "month": "2023-01",
+    "district": "D24",
+    "count": 1,
+    "total_quantum": 283900.0
+  },
+  {
+    "month": "2023-01",
+    "district": "D27",
+    "count": 1,
+    "total_quantum": 681360.0
   },
   {
     "month": "2023-02",
-    "region": "RCR",
-    "count": 14,
-    "total_quantum": 15755464.0
-  },
-  {
-    "month": "2023-03",
-    "region": "CCR",
-    "count": 6,
-    "total_quantum": 7533000.0
-  },
-  {
-    "month": "2023-03",
-    "region": "OCR",
-    "count": 2,
-    "total_quantum": 2033000.0
-  },
-  {
-    "month": "2023-03",
-    "region": "RCR",
-    "count": 31,
-    "total_quantum": 34273888.0
-  },
-  {
-    "month": "2023-04",
-    "region": "CCR",
-    "count": 5,
-    "total_quantum": 6250000.0
-  },
-  {
-    "month": "2023-04",
-    "region": "OCR",
-    "count": 3,
-    "total_quantum": 3094688.0
-  },
-  {
-    "month": "2023-04",
-    "region": "RCR",
-    "count": 29,
-    "total_quantum": 32362552.0
-  },
-  {
-    "month": "2023-05",
-    "region": "CCR",
-    "count": 3,
-    "total_quantum": 3726000.0
-  },
-  {
-    "month": "2023-05",
-    "region": "OCR",
-    "count": 10,
-    "total_quantum": 10571888.0
-  },
-  {
-    "month": "2023-05",
-    "region": "RCR",
-    "count": 21,
-    "total_quantum": 22943552.0
-  },
-  {
-    "month": "2023-06",
-    "region": "CCR",
-    "count": 5,
-    "total_quantum": 5711000.0
-  },
-  {
-    "month": "2023-06",
-    "region": "OCR",
-    "count": 2,
-    "total_quantum": 2018000.0
-  },
-  {
-    "month": "2023-06",
-    "region": "RCR",
-    "count": 27,
-    "total_quantum": 30524776.0
-  },
-  {
-    "month": "2023-07",
-    "region": "CCR",
-    "count": 2,
-    "total_quantum": 2438000.0
-  },
-  {
-    "month": "2023-07",
-    "region": "OCR",
-    "count": 6,
-    "total_quantum": 6617000.0
-  },
-  {
-    "month": "2023-07",
-    "region": "RCR",
-    "count": 24,
-    "total_quantum": 26391000.0
-  },
-  {
-    "month": "2023-08",
-    "region": "CCR",
-    "count": 8,
-    "total_quantum": 10248000.0
-  },
-  {
-    "month": "2023-08",
-    "region": "OCR",
-    "count": 8,
-    "total_quantum": 8803888.0
-  },
-  {
-    "month": "2023-08",
-    "region": "RCR",
-    "count": 38,
-    "total_quantum": 42244688.0
-  },
-  {
-    "month": "2023-09",
-    "region": "CCR",
-    "count": 3,
-    "total_quantum": 3981939.0
-  },
-  {
-    "month": "2023-09",
-    "region": "OCR",
-    "count": 8,
-    "total_quantum": 8623000.0
-  },
-  {
-    "month": "2023-09",
-    "region": "RCR",
-    "count": 31,
-    "total_quantum": 35966664.0
-  },
-  {
-    "month": "2023-10",
-    "region": "CCR",
-    "count": 2,
-    "total_quantum": 2768888.0
-  },
-  {
-    "month": "2023-10",
-    "region": "OCR",
+    "district": "D01",
     "count": 1,
-    "total_quantum": 1180000.0
+    "total_quantum": 1464800.0
   },
   {
-    "month": "2023-10",
-    "region": "RCR",
-    "count": 37,
-    "total_quantum": 41214776.0
+    "month": "2023-02",
+    "district": "D03",
+    "count": 3,
+    "total_quantum": 3645019.6
   },
   {
-    "month": "2023-11",
-    "region": "CCR",
+    "month": "2023-02",
+    "district": "D05",
+    "count": 1,
+    "total_quantum": 1260437.12
+  },
+  {
+    "month": "2023-02",
+    "district": "D08",
     "count": 2,
-    "total_quantum": 2410888.0
+    "total_quantum": 1703273.2
   },
   {
-    "month": "2023-11",
-    "region": "OCR",
-    "count": 5,
-    "total_quantum": 5126000.0
+    "month": "2023-02",
+    "district": "D12",
+    "count": 2,
+    "total_quantum": 1890655.68
   },
   {
-    "month": "2023-11",
-    "region": "RCR",
-    "count": 38,
-    "total_quantum": 41464276.0
+    "month": "2023-02",
+    "district": "D13",
+    "count": 1,
+    "total_quantum": 1575546.4
   },
   {
-    "month": "2023-12",
-    "region": "CCR",
+    "month": "2023-02",
+    "district": "D14",
+    "count": 1,
+    "total_quantum": 1575546.4
+  },
+  {
+    "month": "2023-02",
+    "district": "D15",
+    "count": 1,
+    "total_quantum": 1575546.4
+  },
+  {
+    "month": "2023-02",
+    "district": "D16",
+    "count": 1,
+    "total_quantum": 722100.0
+  },
+  {
+    "month": "2023-02",
+    "district": "D18",
+    "count": 1,
+    "total_quantum": 1083150.0
+  },
+  {
+    "month": "2023-02",
+    "district": "D19",
+    "count": 3,
+    "total_quantum": 2593023.2
+  },
+  {
+    "month": "2023-02",
+    "district": "D20",
     "count": 4,
-    "total_quantum": 5308888.0
+    "total_quantum": 3938866.0
   },
   {
-    "month": "2023-12",
-    "region": "OCR",
-    "count": 6,
-    "total_quantum": 6654000.0
-  },
-  {
-    "month": "2023-12",
-    "region": "RCR",
-    "count": 38,
-    "total_quantum": 41413440.0
-  },
-  {
-    "month": "2024-01",
-    "region": "CCR",
+    "month": "2023-02",
+    "district": "D22",
     "count": 1,
-    "total_quantum": 1450000.0
+    "total_quantum": 577680.0
   },
   {
-    "month": "2024-01",
-    "region": "OCR",
-    "count": 10,
-    "total_quantum": 11135776.0
+    "month": "2023-02",
+    "district": "D23",
+    "count": 1,
+    "total_quantum": 866520.0
   },
   {
-    "month": "2024-01",
-    "region": "RCR",
-    "count": 63,
-    "total_quantum": 71248771.0
+    "month": "2023-02",
+    "district": "D25",
+    "count": 1,
+    "total_quantum": 577680.0
   },
   {
-    "month": "2024-02",
-    "region": "CCR",
+    "month": "2023-02",
+    "district": "D27",
+    "count": 1,
+    "total_quantum": 866520.0
+  },
+  {
+    "month": "2023-03",
+    "district": "D01",
     "count": 2,
-    "total_quantum": 2530000.0
+    "total_quantum": 3013200.0
   },
   {
-    "month": "2024-02",
-    "region": "OCR",
-    "count": 8,
-    "total_quantum": 8585888.0
+    "month": "2023-03",
+    "district": "D03",
+    "count": 7,
+    "total_quantum": 7777633.2
   },
   {
-    "month": "2024-02",
-    "region": "RCR",
-    "count": 39,
-    "total_quantum": 42929528.0
+    "month": "2023-03",
+    "district": "D05",
+    "count": 2,
+    "total_quantum": 2741911.04
   },
   {
-    "month": "2024-03",
-    "region": "CCR",
+    "month": "2023-03",
+    "district": "D08",
     "count": 4,
-    "total_quantum": 5318888.0
+    "total_quantum": 3596944.4
   },
   {
-    "month": "2024-03",
-    "region": "OCR",
-    "count": 14,
-    "total_quantum": 14985676.0
+    "month": "2023-03",
+    "district": "D12",
+    "count": 4,
+    "total_quantum": 4112866.56
   },
   {
-    "month": "2024-03",
-    "region": "RCR",
-    "count": 42,
-    "total_quantum": 46770940.0
+    "month": "2023-03",
+    "district": "D13",
+    "count": 3,
+    "total_quantum": 3427388.8
   },
   {
-    "month": "2024-04",
-    "region": "CCR",
+    "month": "2023-03",
+    "district": "D14",
+    "count": 3,
+    "total_quantum": 3427388.8
+  },
+  {
+    "month": "2023-03",
+    "district": "D15",
+    "count": 3,
+    "total_quantum": 3427388.8
+  },
+  {
+    "month": "2023-03",
+    "district": "D19",
     "count": 1,
-    "total_quantum": 1425000.0
+    "total_quantum": 1713694.4000000008
   },
   {
-    "month": "2024-04",
-    "region": "OCR",
+    "month": "2023-03",
+    "district": "D20",
+    "count": 8,
+    "total_quantum": 8568472.0
+  },
+  {
+    "month": "2023-03",
+    "district": "D24",
+    "count": 2,
+    "total_quantum": 101650.0
+  },
+  {
+    "month": "2023-04",
+    "district": "D01",
+    "count": 2,
+    "total_quantum": 2500000.0
+  },
+  {
+    "month": "2023-04",
+    "district": "D03",
+    "count": 6,
+    "total_quantum": 7041882.8
+  },
+  {
+    "month": "2023-04",
+    "district": "D05",
+    "count": 2,
+    "total_quantum": 2589004.16
+  },
+  {
+    "month": "2023-04",
+    "district": "D08",
+    "count": 2,
+    "total_quantum": 3180627.6
+  },
+  {
+    "month": "2023-04",
+    "district": "D12",
+    "count": 3,
+    "total_quantum": 3883506.24
+  },
+  {
+    "month": "2023-04",
+    "district": "D13",
+    "count": 3,
+    "total_quantum": 3236255.2
+  },
+  {
+    "month": "2023-04",
+    "district": "D14",
+    "count": 3,
+    "total_quantum": 3236255.2
+  },
+  {
+    "month": "2023-04",
+    "district": "D15",
+    "count": 3,
+    "total_quantum": 3236255.2
+  },
+  {
+    "month": "2023-04",
+    "district": "D19",
+    "count": 4,
+    "total_quantum": 2391799.599999998
+  },
+  {
+    "month": "2023-04",
+    "district": "D20",
+    "count": 7,
+    "total_quantum": 8090638.0
+  },
+  {
+    "month": "2023-04",
+    "district": "D24",
+    "count": 2,
+    "total_quantum": 154734.39999999982
+  },
+  {
+    "month": "2023-05",
+    "district": "D01",
+    "count": 1,
+    "total_quantum": 1490400.0
+  },
+  {
+    "month": "2023-05",
+    "district": "D03",
+    "count": 4,
+    "total_quantum": 4745632.8
+  },
+  {
+    "month": "2023-05",
+    "district": "D05",
+    "count": 2,
+    "total_quantum": 1835484.16
+  },
+  {
+    "month": "2023-05",
+    "district": "D08",
+    "count": 2,
+    "total_quantum": 2078677.6
+  },
+  {
+    "month": "2023-05",
+    "district": "D12",
+    "count": 3,
+    "total_quantum": 2753226.24
+  },
+  {
+    "month": "2023-05",
+    "district": "D13",
+    "count": 2,
+    "total_quantum": 2294355.2
+  },
+  {
+    "month": "2023-05",
+    "district": "D14",
+    "count": 2,
+    "total_quantum": 2294355.2
+  },
+  {
+    "month": "2023-05",
+    "district": "D15",
+    "count": 2,
+    "total_quantum": 2294355.2
+  },
+  {
+    "month": "2023-05",
+    "district": "D16",
+    "count": 1,
+    "total_quantum": 1057188.8
+  },
+  {
+    "month": "2023-05",
+    "district": "D18",
+    "count": 2,
+    "total_quantum": 1585783.2
+  },
+  {
+    "month": "2023-05",
+    "district": "D19",
+    "count": 3,
+    "total_quantum": 3790149.5999999973
+  },
+  {
+    "month": "2023-05",
+    "district": "D20",
+    "count": 5,
+    "total_quantum": 5735888.0
+  },
+  {
+    "month": "2023-05",
+    "district": "D22",
+    "count": 1,
+    "total_quantum": 845751.04
+  },
+  {
+    "month": "2023-05",
+    "district": "D23",
+    "count": 1,
+    "total_quantum": 1268626.56
+  },
+  {
+    "month": "2023-05",
+    "district": "D24",
+    "count": 1,
+    "total_quantum": 528594.3999999998
+  },
+  {
+    "month": "2023-05",
+    "district": "D25",
+    "count": 1,
+    "total_quantum": 845751.04
+  },
+  {
+    "month": "2023-05",
+    "district": "D27",
+    "count": 1,
+    "total_quantum": 1268626.56
+  },
+  {
+    "month": "2023-06",
+    "district": "D01",
+    "count": 2,
+    "total_quantum": 2284400.0
+  },
+  {
+    "month": "2023-06",
+    "district": "D03",
+    "count": 6,
+    "total_quantum": 6577566.4
+  },
+  {
+    "month": "2023-06",
+    "district": "D05",
+    "count": 2,
+    "total_quantum": 2441982.08
+  },
+  {
+    "month": "2023-06",
+    "district": "D08",
+    "count": 2,
+    "total_quantum": 2953988.8
+  },
+  {
+    "month": "2023-06",
+    "district": "D12",
+    "count": 3,
+    "total_quantum": 3662973.12
+  },
+  {
+    "month": "2023-06",
+    "district": "D13",
+    "count": 3,
+    "total_quantum": 3052477.6
+  },
+  {
+    "month": "2023-06",
+    "district": "D14",
+    "count": 3,
+    "total_quantum": 3052477.6
+  },
+  {
+    "month": "2023-06",
+    "district": "D15",
+    "count": 3,
+    "total_quantum": 3052477.6
+  },
+  {
+    "month": "2023-06",
+    "district": "D19",
+    "count": 1,
+    "total_quantum": 1526238.8000000014
+  },
+  {
+    "month": "2023-06",
+    "district": "D20",
+    "count": 7,
+    "total_quantum": 7631194.0
+  },
+  {
+    "month": "2023-06",
+    "district": "D24",
+    "count": 2,
+    "total_quantum": 100900.0
+  },
+  {
+    "month": "2023-07",
+    "district": "D01",
+    "count": 1,
+    "total_quantum": 975200.0
+  },
+  {
+    "month": "2023-07",
+    "district": "D03",
+    "count": 5,
+    "total_quantum": 4811950.0
+  },
+  {
+    "month": "2023-07",
+    "district": "D05",
+    "count": 2,
+    "total_quantum": 2111280.0
+  },
+  {
+    "month": "2023-07",
+    "district": "D08",
+    "count": 1,
+    "total_quantum": 1319550.0
+  },
+  {
+    "month": "2023-07",
+    "district": "D12",
+    "count": 3,
+    "total_quantum": 3166920.0
+  },
+  {
+    "month": "2023-07",
+    "district": "D13",
+    "count": 2,
+    "total_quantum": 2639100.0
+  },
+  {
+    "month": "2023-07",
+    "district": "D14",
+    "count": 2,
+    "total_quantum": 2639100.0
+  },
+  {
+    "month": "2023-07",
+    "district": "D15",
+    "count": 2,
+    "total_quantum": 2639100.0
+  },
+  {
+    "month": "2023-07",
+    "district": "D16",
+    "count": 1,
+    "total_quantum": 661700.0
+  },
+  {
+    "month": "2023-07",
+    "district": "D18",
+    "count": 1,
+    "total_quantum": 992550.0
+  },
+  {
+    "month": "2023-07",
+    "district": "D19",
+    "count": 4,
+    "total_quantum": 2973800.0
+  },
+  {
+    "month": "2023-07",
+    "district": "D20",
+    "count": 6,
+    "total_quantum": 6597750.0
+  },
+  {
+    "month": "2023-07",
+    "district": "D23",
+    "count": 1,
+    "total_quantum": 794040.0
+  },
+  {
+    "month": "2023-07",
+    "district": "D27",
+    "count": 1,
+    "total_quantum": 794040.0
+  },
+  {
+    "month": "2023-08",
+    "district": "D01",
+    "count": 3,
+    "total_quantum": 4099200.0
+  },
+  {
+    "month": "2023-08",
+    "district": "D03",
+    "count": 9,
+    "total_quantum": 9923503.2
+  },
+  {
+    "month": "2023-08",
+    "district": "D05",
+    "count": 3,
+    "total_quantum": 3379575.04
+  },
+  {
+    "month": "2023-08",
+    "district": "D08",
+    "count": 4,
+    "total_quantum": 4674234.4
+  },
+  {
+    "month": "2023-08",
+    "district": "D12",
+    "count": 5,
+    "total_quantum": 5069362.56
+  },
+  {
+    "month": "2023-08",
+    "district": "D13",
+    "count": 4,
+    "total_quantum": 4224468.8
+  },
+  {
+    "month": "2023-08",
+    "district": "D14",
+    "count": 4,
+    "total_quantum": 4224468.8
+  },
+  {
+    "month": "2023-08",
+    "district": "D15",
+    "count": 4,
+    "total_quantum": 4224468.8
+  },
+  {
+    "month": "2023-08",
+    "district": "D16",
+    "count": 1,
+    "total_quantum": 880388.8
+  },
+  {
+    "month": "2023-08",
+    "district": "D18",
+    "count": 1,
+    "total_quantum": 1320583.2
+  },
+  {
+    "month": "2023-08",
+    "district": "D19",
+    "count": 2,
+    "total_quantum": 2200972.0
+  },
+  {
+    "month": "2023-08",
+    "district": "D20",
+    "count": 10,
+    "total_quantum": 10561172.0
+  },
+  {
+    "month": "2023-08",
+    "district": "D22",
+    "count": 1,
+    "total_quantum": 704311.04
+  },
+  {
+    "month": "2023-08",
+    "district": "D23",
+    "count": 1,
+    "total_quantum": 1056466.56
+  },
+  {
+    "month": "2023-08",
+    "district": "D25",
+    "count": 1,
+    "total_quantum": 704311.04
+  },
+  {
+    "month": "2023-08",
+    "district": "D27",
+    "count": 1,
+    "total_quantum": 1056466.56
+  },
+  {
+    "month": "2023-09",
+    "district": "D01",
+    "count": 1,
+    "total_quantum": 1592775.6
+  },
+  {
+    "month": "2023-09",
+    "district": "D03",
+    "count": 6,
+    "total_quantum": 6788678.25
+  },
+  {
+    "month": "2023-09",
+    "district": "D05",
+    "count": 2,
+    "total_quantum": 2877333.12
+  },
+  {
+    "month": "2023-09",
+    "district": "D08",
+    "count": 3,
+    "total_quantum": 2793817.95
+  },
+  {
+    "month": "2023-09",
+    "district": "D12",
+    "count": 4,
+    "total_quantum": 4315999.68
+  },
+  {
+    "month": "2023-09",
+    "district": "D13",
+    "count": 3,
+    "total_quantum": 3596666.4
+  },
+  {
+    "month": "2023-09",
+    "district": "D14",
+    "count": 3,
+    "total_quantum": 3596666.4
+  },
+  {
+    "month": "2023-09",
+    "district": "D15",
+    "count": 3,
+    "total_quantum": 3596666.4
+  },
+  {
+    "month": "2023-09",
+    "district": "D16",
+    "count": 1,
+    "total_quantum": 862300.0
+  },
+  {
+    "month": "2023-09",
+    "district": "D18",
+    "count": 1,
+    "total_quantum": 1293450.0
+  },
+  {
+    "month": "2023-09",
+    "district": "D19",
+    "count": 3,
+    "total_quantum": 3954083.1999999974
+  },
+  {
+    "month": "2023-09",
+    "district": "D20",
+    "count": 8,
+    "total_quantum": 8991666.0
+  },
+  {
+    "month": "2023-09",
+    "district": "D22",
+    "count": 1,
+    "total_quantum": 689840.0
+  },
+  {
+    "month": "2023-09",
+    "district": "D23",
+    "count": 1,
+    "total_quantum": 1034760.0
+  },
+  {
+    "month": "2023-09",
+    "district": "D25",
+    "count": 1,
+    "total_quantum": 689840.0
+  },
+  {
+    "month": "2023-09",
+    "district": "D27",
+    "count": 1,
+    "total_quantum": 1034760.0
+  },
+  {
+    "month": "2023-10",
+    "district": "D01",
+    "count": 1,
+    "total_quantum": 1107555.2
+  },
+  {
+    "month": "2023-10",
+    "district": "D03",
+    "count": 7,
+    "total_quantum": 7151327.2
+  },
+  {
+    "month": "2023-10",
+    "district": "D05",
+    "count": 3,
+    "total_quantum": 3297182.08
+  },
+  {
+    "month": "2023-10",
+    "district": "D08",
+    "count": 2,
+    "total_quantum": 2060738.8
+  },
+  {
+    "month": "2023-10",
+    "district": "D12",
+    "count": 4,
+    "total_quantum": 4945773.12
+  },
+  {
+    "month": "2023-10",
+    "district": "D13",
+    "count": 4,
+    "total_quantum": 4121477.6
+  },
+  {
+    "month": "2023-10",
+    "district": "D14",
+    "count": 4,
+    "total_quantum": 4121477.6
+  },
+  {
+    "month": "2023-10",
+    "district": "D15",
+    "count": 4,
+    "total_quantum": 4121477.6
+  },
+  {
+    "month": "2023-10",
+    "district": "D19",
+    "count": 1,
+    "total_quantum": 2060738.8000000014
+  },
+  {
+    "month": "2023-10",
+    "district": "D20",
+    "count": 9,
+    "total_quantum": 10303694.0
+  },
+  {
+    "month": "2023-10",
+    "district": "D24",
+    "count": 1,
+    "total_quantum": 59000.0
+  },
+  {
+    "month": "2023-11",
+    "district": "D01",
+    "count": 1,
+    "total_quantum": 964355.2
+  },
+  {
+    "month": "2023-11",
+    "district": "D03",
+    "count": 7,
+    "total_quantum": 7063452.2
+  },
+  {
+    "month": "2023-11",
+    "district": "D05",
+    "count": 3,
+    "total_quantum": 3317142.08
+  },
+  {
+    "month": "2023-11",
+    "district": "D08",
+    "count": 2,
+    "total_quantum": 2073213.8
+  },
+  {
+    "month": "2023-11",
+    "district": "D12",
+    "count": 5,
+    "total_quantum": 4975713.12
+  },
+  {
+    "month": "2023-11",
+    "district": "D13",
+    "count": 4,
+    "total_quantum": 4146427.6
+  },
+  {
+    "month": "2023-11",
+    "district": "D14",
+    "count": 4,
+    "total_quantum": 4146427.6
+  },
+  {
+    "month": "2023-11",
+    "district": "D15",
+    "count": 4,
+    "total_quantum": 4146427.6
+  },
+  {
+    "month": "2023-11",
+    "district": "D18",
+    "count": 1,
+    "total_quantum": 768900.0
+  },
+  {
+    "month": "2023-11",
+    "district": "D19",
+    "count": 1,
+    "total_quantum": 1281500.0
+  },
+  {
+    "month": "2023-11",
+    "district": "D20",
+    "count": 10,
+    "total_quantum": 10366069.0
+  },
+  {
+    "month": "2023-11",
+    "district": "D23",
+    "count": 1,
+    "total_quantum": 615120.0
+  },
+  {
+    "month": "2023-11",
+    "district": "D24",
+    "count": 1,
+    "total_quantum": 256300.0
+  },
+  {
+    "month": "2023-11",
+    "district": "D27",
+    "count": 1,
+    "total_quantum": 615120.0
+  },
+  {
+    "month": "2023-12",
+    "district": "D01",
+    "count": 2,
+    "total_quantum": 2123555.2
+  },
+  {
+    "month": "2023-12",
+    "district": "D03",
+    "count": 7,
+    "total_quantum": 8070126.8
+  },
+  {
+    "month": "2023-12",
+    "district": "D05",
+    "count": 3,
+    "total_quantum": 3313075.2
+  },
+  {
+    "month": "2023-12",
+    "district": "D08",
+    "count": 3,
+    "total_quantum": 3397894.0
+  },
+  {
+    "month": "2023-12",
+    "district": "D12",
+    "count": 5,
+    "total_quantum": 4969612.8
+  },
+  {
+    "month": "2023-12",
+    "district": "D13",
+    "count": 4,
+    "total_quantum": 4141344.0
+  },
+  {
+    "month": "2023-12",
+    "district": "D14",
+    "count": 4,
+    "total_quantum": 4141344.0
+  },
+  {
+    "month": "2023-12",
+    "district": "D15",
+    "count": 4,
+    "total_quantum": 4141344.0
+  },
+  {
+    "month": "2023-12",
+    "district": "D16",
+    "count": 1,
+    "total_quantum": 665400.0
+  },
+  {
+    "month": "2023-12",
+    "district": "D18",
+    "count": 1,
+    "total_quantum": 998100.0
+  },
+  {
+    "month": "2023-12",
+    "district": "D19",
+    "count": 2,
+    "total_quantum": 1663500.0
+  },
+  {
+    "month": "2023-12",
+    "district": "D20",
+    "count": 10,
+    "total_quantum": 10353360.0
+  },
+  {
+    "month": "2023-12",
+    "district": "D23",
+    "count": 1,
+    "total_quantum": 798480.0
+  },
+  {
+    "month": "2023-12",
+    "district": "D27",
+    "count": 1,
+    "total_quantum": 798480.0
+  },
+  {
+    "month": "2024-01",
+    "district": "D03",
+    "count": 9,
+    "total_quantum": 10687315.65
+  },
+  {
+    "month": "2024-01",
+    "district": "D05",
+    "count": 5,
+    "total_quantum": 5699901.68
+  },
+  {
+    "month": "2024-01",
+    "district": "D08",
+    "count": 4,
+    "total_quantum": 3924938.55
+  },
+  {
+    "month": "2024-01",
+    "district": "D12",
+    "count": 8,
+    "total_quantum": 8549852.52
+  },
+  {
+    "month": "2024-01",
+    "district": "D13",
+    "count": 6,
+    "total_quantum": 7124877.1
+  },
+  {
+    "month": "2024-01",
+    "district": "D14",
+    "count": 6,
+    "total_quantum": 7124877.1
+  },
+  {
+    "month": "2024-01",
+    "district": "D15",
+    "count": 6,
+    "total_quantum": 7124877.1
+  },
+  {
+    "month": "2024-01",
+    "district": "D16",
+    "count": 1,
+    "total_quantum": 1113577.6
+  },
+  {
+    "month": "2024-01",
+    "district": "D18",
+    "count": 2,
+    "total_quantum": 1670366.4
+  },
+  {
+    "month": "2024-01",
+    "district": "D19",
+    "count": 6,
+    "total_quantum": 6346382.549999996
+  },
+  {
+    "month": "2024-01",
+    "district": "D20",
     "count": 16,
-    "total_quantum": 17567888.0
+    "total_quantum": 17812192.75
+  },
+  {
+    "month": "2024-01",
+    "district": "D22",
+    "count": 1,
+    "total_quantum": 890862.08
+  },
+  {
+    "month": "2024-01",
+    "district": "D23",
+    "count": 1,
+    "total_quantum": 1336293.12
+  },
+  {
+    "month": "2024-01",
+    "district": "D24",
+    "count": 1,
+    "total_quantum": 556788.7999999991
+  },
+  {
+    "month": "2024-01",
+    "district": "D25",
+    "count": 1,
+    "total_quantum": 890862.08
+  },
+  {
+    "month": "2024-01",
+    "district": "D27",
+    "count": 1,
+    "total_quantum": 1336293.12
+  },
+  {
+    "month": "2024-02",
+    "district": "D01",
+    "count": 1,
+    "total_quantum": 1012000.0
+  },
+  {
+    "month": "2024-02",
+    "district": "D03",
+    "count": 7,
+    "total_quantum": 7324929.2
+  },
+  {
+    "month": "2024-02",
+    "district": "D05",
+    "count": 3,
+    "total_quantum": 3434362.24
+  },
+  {
+    "month": "2024-02",
+    "district": "D08",
+    "count": 2,
+    "total_quantum": 2146476.4
+  },
+  {
+    "month": "2024-02",
+    "district": "D12",
+    "count": 5,
+    "total_quantum": 5151543.36
+  },
+  {
+    "month": "2024-02",
+    "district": "D13",
+    "count": 4,
+    "total_quantum": 4292952.8
+  },
+  {
+    "month": "2024-02",
+    "district": "D14",
+    "count": 4,
+    "total_quantum": 4292952.8
+  },
+  {
+    "month": "2024-02",
+    "district": "D15",
+    "count": 4,
+    "total_quantum": 4292952.8
+  },
+  {
+    "month": "2024-02",
+    "district": "D16",
+    "count": 1,
+    "total_quantum": 858588.8
+  },
+  {
+    "month": "2024-02",
+    "district": "D18",
+    "count": 1,
+    "total_quantum": 1287883.2
+  },
+  {
+    "month": "2024-02",
+    "district": "D19",
+    "count": 3,
+    "total_quantum": 4292948.4
+  },
+  {
+    "month": "2024-02",
+    "district": "D20",
+    "count": 10,
+    "total_quantum": 10732382.0
+  },
+  {
+    "month": "2024-02",
+    "district": "D22",
+    "count": 1,
+    "total_quantum": 686871.04
+  },
+  {
+    "month": "2024-02",
+    "district": "D23",
+    "count": 1,
+    "total_quantum": 1030306.56
+  },
+  {
+    "month": "2024-02",
+    "district": "D25",
+    "count": 1,
+    "total_quantum": 686871.04
+  },
+  {
+    "month": "2024-02",
+    "district": "D27",
+    "count": 1,
+    "total_quantum": 1030306.56
+  },
+  {
+    "month": "2024-03",
+    "district": "D01",
+    "count": 2,
+    "total_quantum": 2127555.2
+  },
+  {
+    "month": "2024-03",
+    "district": "D03",
+    "count": 7,
+    "total_quantum": 8877251.8
+  },
+  {
+    "month": "2024-03",
+    "district": "D05",
+    "count": 3,
+    "total_quantum": 3741675.2
+  },
+  {
+    "month": "2024-03",
+    "district": "D08",
+    "count": 3,
+    "total_quantum": 3668269.0
+  },
+  {
+    "month": "2024-03",
+    "district": "D12",
+    "count": 5,
+    "total_quantum": 5612512.8
+  },
+  {
+    "month": "2024-03",
+    "district": "D13",
+    "count": 4,
+    "total_quantum": 4677094.0
+  },
+  {
+    "month": "2024-03",
+    "district": "D14",
+    "count": 4,
+    "total_quantum": 4677094.0
+  },
+  {
+    "month": "2024-03",
+    "district": "D15",
+    "count": 4,
+    "total_quantum": 4677094.0
+  },
+  {
+    "month": "2024-03",
+    "district": "D16",
+    "count": 1,
+    "total_quantum": 1498567.6
+  },
+  {
+    "month": "2024-03",
+    "district": "D18",
+    "count": 2,
+    "total_quantum": 2247851.4
+  },
+  {
+    "month": "2024-03",
+    "district": "D19",
+    "count": 8,
+    "total_quantum": 6084965.999999999
+  },
+  {
+    "month": "2024-03",
+    "district": "D20",
+    "count": 10,
+    "total_quantum": 11692735.0
+  },
+  {
+    "month": "2024-03",
+    "district": "D21",
+    "count": 1,
+    "total_quantum": 749283.8
+  },
+  {
+    "month": "2024-03",
+    "district": "D22",
+    "count": 1,
+    "total_quantum": 1198854.08
+  },
+  {
+    "month": "2024-03",
+    "district": "D23",
+    "count": 2,
+    "total_quantum": 1798281.12
+  },
+  {
+    "month": "2024-03",
+    "district": "D25",
+    "count": 1,
+    "total_quantum": 1198854.08
+  },
+  {
+    "month": "2024-03",
+    "district": "D27",
+    "count": 2,
+    "total_quantum": 1798281.12
   },
   {
     "month": "2024-04",
-    "region": "RCR",
-    "count": 51,
-    "total_quantum": 56441152.0
+    "district": "D03",
+    "count": 8,
+    "total_quantum": 8466172.8
   },
   {
-    "month": "2024-05",
-    "region": "CCR",
-    "count": 3,
-    "total_quantum": 4213888.0
-  },
-  {
-    "month": "2024-05",
-    "region": "OCR",
-    "count": 13,
-    "total_quantum": 13513800.0
-  },
-  {
-    "month": "2024-05",
-    "region": "RCR",
-    "count": 57,
-    "total_quantum": 62995431.0
-  },
-  {
-    "month": "2024-06",
-    "region": "CCR",
-    "count": 3,
-    "total_quantum": 3994000.0
-  },
-  {
-    "month": "2024-06",
-    "region": "OCR",
-    "count": 11,
-    "total_quantum": 11685688.0
-  },
-  {
-    "month": "2024-06",
-    "region": "RCR",
-    "count": 81,
-    "total_quantum": 92577768.0
-  },
-  {
-    "month": "2024-07",
-    "region": "CCR",
-    "count": 3,
-    "total_quantum": 3800000.0
-  },
-  {
-    "month": "2024-07",
-    "region": "OCR",
-    "count": 15,
-    "total_quantum": 16542888.0
-  },
-  {
-    "month": "2024-07",
-    "region": "RCR",
-    "count": 102,
-    "total_quantum": 114011780.88
-  },
-  {
-    "month": "2024-08",
-    "region": "CCR",
-    "count": 5,
-    "total_quantum": 6856000.0
-  },
-  {
-    "month": "2024-08",
-    "region": "OCR",
-    "count": 21,
-    "total_quantum": 22679656.0
-  },
-  {
-    "month": "2024-08",
-    "region": "RCR",
-    "count": 79,
-    "total_quantum": 88183354.0
-  },
-  {
-    "month": "2024-09",
-    "region": "CCR",
-    "count": 5,
-    "total_quantum": 6968000.0
-  },
-  {
-    "month": "2024-09",
-    "region": "OCR",
-    "count": 18,
-    "total_quantum": 19069776.0
-  },
-  {
-    "month": "2024-09",
-    "region": "RCR",
-    "count": 83,
-    "total_quantum": 92019392.0
-  },
-  {
-    "month": "2024-10",
-    "region": "CCR",
-    "count": 6,
-    "total_quantum": 8549888.0
-  },
-  {
-    "month": "2024-10",
-    "region": "OCR",
-    "count": 17,
-    "total_quantum": 18038888.0
-  },
-  {
-    "month": "2024-10",
-    "region": "RCR",
-    "count": 80,
-    "total_quantum": 89940472.0
-  },
-  {
-    "month": "2024-11",
-    "region": "CCR",
-    "count": 5,
-    "total_quantum": 6352880.0
-  },
-  {
-    "month": "2024-11",
-    "region": "OCR",
-    "count": 15,
-    "total_quantum": 15805000.0
-  },
-  {
-    "month": "2024-11",
-    "region": "RCR",
-    "count": 67,
-    "total_quantum": 74358496.0
-  },
-  {
-    "month": "2024-12",
-    "region": "CCR",
-    "count": 9,
-    "total_quantum": 12083888.0
-  },
-  {
-    "month": "2024-12",
-    "region": "OCR",
-    "count": 5,
-    "total_quantum": 5407000.0
-  },
-  {
-    "month": "2024-12",
-    "region": "RCR",
-    "count": 81,
-    "total_quantum": 89915589.0
-  },
-  {
-    "month": "2025-01",
-    "region": "CCR",
+    "month": "2024-04",
+    "district": "D05",
     "count": 4,
-    "total_quantum": 5180000.0
+    "total_quantum": 4515292.16
   },
   {
-    "month": "2025-01",
-    "region": "OCR",
-    "count": 19,
-    "total_quantum": 20114664.0
+    "month": "2024-04",
+    "district": "D08",
+    "count": 4,
+    "total_quantum": 3178307.6
   },
   {
-    "month": "2025-01",
-    "region": "RCR",
-    "count": 96,
-    "total_quantum": 107946656.0
+    "month": "2024-04",
+    "district": "D12",
+    "count": 6,
+    "total_quantum": 6772938.24
   },
   {
-    "month": "2025-02",
-    "region": "CCR",
+    "month": "2024-04",
+    "district": "D13",
+    "count": 5,
+    "total_quantum": 5644115.2
+  },
+  {
+    "month": "2024-04",
+    "district": "D14",
+    "count": 5,
+    "total_quantum": 5644115.2
+  },
+  {
+    "month": "2024-04",
+    "district": "D15",
+    "count": 5,
+    "total_quantum": 5644115.2
+  },
+  {
+    "month": "2024-04",
+    "district": "D16",
     "count": 2,
-    "total_quantum": 2882000.0
+    "total_quantum": 1756788.8
   },
   {
-    "month": "2025-02",
-    "region": "OCR",
-    "count": 23,
-    "total_quantum": 24797440.0
+    "month": "2024-04",
+    "district": "D18",
+    "count": 2,
+    "total_quantum": 2635183.2
   },
   {
-    "month": "2025-02",
-    "region": "RCR",
-    "count": 96,
-    "total_quantum": 111203435.0
-  },
-  {
-    "month": "2025-03",
-    "region": "CCR",
-    "count": 4,
-    "total_quantum": 5548000.0
-  },
-  {
-    "month": "2025-03",
-    "region": "OCR",
-    "count": 15,
-    "total_quantum": 15845888.0
-  },
-  {
-    "month": "2025-03",
-    "region": "RCR",
-    "count": 89,
-    "total_quantum": 101069853.0
-  },
-  {
-    "month": "2025-04",
-    "region": "CCR",
-    "count": 5,
-    "total_quantum": 6678888.0
-  },
-  {
-    "month": "2025-04",
-    "region": "OCR",
-    "count": 24,
-    "total_quantum": 26650576.0
-  },
-  {
-    "month": "2025-04",
-    "region": "RCR",
-    "count": 112,
-    "total_quantum": 125823904.0
-  },
-  {
-    "month": "2025-05",
-    "region": "CCR",
-    "count": 7,
-    "total_quantum": 9643568.0
-  },
-  {
-    "month": "2025-05",
-    "region": "OCR",
-    "count": 29,
-    "total_quantum": 31828330.0
-  },
-  {
-    "month": "2025-05",
-    "region": "RCR",
-    "count": 106,
-    "total_quantum": 121626596.0
-  },
-  {
-    "month": "2025-06",
-    "region": "CCR",
-    "count": 4,
-    "total_quantum": 5700888.0
-  },
-  {
-    "month": "2025-06",
-    "region": "OCR",
-    "count": 25,
-    "total_quantum": 27532352.0
-  },
-  {
-    "month": "2025-06",
-    "region": "RCR",
-    "count": 103,
-    "total_quantum": 118125532.0
-  },
-  {
-    "month": "2025-07",
-    "region": "CCR",
+    "month": "2024-04",
+    "district": "D19",
     "count": 6,
-    "total_quantum": 8642800.0
+    "total_quantum": 7214029.600000003
   },
   {
-    "month": "2025-07",
-    "region": "OCR",
-    "count": 34,
-    "total_quantum": 36699352.0
+    "month": "2024-04",
+    "district": "D20",
+    "count": 13,
+    "total_quantum": 14110288.0
   },
   {
-    "month": "2025-07",
-    "region": "RCR",
-    "count": 127,
-    "total_quantum": 143535010.0
+    "month": "2024-04",
+    "district": "D21",
+    "count": 1,
+    "total_quantum": 878394.4
   },
   {
-    "month": "2025-08",
-    "region": "CCR",
-    "count": 7,
-    "total_quantum": 9705000.0
+    "month": "2024-04",
+    "district": "D22",
+    "count": 1,
+    "total_quantum": 1405431.04
   },
   {
-    "month": "2025-08",
-    "region": "OCR",
-    "count": 22,
-    "total_quantum": 24099888.0
+    "month": "2024-04",
+    "district": "D23",
+    "count": 2,
+    "total_quantum": 2108146.56
   },
   {
-    "month": "2025-08",
-    "region": "RCR",
-    "count": 112,
-    "total_quantum": 129420704.88
+    "month": "2024-04",
+    "district": "D24",
+    "count": 1,
+    "total_quantum": 878394.3999999998
   },
   {
-    "month": "2025-09",
-    "region": "CCR",
-    "count": 7,
-    "total_quantum": 9685000.0
+    "month": "2024-04",
+    "district": "D25",
+    "count": 1,
+    "total_quantum": 1405431.04
   },
   {
-    "month": "2025-09",
-    "region": "OCR",
-    "count": 34,
-    "total_quantum": 36060888.0
+    "month": "2024-04",
+    "district": "D27",
+    "count": 2,
+    "total_quantum": 2108146.56
   },
   {
-    "month": "2025-09",
-    "region": "RCR",
-    "count": 131,
-    "total_quantum": 148789088.88
+    "month": "2024-05",
+    "district": "D01",
+    "count": 1,
+    "total_quantum": 1685555.2
   },
   {
-    "month": "2025-10",
-    "region": "CCR",
+    "month": "2024-05",
+    "district": "D03",
+    "count": 10,
+    "total_quantum": 10924175.450000001
+  },
+  {
+    "month": "2024-05",
+    "district": "D05",
+    "count": 5,
+    "total_quantum": 5039634.48
+  },
+  {
+    "month": "2024-05",
+    "district": "D08",
     "count": 4,
-    "total_quantum": 5956000.0
+    "total_quantum": 4203243.55
   },
   {
-    "month": "2025-10",
-    "region": "OCR",
+    "month": "2024-05",
+    "district": "D12",
+    "count": 7,
+    "total_quantum": 7559451.72
+  },
+  {
+    "month": "2024-05",
+    "district": "D13",
+    "count": 6,
+    "total_quantum": 6299543.1
+  },
+  {
+    "month": "2024-05",
+    "district": "D14",
+    "count": 6,
+    "total_quantum": 6299543.1
+  },
+  {
+    "month": "2024-05",
+    "district": "D15",
+    "count": 6,
+    "total_quantum": 6299543.1
+  },
+  {
+    "month": "2024-05",
+    "district": "D16",
+    "count": 1,
+    "total_quantum": 1351380.0
+  },
+  {
+    "month": "2024-05",
+    "district": "D18",
+    "count": 2,
+    "total_quantum": 2027070.0
+  },
+  {
+    "month": "2024-05",
+    "district": "D19",
+    "count": 4,
+    "total_quantum": 6528221.55
+  },
+  {
+    "month": "2024-05",
+    "district": "D20",
+    "count": 14,
+    "total_quantum": 15748857.75
+  },
+  {
+    "month": "2024-05",
+    "district": "D21",
+    "count": 1,
+    "total_quantum": 675690.0
+  },
+  {
+    "month": "2024-05",
+    "district": "D22",
+    "count": 1,
+    "total_quantum": 1081104.0
+  },
+  {
+    "month": "2024-05",
+    "district": "D23",
+    "count": 2,
+    "total_quantum": 1621656.0
+  },
+  {
+    "month": "2024-05",
+    "district": "D25",
+    "count": 1,
+    "total_quantum": 1081104.0
+  },
+  {
+    "month": "2024-05",
+    "district": "D27",
+    "count": 2,
+    "total_quantum": 1621656.0
+  },
+  {
+    "month": "2024-06",
+    "district": "D01",
+    "count": 1,
+    "total_quantum": 1597600.0
+  },
+  {
+    "month": "2024-06",
+    "district": "D03",
+    "count": 13,
+    "total_quantum": 15284565.2
+  },
+  {
+    "month": "2024-06",
+    "district": "D05",
+    "count": 6,
+    "total_quantum": 7406221.44
+  },
+  {
+    "month": "2024-06",
+    "district": "D08",
+    "count": 5,
+    "total_quantum": 5627388.4
+  },
+  {
+    "month": "2024-06",
+    "district": "D12",
+    "count": 10,
+    "total_quantum": 11109332.16
+  },
+  {
+    "month": "2024-06",
+    "district": "D13",
+    "count": 8,
+    "total_quantum": 9257776.8
+  },
+  {
+    "month": "2024-06",
+    "district": "D14",
+    "count": 8,
+    "total_quantum": 9257776.8
+  },
+  {
+    "month": "2024-06",
+    "district": "D15",
+    "count": 8,
+    "total_quantum": 9257776.8
+  },
+  {
+    "month": "2024-06",
+    "district": "D16",
+    "count": 1,
+    "total_quantum": 1168568.8
+  },
+  {
+    "month": "2024-06",
+    "district": "D18",
+    "count": 2,
+    "total_quantum": 1752853.2
+  },
+  {
+    "month": "2024-06",
+    "district": "D19",
+    "count": 8,
+    "total_quantum": 7550310.4
+  },
+  {
+    "month": "2024-06",
+    "district": "D20",
+    "count": 20,
+    "total_quantum": 23144442.0
+  },
+  {
+    "month": "2024-06",
+    "district": "D21",
+    "count": 1,
+    "total_quantum": 584284.4
+  },
+  {
+    "month": "2024-06",
+    "district": "D22",
+    "count": 1,
+    "total_quantum": 934855.04
+  },
+  {
+    "month": "2024-06",
+    "district": "D23",
+    "count": 1,
+    "total_quantum": 1402282.56
+  },
+  {
+    "month": "2024-06",
+    "district": "D25",
+    "count": 1,
+    "total_quantum": 934855.04
+  },
+  {
+    "month": "2024-06",
+    "district": "D27",
+    "count": 1,
+    "total_quantum": 1402282.56
+  },
+  {
+    "month": "2024-07",
+    "district": "D01",
+    "count": 1,
+    "total_quantum": 1520000.0
+  },
+  {
+    "month": "2024-07",
+    "district": "D03",
+    "count": 16,
+    "total_quantum": 18431767.13
+  },
+  {
+    "month": "2024-07",
+    "district": "D05",
+    "count": 8,
+    "total_quantum": 9120942.47
+  },
+  {
+    "month": "2024-07",
+    "district": "D08",
+    "count": 6,
+    "total_quantum": 6650589.04
+  },
+  {
+    "month": "2024-07",
+    "district": "D12",
+    "count": 12,
+    "total_quantum": 13681413.71
+  },
+  {
+    "month": "2024-07",
+    "district": "D13",
+    "count": 10,
+    "total_quantum": 11401178.09
+  },
+  {
+    "month": "2024-07",
+    "district": "D14",
+    "count": 10,
+    "total_quantum": 11401178.09
+  },
+  {
+    "month": "2024-07",
+    "district": "D15",
+    "count": 10,
+    "total_quantum": 11401178.09
+  },
+  {
+    "month": "2024-07",
+    "district": "D16",
+    "count": 2,
+    "total_quantum": 1654288.8
+  },
+  {
+    "month": "2024-07",
+    "district": "D18",
+    "count": 2,
+    "total_quantum": 2481433.2
+  },
+  {
+    "month": "2024-07",
+    "district": "D19",
+    "count": 10,
+    "total_quantum": 9836311.040000003
+  },
+  {
+    "month": "2024-07",
+    "district": "D20",
+    "count": 26,
+    "total_quantum": 28502945.22
+  },
+  {
+    "month": "2024-07",
+    "district": "D21",
+    "count": 1,
+    "total_quantum": 827144.4
+  },
+  {
+    "month": "2024-07",
+    "district": "D22",
+    "count": 1,
+    "total_quantum": 1323431.04
+  },
+  {
+    "month": "2024-07",
+    "district": "D23",
+    "count": 2,
+    "total_quantum": 1985146.56
+  },
+  {
+    "month": "2024-07",
+    "district": "D25",
+    "count": 1,
+    "total_quantum": 1323431.04
+  },
+  {
+    "month": "2024-07",
+    "district": "D27",
+    "count": 2,
+    "total_quantum": 1985146.56
+  },
+  {
+    "month": "2024-08",
+    "district": "D01",
+    "count": 2,
+    "total_quantum": 2742400.0
+  },
+  {
+    "month": "2024-08",
+    "district": "D03",
+    "count": 14,
+    "total_quantum": 15627103.1
+  },
+  {
+    "month": "2024-08",
+    "district": "D05",
+    "count": 6,
+    "total_quantum": 7054668.32
+  },
+  {
+    "month": "2024-08",
+    "district": "D08",
+    "count": 5,
+    "total_quantum": 6123167.7
+  },
+  {
+    "month": "2024-08",
+    "district": "D12",
     "count": 9,
-    "total_quantum": 9700888.0
+    "total_quantum": 10582002.48
+  },
+  {
+    "month": "2024-08",
+    "district": "D13",
+    "count": 8,
+    "total_quantum": 8818335.4
+  },
+  {
+    "month": "2024-08",
+    "district": "D14",
+    "count": 8,
+    "total_quantum": 8818335.4
+  },
+  {
+    "month": "2024-08",
+    "district": "D15",
+    "count": 8,
+    "total_quantum": 8818335.4
+  },
+  {
+    "month": "2024-08",
+    "district": "D16",
+    "count": 2,
+    "total_quantum": 2267965.6
+  },
+  {
+    "month": "2024-08",
+    "district": "D18",
+    "count": 3,
+    "total_quantum": 3401948.4
+  },
+  {
+    "month": "2024-08",
+    "district": "D19",
+    "count": 9,
+    "total_quantum": 10079081.700000003
+  },
+  {
+    "month": "2024-08",
+    "district": "D20",
+    "count": 20,
+    "total_quantum": 22045838.5
+  },
+  {
+    "month": "2024-08",
+    "district": "D21",
+    "count": 1,
+    "total_quantum": 1133982.8
+  },
+  {
+    "month": "2024-08",
+    "district": "D22",
+    "count": 2,
+    "total_quantum": 1814372.48
+  },
+  {
+    "month": "2024-08",
+    "district": "D23",
+    "count": 3,
+    "total_quantum": 2721558.72
+  },
+  {
+    "month": "2024-08",
+    "district": "D25",
+    "count": 2,
+    "total_quantum": 1814372.48
+  },
+  {
+    "month": "2024-08",
+    "district": "D27",
+    "count": 3,
+    "total_quantum": 2721558.72
+  },
+  {
+    "month": "2024-09",
+    "district": "D01",
+    "count": 2,
+    "total_quantum": 2787200.0
+  },
+  {
+    "month": "2024-09",
+    "district": "D03",
+    "count": 14,
+    "total_quantum": 16241708.8
+  },
+  {
+    "month": "2024-09",
+    "district": "D05",
+    "count": 7,
+    "total_quantum": 7361551.36
+  },
+  {
+    "month": "2024-09",
+    "district": "D08",
+    "count": 5,
+    "total_quantum": 6342969.6
+  },
+  {
+    "month": "2024-09",
+    "district": "D12",
+    "count": 10,
+    "total_quantum": 11042327.04
+  },
+  {
+    "month": "2024-09",
+    "district": "D13",
+    "count": 8,
+    "total_quantum": 9201939.2
+  },
+  {
+    "month": "2024-09",
+    "district": "D14",
+    "count": 8,
+    "total_quantum": 9201939.2
+  },
+  {
+    "month": "2024-09",
+    "district": "D15",
+    "count": 8,
+    "total_quantum": 9201939.2
+  },
+  {
+    "month": "2024-09",
+    "district": "D16",
+    "count": 2,
+    "total_quantum": 1906977.6
+  },
+  {
+    "month": "2024-09",
+    "district": "D18",
+    "count": 3,
+    "total_quantum": 2860466.4
+  },
+  {
+    "month": "2024-09",
+    "district": "D19",
+    "count": 9,
+    "total_quantum": 9368413.60000001
+  },
+  {
+    "month": "2024-09",
+    "district": "D20",
+    "count": 21,
+    "total_quantum": 23004848.0
+  },
+  {
+    "month": "2024-09",
+    "district": "D21",
+    "count": 1,
+    "total_quantum": 953488.8
+  },
+  {
+    "month": "2024-09",
+    "district": "D22",
+    "count": 1,
+    "total_quantum": 1525582.08
+  },
+  {
+    "month": "2024-09",
+    "district": "D23",
+    "count": 2,
+    "total_quantum": 2288373.12
+  },
+  {
+    "month": "2024-09",
+    "district": "D24",
+    "count": 2,
+    "total_quantum": 953488.7999999996
+  },
+  {
+    "month": "2024-09",
+    "district": "D25",
+    "count": 1,
+    "total_quantum": 1525582.08
+  },
+  {
+    "month": "2024-09",
+    "district": "D27",
+    "count": 2,
+    "total_quantum": 2288373.12
+  },
+  {
+    "month": "2024-10",
+    "district": "D01",
+    "count": 2,
+    "total_quantum": 3419955.2
+  },
+  {
+    "month": "2024-10",
+    "district": "D03",
+    "count": 14,
+    "total_quantum": 16483531.600000001
+  },
+  {
+    "month": "2024-10",
+    "district": "D05",
+    "count": 6,
+    "total_quantum": 7195237.76
+  },
+  {
+    "month": "2024-10",
+    "district": "D08",
+    "count": 6,
+    "total_quantum": 6634495.6
+  },
+  {
+    "month": "2024-10",
+    "district": "D12",
+    "count": 10,
+    "total_quantum": 10792856.64
+  },
+  {
+    "month": "2024-10",
+    "district": "D13",
+    "count": 8,
+    "total_quantum": 8994047.2
+  },
+  {
+    "month": "2024-10",
+    "district": "D14",
+    "count": 8,
+    "total_quantum": 8994047.2
+  },
+  {
+    "month": "2024-10",
+    "district": "D15",
+    "count": 8,
+    "total_quantum": 8994047.2
+  },
+  {
+    "month": "2024-10",
+    "district": "D16",
+    "count": 2,
+    "total_quantum": 1803888.8
+  },
+  {
+    "month": "2024-10",
+    "district": "D18",
+    "count": 3,
+    "total_quantum": 2705833.2
+  },
+  {
+    "month": "2024-10",
+    "district": "D19",
+    "count": 8,
+    "total_quantum": 9006745.600000001
+  },
+  {
+    "month": "2024-10",
+    "district": "D20",
+    "count": 20,
+    "total_quantum": 22485118.0
+  },
+  {
+    "month": "2024-10",
+    "district": "D21",
+    "count": 1,
+    "total_quantum": 901944.4
+  },
+  {
+    "month": "2024-10",
+    "district": "D22",
+    "count": 1,
+    "total_quantum": 1443111.04
+  },
+  {
+    "month": "2024-10",
+    "district": "D23",
+    "count": 2,
+    "total_quantum": 2164666.56
+  },
+  {
+    "month": "2024-10",
+    "district": "D24",
+    "count": 1,
+    "total_quantum": 901944.3999999998
+  },
+  {
+    "month": "2024-10",
+    "district": "D25",
+    "count": 1,
+    "total_quantum": 1443111.04
+  },
+  {
+    "month": "2024-10",
+    "district": "D27",
+    "count": 2,
+    "total_quantum": 2164666.56
+  },
+  {
+    "month": "2024-11",
+    "district": "D01",
+    "count": 2,
+    "total_quantum": 2541152.0
+  },
+  {
+    "month": "2024-11",
+    "district": "D03",
+    "count": 12,
+    "total_quantum": 13377282.4
+  },
+  {
+    "month": "2024-11",
+    "district": "D05",
+    "count": 5,
+    "total_quantum": 5948679.68
+  },
+  {
+    "month": "2024-11",
+    "district": "D08",
+    "count": 4,
+    "total_quantum": 5306144.8
+  },
+  {
+    "month": "2024-11",
+    "district": "D12",
+    "count": 8,
+    "total_quantum": 8923019.52
+  },
+  {
+    "month": "2024-11",
+    "district": "D13",
+    "count": 7,
+    "total_quantum": 7435849.6
+  },
+  {
+    "month": "2024-11",
+    "district": "D14",
+    "count": 7,
+    "total_quantum": 7435849.6
+  },
+  {
+    "month": "2024-11",
+    "district": "D15",
+    "count": 7,
+    "total_quantum": 7435849.6
+  },
+  {
+    "month": "2024-11",
+    "district": "D16",
+    "count": 2,
+    "total_quantum": 1580500.0
+  },
+  {
+    "month": "2024-11",
+    "district": "D18",
+    "count": 2,
+    "total_quantum": 2370750.0
+  },
+  {
+    "month": "2024-11",
+    "district": "D19",
+    "count": 7,
+    "total_quantum": 7669174.799999996
+  },
+  {
+    "month": "2024-11",
+    "district": "D20",
+    "count": 17,
+    "total_quantum": 18589624.0
+  },
+  {
+    "month": "2024-11",
+    "district": "D21",
+    "count": 1,
+    "total_quantum": 790250.0
+  },
+  {
+    "month": "2024-11",
+    "district": "D22",
+    "count": 1,
+    "total_quantum": 1264400.0
+  },
+  {
+    "month": "2024-11",
+    "district": "D23",
+    "count": 2,
+    "total_quantum": 1896600.0
+  },
+  {
+    "month": "2024-11",
+    "district": "D25",
+    "count": 1,
+    "total_quantum": 1264400.0
+  },
+  {
+    "month": "2024-11",
+    "district": "D27",
+    "count": 2,
+    "total_quantum": 1896600.0
+  },
+  {
+    "month": "2024-12",
+    "district": "D01",
+    "count": 4,
+    "total_quantum": 4833555.2
+  },
+  {
+    "month": "2024-12",
+    "district": "D03",
+    "count": 15,
+    "total_quantum": 17716699.15
+  },
+  {
+    "month": "2024-12",
+    "district": "D05",
+    "count": 6,
+    "total_quantum": 7193247.12
+  },
+  {
+    "month": "2024-12",
+    "district": "D08",
+    "count": 6,
+    "total_quantum": 7516751.45
+  },
+  {
+    "month": "2024-12",
+    "district": "D12",
+    "count": 10,
+    "total_quantum": 10789870.68
+  },
+  {
+    "month": "2024-12",
+    "district": "D13",
+    "count": 8,
+    "total_quantum": 8991558.9
+  },
+  {
+    "month": "2024-12",
+    "district": "D14",
+    "count": 8,
+    "total_quantum": 8991558.9
+  },
+  {
+    "month": "2024-12",
+    "district": "D15",
+    "count": 8,
+    "total_quantum": 8991558.9
+  },
+  {
+    "month": "2024-12",
+    "district": "D18",
+    "count": 1,
+    "total_quantum": 811050.0
+  },
+  {
+    "month": "2024-12",
+    "district": "D19",
+    "count": 6,
+    "total_quantum": 5847529.450000002
+  },
+  {
+    "month": "2024-12",
+    "district": "D20",
+    "count": 20,
+    "total_quantum": 22478897.25
+  },
+  {
+    "month": "2024-12",
+    "district": "D23",
+    "count": 1,
+    "total_quantum": 648840.0
+  },
+  {
+    "month": "2024-12",
+    "district": "D24",
+    "count": 1,
+    "total_quantum": 270350.0
+  },
+  {
+    "month": "2024-12",
+    "district": "D27",
+    "count": 1,
+    "total_quantum": 648840.0
+  },
+  {
+    "month": "2025-01",
+    "district": "D01",
+    "count": 2,
+    "total_quantum": 2072000.0
+  },
+  {
+    "month": "2025-01",
+    "district": "D03",
+    "count": 15,
+    "total_quantum": 18004998.4
+  },
+  {
+    "month": "2025-01",
+    "district": "D05",
+    "count": 8,
+    "total_quantum": 8635732.48
+  },
+  {
+    "month": "2025-01",
+    "district": "D08",
+    "count": 6,
+    "total_quantum": 6692332.8
+  },
+  {
+    "month": "2025-01",
+    "district": "D12",
+    "count": 12,
+    "total_quantum": 12953598.72
+  },
+  {
+    "month": "2025-01",
+    "district": "D13",
+    "count": 10,
+    "total_quantum": 10794665.6
+  },
+  {
+    "month": "2025-01",
+    "district": "D14",
+    "count": 10,
+    "total_quantum": 10794665.6
+  },
+  {
+    "month": "2025-01",
+    "district": "D15",
+    "count": 10,
+    "total_quantum": 10794665.6
+  },
+  {
+    "month": "2025-01",
+    "district": "D16",
+    "count": 2,
+    "total_quantum": 2011466.4
+  },
+  {
+    "month": "2025-01",
+    "district": "D18",
+    "count": 3,
+    "total_quantum": 3017199.6
+  },
+  {
+    "month": "2025-01",
+    "district": "D19",
+    "count": 8,
+    "total_quantum": 10425998.799999997
+  },
+  {
+    "month": "2025-01",
+    "district": "D20",
+    "count": 24,
+    "total_quantum": 26986664.0
+  },
+  {
+    "month": "2025-01",
+    "district": "D21",
+    "count": 1,
+    "total_quantum": 1005733.2
+  },
+  {
+    "month": "2025-01",
+    "district": "D22",
+    "count": 2,
+    "total_quantum": 1609173.12
+  },
+  {
+    "month": "2025-01",
+    "district": "D23",
+    "count": 2,
+    "total_quantum": 2413759.68
+  },
+  {
+    "month": "2025-01",
+    "district": "D25",
+    "count": 2,
+    "total_quantum": 1609173.12
+  },
+  {
+    "month": "2025-01",
+    "district": "D27",
+    "count": 2,
+    "total_quantum": 2413759.68
+  },
+  {
+    "month": "2025-02",
+    "district": "D01",
+    "count": 1,
+    "total_quantum": 1152800.0
+  },
+  {
+    "month": "2025-02",
+    "district": "D03",
+    "count": 15,
+    "total_quantum": 17689215.25
+  },
+  {
+    "month": "2025-02",
+    "district": "D05",
+    "count": 8,
+    "total_quantum": 8896274.8
+  },
+  {
+    "month": "2025-02",
+    "district": "D08",
+    "count": 5,
+    "total_quantum": 5560171.75
+  },
+  {
+    "month": "2025-02",
+    "district": "D12",
+    "count": 12,
+    "total_quantum": 13344412.2
+  },
+  {
+    "month": "2025-02",
+    "district": "D13",
+    "count": 10,
+    "total_quantum": 11120343.5
+  },
+  {
+    "month": "2025-02",
+    "district": "D14",
+    "count": 10,
+    "total_quantum": 11120343.5
+  },
+  {
+    "month": "2025-02",
+    "district": "D15",
+    "count": 10,
+    "total_quantum": 11120343.5
+  },
+  {
+    "month": "2025-02",
+    "district": "D16",
+    "count": 2,
+    "total_quantum": 2479744.0
+  },
+  {
+    "month": "2025-02",
+    "district": "D18",
+    "count": 3,
+    "total_quantum": 3719616.0
+  },
+  {
+    "month": "2025-02",
+    "district": "D19",
+    "count": 9,
+    "total_quantum": 11759531.749999996
+  },
+  {
+    "month": "2025-02",
+    "district": "D20",
+    "count": 24,
+    "total_quantum": 27800858.75
+  },
+  {
+    "month": "2025-02",
+    "district": "D21",
+    "count": 1,
+    "total_quantum": 1239872.0
+  },
+  {
+    "month": "2025-02",
+    "district": "D22",
+    "count": 2,
+    "total_quantum": 1983795.2
+  },
+  {
+    "month": "2025-02",
+    "district": "D23",
+    "count": 3,
+    "total_quantum": 2975692.8
+  },
+  {
+    "month": "2025-02",
+    "district": "D24",
+    "count": 1,
+    "total_quantum": 1239871.9999999981
+  },
+  {
+    "month": "2025-02",
+    "district": "D25",
+    "count": 2,
+    "total_quantum": 1983795.2
+  },
+  {
+    "month": "2025-02",
+    "district": "D27",
+    "count": 3,
+    "total_quantum": 2975692.8
+  },
+  {
+    "month": "2025-03",
+    "district": "D01",
+    "count": 2,
+    "total_quantum": 2219200.0
+  },
+  {
+    "month": "2025-03",
+    "district": "D03",
+    "count": 14,
+    "total_quantum": 17102277.95
+  },
+  {
+    "month": "2025-03",
+    "district": "D05",
+    "count": 7,
+    "total_quantum": 8085588.24
+  },
+  {
+    "month": "2025-03",
+    "district": "D08",
+    "count": 5,
+    "total_quantum": 6440492.65
+  },
+  {
+    "month": "2025-03",
+    "district": "D12",
+    "count": 11,
+    "total_quantum": 12128382.36
+  },
+  {
+    "month": "2025-03",
+    "district": "D13",
+    "count": 9,
+    "total_quantum": 10106985.3
+  },
+  {
+    "month": "2025-03",
+    "district": "D14",
+    "count": 9,
+    "total_quantum": 10106985.3
+  },
+  {
+    "month": "2025-03",
+    "district": "D15",
+    "count": 9,
+    "total_quantum": 10106985.3
+  },
+  {
+    "month": "2025-03",
+    "district": "D16",
+    "count": 2,
+    "total_quantum": 1584588.8
+  },
+  {
+    "month": "2025-03",
+    "district": "D18",
+    "count": 2,
+    "total_quantum": 2376883.2
+  },
+  {
+    "month": "2025-03",
+    "district": "D19",
+    "count": 9,
+    "total_quantum": 9014964.649999999
+  },
+  {
+    "month": "2025-03",
+    "district": "D20",
+    "count": 22,
+    "total_quantum": 25267463.25
+  },
+  {
+    "month": "2025-03",
+    "district": "D21",
+    "count": 1,
+    "total_quantum": 792294.4
+  },
+  {
+    "month": "2025-03",
+    "district": "D22",
+    "count": 1,
+    "total_quantum": 1267671.04
+  },
+  {
+    "month": "2025-03",
+    "district": "D23",
+    "count": 2,
+    "total_quantum": 1901506.56
+  },
+  {
+    "month": "2025-03",
+    "district": "D25",
+    "count": 1,
+    "total_quantum": 1267671.04
+  },
+  {
+    "month": "2025-03",
+    "district": "D27",
+    "count": 2,
+    "total_quantum": 1901506.56
+  },
+  {
+    "month": "2025-04",
+    "district": "D01",
+    "count": 2,
+    "total_quantum": 2671555.2
+  },
+  {
+    "month": "2025-04",
+    "district": "D03",
+    "count": 19,
+    "total_quantum": 21211196.400000002
+  },
+  {
+    "month": "2025-04",
+    "district": "D05",
+    "count": 9,
+    "total_quantum": 10065912.32
+  },
+  {
+    "month": "2025-04",
+    "district": "D08",
+    "count": 7,
+    "total_quantum": 7960917.2
+  },
+  {
+    "month": "2025-04",
+    "district": "D12",
+    "count": 13,
+    "total_quantum": 15098868.48
+  },
+  {
+    "month": "2025-04",
+    "district": "D13",
+    "count": 11,
+    "total_quantum": 12582390.4
+  },
+  {
+    "month": "2025-04",
+    "district": "D14",
+    "count": 11,
+    "total_quantum": 12582390.4
+  },
+  {
+    "month": "2025-04",
+    "district": "D15",
+    "count": 11,
+    "total_quantum": 12582390.4
+  },
+  {
+    "month": "2025-04",
+    "district": "D16",
+    "count": 2,
+    "total_quantum": 2665057.6
+  },
+  {
+    "month": "2025-04",
+    "district": "D18",
+    "count": 4,
+    "total_quantum": 3997586.4
+  },
+  {
+    "month": "2025-04",
+    "district": "D19",
+    "count": 12,
+    "total_quantum": 12953839.200000007
+  },
+  {
+    "month": "2025-04",
+    "district": "D20",
+    "count": 28,
+    "total_quantum": 31455976.0
+  },
+  {
+    "month": "2025-04",
+    "district": "D21",
+    "count": 1,
+    "total_quantum": 1332528.8
+  },
+  {
+    "month": "2025-04",
+    "district": "D22",
+    "count": 2,
+    "total_quantum": 2132046.08
+  },
+  {
+    "month": "2025-04",
+    "district": "D23",
+    "count": 3,
+    "total_quantum": 3198069.12
+  },
+  {
+    "month": "2025-04",
+    "district": "D24",
+    "count": 1,
+    "total_quantum": 1332528.7999999996
+  },
+  {
+    "month": "2025-04",
+    "district": "D25",
+    "count": 2,
+    "total_quantum": 2132046.08
+  },
+  {
+    "month": "2025-04",
+    "district": "D27",
+    "count": 3,
+    "total_quantum": 3198069.12
+  },
+  {
+    "month": "2025-05",
+    "district": "D01",
+    "count": 3,
+    "total_quantum": 3857427.2
+  },
+  {
+    "month": "2025-05",
+    "district": "D03",
+    "count": 18,
+    "total_quantum": 21619238.2
+  },
+  {
+    "month": "2025-05",
+    "district": "D05",
+    "count": 8,
+    "total_quantum": 9730127.68
+  },
+  {
+    "month": "2025-05",
+    "district": "D08",
+    "count": 7,
+    "total_quantum": 8492221.8
+  },
+  {
+    "month": "2025-05",
+    "district": "D12",
+    "count": 13,
+    "total_quantum": 14595191.52
+  },
+  {
+    "month": "2025-05",
+    "district": "D13",
+    "count": 11,
+    "total_quantum": 12162659.6
+  },
+  {
+    "month": "2025-05",
+    "district": "D14",
+    "count": 11,
+    "total_quantum": 12162659.6
+  },
+  {
+    "month": "2025-05",
+    "district": "D15",
+    "count": 11,
+    "total_quantum": 12162659.6
+  },
+  {
+    "month": "2025-05",
+    "district": "D16",
+    "count": 3,
+    "total_quantum": 3182833.0
+  },
+  {
+    "month": "2025-05",
+    "district": "D18",
+    "count": 4,
+    "total_quantum": 4774249.5
+  },
+  {
+    "month": "2025-05",
+    "district": "D19",
+    "count": 12,
+    "total_quantum": 14038412.299999993
+  },
+  {
+    "month": "2025-05",
+    "district": "D20",
+    "count": 26,
+    "total_quantum": 30406649.0
+  },
+  {
+    "month": "2025-05",
+    "district": "D21",
+    "count": 1,
+    "total_quantum": 1591416.5
+  },
+  {
+    "month": "2025-05",
+    "district": "D22",
+    "count": 2,
+    "total_quantum": 2546266.4
+  },
+  {
+    "month": "2025-05",
+    "district": "D23",
+    "count": 3,
+    "total_quantum": 3819399.6
+  },
+  {
+    "month": "2025-05",
+    "district": "D24",
+    "count": 4,
+    "total_quantum": 1591416.5000000005
+  },
+  {
+    "month": "2025-05",
+    "district": "D25",
+    "count": 2,
+    "total_quantum": 2546266.4
+  },
+  {
+    "month": "2025-05",
+    "district": "D27",
+    "count": 3,
+    "total_quantum": 3819399.6
+  },
+  {
+    "month": "2025-06",
+    "district": "D01",
+    "count": 2,
+    "total_quantum": 2280355.2
+  },
+  {
+    "month": "2025-06",
+    "district": "D03",
+    "count": 16,
+    "total_quantum": 19714140.6
+  },
+  {
+    "month": "2025-06",
+    "district": "D05",
+    "count": 8,
+    "total_quantum": 9450042.56
+  },
+  {
+    "month": "2025-06",
+    "district": "D08",
+    "count": 6,
+    "total_quantum": 7331498.6
+  },
+  {
+    "month": "2025-06",
+    "district": "D12",
+    "count": 12,
+    "total_quantum": 14175063.84
+  },
+  {
+    "month": "2025-06",
+    "district": "D13",
+    "count": 10,
+    "total_quantum": 11812553.2
+  },
+  {
+    "month": "2025-06",
+    "district": "D14",
+    "count": 10,
+    "total_quantum": 11812553.2
+  },
+  {
+    "month": "2025-06",
+    "district": "D15",
+    "count": 10,
+    "total_quantum": 11812553.2
+  },
+  {
+    "month": "2025-06",
+    "district": "D16",
+    "count": 2,
+    "total_quantum": 2753235.2
+  },
+  {
+    "month": "2025-06",
+    "district": "D18",
+    "count": 4,
+    "total_quantum": 4129852.8
+  },
+  {
+    "month": "2025-06",
+    "district": "D19",
+    "count": 13,
+    "total_quantum": 12789364.599999998
+  },
+  {
+    "month": "2025-06",
+    "district": "D20",
+    "count": 26,
+    "total_quantum": 29531383.0
+  },
+  {
+    "month": "2025-06",
+    "district": "D21",
+    "count": 1,
+    "total_quantum": 1376617.6
+  },
+  {
+    "month": "2025-06",
+    "district": "D22",
+    "count": 2,
+    "total_quantum": 2202588.16
+  },
+  {
+    "month": "2025-06",
+    "district": "D23",
+    "count": 3,
+    "total_quantum": 3303882.24
+  },
+  {
+    "month": "2025-06",
+    "district": "D24",
+    "count": 2,
+    "total_quantum": 1376617.5999999982
+  },
+  {
+    "month": "2025-06",
+    "district": "D25",
+    "count": 2,
+    "total_quantum": 2202588.16
+  },
+  {
+    "month": "2025-06",
+    "district": "D27",
+    "count": 3,
+    "total_quantum": 3303882.24
+  },
+  {
+    "month": "2025-07",
+    "district": "D01",
+    "count": 2,
+    "total_quantum": 3457120.0
+  },
+  {
+    "month": "2025-07",
+    "district": "D03",
+    "count": 21,
+    "total_quantum": 24555231.5
+  },
+  {
+    "month": "2025-07",
+    "district": "D05",
+    "count": 10,
+    "total_quantum": 11482800.8
+  },
+  {
+    "month": "2025-07",
+    "district": "D08",
+    "count": 8,
+    "total_quantum": 9337450.5
+  },
+  {
+    "month": "2025-07",
+    "district": "D12",
+    "count": 15,
+    "total_quantum": 17224201.2
+  },
+  {
+    "month": "2025-07",
+    "district": "D13",
+    "count": 13,
+    "total_quantum": 14353501.0
+  },
+  {
+    "month": "2025-07",
+    "district": "D14",
+    "count": 13,
+    "total_quantum": 14353501.0
+  },
+  {
+    "month": "2025-07",
+    "district": "D15",
+    "count": 13,
+    "total_quantum": 14353501.0
+  },
+  {
+    "month": "2025-07",
+    "district": "D16",
+    "count": 3,
+    "total_quantum": 3669935.2
+  },
+  {
+    "month": "2025-07",
+    "district": "D18",
+    "count": 5,
+    "total_quantum": 5504902.8
+  },
+  {
+    "month": "2025-07",
+    "district": "D19",
+    "count": 14,
+    "total_quantum": 16351588.499999996
+  },
+  {
+    "month": "2025-07",
+    "district": "D20",
+    "count": 32,
+    "total_quantum": 35883752.5
+  },
+  {
+    "month": "2025-07",
+    "district": "D21",
+    "count": 2,
+    "total_quantum": 1834967.6
+  },
+  {
+    "month": "2025-07",
+    "district": "D22",
+    "count": 3,
+    "total_quantum": 2935948.16
+  },
+  {
+    "month": "2025-07",
+    "district": "D23",
+    "count": 4,
+    "total_quantum": 4403922.24
+  },
+  {
+    "month": "2025-07",
+    "district": "D24",
+    "count": 2,
+    "total_quantum": 1834967.5999999992
+  },
+  {
+    "month": "2025-07",
+    "district": "D25",
+    "count": 3,
+    "total_quantum": 2935948.16
+  },
+  {
+    "month": "2025-07",
+    "district": "D27",
+    "count": 4,
+    "total_quantum": 4403922.24
+  },
+  {
+    "month": "2025-08",
+    "district": "D01",
+    "count": 3,
+    "total_quantum": 3882000.0
+  },
+  {
+    "month": "2025-08",
+    "district": "D03",
+    "count": 19,
+    "total_quantum": 22809855.73
+  },
+  {
+    "month": "2025-08",
+    "district": "D05",
+    "count": 9,
+    "total_quantum": 10353656.39
+  },
+  {
+    "month": "2025-08",
+    "district": "D08",
+    "count": 8,
+    "total_quantum": 8897285.24
+  },
+  {
+    "month": "2025-08",
+    "district": "D12",
+    "count": 13,
+    "total_quantum": 15530484.59
+  },
+  {
+    "month": "2025-08",
+    "district": "D13",
+    "count": 11,
+    "total_quantum": 12942070.49
+  },
+  {
+    "month": "2025-08",
+    "district": "D14",
+    "count": 11,
+    "total_quantum": 12942070.49
+  },
+  {
+    "month": "2025-08",
+    "district": "D15",
+    "count": 11,
+    "total_quantum": 12942070.49
+  },
+  {
+    "month": "2025-08",
+    "district": "D16",
+    "count": 2,
+    "total_quantum": 2409988.8
+  },
+  {
+    "month": "2025-08",
+    "district": "D18",
+    "count": 3,
+    "total_quantum": 3614983.2
+  },
+  {
+    "month": "2025-08",
+    "district": "D19",
+    "count": 12,
+    "total_quantum": 12496007.239999982
+  },
+  {
+    "month": "2025-08",
+    "district": "D20",
+    "count": 28,
+    "total_quantum": 32355176.22
+  },
+  {
+    "month": "2025-08",
+    "district": "D21",
+    "count": 1,
+    "total_quantum": 1204994.4
+  },
+  {
+    "month": "2025-08",
+    "district": "D22",
+    "count": 2,
+    "total_quantum": 1927991.04
+  },
+  {
+    "month": "2025-08",
+    "district": "D23",
+    "count": 3,
+    "total_quantum": 2891986.56
+  },
+  {
+    "month": "2025-08",
+    "district": "D25",
+    "count": 2,
+    "total_quantum": 1927991.04
+  },
+  {
+    "month": "2025-08",
+    "district": "D27",
+    "count": 3,
+    "total_quantum": 2891986.56
+  },
+  {
+    "month": "2025-09",
+    "district": "D01",
+    "count": 3,
+    "total_quantum": 3874000.0
+  },
+  {
+    "month": "2025-09",
+    "district": "D03",
+    "count": 22,
+    "total_quantum": 25708113.33
+  },
+  {
+    "month": "2025-09",
+    "district": "D05",
+    "count": 10,
+    "total_quantum": 11903127.11
+  },
+  {
+    "month": "2025-09",
+    "district": "D08",
+    "count": 9,
+    "total_quantum": 9860704.440000001
+  },
+  {
+    "month": "2025-09",
+    "district": "D12",
+    "count": 16,
+    "total_quantum": 17854690.67
+  },
+  {
+    "month": "2025-09",
+    "district": "D13",
+    "count": 13,
+    "total_quantum": 14878908.89
+  },
+  {
+    "month": "2025-09",
+    "district": "D14",
+    "count": 13,
+    "total_quantum": 14878908.89
+  },
+  {
+    "month": "2025-09",
+    "district": "D15",
+    "count": 13,
+    "total_quantum": 14878908.89
+  },
+  {
+    "month": "2025-09",
+    "district": "D16",
+    "count": 3,
+    "total_quantum": 3606088.8
+  },
+  {
+    "month": "2025-09",
+    "district": "D18",
+    "count": 5,
+    "total_quantum": 5409133.2
+  },
+  {
+    "month": "2025-09",
+    "district": "D19",
+    "count": 14,
+    "total_quantum": 16454676.439999994
+  },
+  {
+    "month": "2025-09",
+    "district": "D20",
+    "count": 33,
+    "total_quantum": 37197272.22
+  },
+  {
+    "month": "2025-09",
+    "district": "D21",
+    "count": 2,
+    "total_quantum": 1803044.4
+  },
+  {
+    "month": "2025-09",
+    "district": "D22",
+    "count": 3,
+    "total_quantum": 2884871.04
+  },
+  {
+    "month": "2025-09",
+    "district": "D23",
+    "count": 4,
+    "total_quantum": 4327306.56
+  },
+  {
+    "month": "2025-09",
+    "district": "D24",
+    "count": 2,
+    "total_quantum": 1803044.4000000027
+  },
+  {
+    "month": "2025-09",
+    "district": "D25",
+    "count": 3,
+    "total_quantum": 2884871.04
+  },
+  {
+    "month": "2025-09",
+    "district": "D27",
+    "count": 4,
+    "total_quantum": 4327306.56
   },
   {
     "month": "2025-10",
-    "region": "RCR",
-    "count": 73,
-    "total_quantum": 83718344.0
+    "district": "D01",
+    "count": 2,
+    "total_quantum": 2382400.0
   },
   {
-    "month": "2025-11",
-    "region": "CCR",
+    "month": "2025-10",
+    "district": "D03",
+    "count": 12,
+    "total_quantum": 14642351.6
+  },
+  {
+    "month": "2025-10",
+    "district": "D05",
+    "count": 6,
+    "total_quantum": 6697467.52
+  },
+  {
+    "month": "2025-10",
+    "district": "D08",
+    "count": 5,
+    "total_quantum": 5674917.2
+  },
+  {
+    "month": "2025-10",
+    "district": "D12",
+    "count": 9,
+    "total_quantum": 10046201.28
+  },
+  {
+    "month": "2025-10",
+    "district": "D13",
+    "count": 7,
+    "total_quantum": 8371834.4
+  },
+  {
+    "month": "2025-10",
+    "district": "D14",
+    "count": 7,
+    "total_quantum": 8371834.4
+  },
+  {
+    "month": "2025-10",
+    "district": "D15",
+    "count": 7,
+    "total_quantum": 8371834.4
+  },
+  {
+    "month": "2025-10",
+    "district": "D16",
     "count": 1,
-    "total_quantum": 1490000.0
+    "total_quantum": 970088.8
   },
   {
-    "month": "2025-11",
-    "region": "OCR",
-    "count": 28,
-    "total_quantum": 30760664.0
-  },
-  {
-    "month": "2025-11",
-    "region": "RCR",
-    "count": 91,
-    "total_quantum": 107987880.88
-  },
-  {
-    "month": "2025-12",
-    "region": "CCR",
-    "count": 4,
-    "total_quantum": 5256888.0
-  },
-  {
-    "month": "2025-12",
-    "region": "OCR",
-    "count": 27,
-    "total_quantum": 29672776.0
-  },
-  {
-    "month": "2025-12",
-    "region": "RCR",
-    "count": 114,
-    "total_quantum": 134461336.0
-  },
-  {
-    "month": "2026-01",
-    "region": "CCR",
-    "count": 4,
-    "total_quantum": 5845888.0
-  },
-  {
-    "month": "2026-01",
-    "region": "OCR",
-    "count": 29,
-    "total_quantum": 30871888.0
-  },
-  {
-    "month": "2026-01",
-    "region": "RCR",
-    "count": 113,
-    "total_quantum": 130581868.0
-  },
-  {
-    "month": "2026-02",
-    "region": "CCR",
+    "month": "2025-10",
+    "district": "D18",
     "count": 1,
-    "total_quantum": 1350000.0
+    "total_quantum": 1455133.2
   },
   {
-    "month": "2026-02",
-    "region": "OCR",
+    "month": "2025-10",
+    "district": "D19",
+    "count": 6,
+    "total_quantum": 6611139.2
+  },
+  {
+    "month": "2025-10",
+    "district": "D20",
     "count": 18,
-    "total_quantum": 19621776.0
+    "total_quantum": 20929586.0
+  },
+  {
+    "month": "2025-10",
+    "district": "D22",
+    "count": 1,
+    "total_quantum": 776071.04
+  },
+  {
+    "month": "2025-10",
+    "district": "D23",
+    "count": 1,
+    "total_quantum": 1164106.56
+  },
+  {
+    "month": "2025-10",
+    "district": "D24",
+    "count": 1,
+    "total_quantum": 485044.3999999998
+  },
+  {
+    "month": "2025-10",
+    "district": "D25",
+    "count": 1,
+    "total_quantum": 776071.04
+  },
+  {
+    "month": "2025-10",
+    "district": "D27",
+    "count": 1,
+    "total_quantum": 1164106.56
+  },
+  {
+    "month": "2025-11",
+    "district": "D03",
+    "count": 14,
+    "total_quantum": 16198182.13
+  },
+  {
+    "month": "2025-11",
+    "district": "D05",
+    "count": 7,
+    "total_quantum": 8639030.47
+  },
+  {
+    "month": "2025-11",
+    "district": "D08",
+    "count": 6,
+    "total_quantum": 5771894.04
+  },
+  {
+    "month": "2025-11",
+    "district": "D12",
+    "count": 11,
+    "total_quantum": 12958545.71
+  },
+  {
+    "month": "2025-11",
+    "district": "D13",
+    "count": 9,
+    "total_quantum": 10798788.09
+  },
+  {
+    "month": "2025-11",
+    "district": "D14",
+    "count": 9,
+    "total_quantum": 10798788.09
+  },
+  {
+    "month": "2025-11",
+    "district": "D15",
+    "count": 9,
+    "total_quantum": 10798788.09
+  },
+  {
+    "month": "2025-11",
+    "district": "D16",
+    "count": 3,
+    "total_quantum": 3076066.4
+  },
+  {
+    "month": "2025-11",
+    "district": "D18",
+    "count": 4,
+    "total_quantum": 4614099.6
+  },
+  {
+    "month": "2025-11",
+    "district": "D19",
+    "count": 11,
+    "total_quantum": 13089560.039999988
+  },
+  {
+    "month": "2025-11",
+    "district": "D20",
+    "count": 23,
+    "total_quantum": 26996970.22
+  },
+  {
+    "month": "2025-11",
+    "district": "D21",
+    "count": 1,
+    "total_quantum": 1538033.2
+  },
+  {
+    "month": "2025-11",
+    "district": "D22",
+    "count": 2,
+    "total_quantum": 2460853.12
+  },
+  {
+    "month": "2025-11",
+    "district": "D23",
+    "count": 3,
+    "total_quantum": 3691279.68
+  },
+  {
+    "month": "2025-11",
+    "district": "D24",
+    "count": 3,
+    "total_quantum": 1538033.1999999986
+  },
+  {
+    "month": "2025-11",
+    "district": "D25",
+    "count": 2,
+    "total_quantum": 2460853.12
+  },
+  {
+    "month": "2025-11",
+    "district": "D27",
+    "count": 3,
+    "total_quantum": 3691279.68
+  },
+  {
+    "month": "2025-12",
+    "district": "D01",
+    "count": 2,
+    "total_quantum": 2102755.2
+  },
+  {
+    "month": "2025-12",
+    "district": "D03",
+    "count": 18,
+    "total_quantum": 22009111.2
+  },
+  {
+    "month": "2025-12",
+    "district": "D05",
+    "count": 9,
+    "total_quantum": 10756906.88
+  },
+  {
+    "month": "2025-12",
+    "district": "D08",
+    "count": 7,
+    "total_quantum": 8037288.8
+  },
+  {
+    "month": "2025-12",
+    "district": "D12",
+    "count": 14,
+    "total_quantum": 16135360.32
+  },
+  {
+    "month": "2025-12",
+    "district": "D13",
+    "count": 11,
+    "total_quantum": 13446133.6
+  },
+  {
+    "month": "2025-12",
+    "district": "D14",
+    "count": 11,
+    "total_quantum": 13446133.6
+  },
+  {
+    "month": "2025-12",
+    "district": "D15",
+    "count": 11,
+    "total_quantum": 13446133.6
+  },
+  {
+    "month": "2025-12",
+    "district": "D16",
+    "count": 3,
+    "total_quantum": 2967277.6
+  },
+  {
+    "month": "2025-12",
+    "district": "D18",
+    "count": 4,
+    "total_quantum": 4450916.4
+  },
+  {
+    "month": "2025-12",
+    "district": "D19",
+    "count": 14,
+    "total_quantum": 14141260.79999999
+  },
+  {
+    "month": "2025-12",
+    "district": "D20",
+    "count": 28,
+    "total_quantum": 33615334.0
+  },
+  {
+    "month": "2025-12",
+    "district": "D21",
+    "count": 1,
+    "total_quantum": 1483638.8
+  },
+  {
+    "month": "2025-12",
+    "district": "D22",
+    "count": 2,
+    "total_quantum": 2373822.08
+  },
+  {
+    "month": "2025-12",
+    "district": "D23",
+    "count": 3,
+    "total_quantum": 3560733.12
+  },
+  {
+    "month": "2025-12",
+    "district": "D24",
+    "count": 2,
+    "total_quantum": 1483638.7999999996
+  },
+  {
+    "month": "2025-12",
+    "district": "D25",
+    "count": 2,
+    "total_quantum": 2373822.08
+  },
+  {
+    "month": "2025-12",
+    "district": "D27",
+    "count": 3,
+    "total_quantum": 3560733.12
+  },
+  {
+    "month": "2026-01",
+    "district": "D01",
+    "count": 2,
+    "total_quantum": 2338355.2
+  },
+  {
+    "month": "2026-01",
+    "district": "D03",
+    "count": 18,
+    "total_quantum": 21633341.0
+  },
+  {
+    "month": "2026-01",
+    "district": "D05",
+    "count": 9,
+    "total_quantum": 10446549.44
+  },
+  {
+    "month": "2026-01",
+    "district": "D08",
+    "count": 7,
+    "total_quantum": 7990565.4
+  },
+  {
+    "month": "2026-01",
+    "district": "D12",
+    "count": 14,
+    "total_quantum": 15669824.16
+  },
+  {
+    "month": "2026-01",
+    "district": "D13",
+    "count": 11,
+    "total_quantum": 13058186.8
+  },
+  {
+    "month": "2026-01",
+    "district": "D14",
+    "count": 11,
+    "total_quantum": 13058186.8
+  },
+  {
+    "month": "2026-01",
+    "district": "D15",
+    "count": 11,
+    "total_quantum": 13058186.8
+  },
+  {
+    "month": "2026-01",
+    "district": "D16",
+    "count": 3,
+    "total_quantum": 3087188.8
+  },
+  {
+    "month": "2026-01",
+    "district": "D18",
+    "count": 4,
+    "total_quantum": 4630783.2
+  },
+  {
+    "month": "2026-01",
+    "district": "D19",
+    "count": 13,
+    "total_quantum": 14247065.400000006
+  },
+  {
+    "month": "2026-01",
+    "district": "D20",
+    "count": 28,
+    "total_quantum": 32645467.0
+  },
+  {
+    "month": "2026-01",
+    "district": "D21",
+    "count": 1,
+    "total_quantum": 1543594.4
+  },
+  {
+    "month": "2026-01",
+    "district": "D22",
+    "count": 2,
+    "total_quantum": 2469751.04
+  },
+  {
+    "month": "2026-01",
+    "district": "D23",
+    "count": 3,
+    "total_quantum": 3704626.56
+  },
+  {
+    "month": "2026-01",
+    "district": "D24",
+    "count": 4,
+    "total_quantum": 1543594.4
+  },
+  {
+    "month": "2026-01",
+    "district": "D25",
+    "count": 2,
+    "total_quantum": 2469751.04
+  },
+  {
+    "month": "2026-01",
+    "district": "D27",
+    "count": 3,
+    "total_quantum": 3704626.56
   },
   {
     "month": "2026-02",
-    "region": "RCR",
-    "count": 53,
-    "total_quantum": 60498740.0
+    "district": "D03",
+    "count": 8,
+    "total_quantum": 9074811.0
+  },
+  {
+    "month": "2026-02",
+    "district": "D05",
+    "count": 4,
+    "total_quantum": 4839899.2
+  },
+  {
+    "month": "2026-02",
+    "district": "D08",
+    "count": 4,
+    "total_quantum": 3362437.0
+  },
+  {
+    "month": "2026-02",
+    "district": "D12",
+    "count": 6,
+    "total_quantum": 7259848.8
+  },
+  {
+    "month": "2026-02",
+    "district": "D13",
+    "count": 5,
+    "total_quantum": 6049874.0
+  },
+  {
+    "month": "2026-02",
+    "district": "D14",
+    "count": 5,
+    "total_quantum": 6049874.0
+  },
+  {
+    "month": "2026-02",
+    "district": "D15",
+    "count": 5,
+    "total_quantum": 6049874.0
+  },
+  {
+    "month": "2026-02",
+    "district": "D16",
+    "count": 2,
+    "total_quantum": 1962177.6
+  },
+  {
+    "month": "2026-02",
+    "district": "D18",
+    "count": 3,
+    "total_quantum": 2943266.4
+  },
+  {
+    "month": "2026-02",
+    "district": "D19",
+    "count": 8,
+    "total_quantum": 7930380.999999999
+  },
+  {
+    "month": "2026-02",
+    "district": "D20",
+    "count": 13,
+    "total_quantum": 15124685.0
+  },
+  {
+    "month": "2026-02",
+    "district": "D21",
+    "count": 1,
+    "total_quantum": 981088.8
+  },
+  {
+    "month": "2026-02",
+    "district": "D22",
+    "count": 1,
+    "total_quantum": 1569742.08
+  },
+  {
+    "month": "2026-02",
+    "district": "D23",
+    "count": 2,
+    "total_quantum": 2354613.12
+  },
+  {
+    "month": "2026-02",
+    "district": "D24",
+    "count": 2,
+    "total_quantum": 981088.7999999996
+  },
+  {
+    "month": "2026-02",
+    "district": "D25",
+    "count": 1,
+    "total_quantum": 1569742.08
+  },
+  {
+    "month": "2026-02",
+    "district": "D27",
+    "count": 2,
+    "total_quantum": 2354613.12
   }
 ]
