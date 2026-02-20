@@ -10,8 +10,8 @@ Endpoints:
 Cold-cache behaviour:
   First request triggers a background fetch (returns 202 + "loading" status).
   Subsequent requests poll until data is ready, then return 200 + data.
-  With DATA_GOV_SG_API_KEY set: ~15-20s cold fetch (generous rate limit).
-  Without key: ~2-3 min cold fetch (anonymous ~10 req/min limit).
+  With DATA_GOV_SG_API_KEY set: ~5-10s cold fetch (generous rate limit).
+  Without key: ~35-45s cold fetch (1000/page, 7s delay, ~5 pages).
   Once cached, all responses for the next 6 hours are instant cache hits.
 """
 
@@ -38,22 +38,23 @@ _CACHE_TTL_SECONDS = 6 * 60 * 60  # 6 hours
 _DATA_GOV_URL = 'https://data.gov.sg/api/action/datastore_search'
 _DATASET_ID = 'd_8b84c4ee58e3cfc0ece0d773c8ca6abc'
 _MILLION = 1_000_000
-_PAGE_LIMIT = 100
-_REQUEST_TIMEOUT = 15   # seconds per page request
-_MAX_PAGES = 300        # safety cap (~30,000 records max)
-_RETRY_WAIT = 20        # seconds to wait after 429 before retrying
+_PAGE_LIMIT = 1000      # Large pages to minimize total API calls (~5 pages for ~4200 txns)
+_REQUEST_TIMEOUT = 30   # seconds per page request (larger pages need more time)
+_MAX_PAGES = 30         # safety cap (~30,000 records max)
+_RETRY_WAIT = 15        # seconds to wait after 429 before retrying
 _MAX_RETRIES = 3        # retries per page on 429
 
 # API key from environment — unlocks higher rate limits on data.gov.sg
 # Set DATA_GOV_SG_API_KEY in your .env / Render dashboard.
-# With key:    ~0.1s delay between pages → cold fetch ~15-20s
-# Without key: ~1.2s delay between pages → cold fetch ~2-3 min
+# With key:    ~0.5s delay between pages → cold fetch ~5-10s
+# Without key: ~7s delay between pages   → ~8.5 req/min, under 10 req/min limit
+#              With ~5 pages needed, cold fetch ~35-45s
 _API_KEY = os.environ.get('DATA_GOV_SG_API_KEY', '')
-_PAGE_DELAY = 0.1 if _API_KEY else 1.2
+_PAGE_DELAY = 0.5 if _API_KEY else 7.0
 
 
 def _fetch_page(offset):
-    """Fetch one page with 429 retry/backoff. Returns list of records."""
+    """Fetch one page with 429 retry/exponential backoff. Raises exception if fails after retries."""
     headers = {'Authorization': _API_KEY} if _API_KEY else {}
     for attempt in range(_MAX_RETRIES):
         resp = requests.get(
@@ -69,11 +70,21 @@ def _fetch_page(offset):
         )
         if resp.status_code == 429:
             if attempt < _MAX_RETRIES - 1:
-                time.sleep(_RETRY_WAIT)
+                # Defense-in-depth: exponential backoff if 429 occurs despite rate-safe pacing
+                # Primary fix is _PAGE_LIMIT=1000 + _PAGE_DELAY=7s keeping us under 10 req/min
+                backoff_time = _RETRY_WAIT * (2 ** attempt)  # 15s, 30s, 60s
+                print(f"[HDB Fetch] Rate limited (429). Retrying in {backoff_time}s... (Attempt {attempt + 1}/{_MAX_RETRIES})")
+                time.sleep(backoff_time)
                 continue
+        
+        # If any other error (or 429 still happening after all retries), this will raise it
         resp.raise_for_status()
+        
+        # Return records
         return resp.json().get('result', {}).get('records', [])
-    return []
+        
+    # If we get here it means all retries failed and somehow didn't raise
+    raise Exception(f"Failed to fetch data from data.gov.sg after {_MAX_RETRIES} attempts.")
 
 
 def _build_series(monthly):
