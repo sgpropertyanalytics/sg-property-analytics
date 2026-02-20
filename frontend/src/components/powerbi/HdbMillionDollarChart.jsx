@@ -18,17 +18,45 @@ import { baseChartJsOptions, CHART_AXIS_DEFAULTS, CHART_TOOLTIP } from '../../co
 import { CHART_COLORS } from '../../constants/colors';
 import { getHdbMillionDollarTrend } from '../../api/client';
 import { niceMax } from '../../utils/niceAxisMax';
+import { useZustandFilters } from '../../stores';
+import { monthToQuarter, monthToYear } from '../../adapters/aggregate/timeAggregation';
 
 /**
  * HDB Million-Dollar Chart — Bar + Line Combo
  *
- * X-axis: Month (YYYY-MM)
+ * X-axis: Period (Month/Quarter/Year — controlled by time grouping filter)
  * Y1 (bars, left):  Count of $1M+ HDB resale transactions
  * Y2 (line, right): Total quantum ($) of those transactions
  *
  * Data source: data.gov.sg HDB Resale Flat Prices dataset.
- * Not controlled by sidebar filters — this is a standalone market indicator.
+ * Responds to time grouping filter (month/quarter/year) like other charts.
  */
+
+// Time level labels for display (matches TimeTrendChart pattern)
+const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
+
+/**
+ * Aggregate HDB monthly data by time grain.
+ * HDB data shape: { month, count, total_quantum }
+ */
+function aggregateHdbByGrain(monthlyData, targetGrain) {
+  if (!monthlyData?.length) return [];
+  if (targetGrain === 'month') return monthlyData;
+
+  const convertPeriod = targetGrain === 'quarter' ? monthToQuarter : monthToYear;
+  const grouped = {};
+
+  for (const row of monthlyData) {
+    const targetPeriod = convertPeriod(row.month);
+    if (!grouped[targetPeriod]) {
+      grouped[targetPeriod] = { month: targetPeriod, count: 0, total_quantum: 0 };
+    }
+    grouped[targetPeriod].count += row.count ?? 0;
+    grouped[targetPeriod].total_quantum += row.total_quantum ?? 0;
+  }
+
+  return Object.values(grouped).sort((a, b) => a.month.localeCompare(b.month));
+}
 
 /**
  * @param {{
@@ -41,6 +69,9 @@ function HdbMillionDollarChartBase({ height = 380, staggerIndex = 0, variant = '
   const isDashboard = variant === 'dashboard';
   const embedded = isDashboard;
   const cinema = isDashboard;
+
+  // Read time grouping from Zustand store (same pattern as TimeTrendChart)
+  const { timeGrouping } = useZustandFilters();
 
   const chartRef = useRef(null);
 
@@ -65,7 +96,13 @@ function HdbMillionDollarChartBase({ height = 380, staggerIndex = 0, variant = '
   );
 
   const isBackgroundLoading = queryResult?.loading === true;
-  const safeData = isBackgroundLoading ? [] : (queryResult?.records ?? []);
+  const rawData = isBackgroundLoading ? [] : (queryResult?.records ?? []);
+
+  // Client-side aggregation by time grain (same pattern as useTimeSeriesQuery)
+  const safeData = useMemo(
+    () => aggregateHdbByGrain(rawData, timeGrouping),
+    [rawData, timeGrouping],
+  );
 
   const labels = safeData.map(d => d.month);
   const counts = safeData.map(d => d.count ?? 0);
@@ -198,7 +235,7 @@ function HdbMillionDollarChartBase({ height = 380, staggerIndex = 0, variant = '
 
   const totalTransactions = counts.reduce((sum, c) => sum + c, 0);
   const totalQuantum = quanta.reduce((sum, v) => sum + v, 0);
-  const peakMonth = safeData.length > 0
+  const peakPeriod = safeData.length > 0
     ? safeData.reduce((best, d) => (d.count > best.count ? d : best), safeData[0])
     : null;
 
@@ -217,11 +254,11 @@ function HdbMillionDollarChartBase({ height = 380, staggerIndex = 0, variant = '
         {/* Layer 1: Header */}
         <DataCardHeader
           title="HDB Resale · $1M+ Transactions"
-          logic="Count of HDB resale transactions ≥ $1M per month. Quantum = total value."
-          info={`Transactions — Monthly count of HDB resale transactions at or above $1,000,000.
+          logic="Count of HDB resale transactions ≥ $1M per period. Quantum = total value."
+          info={`Transactions — HDB resale transaction count at or above $1,000,000.
 Quantum — Total transaction value for those transactions.
-Source: data.gov.sg HDB Resale Flat Prices (Jan 2017–present).
-Note: First load fetches from external API and may take 2–3 minutes. Cached for 6 hours after.`}
+Grouped by ${TIME_LABELS[timeGrouping]}.
+Source: data.gov.sg HDB Resale Flat Prices (Jan 2017–present).`}
         />
 
         {/* Layer 2: KPI Strip */}
@@ -237,9 +274,9 @@ Note: First load fetches from external API and may take 2–3 minutes. Cached fo
             subtext="aggregate value"
           />
           <ToolbarStat
-            label="Peak Month"
-            value={peakMonth ? peakMonth.month : '—'}
-            subtext={peakMonth ? `${peakMonth.count} txns` : 'no data'}
+            label="Peak Period"
+            value={peakPeriod ? peakPeriod.month : '—'}
+            subtext={peakPeriod ? `${peakPeriod.count} txns` : 'no data'}
           />
         </DataCardToolbar>
 
@@ -252,7 +289,7 @@ Note: First load fetches from external API and may take 2–3 minutes. Cached fo
 
         {/* Layer 4: Status footer */}
         <StatusDeck
-          left={<StatusPeriod>{safeData.length} Months</StatusPeriod>}
+          left={<StatusPeriod>{safeData.length} Periods ({TIME_LABELS[timeGrouping]})</StatusPeriod>}
           right={<StatusCount count={totalTransactions} />}
         >
           <LegendLine label="Transactions" color={CHART_COLORS.ocean} />
