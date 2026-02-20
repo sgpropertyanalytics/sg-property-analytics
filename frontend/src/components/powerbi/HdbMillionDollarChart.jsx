@@ -15,7 +15,7 @@ import {
   LegendLine,
 } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS, CHART_TOOLTIP } from '../../constants/chartOptions';
-import { CHART_COLORS, REGION, alpha } from '../../constants/colors';
+import { CHART_COLORS, alpha } from '../../constants/colors';
 import { getHdbMillionDollarTrend } from '../../api/client';
 import { niceMax } from '../../utils/niceAxisMax';
 import { useZustandFilters } from '../../stores';
@@ -25,49 +25,104 @@ import { monthToQuarter, monthToYear } from '../../adapters/aggregate/timeAggreg
  * HDB Million-Dollar Chart — Stacked Bar + Line Combo
  *
  * X-axis: Period (Month/Quarter/Year — controlled by time grouping filter)
- * Y1 (stacked bars, left):  Count of $1M+ transactions by region (CCR/RCR/OCR)
+ * Y1 (stacked bars, left): Count of $1M+ transactions by URA district
  * Y2 (line, right): Total quantum ($)
  *
  * Data source: data.gov.sg HDB Resale Flat Prices dataset.
  */
 
 const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
-const REGIONS = ['CCR', 'RCR', 'OCR'];
-const REGION_LABELS = { CCR: 'CCR (Core Central)', RCR: 'RCR (Rest of Central)', OCR: 'OCR (Outside Central)' };
+
+// District display names (from constants.py DISTRICT_NAMES)
+const DISTRICT_NAMES = {
+  D01: 'Raffles Place / Marina',
+  D03: 'Queenstown / Tiong Bahru',
+  D05: 'Buona Vista / Clementi',
+  D08: 'Little India / Farrer Park',
+  D12: 'Balestier / Toa Payoh',
+  D14: 'Geylang / Paya Lebar',
+  D15: 'East Coast / Katong',
+  D16: 'Bedok / Upper East Coast',
+  D18: 'Tampines / Pasir Ris',
+  D19: 'Serangoon / Hougang / Punggol',
+  D20: 'Bishan / Ang Mo Kio',
+  D21: 'Upper Bukit Timah / Clementi',
+  D22: 'Jurong',
+  D23: 'Bukit Batok / Bukit Panjang',
+  D24: 'Lim Chu Kang / Tengah',
+  D25: 'Woodlands',
+  D27: 'Yishun / Sembawang',
+};
+
+// Color palette for districts — distinct colors, ordered by visual weight
+const DISTRICT_COLORS = [
+  '#213448', // navy
+  '#547792', // ocean
+  '#94B4C1', // sky
+  '#78503C', // brown
+  '#C4A484', // bronze
+  '#059669', // emerald
+  '#F97316', // orange
+  '#2563EB', // blue
+  '#DC2626', // red
+  '#F59E0B', // amber
+  '#6b4226', // supplyDark
+  '#9c6644', // supplyMid
+  '#c4a77d', // supplyLight
+  '#64748B', // slate500
+  '#334155', // slate700
+  '#94A3B8', // slate400
+];
 
 /**
- * Pivot flat rows [{month, region, count, total_quantum}]
- * into per-period aggregated structure for chart rendering.
- *
- * Returns: { labels, ccr[], rcr[], ocr[], quantum[] }
+ * Pivot flat rows [{month, district, count, total_quantum}]
+ * into per-period structure for stacked bar chart.
  */
-function pivotByRegion(rows, timeGrouping) {
-  if (!rows?.length) return { labels: [], ccr: [], rcr: [], ocr: [], quantum: [] };
+function pivotByDistrict(rows, timeGrouping) {
+  if (!rows?.length) return { labels: [], districtSeries: {}, quantum: [], districts: [] };
 
   const convertPeriod = timeGrouping === 'quarter' ? monthToQuarter
     : timeGrouping === 'year' ? monthToYear
       : (m) => m;
 
-  // Accumulate by (period, region)
+  // Accumulate by (period, district)
   const periods = {};
+  const districtTotals = {};
+
   for (const row of rows) {
     const period = convertPeriod(row.month);
-    if (!periods[period]) {
-      periods[period] = { CCR: 0, RCR: 0, OCR: 0, quantum: 0 };
-    }
-    const region = row.region || 'OCR';
-    periods[period][region] = (periods[period][region] || 0) + (row.count ?? 0);
-    periods[period].quantum += row.total_quantum ?? 0;
+    const district = row.district || row.region || 'D19';
+    if (!periods[period]) periods[period] = {};
+    periods[period][district] = (periods[period][district] || 0) + (row.count ?? 0);
+    districtTotals[district] = (districtTotals[district] || 0) + (row.count ?? 0);
   }
 
-  // Sort and flatten
-  const sorted = Object.entries(periods).sort(([a], [b]) => a.localeCompare(b));
+  // Compute quantum per period
+  const quantumMap = {};
+  for (const row of rows) {
+    const period = convertPeriod(row.month);
+    quantumMap[period] = (quantumMap[period] || 0) + (row.total_quantum ?? 0);
+  }
+
+  // Sort districts by total count descending (most active first)
+  const sortedDistricts = Object.entries(districtTotals)
+    .sort(([, a], [, b]) => b - a)
+    .map(([d]) => d);
+
+  // Sort periods chronologically
+  const sortedPeriods = Object.keys(periods).sort();
+
+  // Build per-district series
+  const districtSeries = {};
+  for (const d of sortedDistricts) {
+    districtSeries[d] = sortedPeriods.map(p => periods[p][d] || 0);
+  }
+
   return {
-    labels: sorted.map(([p]) => p),
-    ccr: sorted.map(([, v]) => v.CCR),
-    rcr: sorted.map(([, v]) => v.RCR),
-    ocr: sorted.map(([, v]) => v.OCR),
-    quantum: sorted.map(([, v]) => v.quantum),
+    labels: sortedPeriods,
+    districtSeries,
+    quantum: sortedPeriods.map(p => quantumMap[p] || 0),
+    districts: sortedDistricts,
   };
 }
 
@@ -99,64 +154,38 @@ function HdbMillionDollarChartBase({ height = 380, staggerIndex = 0, variant = '
   const isBackgroundLoading = queryResult?.loading === true;
   const rawData = isBackgroundLoading ? [] : (queryResult?.records ?? []);
 
-  // Pivot raw rows into per-period stacked structure
-  const { labels, ccr, rcr, ocr, quantum } = useMemo(
-    () => pivotByRegion(rawData, timeGrouping),
+  // Pivot into per-district stacked structure
+  const { labels, districtSeries, quantum, districts } = useMemo(
+    () => pivotByDistrict(rawData, timeGrouping),
     [rawData, timeGrouping],
   );
 
   // Total count per period (for y-axis scaling)
-  const totalCounts = labels.map((_, i) => ccr[i] + rcr[i] + ocr[i]);
+  const totalCounts = labels.map((_, i) =>
+    districts.reduce((sum, d) => sum + (districtSeries[d]?.[i] || 0), 0)
+  );
   const maxCount = Math.max(...totalCounts, 1);
   const yAxisMax = niceMax(Math.ceil(maxCount * 1.4));
 
-  const chartData = {
+  const chartData = useMemo(() => ({
     labels,
     datasets: [
-      // Stacked bars — order: OCR bottom, RCR middle, CCR top
-      {
+      // Stacked bars — one dataset per district (ordered by total count desc)
+      ...districts.map((d, idx) => ({
         type: 'bar',
-        label: 'OCR',
-        data: ocr,
-        backgroundColor: alpha(REGION.OCR, 0.7),
-        borderColor: REGION.OCR,
-        borderWidth: 1,
+        label: d,
+        data: districtSeries[d],
+        backgroundColor: alpha(DISTRICT_COLORS[idx % DISTRICT_COLORS.length], 0.75),
+        borderColor: DISTRICT_COLORS[idx % DISTRICT_COLORS.length],
+        borderWidth: 0.5,
         borderRadius: 0,
         barPercentage: 0.85,
         categoryPercentage: 0.9,
         yAxisID: 'y',
-        stack: 'region',
+        stack: 'district',
         order: 3,
-      },
-      {
-        type: 'bar',
-        label: 'RCR',
-        data: rcr,
-        backgroundColor: alpha(REGION.RCR, 0.7),
-        borderColor: REGION.RCR,
-        borderWidth: 1,
-        borderRadius: 0,
-        barPercentage: 0.85,
-        categoryPercentage: 0.9,
-        yAxisID: 'y',
-        stack: 'region',
-        order: 3,
-      },
-      {
-        type: 'bar',
-        label: 'CCR',
-        data: ccr,
-        backgroundColor: alpha(REGION.CCR, 0.7),
-        borderColor: REGION.CCR,
-        borderWidth: 1,
-        borderRadius: 0,
-        barPercentage: 0.85,
-        categoryPercentage: 0.9,
-        yAxisID: 'y',
-        stack: 'region',
-        order: 3,
-      },
-      // Quantum line (unchanged)
+      })),
+      // Quantum line
       {
         type: 'line',
         label: 'Quantum',
@@ -176,7 +205,7 @@ function HdbMillionDollarChartBase({ height = 380, staggerIndex = 0, variant = '
         order: 1,
       },
     ],
-  };
+  }), [labels, districts, districtSeries, quantum]);
 
   const options = useMemo(() => ({
     ...baseChartJsOptions,
@@ -190,26 +219,23 @@ function HdbMillionDollarChartBase({ height = 380, staggerIndex = 0, variant = '
         ...CHART_TOOLTIP,
         displayColors: true,
         boxPadding: 4,
+        // Filter out zero-value items from tooltip
+        filter: (item) => item.parsed.y > 0,
         callbacks: {
           label: (context) => {
             const label = context.dataset.label || '';
             const value = context.parsed.y;
             if (label === 'Quantum') {
-              if (value >= 1_000_000_000) {
-                return ` ${label}: $${(value / 1_000_000_000).toFixed(2)}B`;
-              }
+              if (value >= 1_000_000_000) return ` ${label}: $${(value / 1_000_000_000).toFixed(2)}B`;
               return ` ${label}: $${(value / 1_000_000).toFixed(0)}M`;
             }
-            return ` ${label}: ${value.toLocaleString()} txns`;
+            const name = DISTRICT_NAMES[label] || label;
+            return ` ${label} ${name}: ${value.toLocaleString()} txns`;
           },
         },
       },
       crosshair: {
-        line: {
-          color: CHART_COLORS.slate400,
-          width: 1,
-          dashPattern: [4, 4],
-        },
+        line: { color: CHART_COLORS.slate400, width: 1, dashPattern: [4, 4] },
       },
     },
     scales: {
@@ -230,11 +256,7 @@ function HdbMillionDollarChartBase({ height = 380, staggerIndex = 0, variant = '
         stacked: true,
         min: 0,
         max: yAxisMax,
-        title: {
-          display: true,
-          text: 'Transactions',
-          ...CHART_AXIS_DEFAULTS.title,
-        },
+        title: { display: true, text: 'Transactions', ...CHART_AXIS_DEFAULTS.title },
         grid: { color: CHART_COLORS.skyAlpha20 },
         ticks: {
           ...CHART_AXIS_DEFAULTS.ticks,
@@ -246,18 +268,12 @@ function HdbMillionDollarChartBase({ height = 380, staggerIndex = 0, variant = '
         display: true,
         position: 'right',
         min: 0,
-        title: {
-          display: true,
-          text: 'Quantum ($)',
-          ...CHART_AXIS_DEFAULTS.title,
-        },
+        title: { display: true, text: 'Quantum ($)', ...CHART_AXIS_DEFAULTS.title },
         grid: { drawOnChartArea: false },
         ticks: {
           ...CHART_AXIS_DEFAULTS.ticks,
           callback: (value) => {
-            if (value >= 1_000_000_000) {
-              return `$${(value / 1_000_000_000).toFixed(1)}B`;
-            }
+            if (value >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(1)}B`;
             return `$${(value / 1_000_000).toFixed(0)}M`;
           },
         },
@@ -267,9 +283,12 @@ function HdbMillionDollarChartBase({ height = 380, staggerIndex = 0, variant = '
 
   const totalTransactions = totalCounts.reduce((sum, c) => sum + c, 0);
   const totalQuantum = quantum.reduce((sum, v) => sum + v, 0);
-  const totalCCR = ccr.reduce((s, v) => s + v, 0);
-  const totalRCR = rcr.reduce((s, v) => s + v, 0);
-  const totalOCR = ocr.reduce((s, v) => s + v, 0);
+
+  // Top 3 districts for KPI
+  const top3 = districts.slice(0, 3).map(d => {
+    const count = (districtSeries[d] || []).reduce((s, v) => s + v, 0);
+    return `${d}: ${count}`;
+  });
 
   return (
     <ChartFrame
@@ -286,11 +305,8 @@ function HdbMillionDollarChartBase({ height = 380, staggerIndex = 0, variant = '
         {/* Layer 1: Header */}
         <DataCardHeader
           title="HDB Resale · $1M+ Transactions"
-          logic="Count of HDB resale transactions ≥ $1M by region. Quantum = total value."
-          info={`Transactions — HDB resale transaction count at or above $1,000,000, broken down by market region.
-CCR = Core Central Region (D01-D02, D06-D07, D09-D11)
-RCR = Rest of Central Region (D03-D05, D08, D12-D15, D20)
-OCR = Outside Central Region (D16-D19, D21-D28)
+          logic="Count of HDB resale transactions ≥ $1M by URA district. Quantum = total value."
+          info={`Transactions — HDB resale transaction count at or above $1,000,000, broken down by URA postal district.
 Grouped by ${TIME_LABELS[timeGrouping]}.
 Source: data.gov.sg HDB Resale Flat Prices (Jan 2017–present).`}
         />
@@ -308,13 +324,9 @@ Source: data.gov.sg HDB Resale Flat Prices (Jan 2017–present).`}
             subtext="aggregate value"
           />
           <ToolbarStat
-            label="Region Split"
-            value={totalTransactions > 0
-              ? `${Math.round(totalOCR / totalTransactions * 100)}% OCR`
-              : '—'}
-            subtext={totalTransactions > 0
-              ? `${totalCCR} CCR · ${totalRCR} RCR · ${totalOCR} OCR`
-              : 'no data'}
+            label="Top Districts"
+            value={districts[0] || '—'}
+            subtext={top3.join(' · ')}
           />
         </DataCardToolbar>
 
@@ -330,9 +342,10 @@ Source: data.gov.sg HDB Resale Flat Prices (Jan 2017–present).`}
           left={<StatusPeriod>{labels.length} Periods ({TIME_LABELS[timeGrouping]})</StatusPeriod>}
           right={<StatusCount count={totalTransactions} />}
         >
-          <LegendLine label="CCR" color={REGION.CCR} />
-          <LegendLine label="RCR" color={REGION.RCR} />
-          <LegendLine label="OCR" color={REGION.OCR} />
+          {districts.slice(0, 6).map((d, i) => (
+            <LegendLine key={d} label={d} color={DISTRICT_COLORS[i % DISTRICT_COLORS.length]} />
+          ))}
+          {districts.length > 6 && <LegendLine label={`+${districts.length - 6} more`} color={CHART_COLORS.slate400} />}
           <LegendLine label="Quantum" color={CHART_COLORS.navy} />
         </StatusDeck>
       </DataCard>

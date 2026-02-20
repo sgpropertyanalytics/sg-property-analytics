@@ -1,5 +1,5 @@
 """
-One-time script to generate HDB $1M+ seed data with region breakdown.
+One-time script to generate HDB $1M+ seed data with district breakdown.
 Self-contained — no pip dependencies, no imports from backend.
 
 Usage: cd backend && python3 -m scripts.generate_hdb_seed
@@ -11,37 +11,37 @@ import urllib.request
 import urllib.parse
 import urllib.error
 
-# HDB town → CCR/RCR/OCR region mapping
-# Source: constants.py PLANNING_AREA_TO_DISTRICT + get_region_for_district
-HDB_TOWN_TO_REGION = {
-    'ANG MO KIO': 'RCR',       # D20
-    'BEDOK': 'OCR',             # D16
-    'BISHAN': 'RCR',            # D20
-    'BUKIT BATOK': 'OCR',       # D23
-    'BUKIT MERAH': 'RCR',       # D03/D04
-    'BUKIT PANJANG': 'OCR',     # D23
-    'BUKIT TIMAH': 'OCR',       # D21
-    'CENTRAL AREA': 'CCR',      # D01/D02
-    'CHOA CHU KANG': 'OCR',     # D23
-    'CLEMENTI': 'RCR',          # D05
-    'GEYLANG': 'RCR',           # D14
-    'HOUGANG': 'OCR',           # D19
-    'JURONG EAST': 'OCR',       # D22
-    'JURONG WEST': 'OCR',       # D22
-    'KALLANG/WHAMPOA': 'RCR',   # D08
-    'LIM CHU KANG': 'OCR',      # D24
-    'MARINE PARADE': 'RCR',     # D15
-    'PASIR RIS': 'OCR',         # D18
-    'PUNGGOL': 'OCR',           # D19
-    'QUEENSTOWN': 'RCR',        # D03
-    'SEMBAWANG': 'OCR',         # D27
-    'SENGKANG': 'OCR',          # D19
-    'SERANGOON': 'RCR',         # D13
-    'TAMPINES': 'OCR',          # D18
-    'TENGAH': 'OCR',            # D24
-    'TOA PAYOH': 'RCR',         # D12
-    'WOODLANDS': 'OCR',         # D25
-    'YISHUN': 'OCR',            # D27
+# HDB town → URA district mapping
+# Source: constants.py PLANNING_AREA_TO_DISTRICT
+HDB_TOWN_TO_DISTRICT = {
+    'ANG MO KIO': 'D20',
+    'BEDOK': 'D16',
+    'BISHAN': 'D20',
+    'BUKIT BATOK': 'D23',
+    'BUKIT MERAH': 'D03',
+    'BUKIT PANJANG': 'D23',
+    'BUKIT TIMAH': 'D21',
+    'CENTRAL AREA': 'D01',
+    'CHOA CHU KANG': 'D23',
+    'CLEMENTI': 'D05',
+    'GEYLANG': 'D14',
+    'HOUGANG': 'D19',
+    'JURONG EAST': 'D22',
+    'JURONG WEST': 'D22',
+    'KALLANG/WHAMPOA': 'D08',
+    'LIM CHU KANG': 'D24',
+    'MARINE PARADE': 'D15',
+    'PASIR RIS': 'D18',
+    'PUNGGOL': 'D19',
+    'QUEENSTOWN': 'D03',
+    'SEMBAWANG': 'D27',
+    'SENGKANG': 'D19',
+    'SERANGOON': 'D19',
+    'TAMPINES': 'D18',
+    'TENGAH': 'D24',
+    'TOA PAYOH': 'D12',
+    'WOODLANDS': 'D25',
+    'YISHUN': 'D27',
 }
 
 API_URL = 'https://data.gov.sg/api/action/datastore_search'
@@ -79,8 +79,8 @@ def fetch_page(offset):
 
 
 def main():
-    print("Generating HDB $1M+ seed data with region breakdown...")
-    monthly = {}  # key: (month, region)
+    print("Generating HDB $1M+ seed data with district breakdown...")
+    monthly = {}  # key: (month, district)
     offset = 0
     total = 0
     delay = 0.5 if API_KEY else 10.0
@@ -99,10 +99,11 @@ def main():
                 break
             month = r['month']
             town = r.get('town', 'UNKNOWN')
-            region = HDB_TOWN_TO_REGION.get(town, 'OCR')
-            if town not in HDB_TOWN_TO_REGION:
-                print(f"  WARNING: Unknown town '{town}', defaulting to OCR")
-            key = (month, region)
+            district = HDB_TOWN_TO_DISTRICT.get(town)
+            if not district:
+                print(f"  WARNING: Unknown town '{town}', skipping")
+                continue
+            key = (month, district)
             if key not in monthly:
                 monthly[key] = {'count': 0, 'total_quantum': 0.0}
             monthly[key]['count'] += 1
@@ -116,17 +117,25 @@ def main():
         time.sleep(delay)
 
     data = sorted(
-        [{'month': k[0], 'region': k[1], 'count': v['count'], 'total_quantum': v['total_quantum']}
+        [{'month': k[0], 'district': k[1], 'count': v['count'], 'total_quantum': v['total_quantum']}
          for k, v in monthly.items()],
-        key=lambda x: (x['month'], x['region']),
+        key=lambda x: (x['month'], x['district']),
     )
 
     out_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'hdb_million_dollar_seed.json')
     with open(out_path, 'w') as f:
         json.dump(data, f, indent=2)
 
-    print(f"\nDone! {total} transactions → {len(data)} month-region buckets.")
+    # Print summary
+    district_totals = {}
+    for row in data:
+        d = row['district']
+        district_totals[d] = district_totals.get(d, 0) + row['count']
+    print(f"\nDone! {total} transactions → {len(data)} month-district buckets.")
     print(f"Saved to {out_path}")
+    print(f"\nDistrict breakdown:")
+    for d, count in sorted(district_totals.items(), key=lambda x: -x[1]):
+        print(f"  {d}: {count} txns")
 
 
 if __name__ == '__main__':

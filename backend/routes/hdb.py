@@ -68,20 +68,20 @@ _MAX_RETRIES = 3        # retries per page on 429
 _API_KEY = os.environ.get('DATA_GOV_SG_API_KEY', '')
 _PAGE_DELAY = 0.5 if _API_KEY else 7.0
 
-# HDB town → CCR/RCR/OCR region mapping
-# Derived from constants.py PLANNING_AREA_TO_DISTRICT + get_region_for_district.
+# HDB town → URA district mapping
+# Derived from constants.py PLANNING_AREA_TO_DISTRICT.
 # Inlined here to avoid importing constants.py (heavy deps) in this lightweight module.
-_HDB_TOWN_TO_REGION = {
-    'ANG MO KIO': 'RCR', 'BEDOK': 'OCR', 'BISHAN': 'RCR',
-    'BUKIT BATOK': 'OCR', 'BUKIT MERAH': 'RCR', 'BUKIT PANJANG': 'OCR',
-    'BUKIT TIMAH': 'OCR', 'CENTRAL AREA': 'CCR', 'CHOA CHU KANG': 'OCR',
-    'CLEMENTI': 'RCR', 'GEYLANG': 'RCR', 'HOUGANG': 'OCR',
-    'JURONG EAST': 'OCR', 'JURONG WEST': 'OCR', 'KALLANG/WHAMPOA': 'RCR',
-    'LIM CHU KANG': 'OCR', 'MARINE PARADE': 'RCR', 'PASIR RIS': 'OCR',
-    'PUNGGOL': 'OCR', 'QUEENSTOWN': 'RCR', 'SEMBAWANG': 'OCR',
-    'SENGKANG': 'OCR', 'SERANGOON': 'RCR', 'TAMPINES': 'OCR',
-    'TENGAH': 'OCR', 'TOA PAYOH': 'RCR', 'WOODLANDS': 'OCR',
-    'YISHUN': 'OCR',
+_HDB_TOWN_TO_DISTRICT = {
+    'ANG MO KIO': 'D20', 'BEDOK': 'D16', 'BISHAN': 'D20',
+    'BUKIT BATOK': 'D23', 'BUKIT MERAH': 'D03', 'BUKIT PANJANG': 'D23',
+    'BUKIT TIMAH': 'D21', 'CENTRAL AREA': 'D01', 'CHOA CHU KANG': 'D23',
+    'CLEMENTI': 'D05', 'GEYLANG': 'D14', 'HOUGANG': 'D19',
+    'JURONG EAST': 'D22', 'JURONG WEST': 'D22', 'KALLANG/WHAMPOA': 'D08',
+    'LIM CHU KANG': 'D24', 'MARINE PARADE': 'D15', 'PASIR RIS': 'D18',
+    'PUNGGOL': 'D19', 'QUEENSTOWN': 'D03', 'SEMBAWANG': 'D27',
+    'SENGKANG': 'D19', 'SERANGOON': 'D19', 'TAMPINES': 'D18',
+    'TENGAH': 'D24', 'TOA PAYOH': 'D12', 'WOODLANDS': 'D25',
+    'YISHUN': 'D27',
 }
 
 
@@ -121,10 +121,10 @@ def _fetch_page(offset):
 def _build_series(monthly):
     return sorted(
         [
-            {'month': k[0], 'region': k[1], 'count': v['count'], 'total_quantum': v['total_quantum']}
+            {'month': k[0], 'district': k[1], 'count': v['count'], 'total_quantum': v['total_quantum']}
             for k, v in monthly.items()
         ],
-        key=lambda x: (x['month'], x['region']),
+        key=lambda x: (x['month'], x['district']),
     )
 
 
@@ -134,7 +134,7 @@ def _background_fetch():
     Writes result into _CACHE on completion. Failure is non-fatal — seed data
     remains available as fallback.
     """
-    monthly = {}  # key: (month, region)
+    monthly = {}  # key: (month, district)
     offset = 0
 
     try:
@@ -151,8 +151,8 @@ def _background_fetch():
                     break
                 month = r['month']
                 town = r.get('town', 'UNKNOWN')
-                region = _HDB_TOWN_TO_REGION.get(town, 'OCR')
-                key = (month, region)
+                district = _HDB_TOWN_TO_DISTRICT.get(town, 'D19')
+                key = (month, district)
                 if key not in monthly:
                     monthly[key] = {'count': 0, 'total_quantum': 0.0}
                 monthly[key]['count'] += 1
