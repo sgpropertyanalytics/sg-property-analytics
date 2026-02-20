@@ -10,10 +10,12 @@ Endpoints:
 Cold-cache behaviour:
   First request triggers a background fetch (returns 202 + "loading" status).
   Subsequent requests poll until data is ready, then return 200 + data.
-  Background fetch takes ~2-3 min (rate-limited to ~10 req/min on data.gov.sg).
+  With DATA_GOV_SG_API_KEY set: ~15-20s cold fetch (generous rate limit).
+  Without key: ~2-3 min cold fetch (anonymous ~10 req/min limit).
   Once cached, all responses for the next 6 hours are instant cache hits.
 """
 
+import os
 import time
 import threading
 import requests
@@ -38,14 +40,21 @@ _DATASET_ID = 'd_8b84c4ee58e3cfc0ece0d773c8ca6abc'
 _MILLION = 1_000_000
 _PAGE_LIMIT = 100
 _REQUEST_TIMEOUT = 15   # seconds per page request
-_PAGE_DELAY = 1.2       # seconds between pages (stay under ~10 req/min limit)
 _MAX_PAGES = 300        # safety cap (~30,000 records max)
 _RETRY_WAIT = 20        # seconds to wait after 429 before retrying
 _MAX_RETRIES = 3        # retries per page on 429
 
+# API key from environment — unlocks higher rate limits on data.gov.sg
+# Set DATA_GOV_SG_API_KEY in your .env / Render dashboard.
+# With key:    ~0.1s delay between pages → cold fetch ~15-20s
+# Without key: ~1.2s delay between pages → cold fetch ~2-3 min
+_API_KEY = os.environ.get('DATA_GOV_SG_API_KEY', '')
+_PAGE_DELAY = 0.1 if _API_KEY else 1.2
+
 
 def _fetch_page(offset):
     """Fetch one page with 429 retry/backoff. Returns list of records."""
+    headers = {'Authorization': _API_KEY} if _API_KEY else {}
     for attempt in range(_MAX_RETRIES):
         resp = requests.get(
             _DATA_GOV_URL,
@@ -55,6 +64,7 @@ def _fetch_page(offset):
                 'offset': offset,
                 'sort': 'resale_price desc',
             },
+            headers=headers,
             timeout=_REQUEST_TIMEOUT,
         )
         if resp.status_code == 429:
