@@ -1,6 +1,50 @@
 @import "tailwindcss";
-@config "../tailwind.config.js";
 @import "./styles/tokens.css";
+
+/*
+ * Tailwind v4 custom theme tokens.
+ * Generates utility classes: text-brand-navy, bg-mono-void, text-status-live, etc.
+ * Values must match tokens.css so both CSS vars and utilities stay in sync.
+ */
+@theme {
+  /* Brand palette */
+  --color-brand-navy: #213448;
+  --color-brand-blue: #547792;
+  --color-brand-sky: #94B4C1;
+  --color-brand-sand: #EAE0CF;
+
+  /* Monochromatic palette */
+  --color-mono-void: #0A0A0A;
+  --color-mono-surface: #1A1A1A;
+  --color-mono-edge: #333333;
+  --color-mono-ink: #0F172A;
+  --color-mono-dark: #1A1A1A;
+  --color-mono-mid: #475569;
+  --color-mono-light: #94A3B8;
+  --color-mono-muted: #A8A29E;
+  --color-mono-canvas: #F9FAFB;
+
+  /* Status */
+  --color-status-live: #059669;
+  --color-status-negative: #DC2626;
+
+  /* Card */
+  --color-card: transparent;
+  --color-card-hover: rgba(255, 79, 0, 0.05);
+
+  /* Nav */
+  --color-nav-bg: #262321;
+  --color-nav-text: #E7E5E4;
+  --color-nav-muted: #A8A29E;
+
+  /* Skeleton */
+  --color-skeleton-bg: #f5f2ed;
+  --color-skeleton-border: #d4d0c8;
+
+  /* Custom font families */
+  --font-display: "JetBrains Mono", "Geist Sans", system-ui, -apple-system, sans-serif;
+  --font-data: "JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace;
+}
 
 /* Geist font for display headlines */
 @import "@fontsource/geist-sans/400.css";
