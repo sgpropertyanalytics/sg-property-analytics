@@ -66,6 +66,28 @@ ENV/
 env.bak/
 venv.bak/
 
+# AI coding tool configs (only .claude is tracked)
+.adal/
+.agent/
+.agents/
+.augment/
+.cline/
+.codebuddy/
+.codex/
+.commandcode/
+.continue/
+.crush/
+.cursor/
+.factory/
+.gemini/
+.goose/
+.iflow/
+.junie/
+.kilocode/
+.kiro/
+.kode/
+.mcpjam/
+
 # IDEs
 .vscode/
 .idea/
