@@ -302,7 +302,7 @@ function HdbMillionDollarChartBase({ height = 380, staggerIndex = 0, variant = '
   return (
     <ChartFrame
       status={isBackgroundLoading ? 'pending' : status}
-      isFiltering={isFiltering}
+      isFiltering={false}
       error={error}
       onRetry={refetch}
       empty={!isBackgroundLoading && labels.length === 0}
