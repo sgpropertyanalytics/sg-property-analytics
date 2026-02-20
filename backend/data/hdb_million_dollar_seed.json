@@ -1,472 +1,1610 @@
 [
-    {
-        "month": "2018-01",
-        "count": 1,
-        "total_quantum": 1068000.0
-    },
-    {
-        "month": "2018-04",
-        "count": 1,
-        "total_quantum": 1100000.0
-    },
-    {
-        "month": "2018-07",
-        "count": 3,
-        "total_quantum": 3228000.0
-    },
-    {
-        "month": "2018-08",
-        "count": 3,
-        "total_quantum": 3208000.0
-    },
-    {
-        "month": "2018-09",
-        "count": 3,
-        "total_quantum": 3124000.0
-    },
-    {
-        "month": "2018-10",
-        "count": 2,
-        "total_quantum": 2088888.0
-    },
-    {
-        "month": "2018-11",
-        "count": 2,
-        "total_quantum": 2068000.0
-    },
-    {
-        "month": "2018-12",
-        "count": 4,
-        "total_quantum": 4338000.0
-    },
-    {
-        "month": "2019-01",
-        "count": 6,
-        "total_quantum": 6633000.0
-    },
-    {
-        "month": "2019-02",
-        "count": 4,
-        "total_quantum": 4071000.0
-    },
-    {
-        "month": "2019-03",
-        "count": 7,
-        "total_quantum": 7524000.0
-    },
-    {
-        "month": "2019-04",
-        "count": 5,
-        "total_quantum": 5314000.0
-    },
-    {
-        "month": "2019-05",
-        "count": 8,
-        "total_quantum": 8394776.0
-    },
-    {
-        "month": "2019-06",
-        "count": 6,
-        "total_quantum": 6434800.0
-    },
-    {
-        "month": "2019-07",
-        "count": 8,
-        "total_quantum": 8678000.0
-    },
-    {
-        "month": "2019-08",
-        "count": 9,
-        "total_quantum": 9506801.0
-    },
-    {
-        "month": "2019-09",
-        "count": 4,
-        "total_quantum": 4110000.0
-    },
-    {
-        "month": "2019-10",
-        "count": 1,
-        "total_quantum": 1100000.0
-    },
-    {
-        "month": "2019-11",
-        "count": 4,
-        "total_quantum": 4184888.0
-    },
-    {
-        "month": "2019-12",
-        "count": 2,
-        "total_quantum": 2066800.0
-    },
-    {
-        "month": "2020-01",
-        "count": 4,
-        "total_quantum": 4041888.0
-    },
-    {
-        "month": "2020-02",
-        "count": 4,
-        "total_quantum": 4178000.0
-    },
-    {
-        "month": "2020-03",
-        "count": 5,
-        "total_quantum": 5439000.0
-    },
-    {
-        "month": "2020-04",
-        "count": 1,
-        "total_quantum": 1010000.88
-    },
-    {
-        "month": "2020-05",
-        "count": 2,
-        "total_quantum": 2170000.0
-    },
-    {
-        "month": "2020-06",
-        "count": 8,
-        "total_quantum": 8683076.0
-    },
-    {
-        "month": "2020-07",
-        "count": 9,
-        "total_quantum": 9490000.0
-    },
-    {
-        "month": "2020-08",
-        "count": 5,
-        "total_quantum": 5423000.0
-    },
-    {
-        "month": "2020-09",
-        "count": 8,
-        "total_quantum": 8984888.0
-    },
-    {
-        "month": "2020-10",
-        "count": 13,
-        "total_quantum": 14117888.0
-    },
-    {
-        "month": "2020-11",
-        "count": 13,
-        "total_quantum": 13964964.0
-    },
-    {
-        "month": "2020-12",
-        "count": 10,
-        "total_quantum": 10807664.0
-    },
-    {
-        "month": "2021-01",
-        "count": 13,
-        "total_quantum": 13906888.0
-    },
-    {
-        "month": "2021-02",
-        "count": 23,
-        "total_quantum": 24473800.0
-    },
-    {
-        "month": "2021-03",
-        "count": 17,
-        "total_quantum": 18136664.0
-    },
-    {
-        "month": "2021-04",
-        "count": 21,
-        "total_quantum": 22597888.0
-    },
-    {
-        "month": "2021-05",
-        "count": 13,
-        "total_quantum": 14280388.0
-    },
-    {
-        "month": "2021-06",
-        "count": 19,
-        "total_quantum": 20942188.0
-    },
-    {
-        "month": "2021-07",
-        "count": 19,
-        "total_quantum": 19996000.0
-    },
-    {
-        "month": "2021-08",
-        "count": 26,
-        "total_quantum": 28265776.0
-    },
-    {
-        "month": "2021-09",
-        "count": 23,
-        "total_quantum": 25059888.0
-    },
-    {
-        "month": "2021-10",
-        "count": 20,
-        "total_quantum": 22216888.0
-    },
-    {
-        "month": "2021-11",
-        "count": 29,
-        "total_quantum": 32380000.0
-    },
-    {
-        "month": "2021-12",
-        "count": 36,
-        "total_quantum": 40190191.0
-    },
-    {
-        "month": "2022-01",
-        "count": 27,
-        "total_quantum": 30498464.0
-    },
-    {
-        "month": "2022-02",
-        "count": 29,
-        "total_quantum": 32721888.0
-    },
-    {
-        "month": "2022-03",
-        "count": 27,
-        "total_quantum": 30127830.88
-    },
-    {
-        "month": "2022-04",
-        "count": 22,
-        "total_quantum": 24014000.0
-    },
-    {
-        "month": "2022-05",
-        "count": 30,
-        "total_quantum": 33384864.88
-    },
-    {
-        "month": "2022-06",
-        "count": 31,
-        "total_quantum": 34476664.0
-    },
-    {
-        "month": "2022-07",
-        "count": 33,
-        "total_quantum": 36825441.0
-    },
-    {
-        "month": "2022-08",
-        "count": 33,
-        "total_quantum": 36322189.0
-    },
-    {
-        "month": "2022-09",
-        "count": 45,
-        "total_quantum": 50405754.0
-    },
-    {
-        "month": "2022-10",
-        "count": 38,
-        "total_quantum": 42108276.0
-    },
-    {
-        "month": "2022-11",
-        "count": 26,
-        "total_quantum": 29013888.0
-    },
-    {
-        "month": "2022-12",
-        "count": 28,
-        "total_quantum": 31043488.0
-    },
-    {
-        "month": "2023-01",
-        "count": 40,
-        "total_quantum": 44555776.0
-    },
-    {
-        "month": "2023-02",
-        "count": 24,
-        "total_quantum": 26638464.0
-    },
-    {
-        "month": "2023-03",
-        "count": 39,
-        "total_quantum": 43839888.0
-    },
-    {
-        "month": "2023-04",
-        "count": 37,
-        "total_quantum": 41707240.0
-    },
-    {
-        "month": "2023-05",
-        "count": 34,
-        "total_quantum": 37241440.0
-    },
-    {
-        "month": "2023-06",
-        "count": 34,
-        "total_quantum": 38253776.0
-    },
-    {
-        "month": "2023-07",
-        "count": 32,
-        "total_quantum": 35446000.0
-    },
-    {
-        "month": "2023-08",
-        "count": 54,
-        "total_quantum": 61296576.0
-    },
-    {
-        "month": "2023-09",
-        "count": 42,
-        "total_quantum": 48571603.0
-    },
-    {
-        "month": "2023-10",
-        "count": 40,
-        "total_quantum": 45163664.0
-    },
-    {
-        "month": "2023-11",
-        "count": 45,
-        "total_quantum": 49001164.0
-    },
-    {
-        "month": "2023-12",
-        "count": 48,
-        "total_quantum": 53376328.0
-    },
-    {
-        "month": "2024-01",
-        "count": 74,
-        "total_quantum": 83834547.0
-    },
-    {
-        "month": "2024-02",
-        "count": 49,
-        "total_quantum": 54045416.0
-    },
-    {
-        "month": "2024-03",
-        "count": 60,
-        "total_quantum": 67075504.0
-    },
-    {
-        "month": "2024-04",
-        "count": 68,
-        "total_quantum": 75434040.0
-    },
-    {
-        "month": "2024-05",
-        "count": 73,
-        "total_quantum": 80723119.0
-    },
-    {
-        "month": "2024-06",
-        "count": 95,
-        "total_quantum": 108257456.0
-    },
-    {
-        "month": "2024-07",
-        "count": 120,
-        "total_quantum": 134354668.88
-    },
-    {
-        "month": "2024-08",
-        "count": 105,
-        "total_quantum": 117719010.0
-    },
-    {
-        "month": "2024-09",
-        "count": 106,
-        "total_quantum": 118057168.0
-    },
-    {
-        "month": "2024-10",
-        "count": 103,
-        "total_quantum": 116529248.0
-    },
-    {
-        "month": "2024-11",
-        "count": 87,
-        "total_quantum": 96516376.0
-    },
-    {
-        "month": "2024-12",
-        "count": 95,
-        "total_quantum": 107406477.0
-    },
-    {
-        "month": "2025-01",
-        "count": 119,
-        "total_quantum": 133241320.0
-    },
-    {
-        "month": "2025-02",
-        "count": 121,
-        "total_quantum": 138882875.0
-    },
-    {
-        "month": "2025-03",
-        "count": 108,
-        "total_quantum": 122463741.0
-    },
-    {
-        "month": "2025-04",
-        "count": 141,
-        "total_quantum": 159153368.0
-    },
-    {
-        "month": "2025-05",
-        "count": 142,
-        "total_quantum": 163098494.0
-    },
-    {
-        "month": "2025-06",
-        "count": 132,
-        "total_quantum": 151358772.0
-    },
-    {
-        "month": "2025-07",
-        "count": 167,
-        "total_quantum": 188877162.0
-    },
-    {
-        "month": "2025-08",
-        "count": 141,
-        "total_quantum": 163225592.88
-    },
-    {
-        "month": "2025-09",
-        "count": 172,
-        "total_quantum": 194534976.88
-    },
-    {
-        "month": "2025-10",
-        "count": 86,
-        "total_quantum": 99375232.0
-    },
-    {
-        "month": "2025-11",
-        "count": 120,
-        "total_quantum": 140238544.88
-    },
-    {
-        "month": "2025-12",
-        "count": 145,
-        "total_quantum": 169391000.0
-    },
-    {
-        "month": "2026-01",
-        "count": 146,
-        "total_quantum": 167299644.0
-    },
-    {
-        "month": "2026-02",
-        "count": 72,
-        "total_quantum": 81470516.0
-    }
+  {
+    "month": "2017-01",
+    "region": "CCR",
+    "count": 1,
+    "total_quantum": 1108000.0
+  },
+  {
+    "month": "2017-01",
+    "region": "RCR",
+    "count": 1,
+    "total_quantum": 1005000.0
+  },
+  {
+    "month": "2017-02",
+    "region": "RCR",
+    "count": 1,
+    "total_quantum": 1180000.0
+  },
+  {
+    "month": "2017-03",
+    "region": "CCR",
+    "count": 2,
+    "total_quantum": 2162000.0
+  },
+  {
+    "month": "2017-03",
+    "region": "RCR",
+    "count": 2,
+    "total_quantum": 2088000.0
+  },
+  {
+    "month": "2017-04",
+    "region": "RCR",
+    "count": 2,
+    "total_quantum": 2060000.0
+  },
+  {
+    "month": "2017-05",
+    "region": "CCR",
+    "count": 3,
+    "total_quantum": 3166000.0
+  },
+  {
+    "month": "2017-05",
+    "region": "OCR",
+    "count": 1,
+    "total_quantum": 1015000.0
+  },
+  {
+    "month": "2017-05",
+    "region": "RCR",
+    "count": 2,
+    "total_quantum": 2006000.0
+  },
+  {
+    "month": "2017-06",
+    "region": "CCR",
+    "count": 2,
+    "total_quantum": 2080000.0
+  },
+  {
+    "month": "2017-06",
+    "region": "RCR",
+    "count": 3,
+    "total_quantum": 3038888.0
+  },
+  {
+    "month": "2017-07",
+    "region": "RCR",
+    "count": 9,
+    "total_quantum": 9516888.0
+  },
+  {
+    "month": "2017-08",
+    "region": "CCR",
+    "count": 1,
+    "total_quantum": 1000000.0
+  },
+  {
+    "month": "2017-08",
+    "region": "RCR",
+    "count": 2,
+    "total_quantum": 2033000.0
+  },
+  {
+    "month": "2017-09",
+    "region": "OCR",
+    "count": 1,
+    "total_quantum": 1018888.0
+  },
+  {
+    "month": "2017-09",
+    "region": "RCR",
+    "count": 2,
+    "total_quantum": 2055000.0
+  },
+  {
+    "month": "2017-10",
+    "region": "RCR",
+    "count": 2,
+    "total_quantum": 2085000.0
+  },
+  {
+    "month": "2017-11",
+    "region": "CCR",
+    "count": 1,
+    "total_quantum": 1138000.0
+  },
+  {
+    "month": "2017-11",
+    "region": "RCR",
+    "count": 4,
+    "total_quantum": 4141800.0
+  },
+  {
+    "month": "2017-12",
+    "region": "RCR",
+    "count": 4,
+    "total_quantum": 4083888.0
+  },
+  {
+    "month": "2018-01",
+    "region": "OCR",
+    "count": 1,
+    "total_quantum": 1000000.0
+  },
+  {
+    "month": "2018-02",
+    "region": "CCR",
+    "count": 2,
+    "total_quantum": 2218888.0
+  },
+  {
+    "month": "2018-02",
+    "region": "RCR",
+    "count": 1,
+    "total_quantum": 1028000.0
+  },
+  {
+    "month": "2018-03",
+    "region": "CCR",
+    "count": 4,
+    "total_quantum": 4373000.0
+  },
+  {
+    "month": "2018-03",
+    "region": "RCR",
+    "count": 4,
+    "total_quantum": 4246288.0
+  },
+  {
+    "month": "2018-04",
+    "region": "RCR",
+    "count": 5,
+    "total_quantum": 5218888.0
+  },
+  {
+    "month": "2018-05",
+    "region": "CCR",
+    "count": 1,
+    "total_quantum": 1080000.0
+  },
+  {
+    "month": "2018-06",
+    "region": "CCR",
+    "count": 2,
+    "total_quantum": 2083000.0
+  },
+  {
+    "month": "2018-06",
+    "region": "OCR",
+    "count": 1,
+    "total_quantum": 1038000.0
+  },
+  {
+    "month": "2018-06",
+    "region": "RCR",
+    "count": 8,
+    "total_quantum": 8514976.0
+  },
+  {
+    "month": "2018-07",
+    "region": "CCR",
+    "count": 2,
+    "total_quantum": 2020000.0
+  },
+  {
+    "month": "2018-07",
+    "region": "RCR",
+    "count": 4,
+    "total_quantum": 4276000.0
+  },
+  {
+    "month": "2018-08",
+    "region": "CCR",
+    "count": 3,
+    "total_quantum": 3122888.0
+  },
+  {
+    "month": "2018-08",
+    "region": "OCR",
+    "count": 1,
+    "total_quantum": 1058000.0
+  },
+  {
+    "month": "2018-08",
+    "region": "RCR",
+    "count": 5,
+    "total_quantum": 5440888.0
+  },
+  {
+    "month": "2018-09",
+    "region": "CCR",
+    "count": 1,
+    "total_quantum": 1100000.0
+  },
+  {
+    "month": "2018-09",
+    "region": "RCR",
+    "count": 6,
+    "total_quantum": 6406000.0
+  },
+  {
+    "month": "2018-10",
+    "region": "CCR",
+    "count": 1,
+    "total_quantum": 1168000.0
+  },
+  {
+    "month": "2018-10",
+    "region": "RCR",
+    "count": 7,
+    "total_quantum": 7420888.0
+  },
+  {
+    "month": "2018-11",
+    "region": "CCR",
+    "count": 2,
+    "total_quantum": 2027888.0
+  },
+  {
+    "month": "2018-11",
+    "region": "OCR",
+    "count": 1,
+    "total_quantum": 1000000.0
+  },
+  {
+    "month": "2018-11",
+    "region": "RCR",
+    "count": 5,
+    "total_quantum": 5076888.0
+  },
+  {
+    "month": "2018-12",
+    "region": "RCR",
+    "count": 4,
+    "total_quantum": 4338000.0
+  },
+  {
+    "month": "2019-01",
+    "region": "CCR",
+    "count": 3,
+    "total_quantum": 3198000.0
+  },
+  {
+    "month": "2019-01",
+    "region": "RCR",
+    "count": 3,
+    "total_quantum": 3435000.0
+  },
+  {
+    "month": "2019-02",
+    "region": "RCR",
+    "count": 4,
+    "total_quantum": 4071000.0
+  },
+  {
+    "month": "2019-03",
+    "region": "CCR",
+    "count": 2,
+    "total_quantum": 2153000.0
+  },
+  {
+    "month": "2019-03",
+    "region": "OCR",
+    "count": 1,
+    "total_quantum": 1038000.0
+  },
+  {
+    "month": "2019-03",
+    "region": "RCR",
+    "count": 4,
+    "total_quantum": 4333000.0
+  },
+  {
+    "month": "2019-04",
+    "region": "CCR",
+    "count": 2,
+    "total_quantum": 2050000.0
+  },
+  {
+    "month": "2019-04",
+    "region": "RCR",
+    "count": 3,
+    "total_quantum": 3264000.0
+  },
+  {
+    "month": "2019-05",
+    "region": "CCR",
+    "count": 2,
+    "total_quantum": 2030000.0
+  },
+  {
+    "month": "2019-05",
+    "region": "OCR",
+    "count": 1,
+    "total_quantum": 1000000.0
+  },
+  {
+    "month": "2019-05",
+    "region": "RCR",
+    "count": 5,
+    "total_quantum": 5364776.0
+  },
+  {
+    "month": "2019-06",
+    "region": "CCR",
+    "count": 3,
+    "total_quantum": 3334800.0
+  },
+  {
+    "month": "2019-06",
+    "region": "RCR",
+    "count": 3,
+    "total_quantum": 3100000.0
+  },
+  {
+    "month": "2019-07",
+    "region": "CCR",
+    "count": 2,
+    "total_quantum": 2120000.0
+  },
+  {
+    "month": "2019-07",
+    "region": "RCR",
+    "count": 6,
+    "total_quantum": 6558000.0
+  },
+  {
+    "month": "2019-08",
+    "region": "CCR",
+    "count": 4,
+    "total_quantum": 4291801.0
+  },
+  {
+    "month": "2019-08",
+    "region": "RCR",
+    "count": 5,
+    "total_quantum": 5215000.0
+  },
+  {
+    "month": "2019-09",
+    "region": "CCR",
+    "count": 1,
+    "total_quantum": 1040000.0
+  },
+  {
+    "month": "2019-09",
+    "region": "RCR",
+    "count": 3,
+    "total_quantum": 3070000.0
+  },
+  {
+    "month": "2019-10",
+    "region": "CCR",
+    "count": 1,
+    "total_quantum": 1100000.0
+  },
+  {
+    "month": "2019-11",
+    "region": "CCR",
+    "count": 1,
+    "total_quantum": 1068000.0
+  },
+  {
+    "month": "2019-11",
+    "region": "OCR",
+    "count": 1,
+    "total_quantum": 1020000.0
+  },
+  {
+    "month": "2019-11",
+    "region": "RCR",
+    "count": 2,
+    "total_quantum": 2096888.0
+  },
+  {
+    "month": "2019-12",
+    "region": "CCR",
+    "count": 1,
+    "total_quantum": 1056800.0
+  },
+  {
+    "month": "2019-12",
+    "region": "RCR",
+    "count": 1,
+    "total_quantum": 1010000.0
+  },
+  {
+    "month": "2020-01",
+    "region": "RCR",
+    "count": 4,
+    "total_quantum": 4041888.0
+  },
+  {
+    "month": "2020-02",
+    "region": "RCR",
+    "count": 4,
+    "total_quantum": 4178000.0
+  },
+  {
+    "month": "2020-03",
+    "region": "CCR",
+    "count": 2,
+    "total_quantum": 2262000.0
+  },
+  {
+    "month": "2020-03",
+    "region": "RCR",
+    "count": 3,
+    "total_quantum": 3177000.0
+  },
+  {
+    "month": "2020-04",
+    "region": "RCR",
+    "count": 1,
+    "total_quantum": 1010000.88
+  },
+  {
+    "month": "2020-05",
+    "region": "RCR",
+    "count": 2,
+    "total_quantum": 2170000.0
+  },
+  {
+    "month": "2020-06",
+    "region": "CCR",
+    "count": 4,
+    "total_quantum": 4417076.0
+  },
+  {
+    "month": "2020-06",
+    "region": "RCR",
+    "count": 4,
+    "total_quantum": 4266000.0
+  },
+  {
+    "month": "2020-07",
+    "region": "CCR",
+    "count": 3,
+    "total_quantum": 3155000.0
+  },
+  {
+    "month": "2020-07",
+    "region": "RCR",
+    "count": 6,
+    "total_quantum": 6335000.0
+  },
+  {
+    "month": "2020-08",
+    "region": "CCR",
+    "count": 1,
+    "total_quantum": 1185000.0
+  },
+  {
+    "month": "2020-08",
+    "region": "RCR",
+    "count": 4,
+    "total_quantum": 4238000.0
+  },
+  {
+    "month": "2020-09",
+    "region": "CCR",
+    "count": 3,
+    "total_quantum": 3566000.0
+  },
+  {
+    "month": "2020-09",
+    "region": "RCR",
+    "count": 5,
+    "total_quantum": 5418888.0
+  },
+  {
+    "month": "2020-10",
+    "region": "CCR",
+    "count": 4,
+    "total_quantum": 4330000.0
+  },
+  {
+    "month": "2020-10",
+    "region": "RCR",
+    "count": 9,
+    "total_quantum": 9787888.0
+  },
+  {
+    "month": "2020-11",
+    "region": "CCR",
+    "count": 5,
+    "total_quantum": 5598000.0
+  },
+  {
+    "month": "2020-11",
+    "region": "RCR",
+    "count": 8,
+    "total_quantum": 8366964.0
+  },
+  {
+    "month": "2020-12",
+    "region": "RCR",
+    "count": 10,
+    "total_quantum": 10807664.0
+  },
+  {
+    "month": "2021-01",
+    "region": "CCR",
+    "count": 4,
+    "total_quantum": 4331000.0
+  },
+  {
+    "month": "2021-01",
+    "region": "RCR",
+    "count": 9,
+    "total_quantum": 9575888.0
+  },
+  {
+    "month": "2021-02",
+    "region": "CCR",
+    "count": 6,
+    "total_quantum": 6181000.0
+  },
+  {
+    "month": "2021-02",
+    "region": "OCR",
+    "count": 2,
+    "total_quantum": 2338000.0
+  },
+  {
+    "month": "2021-02",
+    "region": "RCR",
+    "count": 15,
+    "total_quantum": 15954800.0
+  },
+  {
+    "month": "2021-03",
+    "region": "CCR",
+    "count": 4,
+    "total_quantum": 4248888.0
+  },
+  {
+    "month": "2021-03",
+    "region": "OCR",
+    "count": 4,
+    "total_quantum": 4108000.0
+  },
+  {
+    "month": "2021-03",
+    "region": "RCR",
+    "count": 9,
+    "total_quantum": 9779776.0
+  },
+  {
+    "month": "2021-04",
+    "region": "CCR",
+    "count": 7,
+    "total_quantum": 7535000.0
+  },
+  {
+    "month": "2021-04",
+    "region": "OCR",
+    "count": 1,
+    "total_quantum": 1160000.0
+  },
+  {
+    "month": "2021-04",
+    "region": "RCR",
+    "count": 13,
+    "total_quantum": 13902888.0
+  },
+  {
+    "month": "2021-05",
+    "region": "CCR",
+    "count": 5,
+    "total_quantum": 5416000.0
+  },
+  {
+    "month": "2021-05",
+    "region": "OCR",
+    "count": 1,
+    "total_quantum": 1060000.0
+  },
+  {
+    "month": "2021-05",
+    "region": "RCR",
+    "count": 7,
+    "total_quantum": 7804388.0
+  },
+  {
+    "month": "2021-06",
+    "region": "CCR",
+    "count": 4,
+    "total_quantum": 4303000.0
+  },
+  {
+    "month": "2021-06",
+    "region": "RCR",
+    "count": 15,
+    "total_quantum": 16639188.0
+  },
+  {
+    "month": "2021-07",
+    "region": "CCR",
+    "count": 5,
+    "total_quantum": 5315000.0
+  },
+  {
+    "month": "2021-07",
+    "region": "OCR",
+    "count": 1,
+    "total_quantum": 1050000.0
+  },
+  {
+    "month": "2021-07",
+    "region": "RCR",
+    "count": 13,
+    "total_quantum": 13631000.0
+  },
+  {
+    "month": "2021-08",
+    "region": "CCR",
+    "count": 8,
+    "total_quantum": 8818776.0
+  },
+  {
+    "month": "2021-08",
+    "region": "OCR",
+    "count": 1,
+    "total_quantum": 1038000.0
+  },
+  {
+    "month": "2021-08",
+    "region": "RCR",
+    "count": 17,
+    "total_quantum": 18409000.0
+  },
+  {
+    "month": "2021-09",
+    "region": "CCR",
+    "count": 5,
+    "total_quantum": 5653000.0
+  },
+  {
+    "month": "2021-09",
+    "region": "OCR",
+    "count": 1,
+    "total_quantum": 1010000.0
+  },
+  {
+    "month": "2021-09",
+    "region": "RCR",
+    "count": 17,
+    "total_quantum": 18396888.0
+  },
+  {
+    "month": "2021-10",
+    "region": "CCR",
+    "count": 8,
+    "total_quantum": 8650000.0
+  },
+  {
+    "month": "2021-10",
+    "region": "RCR",
+    "count": 12,
+    "total_quantum": 13566888.0
+  },
+  {
+    "month": "2021-11",
+    "region": "CCR",
+    "count": 9,
+    "total_quantum": 10032000.0
+  },
+  {
+    "month": "2021-11",
+    "region": "RCR",
+    "count": 20,
+    "total_quantum": 22348000.0
+  },
+  {
+    "month": "2021-12",
+    "region": "CCR",
+    "count": 10,
+    "total_quantum": 11399000.0
+  },
+  {
+    "month": "2021-12",
+    "region": "OCR",
+    "count": 2,
+    "total_quantum": 2363000.0
+  },
+  {
+    "month": "2021-12",
+    "region": "RCR",
+    "count": 24,
+    "total_quantum": 26428191.0
+  },
+  {
+    "month": "2022-01",
+    "region": "CCR",
+    "count": 4,
+    "total_quantum": 4541000.0
+  },
+  {
+    "month": "2022-01",
+    "region": "OCR",
+    "count": 1,
+    "total_quantum": 1202000.0
+  },
+  {
+    "month": "2022-01",
+    "region": "RCR",
+    "count": 22,
+    "total_quantum": 24755464.0
+  },
+  {
+    "month": "2022-02",
+    "region": "CCR",
+    "count": 7,
+    "total_quantum": 8446000.0
+  },
+  {
+    "month": "2022-02",
+    "region": "OCR",
+    "count": 2,
+    "total_quantum": 2158000.0
+  },
+  {
+    "month": "2022-02",
+    "region": "RCR",
+    "count": 20,
+    "total_quantum": 22117888.0
+  },
+  {
+    "month": "2022-03",
+    "region": "CCR",
+    "count": 4,
+    "total_quantum": 5097776.88
+  },
+  {
+    "month": "2022-03",
+    "region": "OCR",
+    "count": 2,
+    "total_quantum": 2268000.0
+  },
+  {
+    "month": "2022-03",
+    "region": "RCR",
+    "count": 21,
+    "total_quantum": 22762054.0
+  },
+  {
+    "month": "2022-04",
+    "region": "CCR",
+    "count": 5,
+    "total_quantum": 5906000.0
+  },
+  {
+    "month": "2022-04",
+    "region": "RCR",
+    "count": 17,
+    "total_quantum": 18108000.0
+  },
+  {
+    "month": "2022-05",
+    "region": "CCR",
+    "count": 3,
+    "total_quantum": 3698088.88
+  },
+  {
+    "month": "2022-05",
+    "region": "OCR",
+    "count": 4,
+    "total_quantum": 4209776.0
+  },
+  {
+    "month": "2022-05",
+    "region": "RCR",
+    "count": 23,
+    "total_quantum": 25477000.0
+  },
+  {
+    "month": "2022-06",
+    "region": "CCR",
+    "count": 5,
+    "total_quantum": 5330776.0
+  },
+  {
+    "month": "2022-06",
+    "region": "OCR",
+    "count": 1,
+    "total_quantum": 1000000.0
+  },
+  {
+    "month": "2022-06",
+    "region": "RCR",
+    "count": 25,
+    "total_quantum": 28145888.0
+  },
+  {
+    "month": "2022-07",
+    "region": "CCR",
+    "count": 2,
+    "total_quantum": 2388000.0
+  },
+  {
+    "month": "2022-07",
+    "region": "OCR",
+    "count": 4,
+    "total_quantum": 4236665.0
+  },
+  {
+    "month": "2022-07",
+    "region": "RCR",
+    "count": 27,
+    "total_quantum": 30200776.0
+  },
+  {
+    "month": "2022-08",
+    "region": "CCR",
+    "count": 4,
+    "total_quantum": 4521000.0
+  },
+  {
+    "month": "2022-08",
+    "region": "OCR",
+    "count": 1,
+    "total_quantum": 1020000.0
+  },
+  {
+    "month": "2022-08",
+    "region": "RCR",
+    "count": 28,
+    "total_quantum": 30781189.0
+  },
+  {
+    "month": "2022-09",
+    "region": "CCR",
+    "count": 3,
+    "total_quantum": 3696888.0
+  },
+  {
+    "month": "2022-09",
+    "region": "OCR",
+    "count": 7,
+    "total_quantum": 7810101.0
+  },
+  {
+    "month": "2022-09",
+    "region": "RCR",
+    "count": 35,
+    "total_quantum": 38898765.0
+  },
+  {
+    "month": "2022-10",
+    "region": "CCR",
+    "count": 5,
+    "total_quantum": 6005000.0
+  },
+  {
+    "month": "2022-10",
+    "region": "OCR",
+    "count": 4,
+    "total_quantum": 4389388.0
+  },
+  {
+    "month": "2022-10",
+    "region": "RCR",
+    "count": 29,
+    "total_quantum": 31713888.0
+  },
+  {
+    "month": "2022-11",
+    "region": "CCR",
+    "count": 5,
+    "total_quantum": 5668000.0
+  },
+  {
+    "month": "2022-11",
+    "region": "OCR",
+    "count": 8,
+    "total_quantum": 8569888.0
+  },
+  {
+    "month": "2022-11",
+    "region": "RCR",
+    "count": 13,
+    "total_quantum": 14776000.0
+  },
+  {
+    "month": "2022-12",
+    "region": "CCR",
+    "count": 3,
+    "total_quantum": 3738000.0
+  },
+  {
+    "month": "2022-12",
+    "region": "OCR",
+    "count": 5,
+    "total_quantum": 5645600.0
+  },
+  {
+    "month": "2022-12",
+    "region": "RCR",
+    "count": 20,
+    "total_quantum": 21659888.0
+  },
+  {
+    "month": "2023-01",
+    "region": "CCR",
+    "count": 5,
+    "total_quantum": 5918000.0
+  },
+  {
+    "month": "2023-01",
+    "region": "OCR",
+    "count": 5,
+    "total_quantum": 5678000.0
+  },
+  {
+    "month": "2023-01",
+    "region": "RCR",
+    "count": 30,
+    "total_quantum": 32959776.0
+  },
+  {
+    "month": "2023-02",
+    "region": "CCR",
+    "count": 3,
+    "total_quantum": 3662000.0
+  },
+  {
+    "month": "2023-02",
+    "region": "OCR",
+    "count": 7,
+    "total_quantum": 7221000.0
+  },
+  {
+    "month": "2023-02",
+    "region": "RCR",
+    "count": 14,
+    "total_quantum": 15755464.0
+  },
+  {
+    "month": "2023-03",
+    "region": "CCR",
+    "count": 6,
+    "total_quantum": 7533000.0
+  },
+  {
+    "month": "2023-03",
+    "region": "OCR",
+    "count": 2,
+    "total_quantum": 2033000.0
+  },
+  {
+    "month": "2023-03",
+    "region": "RCR",
+    "count": 31,
+    "total_quantum": 34273888.0
+  },
+  {
+    "month": "2023-04",
+    "region": "CCR",
+    "count": 5,
+    "total_quantum": 6250000.0
+  },
+  {
+    "month": "2023-04",
+    "region": "OCR",
+    "count": 3,
+    "total_quantum": 3094688.0
+  },
+  {
+    "month": "2023-04",
+    "region": "RCR",
+    "count": 29,
+    "total_quantum": 32362552.0
+  },
+  {
+    "month": "2023-05",
+    "region": "CCR",
+    "count": 3,
+    "total_quantum": 3726000.0
+  },
+  {
+    "month": "2023-05",
+    "region": "OCR",
+    "count": 10,
+    "total_quantum": 10571888.0
+  },
+  {
+    "month": "2023-05",
+    "region": "RCR",
+    "count": 21,
+    "total_quantum": 22943552.0
+  },
+  {
+    "month": "2023-06",
+    "region": "CCR",
+    "count": 5,
+    "total_quantum": 5711000.0
+  },
+  {
+    "month": "2023-06",
+    "region": "OCR",
+    "count": 2,
+    "total_quantum": 2018000.0
+  },
+  {
+    "month": "2023-06",
+    "region": "RCR",
+    "count": 27,
+    "total_quantum": 30524776.0
+  },
+  {
+    "month": "2023-07",
+    "region": "CCR",
+    "count": 2,
+    "total_quantum": 2438000.0
+  },
+  {
+    "month": "2023-07",
+    "region": "OCR",
+    "count": 6,
+    "total_quantum": 6617000.0
+  },
+  {
+    "month": "2023-07",
+    "region": "RCR",
+    "count": 24,
+    "total_quantum": 26391000.0
+  },
+  {
+    "month": "2023-08",
+    "region": "CCR",
+    "count": 8,
+    "total_quantum": 10248000.0
+  },
+  {
+    "month": "2023-08",
+    "region": "OCR",
+    "count": 8,
+    "total_quantum": 8803888.0
+  },
+  {
+    "month": "2023-08",
+    "region": "RCR",
+    "count": 38,
+    "total_quantum": 42244688.0
+  },
+  {
+    "month": "2023-09",
+    "region": "CCR",
+    "count": 3,
+    "total_quantum": 3981939.0
+  },
+  {
+    "month": "2023-09",
+    "region": "OCR",
+    "count": 8,
+    "total_quantum": 8623000.0
+  },
+  {
+    "month": "2023-09",
+    "region": "RCR",
+    "count": 31,
+    "total_quantum": 35966664.0
+  },
+  {
+    "month": "2023-10",
+    "region": "CCR",
+    "count": 2,
+    "total_quantum": 2768888.0
+  },
+  {
+    "month": "2023-10",
+    "region": "OCR",
+    "count": 1,
+    "total_quantum": 1180000.0
+  },
+  {
+    "month": "2023-10",
+    "region": "RCR",
+    "count": 37,
+    "total_quantum": 41214776.0
+  },
+  {
+    "month": "2023-11",
+    "region": "CCR",
+    "count": 2,
+    "total_quantum": 2410888.0
+  },
+  {
+    "month": "2023-11",
+    "region": "OCR",
+    "count": 5,
+    "total_quantum": 5126000.0
+  },
+  {
+    "month": "2023-11",
+    "region": "RCR",
+    "count": 38,
+    "total_quantum": 41464276.0
+  },
+  {
+    "month": "2023-12",
+    "region": "CCR",
+    "count": 4,
+    "total_quantum": 5308888.0
+  },
+  {
+    "month": "2023-12",
+    "region": "OCR",
+    "count": 6,
+    "total_quantum": 6654000.0
+  },
+  {
+    "month": "2023-12",
+    "region": "RCR",
+    "count": 38,
+    "total_quantum": 41413440.0
+  },
+  {
+    "month": "2024-01",
+    "region": "CCR",
+    "count": 1,
+    "total_quantum": 1450000.0
+  },
+  {
+    "month": "2024-01",
+    "region": "OCR",
+    "count": 10,
+    "total_quantum": 11135776.0
+  },
+  {
+    "month": "2024-01",
+    "region": "RCR",
+    "count": 63,
+    "total_quantum": 71248771.0
+  },
+  {
+    "month": "2024-02",
+    "region": "CCR",
+    "count": 2,
+    "total_quantum": 2530000.0
+  },
+  {
+    "month": "2024-02",
+    "region": "OCR",
+    "count": 8,
+    "total_quantum": 8585888.0
+  },
+  {
+    "month": "2024-02",
+    "region": "RCR",
+    "count": 39,
+    "total_quantum": 42929528.0
+  },
+  {
+    "month": "2024-03",
+    "region": "CCR",
+    "count": 4,
+    "total_quantum": 5318888.0
+  },
+  {
+    "month": "2024-03",
+    "region": "OCR",
+    "count": 14,
+    "total_quantum": 14985676.0
+  },
+  {
+    "month": "2024-03",
+    "region": "RCR",
+    "count": 42,
+    "total_quantum": 46770940.0
+  },
+  {
+    "month": "2024-04",
+    "region": "CCR",
+    "count": 1,
+    "total_quantum": 1425000.0
+  },
+  {
+    "month": "2024-04",
+    "region": "OCR",
+    "count": 16,
+    "total_quantum": 17567888.0
+  },
+  {
+    "month": "2024-04",
+    "region": "RCR",
+    "count": 51,
+    "total_quantum": 56441152.0
+  },
+  {
+    "month": "2024-05",
+    "region": "CCR",
+    "count": 3,
+    "total_quantum": 4213888.0
+  },
+  {
+    "month": "2024-05",
+    "region": "OCR",
+    "count": 13,
+    "total_quantum": 13513800.0
+  },
+  {
+    "month": "2024-05",
+    "region": "RCR",
+    "count": 57,
+    "total_quantum": 62995431.0
+  },
+  {
+    "month": "2024-06",
+    "region": "CCR",
+    "count": 3,
+    "total_quantum": 3994000.0
+  },
+  {
+    "month": "2024-06",
+    "region": "OCR",
+    "count": 11,
+    "total_quantum": 11685688.0
+  },
+  {
+    "month": "2024-06",
+    "region": "RCR",
+    "count": 81,
+    "total_quantum": 92577768.0
+  },
+  {
+    "month": "2024-07",
+    "region": "CCR",
+    "count": 3,
+    "total_quantum": 3800000.0
+  },
+  {
+    "month": "2024-07",
+    "region": "OCR",
+    "count": 15,
+    "total_quantum": 16542888.0
+  },
+  {
+    "month": "2024-07",
+    "region": "RCR",
+    "count": 102,
+    "total_quantum": 114011780.88
+  },
+  {
+    "month": "2024-08",
+    "region": "CCR",
+    "count": 5,
+    "total_quantum": 6856000.0
+  },
+  {
+    "month": "2024-08",
+    "region": "OCR",
+    "count": 21,
+    "total_quantum": 22679656.0
+  },
+  {
+    "month": "2024-08",
+    "region": "RCR",
+    "count": 79,
+    "total_quantum": 88183354.0
+  },
+  {
+    "month": "2024-09",
+    "region": "CCR",
+    "count": 5,
+    "total_quantum": 6968000.0
+  },
+  {
+    "month": "2024-09",
+    "region": "OCR",
+    "count": 18,
+    "total_quantum": 19069776.0
+  },
+  {
+    "month": "2024-09",
+    "region": "RCR",
+    "count": 83,
+    "total_quantum": 92019392.0
+  },
+  {
+    "month": "2024-10",
+    "region": "CCR",
+    "count": 6,
+    "total_quantum": 8549888.0
+  },
+  {
+    "month": "2024-10",
+    "region": "OCR",
+    "count": 17,
+    "total_quantum": 18038888.0
+  },
+  {
+    "month": "2024-10",
+    "region": "RCR",
+    "count": 80,
+    "total_quantum": 89940472.0
+  },
+  {
+    "month": "2024-11",
+    "region": "CCR",
+    "count": 5,
+    "total_quantum": 6352880.0
+  },
+  {
+    "month": "2024-11",
+    "region": "OCR",
+    "count": 15,
+    "total_quantum": 15805000.0
+  },
+  {
+    "month": "2024-11",
+    "region": "RCR",
+    "count": 67,
+    "total_quantum": 74358496.0
+  },
+  {
+    "month": "2024-12",
+    "region": "CCR",
+    "count": 9,
+    "total_quantum": 12083888.0
+  },
+  {
+    "month": "2024-12",
+    "region": "OCR",
+    "count": 5,
+    "total_quantum": 5407000.0
+  },
+  {
+    "month": "2024-12",
+    "region": "RCR",
+    "count": 81,
+    "total_quantum": 89915589.0
+  },
+  {
+    "month": "2025-01",
+    "region": "CCR",
+    "count": 4,
+    "total_quantum": 5180000.0
+  },
+  {
+    "month": "2025-01",
+    "region": "OCR",
+    "count": 19,
+    "total_quantum": 20114664.0
+  },
+  {
+    "month": "2025-01",
+    "region": "RCR",
+    "count": 96,
+    "total_quantum": 107946656.0
+  },
+  {
+    "month": "2025-02",
+    "region": "CCR",
+    "count": 2,
+    "total_quantum": 2882000.0
+  },
+  {
+    "month": "2025-02",
+    "region": "OCR",
+    "count": 23,
+    "total_quantum": 24797440.0
+  },
+  {
+    "month": "2025-02",
+    "region": "RCR",
+    "count": 96,
+    "total_quantum": 111203435.0
+  },
+  {
+    "month": "2025-03",
+    "region": "CCR",
+    "count": 4,
+    "total_quantum": 5548000.0
+  },
+  {
+    "month": "2025-03",
+    "region": "OCR",
+    "count": 15,
+    "total_quantum": 15845888.0
+  },
+  {
+    "month": "2025-03",
+    "region": "RCR",
+    "count": 89,
+    "total_quantum": 101069853.0
+  },
+  {
+    "month": "2025-04",
+    "region": "CCR",
+    "count": 5,
+    "total_quantum": 6678888.0
+  },
+  {
+    "month": "2025-04",
+    "region": "OCR",
+    "count": 24,
+    "total_quantum": 26650576.0
+  },
+  {
+    "month": "2025-04",
+    "region": "RCR",
+    "count": 112,
+    "total_quantum": 125823904.0
+  },
+  {
+    "month": "2025-05",
+    "region": "CCR",
+    "count": 7,
+    "total_quantum": 9643568.0
+  },
+  {
+    "month": "2025-05",
+    "region": "OCR",
+    "count": 29,
+    "total_quantum": 31828330.0
+  },
+  {
+    "month": "2025-05",
+    "region": "RCR",
+    "count": 106,
+    "total_quantum": 121626596.0
+  },
+  {
+    "month": "2025-06",
+    "region": "CCR",
+    "count": 4,
+    "total_quantum": 5700888.0
+  },
+  {
+    "month": "2025-06",
+    "region": "OCR",
+    "count": 25,
+    "total_quantum": 27532352.0
+  },
+  {
+    "month": "2025-06",
+    "region": "RCR",
+    "count": 103,
+    "total_quantum": 118125532.0
+  },
+  {
+    "month": "2025-07",
+    "region": "CCR",
+    "count": 6,
+    "total_quantum": 8642800.0
+  },
+  {
+    "month": "2025-07",
+    "region": "OCR",
+    "count": 34,
+    "total_quantum": 36699352.0
+  },
+  {
+    "month": "2025-07",
+    "region": "RCR",
+    "count": 127,
+    "total_quantum": 143535010.0
+  },
+  {
+    "month": "2025-08",
+    "region": "CCR",
+    "count": 7,
+    "total_quantum": 9705000.0
+  },
+  {
+    "month": "2025-08",
+    "region": "OCR",
+    "count": 22,
+    "total_quantum": 24099888.0
+  },
+  {
+    "month": "2025-08",
+    "region": "RCR",
+    "count": 112,
+    "total_quantum": 129420704.88
+  },
+  {
+    "month": "2025-09",
+    "region": "CCR",
+    "count": 7,
+    "total_quantum": 9685000.0
+  },
+  {
+    "month": "2025-09",
+    "region": "OCR",
+    "count": 34,
+    "total_quantum": 36060888.0
+  },
+  {
+    "month": "2025-09",
+    "region": "RCR",
+    "count": 131,
+    "total_quantum": 148789088.88
+  },
+  {
+    "month": "2025-10",
+    "region": "CCR",
+    "count": 4,
+    "total_quantum": 5956000.0
+  },
+  {
+    "month": "2025-10",
+    "region": "OCR",
+    "count": 9,
+    "total_quantum": 9700888.0
+  },
+  {
+    "month": "2025-10",
+    "region": "RCR",
+    "count": 73,
+    "total_quantum": 83718344.0
+  },
+  {
+    "month": "2025-11",
+    "region": "CCR",
+    "count": 1,
+    "total_quantum": 1490000.0
+  },
+  {
+    "month": "2025-11",
+    "region": "OCR",
+    "count": 28,
+    "total_quantum": 30760664.0
+  },
+  {
+    "month": "2025-11",
+    "region": "RCR",
+    "count": 91,
+    "total_quantum": 107987880.88
+  },
+  {
+    "month": "2025-12",
+    "region": "CCR",
+    "count": 4,
+    "total_quantum": 5256888.0
+  },
+  {
+    "month": "2025-12",
+    "region": "OCR",
+    "count": 27,
+    "total_quantum": 29672776.0
+  },
+  {
+    "month": "2025-12",
+    "region": "RCR",
+    "count": 114,
+    "total_quantum": 134461336.0
+  },
+  {
+    "month": "2026-01",
+    "region": "CCR",
+    "count": 4,
+    "total_quantum": 5845888.0
+  },
+  {
+    "month": "2026-01",
+    "region": "OCR",
+    "count": 29,
+    "total_quantum": 30871888.0
+  },
+  {
+    "month": "2026-01",
+    "region": "RCR",
+    "count": 113,
+    "total_quantum": 130581868.0
+  },
+  {
+    "month": "2026-02",
+    "region": "CCR",
+    "count": 1,
+    "total_quantum": 1350000.0
+  },
+  {
+    "month": "2026-02",
+    "region": "OCR",
+    "count": 18,
+    "total_quantum": 19621776.0
+  },
+  {
+    "month": "2026-02",
+    "region": "RCR",
+    "count": 53,
+    "total_quantum": 60498740.0
+  }
 ]

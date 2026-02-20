@@ -15,82 +15,83 @@ import {
   LegendLine,
 } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS, CHART_TOOLTIP } from '../../constants/chartOptions';
-import { CHART_COLORS } from '../../constants/colors';
+import { CHART_COLORS, REGION, alpha } from '../../constants/colors';
 import { getHdbMillionDollarTrend } from '../../api/client';
 import { niceMax } from '../../utils/niceAxisMax';
 import { useZustandFilters } from '../../stores';
 import { monthToQuarter, monthToYear } from '../../adapters/aggregate/timeAggregation';
 
 /**
- * HDB Million-Dollar Chart — Bar + Line Combo
+ * HDB Million-Dollar Chart — Stacked Bar + Line Combo
  *
  * X-axis: Period (Month/Quarter/Year — controlled by time grouping filter)
- * Y1 (bars, left):  Count of $1M+ HDB resale transactions
- * Y2 (line, right): Total quantum ($) of those transactions
+ * Y1 (stacked bars, left):  Count of $1M+ transactions by region (CCR/RCR/OCR)
+ * Y2 (line, right): Total quantum ($)
  *
  * Data source: data.gov.sg HDB Resale Flat Prices dataset.
- * Responds to time grouping filter (month/quarter/year) like other charts.
  */
 
-// Time level labels for display (matches TimeTrendChart pattern)
 const TIME_LABELS = { year: 'Year', quarter: 'Quarter', month: 'Month' };
+const REGIONS = ['CCR', 'RCR', 'OCR'];
+const REGION_LABELS = { CCR: 'CCR (Core Central)', RCR: 'RCR (Rest of Central)', OCR: 'OCR (Outside Central)' };
 
 /**
- * Aggregate HDB monthly data by time grain.
- * HDB data shape: { month, count, total_quantum }
+ * Pivot flat rows [{month, region, count, total_quantum}]
+ * into per-period aggregated structure for chart rendering.
+ *
+ * Returns: { labels, ccr[], rcr[], ocr[], quantum[] }
  */
-function aggregateHdbByGrain(monthlyData, targetGrain) {
-  if (!monthlyData?.length) return [];
-  if (targetGrain === 'month') return monthlyData;
+function pivotByRegion(rows, timeGrouping) {
+  if (!rows?.length) return { labels: [], ccr: [], rcr: [], ocr: [], quantum: [] };
 
-  const convertPeriod = targetGrain === 'quarter' ? monthToQuarter : monthToYear;
-  const grouped = {};
+  const convertPeriod = timeGrouping === 'quarter' ? monthToQuarter
+    : timeGrouping === 'year' ? monthToYear
+      : (m) => m;
 
-  for (const row of monthlyData) {
-    const targetPeriod = convertPeriod(row.month);
-    if (!grouped[targetPeriod]) {
-      grouped[targetPeriod] = { month: targetPeriod, count: 0, total_quantum: 0 };
+  // Accumulate by (period, region)
+  const periods = {};
+  for (const row of rows) {
+    const period = convertPeriod(row.month);
+    if (!periods[period]) {
+      periods[period] = { CCR: 0, RCR: 0, OCR: 0, quantum: 0 };
     }
-    grouped[targetPeriod].count += row.count ?? 0;
-    grouped[targetPeriod].total_quantum += row.total_quantum ?? 0;
+    const region = row.region || 'OCR';
+    periods[period][region] = (periods[period][region] || 0) + (row.count ?? 0);
+    periods[period].quantum += row.total_quantum ?? 0;
   }
 
-  return Object.values(grouped).sort((a, b) => a.month.localeCompare(b.month));
+  // Sort and flatten
+  const sorted = Object.entries(periods).sort(([a], [b]) => a.localeCompare(b));
+  return {
+    labels: sorted.map(([p]) => p),
+    ccr: sorted.map(([, v]) => v.CCR),
+    rcr: sorted.map(([, v]) => v.RCR),
+    ocr: sorted.map(([, v]) => v.OCR),
+    quantum: sorted.map(([, v]) => v.quantum),
+  };
 }
 
-/**
- * @param {{
- *  height?: number,
- *  staggerIndex?: number,
- *  variant?: 'standalone' | 'dashboard',
- * }} props
- */
+
 function HdbMillionDollarChartBase({ height = 380, staggerIndex = 0, variant = 'standalone' }) {
   const isDashboard = variant === 'dashboard';
   const embedded = isDashboard;
   const cinema = isDashboard;
 
-  // Read time grouping from Zustand store (same pattern as TimeTrendChart)
   const { timeGrouping } = useZustandFilters();
-
   const chartRef = useRef(null);
 
   const { data: queryResult, status, error, refetch } = useAppQuery(
     async (signal) => {
       const response = await getHdbMillionDollarTrend({ signal });
-      // 202 = background fetch in progress; return loading sentinel
-      // response.meta comes from unwrapEnvelope (axios interceptor strips the outer envelope)
       if (response.status === 202 || response.meta?.loading) {
         return { records: [], loading: true };
       }
-      // response.data is the records array after unwrapEnvelope (not response.data.data)
       return { records: Array.isArray(response.data) ? response.data : [], loading: false };
     },
     ['hdb-million-dollar-trend'],
     {
       chartName: 'HdbMillionDollarChart',
       keepPreviousData: true,
-      // Poll every 15s while background fetch is running
       refetchInterval: (data) => (data?.loading ? 15_000 : false),
     },
   );
@@ -98,39 +99,68 @@ function HdbMillionDollarChartBase({ height = 380, staggerIndex = 0, variant = '
   const isBackgroundLoading = queryResult?.loading === true;
   const rawData = isBackgroundLoading ? [] : (queryResult?.records ?? []);
 
-  // Client-side aggregation by time grain (same pattern as useTimeSeriesQuery)
-  const safeData = useMemo(
-    () => aggregateHdbByGrain(rawData, timeGrouping),
+  // Pivot raw rows into per-period stacked structure
+  const { labels, ccr, rcr, ocr, quantum } = useMemo(
+    () => pivotByRegion(rawData, timeGrouping),
     [rawData, timeGrouping],
   );
 
-  const labels = safeData.map(d => d.month);
-  const counts = safeData.map(d => d.count ?? 0);
-  const quanta = safeData.map(d => d.total_quantum ?? 0);
-
-  const maxCount = Math.max(...counts, 1);
+  // Total count per period (for y-axis scaling)
+  const totalCounts = labels.map((_, i) => ccr[i] + rcr[i] + ocr[i]);
+  const maxCount = Math.max(...totalCounts, 1);
   const yAxisMax = niceMax(Math.ceil(maxCount * 1.4));
 
   const chartData = {
     labels,
     datasets: [
+      // Stacked bars — order: OCR bottom, RCR middle, CCR top
       {
         type: 'bar',
-        label: 'Transactions',
-        data: counts,
-        backgroundColor: CHART_COLORS.oceanAlpha(0.6),
-        borderColor: CHART_COLORS.ocean,
+        label: 'OCR',
+        data: ocr,
+        backgroundColor: alpha(REGION.OCR, 0.7),
+        borderColor: REGION.OCR,
         borderWidth: 1,
         borderRadius: 0,
         barPercentage: 0.85,
         categoryPercentage: 0.9,
         yAxisID: 'y',
-        order: 2,
+        stack: 'region',
+        order: 3,
       },
+      {
+        type: 'bar',
+        label: 'RCR',
+        data: rcr,
+        backgroundColor: alpha(REGION.RCR, 0.7),
+        borderColor: REGION.RCR,
+        borderWidth: 1,
+        borderRadius: 0,
+        barPercentage: 0.85,
+        categoryPercentage: 0.9,
+        yAxisID: 'y',
+        stack: 'region',
+        order: 3,
+      },
+      {
+        type: 'bar',
+        label: 'CCR',
+        data: ccr,
+        backgroundColor: alpha(REGION.CCR, 0.7),
+        borderColor: REGION.CCR,
+        borderWidth: 1,
+        borderRadius: 0,
+        barPercentage: 0.85,
+        categoryPercentage: 0.9,
+        yAxisID: 'y',
+        stack: 'region',
+        order: 3,
+      },
+      // Quantum line (unchanged)
       {
         type: 'line',
         label: 'Quantum',
-        data: quanta,
+        data: quantum,
         borderColor: CHART_COLORS.navy,
         backgroundColor: 'transparent',
         borderWidth: 2.5,
@@ -184,6 +214,7 @@ function HdbMillionDollarChartBase({ height = 380, staggerIndex = 0, variant = '
     },
     scales: {
       x: {
+        stacked: true,
         grid: { display: false },
         ticks: {
           ...CHART_AXIS_DEFAULTS.ticks,
@@ -196,6 +227,7 @@ function HdbMillionDollarChartBase({ height = 380, staggerIndex = 0, variant = '
         type: 'linear',
         display: true,
         position: 'left',
+        stacked: true,
         min: 0,
         max: yAxisMax,
         title: {
@@ -233,11 +265,11 @@ function HdbMillionDollarChartBase({ height = 380, staggerIndex = 0, variant = '
     },
   }), [yAxisMax]);
 
-  const totalTransactions = counts.reduce((sum, c) => sum + c, 0);
-  const totalQuantum = quanta.reduce((sum, v) => sum + v, 0);
-  const peakPeriod = safeData.length > 0
-    ? safeData.reduce((best, d) => (d.count > best.count ? d : best), safeData[0])
-    : null;
+  const totalTransactions = totalCounts.reduce((sum, c) => sum + c, 0);
+  const totalQuantum = quantum.reduce((sum, v) => sum + v, 0);
+  const totalCCR = ccr.reduce((s, v) => s + v, 0);
+  const totalRCR = rcr.reduce((s, v) => s + v, 0);
+  const totalOCR = ocr.reduce((s, v) => s + v, 0);
 
   return (
     <ChartFrame
@@ -245,7 +277,7 @@ function HdbMillionDollarChartBase({ height = 380, staggerIndex = 0, variant = '
       isFiltering={false}
       error={error}
       onRetry={refetch}
-      empty={!isBackgroundLoading && safeData.length === 0}
+      empty={!isBackgroundLoading && labels.length === 0}
       skeleton="bar"
       height={height}
       staggerIndex={staggerIndex}
@@ -254,9 +286,11 @@ function HdbMillionDollarChartBase({ height = 380, staggerIndex = 0, variant = '
         {/* Layer 1: Header */}
         <DataCardHeader
           title="HDB Resale · $1M+ Transactions"
-          logic="Count of HDB resale transactions ≥ $1M per period. Quantum = total value."
-          info={`Transactions — HDB resale transaction count at or above $1,000,000.
-Quantum — Total transaction value for those transactions.
+          logic="Count of HDB resale transactions ≥ $1M by region. Quantum = total value."
+          info={`Transactions — HDB resale transaction count at or above $1,000,000, broken down by market region.
+CCR = Core Central Region (D01-D02, D06-D07, D09-D11)
+RCR = Rest of Central Region (D03-D05, D08, D12-D15, D20)
+OCR = Outside Central Region (D16-D19, D21-D28)
 Grouped by ${TIME_LABELS[timeGrouping]}.
 Source: data.gov.sg HDB Resale Flat Prices (Jan 2017–present).`}
         />
@@ -274,9 +308,13 @@ Source: data.gov.sg HDB Resale Flat Prices (Jan 2017–present).`}
             subtext="aggregate value"
           />
           <ToolbarStat
-            label="Peak Period"
-            value={peakPeriod ? peakPeriod.month : '—'}
-            subtext={peakPeriod ? `${peakPeriod.count} txns` : 'no data'}
+            label="Region Split"
+            value={totalTransactions > 0
+              ? `${Math.round(totalOCR / totalTransactions * 100)}% OCR`
+              : '—'}
+            subtext={totalTransactions > 0
+              ? `${totalCCR} CCR · ${totalRCR} RCR · ${totalOCR} OCR`
+              : 'no data'}
           />
         </DataCardToolbar>
 
@@ -289,10 +327,12 @@ Source: data.gov.sg HDB Resale Flat Prices (Jan 2017–present).`}
 
         {/* Layer 4: Status footer */}
         <StatusDeck
-          left={<StatusPeriod>{safeData.length} Periods ({TIME_LABELS[timeGrouping]})</StatusPeriod>}
+          left={<StatusPeriod>{labels.length} Periods ({TIME_LABELS[timeGrouping]})</StatusPeriod>}
           right={<StatusCount count={totalTransactions} />}
         >
-          <LegendLine label="Transactions" color={CHART_COLORS.ocean} />
+          <LegendLine label="CCR" color={REGION.CCR} />
+          <LegendLine label="RCR" color={REGION.RCR} />
+          <LegendLine label="OCR" color={REGION.OCR} />
           <LegendLine label="Quantum" color={CHART_COLORS.navy} />
         </StatusDeck>
       </DataCard>

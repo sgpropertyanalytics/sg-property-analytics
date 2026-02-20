@@ -5,7 +5,7 @@ Proxies data.gov.sg public HDB resale dataset.
 No authentication required - public data.
 
 Endpoints:
-- GET /api/hdb/million-dollar-trend  - Monthly count + quantum of $1M+ transactions
+- GET /api/hdb/million-dollar-trend  - Monthly count + quantum of $1M+ transactions by region
 
 Architecture:
   Seed data (hdb_million_dollar_seed.json) is loaded on startup so the chart
@@ -68,6 +68,22 @@ _MAX_RETRIES = 3        # retries per page on 429
 _API_KEY = os.environ.get('DATA_GOV_SG_API_KEY', '')
 _PAGE_DELAY = 0.5 if _API_KEY else 7.0
 
+# HDB town → CCR/RCR/OCR region mapping
+# Derived from constants.py PLANNING_AREA_TO_DISTRICT + get_region_for_district.
+# Inlined here to avoid importing constants.py (heavy deps) in this lightweight module.
+_HDB_TOWN_TO_REGION = {
+    'ANG MO KIO': 'RCR', 'BEDOK': 'OCR', 'BISHAN': 'RCR',
+    'BUKIT BATOK': 'OCR', 'BUKIT MERAH': 'RCR', 'BUKIT PANJANG': 'OCR',
+    'BUKIT TIMAH': 'OCR', 'CENTRAL AREA': 'CCR', 'CHOA CHU KANG': 'OCR',
+    'CLEMENTI': 'RCR', 'GEYLANG': 'RCR', 'HOUGANG': 'OCR',
+    'JURONG EAST': 'OCR', 'JURONG WEST': 'OCR', 'KALLANG/WHAMPOA': 'RCR',
+    'LIM CHU KANG': 'OCR', 'MARINE PARADE': 'RCR', 'PASIR RIS': 'OCR',
+    'PUNGGOL': 'OCR', 'QUEENSTOWN': 'RCR', 'SEMBAWANG': 'OCR',
+    'SENGKANG': 'OCR', 'SERANGOON': 'RCR', 'TAMPINES': 'OCR',
+    'TENGAH': 'OCR', 'TOA PAYOH': 'RCR', 'WOODLANDS': 'OCR',
+    'YISHUN': 'OCR',
+}
+
 
 def _fetch_page(offset):
     """Fetch one page with 429 retry/exponential backoff. Raises exception if fails after retries."""
@@ -105,10 +121,10 @@ def _fetch_page(offset):
 def _build_series(monthly):
     return sorted(
         [
-            {'month': k, 'count': v['count'], 'total_quantum': v['total_quantum']}
+            {'month': k[0], 'region': k[1], 'count': v['count'], 'total_quantum': v['total_quantum']}
             for k, v in monthly.items()
         ],
-        key=lambda x: x['month'],
+        key=lambda x: (x['month'], x['region']),
     )
 
 
@@ -118,7 +134,7 @@ def _background_fetch():
     Writes result into _CACHE on completion. Failure is non-fatal — seed data
     remains available as fallback.
     """
-    monthly = {}
+    monthly = {}  # key: (month, region)
     offset = 0
 
     try:
@@ -134,10 +150,13 @@ def _background_fetch():
                     done = True
                     break
                 month = r['month']
-                if month not in monthly:
-                    monthly[month] = {'count': 0, 'total_quantum': 0.0}
-                monthly[month]['count'] += 1
-                monthly[month]['total_quantum'] += price
+                town = r.get('town', 'UNKNOWN')
+                region = _HDB_TOWN_TO_REGION.get(town, 'OCR')
+                key = (month, region)
+                if key not in monthly:
+                    monthly[key] = {'count': 0, 'total_quantum': 0.0}
+                monthly[key]['count'] += 1
+                monthly[key]['total_quantum'] += price
 
             if done:
                 break
@@ -169,7 +188,7 @@ def get_million_dollar_trend():
     Triggers background refresh if cache is cold/expired.
 
     Response (200):
-        data: [{month: "YYYY-MM", count: int, total_quantum: float}]
+        data: [{month: "YYYY-MM", region: "CCR"|"RCR"|"OCR", count: int, total_quantum: float}]
         meta: {total_transactions, cache_hit, source, loading}
     """
     now = time.time()
