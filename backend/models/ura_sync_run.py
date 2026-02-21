@@ -58,7 +58,7 @@ class URASyncRun(db.Model):
 
     # Error tracking
     error_message = db.Column(db.Text)
-    error_stage = db.Column(db.Text)  # 'token', 'fetch', 'map', 'insert', 'compare'
+    error_stage = db.Column(db.Text)  # 'token', 'fetch', 'map', 'insert'
     error_details = db.Column(db.JSON)
 
     # Notes
