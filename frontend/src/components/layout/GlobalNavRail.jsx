@@ -107,20 +107,20 @@ function NavItem({ item, isActive, onClick, collapsed = false }) {
       onClick={() => !isComingSoon && onClick(item)}
       disabled={isComingSoon}
       className={`
-        group relative min-h-[44px] py-3 mb-1 rounded-r-[4px]
+        group relative min-h-[44px] py-3 mb-1 rounded-none
         flex items-center text-left
-        transition-all duration-150 ease-out
-        outline-none select-none
-        focus-visible:ring-2 focus-visible:ring-[#C4A484]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900
+        transition-colors duration-150
+        outline-none select-none touch-action-manipulation
+        focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900
         ${collapsed
-          ? 'w-10 h-10 justify-center mx-auto px-0 mb-0 rounded-[4px]'
+          ? 'min-w-[44px] min-h-[44px] justify-center mx-auto px-0 mb-0'
           : 'w-full gap-3 pl-6 pr-4'
         }
         ${isActive
           ? 'bg-white/10 text-white font-medium cursor-default border-l-[3px] border-l-[#C4A484]'
           : isComingSoon
             ? 'text-slate-500 cursor-not-allowed opacity-60 border-l-[3px] border-l-transparent'
-            : 'text-slate-400 hover:text-white hover:bg-white/5 cursor-pointer border-l-[3px] border-l-transparent'
+            : 'text-slate-400 hover:text-white hover:bg-white/5 active:bg-white/10 cursor-pointer border-l-[3px] border-l-transparent'
         }
       `}
       aria-current={isActive ? 'page' : undefined}
@@ -148,14 +148,14 @@ function NavItem({ item, isActive, onClick, collapsed = false }) {
 
       {/* "COMING SOON" badge */}
       {(!collapsed && isComingSoon) && (
-        <span className="ml-auto flex-shrink-0 text-[10px] font-medium tracking-wide px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500 border border-zinc-200">
+        <span className="ml-auto flex-shrink-0 text-[10px] font-medium tracking-wide px-1.5 py-0.5 rounded-none bg-slate-100 text-slate-500 border border-slate-200">
           SOON
         </span>
       )}
 
       {/* Tooltip when collapsed */}
       {collapsed && (
-        <div className="absolute left-full ml-2 z-50 hidden group-hover:block px-2 py-1.5 text-xs font-medium text-white bg-zinc-900 rounded shadow-lg whitespace-nowrap">
+        <div className="absolute left-full ml-2 z-50 hidden group-hover:block px-2 py-1.5 text-xs font-medium text-white bg-slate-900 rounded-none shadow-sm whitespace-nowrap">
           {item.label}
         </div>
       )}
@@ -204,7 +204,7 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
       {/* Aligned with nav item icons on left edge */}
       <button
         onClick={() => startTransition(() => navigate('/market-overview'))}
-        className={`group flex items-center min-w-0 select-none ${collapsed ? 'justify-center' : 'gap-3 pl-6'}`}
+        className={`group flex items-center min-w-0 select-none touch-action-manipulation focus-visible:ring-2 focus-visible:ring-blue-600 outline-none active:opacity-80 ${collapsed ? 'justify-center' : 'gap-3 pl-6'}`}
         aria-label="Go to Dashboard"
       >
         {/* Icon aligned with nav item icons */}
@@ -217,7 +217,7 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
           </span>
         )}
         {collapsed && (
-          <div className="absolute left-full ml-2 z-50 hidden group-hover:block px-2 py-1 text-xs text-white bg-slate-800 rounded shadow-lg whitespace-nowrap">
+          <div className="absolute left-full ml-2 z-50 hidden group-hover:block px-2 py-1 text-xs text-white bg-slate-800 rounded-none shadow-sm whitespace-nowrap">
             SGPropertyAnalytics
           </div>
         )}
@@ -272,7 +272,7 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
               </span>
               <div className="flex items-center gap-1.5">
                 <span className="relative flex h-1.5 w-1.5">
-                  <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-70 animate-ping" />
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-70 motion-safe:animate-ping" />
                   <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
                 </span>
                 <span className="text-[9px] font-mono uppercase tracking-wider text-emerald-400">
@@ -289,10 +289,12 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
         <button
           onClick={() => startTransition(() => navigate('/methodology'))}
           className={`
-            group relative flex items-center w-full py-2 mb-1
-            text-slate-500 hover:text-slate-300 hover:bg-white/5
-            transition-all duration-150 ease-out
+            group relative flex items-center w-full min-h-[44px] py-2 mb-1
+            text-slate-500 hover:text-slate-300 hover:bg-white/5 active:bg-white/10
+            transition-colors duration-150
             border-l-[3px] border-l-transparent
+            outline-none touch-action-manipulation
+            focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900
             ${collapsed ? 'justify-center px-0' : 'pl-6 pr-4 gap-3'}
           `}
           aria-label="Methodology"
@@ -305,7 +307,7 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
             <span className="text-sm font-normal">Methodology</span>
           )}
           {collapsed && (
-            <div className="absolute left-full ml-2 z-50 hidden group-hover:block px-2 py-1.5 text-xs font-medium text-white bg-slate-800 rounded shadow-lg whitespace-nowrap">
+            <div className="absolute left-full ml-2 z-50 hidden group-hover:block px-2 py-1.5 text-xs font-medium text-white bg-slate-800 rounded-none shadow-sm whitespace-nowrap">
               Methodology
             </div>
           )}

@@ -149,7 +149,7 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
   const handleMobileNavClose = () => setMobileNavOpen(false);
 
   return (
-    <div className="flex h-screen" style={{ backgroundColor: 'var(--color-bg)' }}>
+    <div className="flex h-dvh" style={{ backgroundColor: 'var(--color-bg)' }}>
       {/* Clean background - no overlapping grid patterns */}
 
       {/* ===== GLOBAL NAV RAIL (Primary Sidebar) ===== */}
@@ -167,7 +167,7 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
         {/* IDE-style Edge Toggle - Positioned on the vertical dividing line */}
         <button
           onClick={toggleNavCollapse}
-          className="absolute top-1/2 -right-3 transform -translate-y-1/2 z-50 w-6 h-12 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-r-md flex items-center justify-center text-slate-400 hover:text-white transition-colors duration-150"
+          className="absolute top-1/2 -right-3 transform -translate-y-1/2 z-50 w-6 h-12 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 border border-slate-600 rounded-r-md flex items-center justify-center text-slate-400 hover:text-white transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-blue-600 touch-action-manipulation"
           aria-label={isNavCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           <svg
@@ -190,20 +190,21 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
       {mobileNavOpen && (
         <div className="lg:hidden fixed inset-0 z-50">
           {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/50"
+          <button
+            className="absolute inset-0 bg-black/50 cursor-default"
             onClick={handleMobileNavClose}
+            aria-label="Close navigation"
           />
           {/* Nav Drawer - Uses NAV_WIDTH_EXPANDED design token, capped at 85vw */}
           <div
-            className="absolute inset-y-0 left-0 max-w-[85vw] animate-slide-in-left"
+            className="absolute inset-y-0 left-0 max-w-[85vw] animate-slide-in-left overscroll-contain"
             style={{ width: NAV_WIDTH_EXPANDED }}
           >
             <GlobalNavRail activePage={activePage} />
             {/* Close button overlay */}
             <button
               onClick={handleMobileNavClose}
-              className="absolute top-4 right-4 p-2 rounded-none bg-white border border-slate-300 text-slate-600 hover:bg-slate-100 min-h-[44px] min-w-[44px] flex items-center justify-center"
+              className="absolute top-4 right-4 p-2 rounded-none bg-white border border-slate-300 text-slate-600 hover:bg-slate-100 active:bg-slate-200 min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:ring-2 focus-visible:ring-blue-600 touch-action-manipulation"
               aria-label="Close navigation"
             >
 
@@ -226,7 +227,7 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
             {/* Hamburger Menu */}
             <button
               onClick={() => setMobileNavOpen(true)}
-              className="flex items-center justify-center p-2 rounded-none bg-white border border-slate-300 text-slate-600 min-h-[44px] min-w-[44px] hover:bg-slate-100 transition-none"
+              className="flex items-center justify-center p-2 rounded-none bg-white border border-slate-300 text-slate-600 min-h-[44px] min-w-[44px] hover:bg-slate-100 active:bg-slate-200 transition-none focus-visible:ring-2 focus-visible:ring-blue-600 touch-action-manipulation"
               aria-label="Open navigation menu"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

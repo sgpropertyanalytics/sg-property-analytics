@@ -122,7 +122,7 @@ function SectionDivider() {
 function LiveDot() {
   return (
     <span className="relative inline-flex h-1.5 w-1.5">
-      <span className="absolute inline-flex h-full w-full bg-emerald-500 opacity-70 animate-ping" />
+      <span className="absolute inline-flex h-full w-full bg-emerald-500 opacity-70 motion-safe:animate-ping" />
       <span
         className="relative inline-flex h-1.5 w-1.5 bg-emerald-500"
         style={{ boxShadow: '0 0 8px rgba(16, 185, 129, 0.6)' }}
@@ -294,7 +294,7 @@ function CommandBar({ onExecute }) {
       <div className={`absolute -inset-0.5 bg-gradient-to-r from-emerald-500 to-cyan-500 blur opacity-0 group-hover:opacity-20 transition duration-500 ${isFocused ? 'opacity-30' : ''}`} />
 
       {/* Terminal chassis - smoked glass effect */}
-      <div className={`relative bg-[#0a0a0a]/80 backdrop-blur-md border border-neutral-800 shadow-2xl overflow-hidden z-20 transition-all duration-200 ${showSuggestions ? 'border-b-0 rounded-b-none' : ''}`}>
+      <div className={`relative bg-[#0a0a0a]/80 backdrop-blur-md border border-neutral-800 shadow-2xl overflow-hidden z-20 transition-[border-color,border-radius] duration-200 ${showSuggestions ? 'border-b-0 rounded-b-none' : ''}`}>
 
         {/* Terminal header bar */}
         <div className="flex items-center justify-between px-4 py-2 bg-neutral-900 border-b border-neutral-800">
@@ -316,7 +316,7 @@ function CommandBar({ onExecute }) {
           </span>
 
           {/* Input container */}
-          <div className="relative flex-1">
+          <div className="relative flex-1 min-w-0">
             <input
               ref={inputRef}
               type="text"
@@ -375,23 +375,25 @@ function CommandBar({ onExecute }) {
             </div>
 
             {/* Protocol list */}
-            <ul className="py-1">
+            <ul className="py-1" role="listbox">
               {filtered.map((s, i) => (
-                <li
-                  key={s}
-                  onMouseEnter={() => setActiveIndex(i)}
-                  onClick={() => {
-                    setValue(s);
-                    setIsOpen(false);
-                  }}
-                  className={`px-4 py-2 font-mono text-xs cursor-pointer flex items-center group transition-colors ${
-                    i === activeIndex ? 'text-white bg-emerald-500/10' : 'text-neutral-400 hover:text-white hover:bg-emerald-500/10'
-                  }`}
-                >
-                  <span className={`w-1.5 h-1.5 rounded-full mr-3 transition-colors ${
-                    i === activeIndex ? 'bg-emerald-400' : 'bg-neutral-600 group-hover:bg-emerald-400'
-                  }`} />
-                  {s}
+                <li key={s} role="option" aria-selected={i === activeIndex}>
+                  <button
+                    type="button"
+                    onMouseEnter={() => setActiveIndex(i)}
+                    onClick={() => {
+                      setValue(s);
+                      setIsOpen(false);
+                    }}
+                    className={`w-full px-4 py-2 font-mono text-xs cursor-pointer flex items-center group transition-colors text-left touch-action-manipulation ${
+                      i === activeIndex ? 'text-white bg-emerald-500/10' : 'text-neutral-400 hover:text-white hover:bg-emerald-500/10'
+                    }`}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full mr-3 transition-colors ${
+                      i === activeIndex ? 'bg-emerald-400' : 'bg-neutral-600 group-hover:bg-emerald-400'
+                    }`} />
+                    {s}
+                  </button>
                 </li>
               ))}
             </ul>
@@ -762,13 +764,13 @@ function StatusPanel() {
       <div className="p-3 grid grid-cols-2 gap-3 flex-1">
         <div className="border border-black/10 px-3 py-2">
           <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">TRANSACTIONS</div>
-          <div className="mt-1 font-mono text-sm text-black/70 tabular-nums transition-all duration-300">
+          <div className="mt-1 font-mono text-sm text-black/70 tabular-nums">
             {txCount ? txCount.toLocaleString('en-SG') : '—'}
           </div>
         </div>
         <div className="border border-black/10 px-3 py-2">
           <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">INTEGRITY</div>
-          <div className="mt-1 font-mono text-sm text-black/70 tabular-nums transition-all duration-300">
+          <div className="mt-1 font-mono text-sm text-black/70 tabular-nums">
             {integrity ? `${integrity}%` : '—'}
           </div>
         </div>
@@ -871,7 +873,7 @@ function DotMatrixMap() {
 function CapabilityCard({ icon: Icon, title, desc, code }) {
   return (
     <div
-      className="group relative border border-black/10 bg-white/90 backdrop-blur-sm p-4 hover:border-black/20 transition-all hover:shadow-sm scan-line-hover"
+      className="group relative border border-black/10 bg-white/90 backdrop-blur-sm p-4 hover:border-black/20 transition-[border-color,box-shadow] hover:shadow-sm scan-line-hover"
       style={{ boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)' }}
     >
       <HudCorners />
@@ -1034,7 +1036,7 @@ function VolumeTrendPreview() {
         {months.map((month, i) => (
           <div key={month} className="flex-1 flex flex-col items-center gap-1">
             <div
-              className="w-full bg-black/80 transition-all"
+              className="w-full bg-black/80"
               style={{ height: `${(volumes[i] / maxVol) * 100}%` }}
             />
             <div className="font-mono text-[8px] text-black/60">{month}</div>
@@ -1120,7 +1122,7 @@ function MomentumGridPreview() {
                 : 'M0 1 L5 3 L10 2 L15 5 L20 7'
               }
               fill="none"
-              stroke={d.trend === 'up' ? '#10B981' : '#FF5500'}
+              stroke={d.trend === 'up' ? '#059669' : '#DC2626'}
               strokeWidth="1"
             />
           </svg>
@@ -1208,7 +1210,7 @@ function PulseTicker({ transactions, onTransactionClick, isLoading }) {
       {/* Status Badge - Fixed Width */}
       <div className="flex items-center gap-2 px-4 h-full border-r border-black/10 shrink-0">
         <span className="relative flex h-1.5 w-1.5">
-          <span className="animate-ping absolute inline-flex h-full w-full bg-emerald-500 opacity-75" />
+          <span className="motion-safe:animate-ping absolute inline-flex h-full w-full bg-emerald-500 opacity-75" />
           <span className="relative inline-flex h-1.5 w-1.5 bg-emerald-500" />
         </span>
         <span className="font-mono text-[10px] tracking-[0.15em] uppercase text-black/70">
@@ -1224,7 +1226,7 @@ function PulseTicker({ transactions, onTransactionClick, isLoading }) {
               key={`${tx.project}-${idx}`}
               type="button"
               onClick={() => onTransactionClick(tx.district)}
-              className="font-mono text-[10px] tracking-wide transition-colors flex items-center uppercase text-black/50 hover:text-black/70"
+              className="font-mono text-[10px] tracking-wide transition-colors flex items-center uppercase text-black/50 hover:text-black/70 focus-visible:ring-2 focus-visible:ring-blue-600 outline-none touch-action-manipulation"
             >
               <span className="text-black/30">[</span>
               <span className="text-black/60">{tx.district}</span>
@@ -1396,7 +1398,7 @@ function GhostMap({ highlightedDistrict, activePulses, onPulseFade }) {
             fill={getDistrictFill(f.properties.district)}
             stroke={getDistrictStroke(f.properties.district)}
             strokeWidth="0.5"
-            className="transition-all duration-200 ease-out cursor-pointer"
+            className="transition-[fill,stroke] duration-200 ease-out cursor-pointer"
             style={{
               // Paper-thin shadow - crisp separation without thickness
               filter: 'drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.08))',
@@ -1612,7 +1614,7 @@ export default function LandingV3() {
   );
 
   return (
-    <div className="relative min-h-screen bg-[#fafafa] text-black overflow-x-hidden">
+    <div className="relative min-h-dvh bg-[#fafafa] text-black overflow-x-hidden">
       <style>{`
         :root { color-scheme: light; }
 
@@ -1673,7 +1675,7 @@ export default function LandingV3() {
 
       {/* NAV */}
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 border-b transition-all duration-200 ${
+        className={`fixed top-0 left-0 right-0 z-50 border-b transition-[background-color,border-color,box-shadow] duration-200 ${
           isScrolled
             ? 'bg-[#fafafa]/95 backdrop-blur-sm border-black/10 shadow-sm'
             : 'bg-[#fafafa] border-black/10'
@@ -1681,7 +1683,7 @@ export default function LandingV3() {
       >
         {/* Scroll progress indicator */}
         <div
-          className="absolute bottom-0 left-0 h-px bg-black/30 transition-all duration-75"
+          className="absolute bottom-0 left-0 h-px bg-black/30 transition-[width] duration-75"
           style={{ width: `${scrollProgress}%` }}
         />
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-3">
@@ -1710,7 +1712,7 @@ export default function LandingV3() {
               <button
                 type="button"
                 onClick={onAnyCTA}
-                className="group relative px-5 py-2 border-2 border-black bg-transparent text-black font-mono text-[10px] uppercase tracking-[0.15em] hover:bg-[#0F172A] hover:text-white hover:border-[#0F172A] focus:outline-none transition-all duration-150"
+                className="group relative px-5 py-2 min-h-[44px] border-2 border-black bg-transparent text-black font-mono text-[10px] uppercase tracking-[0.15em] hover:bg-[#0F172A] hover:text-white hover:border-[#0F172A] active:opacity-80 transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-blue-600 outline-none touch-action-manipulation"
               >
                 <span className="relative z-10">// LOGIN</span>
                 {/* Bronze accent line - bridges to dashboard aesthetic */}
@@ -1837,7 +1839,7 @@ export default function LandingV3() {
             <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-4 auto-rows-fr">
               {/* Card 1 - slight rotation for visual interest per Phase 7.1 */}
               <div
-                className="relative h-full border border-black/10 bg-white/90 backdrop-blur-sm p-4 hover:border-black/20 transition-all hover:shadow-sm"
+                className="relative h-full border border-black/10 bg-white/90 backdrop-blur-sm p-4 hover:border-black/20 transition-[border-color,box-shadow] hover:shadow-sm"
                 style={{ boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)', transform: 'rotate(-0.5deg)' }}
               >
                 {/* HUD corner ticks */}
@@ -1853,7 +1855,7 @@ export default function LandingV3() {
               </div>
               {/* Card 2 */}
               <div
-                className="relative h-full border border-black/10 bg-white/90 backdrop-blur-sm p-4 hover:border-black/20 transition-all hover:shadow-sm"
+                className="relative h-full border border-black/10 bg-white/90 backdrop-blur-sm p-4 hover:border-black/20 transition-[border-color,box-shadow] hover:shadow-sm"
                 style={{ boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)', transform: 'rotate(0.5deg)' }}
               >
                 <HudCorners />
@@ -1865,7 +1867,7 @@ export default function LandingV3() {
               </div>
               {/* Card 3 - slight rotation */}
               <div
-                className="relative h-full border border-black/10 bg-white/90 backdrop-blur-sm p-4 hover:border-black/20 transition-all hover:shadow-sm"
+                className="relative h-full border border-black/10 bg-white/90 backdrop-blur-sm p-4 hover:border-black/20 transition-[border-color,box-shadow] hover:shadow-sm"
                 style={{ boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)', transform: 'rotate(-0.5deg)' }}
               >
                 <HudCorners />
@@ -1877,7 +1879,7 @@ export default function LandingV3() {
               </div>
               {/* Card 4 */}
               <div
-                className="relative h-full border border-black/10 bg-white/90 backdrop-blur-sm p-4 hover:border-black/20 transition-all hover:shadow-sm"
+                className="relative h-full border border-black/10 bg-white/90 backdrop-blur-sm p-4 hover:border-black/20 transition-[border-color,box-shadow] hover:shadow-sm"
                 style={{ boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)', transform: 'rotate(0.5deg)' }}
               >
                 <HudCorners />
@@ -2050,7 +2052,7 @@ export default function LandingV3() {
                     <button
                       type="button"
                       onClick={onAnyCTA}
-                      className="group inline-flex items-center gap-2 px-4 py-2 border border-black/10 hover:border-black/20 hover:bg-black/[0.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
+                      className="group inline-flex items-center gap-2 px-4 py-2 min-h-[44px] border border-black/10 hover:border-black/20 hover:bg-black/[0.02] active:bg-black/[0.04] outline-none focus-visible:ring-2 focus-visible:ring-blue-600 touch-action-manipulation"
                     >
                       Proceed
                       <ArrowRight className="h-4 w-4 text-black/60 group-hover:translate-x-0.5 transition-transform" />
@@ -2107,14 +2109,14 @@ export default function LandingV3() {
                     <button
                       type="button"
                       onClick={onAnyCTA}
-                      className="w-full px-5 py-3 bg-[#fafafa] text-black font-medium hover:bg-[#fafafa]/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#fafafa]/30"
+                      className="w-full px-5 py-3 min-h-[44px] bg-[#fafafa] text-black font-medium hover:bg-[#fafafa]/90 active:bg-[#fafafa]/80 outline-none focus-visible:ring-2 focus-visible:ring-[#fafafa]/30 touch-action-manipulation"
                     >
                       Continue to Login
                     </button>
                     <button
                       type="button"
                       onClick={onAnyCTA}
-                      className="w-full px-5 py-3 border border-[#fafafa]/20 text-[#fafafa] font-medium hover:border-[#fafafa]/35 hover:bg-[#fafafa]/[0.03] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#fafafa]/30"
+                      className="w-full px-5 py-3 min-h-[44px] border border-[#fafafa]/20 text-[#fafafa] font-medium hover:border-[#fafafa]/35 hover:bg-[#fafafa]/[0.03] active:bg-[#fafafa]/[0.06] outline-none focus-visible:ring-2 focus-visible:ring-[#fafafa]/30 touch-action-manipulation"
                     >
                       Request Access
                     </button>
@@ -2140,7 +2142,7 @@ export default function LandingV3() {
             <div className="system-status-row pb-6 border-b border-black/05">
               <div className="status-item">
                 <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-70 animate-ping" />
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-70 motion-safe:animate-ping" />
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-600" />
                 </span>
                 <span>All Systems Operational</span>
@@ -2170,14 +2172,14 @@ export default function LandingV3() {
                 <button
                   type="button"
                   onClick={onAnyCTA}
-                  className="px-4 py-2 border border-black/10 text-black font-mono text-[10px] uppercase tracking-[0.15em] hover:border-black/20 hover:bg-black/[0.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 btn-scan-sweep"
+                  className="px-4 py-2 min-h-[44px] border border-black/10 text-black font-mono text-[10px] uppercase tracking-[0.15em] hover:border-black/20 hover:bg-black/[0.02] active:bg-black/[0.04] outline-none focus-visible:ring-2 focus-visible:ring-blue-600 touch-action-manipulation btn-scan-sweep"
                 >
                   Login
                 </button>
                 <button
                   type="button"
                   onClick={onAnyCTA}
-                  className="group relative px-5 py-2 bg-[#0F172A] text-[#fafafa] font-mono text-[10px] uppercase tracking-[0.15em] hover:bg-[#0F172A]/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 btn-scan-sweep border-2 border-[#0F172A]"
+                  className="group relative px-5 py-2 min-h-[44px] bg-[#0F172A] text-[#fafafa] font-mono text-[10px] uppercase tracking-[0.15em] hover:bg-[#0F172A]/90 active:bg-[#0F172A]/80 outline-none focus-visible:ring-2 focus-visible:ring-blue-600 touch-action-manipulation btn-scan-sweep border-2 border-[#0F172A]"
                 >
                   <span className="relative z-10">Enter Terminal</span>
                   <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#C4A484]" />
