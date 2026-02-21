@@ -31,7 +31,7 @@ export function ResultsSummaryBar({
   );
 
   return (
-    <div className="sticky top-0 z-30 bg-gradient-to-r from-[#0F172A] to-[#334155] rounded-lg px-3 py-2 sm:px-4 sm:py-3 text-white shadow-lg">
+    <div className="sticky top-0 z-30 bg-slate-900 rounded-none px-3 py-2 sm:px-4 sm:py-3 text-white border border-slate-700">
       {/* Budget message */}
       <p className="text-xs sm:text-sm mb-2 text-white/90">
         Based on your target price of <span className="font-semibold text-white">{formatBudget(budget)}</span> <span className="text-white/70">(+/- $100K)</span>:

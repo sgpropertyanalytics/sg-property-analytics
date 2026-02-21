@@ -95,7 +95,7 @@ export function DataCard({ children, variant = 'standalone', className = '' }: D
   // Embedded variant removes container chrome for "blueprint" integration
   // Chart axes align directly with parent section's grid
   const containerStyles = variant === 'embedded'
-    ? 'flex flex-col'
+    ? 'flex flex-col overflow-hidden'
     : 'bg-white border border-slate-300 rounded-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,0.05)] flex flex-col overflow-hidden';
 
   return (
@@ -518,7 +518,7 @@ export function DataCardCanvas({
 
   return (
     <div
-      className={`flex-grow ${paddingClass} relative ${className}`}
+      className={`flex-grow overflow-hidden ${paddingClass} relative ${className}`}
       style={{ minHeight }}
     >
       {children}

@@ -306,7 +306,7 @@ export function MacroOverviewContent() {
         <DataSection title="MARKET TRENDS">
           {/* Charts Grid - Responsive: 1 col mobile, 2 cols desktop */}
           {/* Each chart wrapped with ErrorBoundary to prevent cascade failures */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4 lg:gap-6">
                 {/* Time Trend Chart - Full width */}
                 <ChartPanel className="lg:col-span-2">
                   <ErrorBoundary name="Time Trend Chart" compact>

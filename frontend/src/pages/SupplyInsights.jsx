@@ -44,7 +44,7 @@ export function SupplyInsightsContent() {
             </ErrorBoundary>
 
             {/* ===== Two-Chart Grid (Always side by side) ===== */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 items-stretch">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 items-stretch">
 
               {/* Chart 1: TRUE Waterfall (Supply Accumulator) */}
               <ErrorBoundary name="Supply Accumulator Chart" compact>

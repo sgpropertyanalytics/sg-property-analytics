@@ -20,7 +20,7 @@
 export function ContentSection({ children, title, className = '' }) {
   return (
     <section
-      className={`intel-panel p-4 md:p-6 mb-4 md:mb-6 ${className}`}
+      className={`intel-panel p-4 md:p-6 mb-4 md:mb-6 overflow-hidden ${className}`}
     >
       {/* Ruler tick marks - top edge precision indicators */}
       <div className="absolute top-0 left-1/4 w-px h-1 bg-black/20" />

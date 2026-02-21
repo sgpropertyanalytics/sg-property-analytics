@@ -222,7 +222,7 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
         {/* Background - clean solid, no grid overlays */}
 
         {/* Mobile Header */}
-        <header className="lg:hidden sticky top-0 z-40 bg-white px-3 py-2 flex-shrink-0 border-b border-slate-200">
+        <header className="lg:hidden sticky top-0 z-40 bg-white px-3 py-2 flex-shrink-0 border-b border-slate-200" style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top))' }}>
           <div className="flex items-center justify-between gap-2">
             {/* Hamburger Menu */}
             <button
@@ -263,7 +263,7 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
             {/* Console Header - Terminal Block (auto-applied to all pages) */}
             {/* Height: 48px (h-12), dense military precision */}
             {/* Border-bottom: Bronze accent line for visual anchoring ("the ledge") */}
-            <div className="flex items-center justify-between px-6 h-12 bg-[#0F172A] border border-gray-200 border-b-2 border-b-[#C4A484]">
+            <div className="flex items-center justify-between px-3 md:px-6 h-12 bg-[#0F172A] border border-gray-200 border-b-2 border-b-[#C4A484]">
               {/* Left: Logo Box + Page Title - Industrial branding */}
               <div className="flex items-center gap-3">
                 <div className="bg-white text-black px-1.5 py-0.5 font-mono text-[10px] font-bold tracking-tighter">
@@ -307,7 +307,7 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
           {/* Content Card - Technical dot grid background */}
           <div className="flex-1 min-w-0 flex flex-col border border-gray-200 border-t-0 bg-white -mt-2">
             {/* Page Content */}
-            <div className="flex-1 min-w-0 technical-grid-bg px-6 pt-4 pb-6">
+            <div className="flex-1 min-w-0 technical-grid-bg px-3 md:px-6 pt-4 pb-6">
               <ErrorBoundary name="Page Content">
                 <Suspense fallback={<ContentLoadingFallback />}>
                   <div className="flex-1 min-w-0 text-ink">

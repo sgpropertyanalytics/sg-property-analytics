@@ -81,7 +81,7 @@ export function FilterBar({ disabledFilters = {} }) {
         <div className="p-3 bg-card/60 rounded-none backdrop-blur-sm">
           <button
             onClick={() => setMobileFilterOpen(true)}
-            className="w-full min-h-[44px] px-4 flex items-center justify-center gap-2 bg-card/80 rounded-none border border-mono-muted text-brand-blue hover:border-brand-blue active:bg-black/[0.04] transition-none"
+            className="w-full min-h-[44px] px-4 flex items-center justify-center gap-2 bg-card/80 rounded-none border border-mono-muted text-brand-blue hover:border-brand-blue active:bg-black/[0.04] transition-none touch-action-manipulation focus-visible:ring-2 focus-visible:ring-blue-600 outline-none"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
@@ -98,11 +98,12 @@ export function FilterBar({ disabledFilters = {} }) {
         {/* Mobile Filter Drawer */}
         {mobileFilterOpen && (
           <div className="fixed inset-0 z-50">
-            <div
-              className="absolute inset-0 bg-black/50"
+            <button
+              className="absolute inset-0 bg-black/50 cursor-default"
               onClick={() => setMobileFilterOpen(false)}
+              aria-label="Close filters"
             />
-            <div className="absolute inset-y-0 right-0 w-full max-w-sm animate-slide-in-right">
+            <div className="absolute inset-y-0 right-0 w-full max-w-sm animate-slide-in-right overscroll-contain">
               <PowerBIFilterSidebar
                 layout="drawer"
                 onClose={() => setMobileFilterOpen(false)}
