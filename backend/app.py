@@ -285,15 +285,16 @@ def create_app():
         is_static = any(path == p or path.startswith(p + '/') for p in static_paths)
 
         if is_static:
-            # 5 min client cache, 10 min CDN/proxy cache
-            response.headers['Cache-Control'] = 'public, max-age=300, s-maxage=600'
+            # 5 min client, 10 min CDN, serve stale up to 1 hour while revalidating
+            response.headers['Cache-Control'] = 'public, max-age=300, s-maxage=600, stale-while-revalidate=3600'
             response.headers['Vary'] = 'Accept-Encoding'
             return response
 
         # Tier 3: Dynamic analytics — short cache for repeated queries.
         # Aggregate, KPI, chart endpoints benefit from brief caching
         # since underlying data only changes on daily sync.
-        response.headers['Cache-Control'] = 'public, max-age=60, s-maxage=120'
+        # 1 min client, 2 min CDN, serve stale up to 5 min while revalidating
+        response.headers['Cache-Control'] = 'public, max-age=60, s-maxage=120, stale-while-revalidate=300'
         response.headers['Vary'] = 'Accept-Encoding'
 
         return response
@@ -420,21 +421,12 @@ def create_app():
         # =======================================================================
         # REMOVED FROM WEB BOOT (2024-01 optimization)
         # =======================================================================
-        # The following were removed because they are USELESS on Render:
-        #
-        # 1. check_and_refresh_on_startup() - GLS freshness check
-        #    Problem: Can spawn background scrape threads, competing with requests
-        #    Solution: Move to dedicated cron job
-        #
-        # 2. warm_cache_for_common_queries() / warm_kpi_cache()
-        #    Problem: Cache is IN-MEMORY (TTLCache). Render instances sleep after
-        #    15 min idle, wiping all cache. Warming takes 20-40s for ZERO benefit.
-        #    Solution: Migrate to DB-backed cache (materialized views or cache table)
-        #    TODO: Implement persistent caching strategy
-        #
-        # 3. data_guard subprocess
-        #    Problem: Spawns separate Python process, adds 1-5s and memory spike
-        #    Solution: Run in CI/CD pipeline or dedicated cron job
+        # 1. check_and_refresh_on_startup() — moved to cron job
+        # 2. warm_cache_for_common_queries() / warm_kpi_cache() — unnecessary.
+        #    Now on standard plan (always-on). Frontend uses persistQueryClient
+        #    (localStorage) so returning users see cached charts instantly while
+        #    stale-while-revalidate triggers background refetch.
+        # 3. data_guard subprocess — moved to CI/CD pipeline
         # =======================================================================
 
         # Firebase Admin SDK pre-initialization (~200ms, non-blocking)

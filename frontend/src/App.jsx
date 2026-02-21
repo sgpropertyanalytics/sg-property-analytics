@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { QueryClientProvider } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 
 // DEV-ONLY: Lazy load React Query DevTools to avoid bundling in production
 const ReactQueryDevtools = import.meta.env.DEV
@@ -14,7 +14,7 @@ const ReactQueryDevtools = import.meta.env.DEV
 // Register Chart.js components globally (MUST be before any chart imports)
 import './chartSetup';
 
-import { queryClient } from './lib/queryClient';
+import { queryClient, queryPersister, PERSIST_MAX_AGE } from './lib/queryClient';
 import { DataProvider } from './context/DataContext';
 import { AuthProvider } from './context/AuthContext';
 import { AccessProvider } from './context/AccessContext';
@@ -133,7 +133,10 @@ const PerformanceDashboard = lazyWithRetry(() =>
  */
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{ persister: queryPersister, maxAge: PERSIST_MAX_AGE }}
+    >
       <AuthProvider>
         <AccessProvider>
         <DataProvider>
@@ -237,7 +240,7 @@ function App() {
     )}
     {/* Global toast notifications */}
     <Toaster richColors closeButton position="top-center" />
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   );
 }
 

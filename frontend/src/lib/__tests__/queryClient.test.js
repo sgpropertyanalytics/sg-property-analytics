@@ -28,9 +28,9 @@ describe('QueryClient Configuration', () => {
     expect(defaults.queries?.staleTime).toBe(30_000);
   });
 
-  it('has correct gcTime default (5 minutes)', () => {
+  it('has correct gcTime default (24 hours for localStorage persistence)', () => {
     const defaults = queryClient.getDefaultOptions();
-    expect(defaults.queries?.gcTime).toBe(5 * 60_000);
+    expect(defaults.queries?.gcTime).toBe(24 * 60 * 60_000);
   });
 
   it('has retry set to 1', () => {
