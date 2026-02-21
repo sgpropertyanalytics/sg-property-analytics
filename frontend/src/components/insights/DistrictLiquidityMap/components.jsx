@@ -347,9 +347,9 @@ export function HoverCard({ district, data, position }) {
             <div className="flex justify-between items-center">
               <span className="text-xs text-slate-500">Z-Score</span>
               <span
-                className={`font-bold text-xs ${(metrics.z_score || 0) >= 0 ? 'text-emerald-600' : 'text-amber-600'}`}
+                className={`font-bold text-xs ${metrics.z_score != null ? (metrics.z_score >= 0 ? 'text-emerald-600' : 'text-amber-600') : 'text-slate-400'}`}
               >
-                {metrics.z_score !== null ? metrics.z_score?.toFixed(2) : '-'}
+                {metrics.z_score != null ? metrics.z_score.toFixed(2) : '-'}
               </span>
             </div>
 
@@ -401,19 +401,19 @@ export function HoverCard({ district, data, position }) {
                     {metrics.fragility_label}
                   </span>
                   <span className="text-[10px] text-slate-500">
-                    {metrics.resale_project_count || metrics.project_count || 0} resale projects
+                    {metrics.resale_project_count ?? 0} resale projects
                   </span>
                 </div>
                 <div className="flex justify-between items-center text-[10px]">
                   <span className="text-slate-500">Gini Index</span>
                   <span className="font-semibold text-slate-800">
-                    {metrics.concentration_gini?.toFixed(2) || '-'}
+                    {metrics.concentration_gini != null ? metrics.concentration_gini.toFixed(3) : '-'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center text-[10px]">
                   <span className="text-slate-500">Top Project Share</span>
                   <span className="font-semibold text-slate-800">
-                    {metrics.top_project_share?.toFixed(0) || 0}%
+                    {metrics.top_project_share != null ? `${metrics.top_project_share.toFixed(1)}%` : '-'}
                   </span>
                 </div>
               </div>
