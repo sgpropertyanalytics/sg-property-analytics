@@ -3,13 +3,16 @@ import React from 'react';
 /**
  * ChartPanel - Standardized chart container with optional header.
  *
+ * Supports ref forwarding for IntersectionObserver-based visibility detection
+ * (e.g., useInView from react-intersection-observer for lazy data fetching).
+ *
  * @param {{ title?: string, subtitle?: string, actions?: React.ReactNode, className?: string, children: React.ReactNode }} props
  */
-export function ChartPanel({ title, subtitle, actions, className = '', children }) {
+export const ChartPanel = React.forwardRef(function ChartPanel({ title, subtitle, actions, className = '', children }, ref) {
   const hasHeader = title || subtitle || actions;
 
   return (
-    <div className={className}>
+    <div ref={ref} className={className}>
       {hasHeader && (
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="min-w-0">
@@ -34,6 +37,6 @@ export function ChartPanel({ title, subtitle, actions, className = '', children 
       {children}
     </div>
   );
-}
+});
 
 export default ChartPanel;

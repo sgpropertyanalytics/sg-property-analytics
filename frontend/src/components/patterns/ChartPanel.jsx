@@ -6,8 +6,8 @@ import { ChartPanel as BaseChartPanel } from '../ui/ChartPanel';
  *
  * @param {import('react').ComponentProps<typeof BaseChartPanel>} props
  */
-export function ChartPanel(props) {
-  return <BaseChartPanel {...props} />;
-}
+export const ChartPanel = React.forwardRef(function ChartPanel(props, ref) {
+  return <BaseChartPanel ref={ref} {...props} />;
+});
 
 export default ChartPanel;
