@@ -375,9 +375,9 @@ function CommandBar({ onExecute }) {
             </div>
 
             {/* Protocol list */}
-            <ul className="py-1" role="listbox">
+            <ul className="py-1">
               {filtered.map((s, i) => (
-                <li key={s} role="option" aria-selected={i === activeIndex}>
+                <li key={s}>
                   <button
                     type="button"
                     onMouseEnter={() => setActiveIndex(i)}

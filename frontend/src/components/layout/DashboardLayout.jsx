@@ -189,8 +189,9 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
       {/* Mobile Nav Drawer Overlay */}
       {mobileNavOpen && (
         <div className="lg:hidden fixed inset-0 z-50">
-          {/* Backdrop */}
+          {/* Backdrop — tabIndex -1 keeps it out of Tab order */}
           <button
+            tabIndex={-1}
             className="absolute inset-0 bg-black/50 cursor-default"
             onClick={handleMobileNavClose}
             aria-label="Close navigation"

@@ -99,6 +99,7 @@ export function FilterBar({ disabledFilters = {} }) {
         {mobileFilterOpen && (
           <div className="fixed inset-0 z-50">
             <button
+              tabIndex={-1}
               className="absolute inset-0 bg-black/50 cursor-default"
               onClick={() => setMobileFilterOpen(false)}
               aria-label="Close filters"
