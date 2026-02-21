@@ -787,8 +787,8 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
         })}
       </div>
 
-      {/* Desktop Table View - no overflow-x-auto to prevent horizontal scroll (HF-5) */}
-      <div className="hidden lg:block max-w-full">
+      {/* Desktop Table View - overflow-x-auto prevents column clipping on narrow viewports */}
+      <div className="hidden lg:block overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
             {/* Group Header Row - Exit Safety + Concentration (only shown on xl+ when all columns visible) */}
@@ -796,7 +796,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
               <th colSpan={6} className="border-b border-slate-200"></th>
               <th
                 colSpan={3}
-                className="px-3 py-1.5 text-center text-[10px] font-bold text-emerald-700 uppercase tracking-wider bg-emerald-100/70"
+                className="px-2 py-1.5 text-center text-[10px] font-bold text-emerald-700 uppercase tracking-wider bg-emerald-100/70"
                 title="Exit Safety metrics: Velocity, Z-Score, Tier calculated on RESALE only (organic demand signal)"
               >
                 Exit Safety
@@ -804,7 +804,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
               </th>
               <th
                 colSpan={3}
-                className="px-3 py-1.5 text-center text-[10px] font-bold text-rose-700 uppercase tracking-wider bg-rose-100/70"
+                className="px-2 py-1.5 text-center text-[10px] font-bold text-rose-700 uppercase tracking-wider bg-rose-100/70"
                 title="Concentration metrics: Gini, Fragility, Top Share calculated on RESALE only (avoids developer release distortion)"
               >
                 Concentration Risks
@@ -813,11 +813,11 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
             </tr>
             {/* Column Header Row */}
             <tr className="bg-slate-50 border-b border-slate-200">
-              <th className="px-3 py-2 text-left font-semibold text-slate-800 whitespace-nowrap">
+              <th className="px-2 py-2 text-left font-semibold text-slate-800 whitespace-nowrap">
                 Rank
               </th>
               <th
-                className="px-3 py-3 min-h-[44px] text-center font-semibold text-slate-800 whitespace-nowrap cursor-pointer hover:bg-slate-100 active:bg-slate-200 select-none"
+                className="px-2 py-2 text-center font-semibold text-slate-800 whitespace-nowrap cursor-pointer hover:bg-slate-100 active:bg-slate-200 select-none"
                 onClick={() => handleSort('liquidity_score')}
               >
                 <span className="inline-flex items-center justify-center gap-1">
@@ -830,7 +830,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                 </span>
               </th>
               <th
-                className="px-3 py-3 min-h-[44px] text-left font-semibold text-slate-800 whitespace-nowrap cursor-pointer hover:bg-slate-100 active:bg-slate-200 select-none"
+                className="px-2 py-2 text-left font-semibold text-slate-800 whitespace-nowrap cursor-pointer hover:bg-slate-100 active:bg-slate-200 select-none"
                 onClick={() => handleSort('district_id')}
               >
                 <span className="inline-flex items-center gap-1">
@@ -839,7 +839,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                 </span>
               </th>
               <th
-                className="px-3 py-3 min-h-[44px] text-center font-semibold text-slate-800 whitespace-nowrap cursor-pointer hover:bg-slate-100 active:bg-slate-200 select-none"
+                className="px-2 py-2 text-center font-semibold text-slate-800 whitespace-nowrap cursor-pointer hover:bg-slate-100 active:bg-slate-200 select-none"
                 onClick={() => handleSort('region')}
               >
                 <span className="inline-flex items-center justify-center gap-1">
@@ -848,7 +848,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                 </span>
               </th>
               <th
-                className="hidden xl:table-cell px-3 py-3 min-h-[44px] text-right font-semibold text-slate-800 whitespace-nowrap cursor-pointer hover:bg-slate-100 active:bg-slate-200 select-none"
+                className="hidden xl:table-cell px-2 py-2 text-right font-semibold text-slate-800 whitespace-nowrap cursor-pointer hover:bg-slate-100 active:bg-slate-200 select-none"
                 onClick={() => handleSort('project_count')}
               >
                 <span className="inline-flex items-center justify-end gap-1">
@@ -858,17 +858,17 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                 </span>
               </th>
               <th
-                className="px-3 py-3 min-h-[44px] text-right font-semibold text-slate-800 whitespace-nowrap cursor-pointer hover:bg-slate-100 active:bg-slate-200 select-none"
+                className="px-2 py-2 text-right font-semibold text-slate-800 whitespace-nowrap cursor-pointer hover:bg-slate-100 active:bg-slate-200 select-none"
                 onClick={() => handleSort('tx_count')}
               >
                 <span className="inline-flex items-center justify-end gap-1">
-                  Observations
+                  Obs
                   <SortIcon column="tx_count" />
                   <InfoTooltip text="Total number of observations across all projects in this district." />
                 </span>
               </th>
               <th
-                className="px-3 py-3 min-h-[44px] text-center font-semibold text-slate-800 whitespace-nowrap bg-emerald-50/50 cursor-pointer hover:bg-emerald-100/50 active:bg-emerald-200/50 select-none"
+                className="px-2 py-2 text-center font-semibold text-slate-800 whitespace-nowrap bg-emerald-50/50 cursor-pointer hover:bg-emerald-100/50 active:bg-emerald-200/50 select-none"
                 onClick={() => handleSort('score_tier')}
               >
                 <span className="inline-flex items-center justify-center gap-1">
@@ -877,7 +877,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                 </span>
               </th>
               <th
-                className="px-3 py-3 min-h-[44px] text-right font-semibold text-slate-800 whitespace-nowrap bg-emerald-50/50 cursor-pointer hover:bg-emerald-100/50 active:bg-emerald-200/50 select-none"
+                className="px-2 py-2 text-right font-semibold text-slate-800 whitespace-nowrap bg-emerald-50/50 cursor-pointer hover:bg-emerald-100/50 active:bg-emerald-200/50 select-none"
                 onClick={() => handleSort('turnover_rate')}
               >
                 <span className="inline-flex items-center justify-end gap-1">
@@ -890,7 +890,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                 </span>
               </th>
               <th
-                className="px-3 py-3 min-h-[44px] text-right font-semibold text-slate-800 whitespace-nowrap bg-emerald-50/50 cursor-pointer hover:bg-emerald-100/50 active:bg-emerald-200/50 select-none"
+                className="px-2 py-2 text-right font-semibold text-slate-800 whitespace-nowrap bg-emerald-50/50 cursor-pointer hover:bg-emerald-100/50 active:bg-emerald-200/50 select-none"
                 onClick={() => handleSort('z_score')}
               >
                 <span className="inline-flex items-center justify-end gap-1">
@@ -903,7 +903,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                 </span>
               </th>
               <th
-                className="px-3 py-3 min-h-[44px] text-center font-semibold text-slate-800 whitespace-nowrap bg-rose-50/50 cursor-pointer hover:bg-rose-100/50 active:bg-rose-200/50 select-none"
+                className="px-2 py-2 text-center font-semibold text-slate-800 whitespace-nowrap bg-rose-50/50 cursor-pointer hover:bg-rose-100/50 active:bg-rose-200/50 select-none"
                 onClick={() => handleSort('fragility_label')}
               >
                 <span className="inline-flex items-center justify-center gap-1">
@@ -916,7 +916,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                 </span>
               </th>
               <th
-                className="hidden xl:table-cell px-3 py-3 min-h-[44px] text-right font-semibold text-slate-800 whitespace-nowrap bg-rose-50/50 cursor-pointer hover:bg-rose-100/50 active:bg-rose-200/50 select-none"
+                className="hidden xl:table-cell px-2 py-2 text-right font-semibold text-slate-800 whitespace-nowrap bg-rose-50/50 cursor-pointer hover:bg-rose-100/50 active:bg-rose-200/50 select-none"
                 onClick={() => handleSort('concentration_gini')}
               >
                 <span className="inline-flex items-center justify-end gap-1">
@@ -929,7 +929,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                 </span>
               </th>
               <th
-                className="hidden xl:table-cell px-3 py-3 min-h-[44px] text-right font-semibold text-slate-800 whitespace-nowrap bg-rose-50/50 cursor-pointer hover:bg-rose-100/50 active:bg-rose-200/50 select-none"
+                className="hidden xl:table-cell px-2 py-2 text-right font-semibold text-slate-800 whitespace-nowrap bg-rose-50/50 cursor-pointer hover:bg-rose-100/50 active:bg-rose-200/50 select-none"
                 onClick={() => handleSort('top_project_share')}
               >
                 <span className="inline-flex items-center justify-end gap-1">
@@ -952,14 +952,14 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                   className={`border-b border-slate-200 hover:bg-slate-50 transition-colors ${index < 3 ? 'bg-slate-50' : ''}`}
                 >
                   {/* Rank */}
-                  <td className="px-3 py-2 text-center">
+                  <td className="px-2 py-1.5 text-center">
                     <span className="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold bg-slate-100 text-slate-500">
                       {index + 1}
                     </span>
                   </td>
 
                   {/* Liquidity Score */}
-                  <td className="px-3 py-2 text-center">
+                  <td className="px-2 py-1.5 text-center">
                     <div className="flex flex-col items-center gap-0.5">
                       <span
                         className={`inline-flex items-center justify-center w-10 h-6 rounded-md text-sm font-bold ${getScoreBadgeStyle(m.liquidity_score)}`}
@@ -976,7 +976,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
 
                   {/* District (ID + Area Name combined) - truncated to prevent overflow */}
                   <td
-                    className="px-3 py-2 text-slate-800 max-w-[200px]"
+                    className="px-2 py-1.5 text-slate-800 max-w-[160px]"
                     title={`${district.district_id} - ${district.full_name}`}
                   >
                     <div className="flex items-baseline gap-1 min-w-0">
@@ -986,45 +986,45 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                   </td>
 
                   {/* Region Badge */}
-                  <td className="px-3 py-2 text-center">
+                  <td className="px-2 py-1.5 text-center">
                     <span
-                      className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold ${getRegionBadge(district.region)}`}
+                      className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold ${getRegionBadge(district.region)}`}
                     >
                       {district.region}
                     </span>
                   </td>
 
                   {/* Project Count (Market Structure - Combined) - hidden on lg, shown on xl+ */}
-                  <td className="hidden xl:table-cell px-3 py-2 text-right text-slate-800 font-mono tabular-nums">{m.project_count || 0}</td>
+                  <td className="hidden xl:table-cell px-2 py-1.5 text-right text-slate-800 font-mono tabular-nums">{m.project_count || 0}</td>
 
                   {/* Transaction Count (Market Structure - Combined) with inline bar */}
-                  <td className="px-3 py-2 text-slate-800">
-                    <div className="flex items-center gap-2">
+                  <td className="px-2 py-1.5 text-slate-800">
+                    <div className="flex items-center gap-1.5">
                       {/* Proportional volume bar */}
-                      <div className="flex-1 h-3.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div className="flex-1 h-3 bg-slate-100 rounded-full overflow-hidden min-w-[40px]">
                         <div
                           className="h-full bg-slate-600 rounded-full"
                           style={{ width: `${((m.tx_count || 0) / maxTxCount) * 100}%` }}
                         />
                       </div>
                       {/* Number value */}
-                      <span className="text-right min-w-[45px] font-mono tabular-nums">
+                      <span className="text-right min-w-[40px] font-mono tabular-nums">
                         {m.tx_count?.toLocaleString() || '0'}
                       </span>
                     </div>
                   </td>
 
                   {/* Exit Safety Group - Score Tier */}
-                  <td className="px-3 py-2 text-center bg-emerald-50/40">
+                  <td className="px-2 py-1.5 text-center bg-emerald-50/40">
                     <span
-                      className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap ${getTierBadgeStyle(m.score_tier)}`}
+                      className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap ${getTierBadgeStyle(m.score_tier)}`}
                     >
                       {m.score_tier || '-'}
                     </span>
                   </td>
 
                   {/* Exit Safety Group - Turnover Rate (Normalized, Resale-only) */}
-                  <td className="px-3 py-2 text-right text-slate-800 bg-emerald-50/40 font-mono tabular-nums">
+                  <td className="px-2 py-1.5 text-right text-slate-800 bg-emerald-50/40 font-mono tabular-nums">
                     <span className="inline-flex items-center gap-1">
                       {m.turnover_rate?.toFixed(1) ?? m.monthly_velocity?.toFixed(1) ?? '0'}
                       {m.low_units_confidence && (
@@ -1034,7 +1034,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                   </td>
 
                   {/* Exit Safety Group - Z-Score (Resale-only) */}
-                  <td className="px-3 py-2 text-right text-slate-800 bg-emerald-50/40 font-mono tabular-nums">
+                  <td className="px-2 py-1.5 text-right text-slate-800 bg-emerald-50/40 font-mono tabular-nums">
                     <span
                       className={
                         (m.z_score || 0) >= 0.5
@@ -1049,18 +1049,18 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
                   </td>
 
                   {/* Concentration Risks Group - Spread (Resale-only) */}
-                  <td className="px-3 py-2 text-center text-slate-800 bg-rose-50/40">
+                  <td className="px-2 py-1.5 text-center text-slate-800 bg-rose-50/40">
                     {getSpreadLabel(m.fragility_label)}
                   </td>
 
                   {/* Concentration Risks Group - Gini Index (Resale-only) - hidden on lg, shown on xl+ */}
-                  <td className="hidden xl:table-cell px-3 py-2 text-right text-slate-800 bg-rose-50/40 font-mono tabular-nums">
-                    {m.concentration_gini?.toFixed(2) || '-'}
+                  <td className="hidden xl:table-cell px-2 py-1.5 text-right text-slate-800 bg-rose-50/40 font-mono tabular-nums">
+                    {m.concentration_gini != null ? m.concentration_gini.toFixed(3) : '-'}
                   </td>
 
                   {/* Concentration Risks Group - Top Project Share (Resale-only) - hidden on lg, shown on xl+ */}
-                  <td className="hidden xl:table-cell px-3 py-2 text-right text-slate-800 bg-rose-50/40 font-mono tabular-nums">
-                    {m.top_project_share?.toFixed(0) || '0'}%
+                  <td className="hidden xl:table-cell px-2 py-1.5 text-right text-slate-800 bg-rose-50/40 font-mono tabular-nums">
+                    {m.top_project_share != null ? `${m.top_project_share.toFixed(1)}%` : '-'}
                   </td>
                 </tr>
               );
@@ -1070,7 +1070,7 @@ export function LiquidityRankingTable({ districtData, selectedBed, selectedSaleT
       </div>
 
       {/* Table Footer */}
-      <div className="px-3 sm:px-4 py-2 bg-slate-50 border-t border-slate-200 text-[10px] sm:text-xs text-slate-500">
+      <div className="px-3 sm:px-4 py-1.5 bg-slate-50 border-t border-slate-200 text-[10px] sm:text-xs text-slate-500">
         {sortedData.length} districts with data
       </div>
     </div>
