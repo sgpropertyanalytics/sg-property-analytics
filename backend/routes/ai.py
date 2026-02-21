@@ -17,7 +17,7 @@ import hashlib
 import os
 from flask import Blueprint, request, Response, jsonify, current_app, g
 
-from utils.subscription import require_authenticated_access, get_user_from_request
+from utils.auth import require_authenticated_access, get_user_from_request
 from config import Config
 
 logger = logging.getLogger(__name__)

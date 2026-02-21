@@ -8,7 +8,7 @@ import { getNewVsResale } from '../../api/client';
 // Phase 3.2: Migrated from usePowerBIFilters to useZustandFilters
 import { useZustandFilters } from '../../stores';
 import { TIME_GROUP_BY } from '../../context/PowerBIFilter';
-import { KeyInsightBox, PreviewChartOverlay, ChartSlot } from '../ui';
+import { KeyInsightBox, ChartSlot } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 import { transformNewVsResaleSeries, logFetchDebug, assertKnownVersion } from '../../adapters';
 import { CHART_COLORS } from '../../constants/colors';
@@ -537,9 +537,7 @@ function NewVsResaleChartBase({ height = 350 }) {
       {/* Chart slot - Chart.js handles data updates efficiently without key remount */}
       <ChartSlot>
         {chartData.length > 0 ? (
-          <PreviewChartOverlay chartRef={chartRef}>
             <Line ref={chartRef} data={chartConfig} options={options} />
-          </PreviewChartOverlay>
         ) : (
           <div className="flex items-center justify-center h-full text-brand-blue">
             <div className="text-center">

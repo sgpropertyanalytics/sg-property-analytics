@@ -77,7 +77,7 @@ export const UserProfileMenu = React.memo(function UserProfileMenu({ expanded = 
         )}
       </div>
 
-      {/* Name + System Chip Plan Badge when expanded */}
+      {/* Name + Access Badge when expanded */}
       {expanded && (
         <div className="flex-1 min-w-0 flex flex-col justify-center text-left">
           {/* Name */}
@@ -85,7 +85,7 @@ export const UserProfileMenu = React.memo(function UserProfileMenu({ expanded = 
             {user.displayName || 'User'}
           </div>
 
-          {/* System Chip Plan Badge */}
+          {/* Access Badge */}
           <div className="flex items-center mt-1">
             <span className="
               inline-flex items-center px-1.5 py-[1px]

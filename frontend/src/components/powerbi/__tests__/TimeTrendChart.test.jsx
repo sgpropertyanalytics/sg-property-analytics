@@ -128,7 +128,6 @@ vi.mock('../../common/ChartFrame', () => ({
 
 // Mock UI components
 vi.mock('../../ui', () => ({
-  PreviewChartOverlay: ({ children }) => <div>{children}</div>,
   ChartSlot: ({ children }) => <div>{children}</div>,
 }));
 
@@ -139,7 +138,6 @@ vi.mock('../../../context/AppReadyContext', () => ({
   useAppReadyOptional: () => ({
     publicReady: mockAppReady,
     authenticatedReady: mockAppReady,
-    proReady: mockAppReady,
     bootStatus: mockAppReady ? 'ready' : 'booting',
     banners: {},
   }),

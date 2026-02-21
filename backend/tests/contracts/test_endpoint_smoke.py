@@ -124,10 +124,9 @@ def mock_user():
     mock.id = 999999
     mock.email = "smoke-test@test.com"
     mock.access_level = "authenticated"
-    mock.is_subscribed.return_value = False
     mock.access_info.return_value = {
-        "has_access": False,
-        "access_source": None,
+        "has_access": True,
+        "access_source": "authenticated_user",
         "access_expires_at": None,
     }
     mock.to_dict.return_value = {"id": 999999, "email": "smoke-test@test.com"}

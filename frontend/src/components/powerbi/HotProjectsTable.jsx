@@ -39,7 +39,6 @@ export function HotProjectsTable({
   onDataLoad = null, // Callback with data count after loading
   excludeSoldOut = false, // When true, exclude projects with 0 unsold units
 }) {
-  const isAccessRestricted = false;
   const [sortConfig, setSortConfig] = useState({
     column: 'first_new_sale',  // Default: sort by latest launch date
     order: 'desc',
@@ -323,7 +322,7 @@ export function HotProjectsTable({
                 ))}
               </tr>
             </thead>
-            <tbody className={isAccessRestricted ? 'blur-sm grayscale-[40%]' : ''}>
+            <tbody>
               {isLoading ? (
                 <tr>
                   <td colSpan={columns.length} className="p-0">

@@ -1,13 +1,12 @@
 """
 Utility modules for the backend.
 """
-from .subscription import (
+from .auth import (
     get_user_from_request,
     has_authenticated_access,
     get_access_level,
     require_authenticated_access,
     check_k_anonymity,
-    enforce_filter_granularity,
     K_ANONYMITY_THRESHOLD,
     K_THRESHOLDS,
     get_k_threshold,
@@ -42,7 +41,6 @@ __all__ = [
     'get_access_level',
     'require_authenticated_access',
     'check_k_anonymity',
-    'enforce_filter_granularity',
     'K_ANONYMITY_THRESHOLD',
     'K_THRESHOLDS',
     'get_k_threshold',

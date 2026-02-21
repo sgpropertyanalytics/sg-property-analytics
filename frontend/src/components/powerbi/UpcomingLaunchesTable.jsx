@@ -33,7 +33,6 @@ export function UpcomingLaunchesTable({
   compact = false,   // Compact mode for embedding (no border)
   showHeader = true, // Show/hide header
 }) {
-  const isAccessRestricted = false;
   const [sortConfig, setSortConfig] = useState({
     column: 'project_name',
     order: 'asc',
@@ -260,7 +259,7 @@ export function UpcomingLaunchesTable({
                 ))}
               </tr>
             </thead>
-            <tbody className={isAccessRestricted ? 'blur-sm grayscale-[40%]' : ''}>
+            <tbody>
               {isLoading ? (
                 <tr>
                   <td colSpan={columns.length} className="p-0">

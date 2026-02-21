@@ -7,7 +7,7 @@
  * - KPICardV2: Responsive stat/metric cards with tooltips
  * - KeyInsightBox: Plain English insight summaries for charts
  * - ErrorBoundary: Error handling wrapper
- * - ChartWatermark: Visual safeguard for preview mode
+ * - ChartSlot: Chart canvas wrapper
  *
  * For responsive layout patterns, use Tailwind CSS classes directly.
  * See .claude/skills/ for design system documentation.
@@ -22,10 +22,6 @@ export { KeyInsightBox } from './KeyInsightBox';
 
 // Error handling
 export { ErrorBoundary, withErrorBoundary } from './ErrorBoundary';
-
-// Premium gating
-export { ChartWatermark } from './ChartWatermark';
-export { PreviewChartOverlay } from './PreviewChartOverlay';
 
 // Layout components
 export { PageHeader } from './PageHeader';

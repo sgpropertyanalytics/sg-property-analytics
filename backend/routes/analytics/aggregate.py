@@ -23,7 +23,7 @@ from utils.normalize import (
 )
 from api.contracts import api_contract
 from api.contracts.contract_schema import PropertyAgeBucket
-from utils.subscription import require_authenticated_access
+from utils.auth import require_authenticated_access
 
 logger = route_logger("aggregate")
 
@@ -401,18 +401,6 @@ def aggregate():
         group_by = [g.strip() for g in group_by.split(",") if g.strip()]
     if isinstance(metrics, str):
         metrics = [m.strip() for m in metrics.split(",") if m.strip()]
-
-    # ACCESS CHECK: granularity restriction for anonymous access
-    from utils.subscription import check_granularity_allowed, has_authenticated_access
-    has_authenticated_access_override = has_authenticated_access()
-
-    group_by_param = ",".join(group_by)
-    allowed, error_msg = check_granularity_allowed(group_by_param, has_authenticated_access_override=has_authenticated_access_override)
-    if not allowed:
-        return jsonify({
-            "error": error_msg,
-            "code": "AUTH_REQUIRED",
-        }), 401
 
     # Build reusable filter conditions
     try:

@@ -14,7 +14,6 @@ import { useZustandFilters } from '../../stores/filterStore';
 import { TIME_GROUP_BY } from '../../context/PowerBIFilter';
 import { getRegionForDistrict } from '../../constants';
 import {
-  PreviewChartOverlay,
   DataCard,
   DataCardHeader,
   DataCardToolbar,
@@ -88,8 +87,6 @@ function AbsolutePsfChartBase({ height = 380, saleType = null, sharedData = null
     });
     return regions;
   }, [filters.districts]);
-  const canAccessAuthenticated = true;
-  const isAccessRestricted = false;
   const chartRef = useRef(null);
   const [isAgentOpen, setIsAgentOpen] = useState(false);
 
@@ -352,7 +349,7 @@ OCR = Outside Central (suburban).`}
         />
 
         {/* KPI Strip: h-20 fixed - Pure metrics only */}
-        <DataCardToolbar columns={3} blur={isAccessRestricted}>
+        <DataCardToolbar columns={3}>
           <ToolbarStat
             label="CCR"
             value={latestData.ccr != null ? `$${Math.round(latestData.ccr).toLocaleString()}` : '—'}
@@ -375,9 +372,7 @@ OCR = Outside Central (suburban).`}
 
         {/* Canvas: flex-grow */}
         <DataCardCanvas minHeight={height} cinema={cinema}>
-          <PreviewChartOverlay chartRef={chartRef}>
             <Line ref={chartRef} data={chartData} options={chartOptions} />
-          </PreviewChartOverlay>
         </DataCardCanvas>
 
         {/* Status Deck: h-10 fixed - Left: periods | Center: legend | Right: txns */}

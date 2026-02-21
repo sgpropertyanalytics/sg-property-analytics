@@ -24,7 +24,7 @@ from routes.analytics._route_utils import log_error
 from models.database import db
 from db.sql import OUTLIER_FILTER
 from api.contracts import api_contract
-from utils.subscription import require_authenticated_access
+from utils.auth import require_authenticated_access
 
 # Reuse existing cache infrastructure (CLAUDE.md Rule #4: Reuse-First)
 from services.dashboard_service import _dashboard_cache

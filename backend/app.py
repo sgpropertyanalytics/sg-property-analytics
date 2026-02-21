@@ -486,7 +486,7 @@ def create_app():
     from routes.insights import insights_bp
     app.register_blueprint(insights_bp, url_prefix='/api/insights')
 
-    # AI routes (Chart interpretation - Premium feature)
+    # AI routes (Chart interpretation)
     from routes.ai import ai_bp
     app.register_blueprint(ai_bp, url_prefix='/api/ai')
     print("   ✓ AI routes registered")

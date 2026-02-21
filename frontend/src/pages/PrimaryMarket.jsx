@@ -4,7 +4,7 @@ import { FilterBar } from '../components/patterns';
 import { PageCanvas, ControlRibbon } from '../components/layout';
 import { NewVsResaleChart } from '../components/powerbi/NewVsResaleChart';
 import { NewLaunchTimelineChart } from '../components/powerbi/NewLaunchTimelineChart';
-import { ErrorBoundary, ChartWatermark } from '../components/ui';
+import { ErrorBoundary } from '../components/ui';
 import { useChartHeight, MOBILE_CAPS } from '../hooks';
 
 /**
@@ -30,16 +30,12 @@ export function PrimaryMarketContent() {
       <div className="animate-view-enter space-y-4 md:space-y-6">
             {/* New Sale vs Recently TOP Chart - Full width */}
             <ErrorBoundary name="New vs Resale Chart" compact>
-              <ChartWatermark>
                 <NewVsResaleChart height={chartHeight} />
-              </ChartWatermark>
             </ErrorBoundary>
 
             {/* New Launch Activity Timeline - Units launched per period with absorption rate */}
             <ErrorBoundary name="New Launch Timeline Chart" compact>
-              <ChartWatermark>
                 <NewLaunchTimelineChart height={chartHeight} />
-              </ChartWatermark>
             </ErrorBoundary>
       </div>
     </PageCanvas>

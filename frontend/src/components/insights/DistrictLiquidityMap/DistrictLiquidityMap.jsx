@@ -59,7 +59,6 @@ function DistrictLiquidityMapBase({
   onModeChange,
   enabled = true,
 }) {
-  const isAccessRestricted = false;
   const [hoveredDistrict, setHoveredDistrict] = useState(null);
 
   // Phase 4: Simplified filter access - read values directly from Zustand
@@ -322,18 +321,6 @@ function DistrictLiquidityMapBase({
 
       {/* Map container */}
       <div ref={mapContainerRef} className="relative h-[50vh] min-h-[400px] md:h-[60vh] md:min-h-[500px] lg:h-[65vh] lg:min-h-[550px]">
-        {/* Blur overlay for non-authenticated users */}
-        {isAccessRestricted && !loading && (
-          <div
-            className="absolute inset-0 z-20 pointer-events-none"
-            style={{
-              backdropFilter: 'blur(6px)',
-              WebkitBackdropFilter: 'blur(6px)',
-              filter: 'grayscale(40%)',
-              background: 'rgba(255, 255, 255, 0.05)',
-            }}
-          />
-        )}
         {/* Loading overlay */}
         <AnimatePresence>
           {loading && (
@@ -577,21 +564,17 @@ function DistrictLiquidityMapBase({
 
       {/* Region summary bar */}
       {!loading && !error && districtData.length > 0 && (
-        <div className={isAccessRestricted ? 'blur-sm grayscale-[40%]' : ''}>
           <RegionSummaryBar districtData={districtData} meta={meta} />
-        </div>
       )}
 
       {/* District Ranking Table */}
       {!loading && !error && districtData.length > 0 && (
-        <div className={isAccessRestricted ? 'blur-sm grayscale-[40%]' : ''}>
           <LiquidityRankingTable
             districtData={districtData}
             selectedBed={selectedBed}
             selectedSaleType={SaleType.RESALE}
             selectedPeriod={selectedPeriod}
           />
-        </div>
       )}
 
       <style>{`

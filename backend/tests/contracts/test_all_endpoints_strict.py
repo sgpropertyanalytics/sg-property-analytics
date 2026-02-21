@@ -160,11 +160,9 @@ def mock_user(app):
     mock_user.id = 999999
     mock_user.email = "test@strict-mode.test"
     mock_user.access_level = "authenticated"
-    mock_user.access_status = None
-    mock_user.is_subscribed.return_value = False
     mock_user.access_info.return_value = {
-        "has_access": False,
-        "access_source": None,
+        "has_access": True,
+        "access_source": "authenticated_user",
         "access_expires_at": None,
     }
     mock_user.to_dict.return_value = {

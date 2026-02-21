@@ -18,7 +18,7 @@ from sqlalchemy import func, and_, or_, extract, case, literal
 from constants import CCR_DISTRICTS, RCR_DISTRICTS, DISTRICT_NAMES, SALE_TYPE_NEW, SALE_TYPE_RESALE
 from services.new_launch_units import get_district_units_for_resale
 from api.contracts import api_contract
-from utils.subscription import get_user_from_request
+from utils.auth import get_user_from_request
 
 # =============================================================================
 # TTL CACHE FOR INSIGHTS ENDPOINTS

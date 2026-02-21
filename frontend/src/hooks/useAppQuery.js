@@ -56,7 +56,6 @@
  *   - chartName: string - Name for timing tracking (dev-only)
  *   - enabled: boolean - ANDed with boot gate
  *   - requiresAccess: boolean - Wait for access-thread resolution (default: false)
- *   - requiresSubscription: boolean - Deprecated alias for requiresAccess
  *   - keepPreviousData: boolean - Show old data while fetching (uses placeholderData)
  *   - initialData: any - Initial data before first fetch
  *   - staleTime: number - Override default staleTime (30s) - controls cache freshness
@@ -75,15 +74,14 @@ const isDev = import.meta.env.DEV;
 
 export function useAppQuery(queryFn, deps = [], options = {}) {
   // Get progressive boot gates with safe defaults for components outside provider
-  const { publicReady, authenticatedReady, proReady } = useAppReadyOptional()
-    ?? { publicReady: true, authenticatedReady: true, proReady: true };
+  const { publicReady, authenticatedReady } = useAppReadyOptional()
+    ?? { publicReady: true, authenticatedReady: true };
 
   // Extract our custom options
   const {
     chartName,
     enabled: userEnabled = true,
-    requiresAccess = false, // Preferred flag
-    requiresSubscription = false, // Deprecated alias
+    requiresAccess = false,
     keepPreviousData = false,
     initialData,
     staleTime,
@@ -100,8 +98,8 @@ export function useAppQuery(queryFn, deps = [], options = {}) {
   // - requiresAccess: false (default) → gates on publicReady (auth + filters)
   // - requiresAccess: true → gates on authenticatedReady (publicReady + access-thread resolution)
   // NOTE: Auth-gated charts that require access MUST be wrapped in <RequireAccess>
-  const shouldRequireAccess = requiresAccess || requiresSubscription;
-  const accessReadyGate = authenticatedReady ?? proReady ?? true;
+  const shouldRequireAccess = requiresAccess;
+  const accessReadyGate = authenticatedReady ?? true;
   const bootReady = shouldRequireAccess ? accessReadyGate : publicReady;
   const effectiveEnabled = userEnabled && bootReady;
 
