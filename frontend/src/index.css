@@ -297,63 +297,6 @@
   border: 1px solid #FECDD3;
 }
 
-/* =========================================
- * HUD INTELLIGENCE FRAME SYSTEM
- * Reusable Palantir-style card treatment:
- * Corner ticks + ruler marks + inset shadow
- * Used on landing page cards AND dashboard panels
- * ========================================= */
-
-/* Base frame - adds corner ticks and ruler marks to any positioned element */
-.hud-frame {
-  position: relative;
-}
-
-/* Corner brackets: top-left and bottom-right */
-.hud-frame::before,
-.hud-frame::after {
-  content: '';
-  position: absolute;
-  width: 8px;
-  height: 8px;
-  pointer-events: none;
-  z-index: 1;
-}
-
-.hud-frame::before {
-  top: -1px;
-  left: -1px;
-  border-top: 2px solid #000;
-  border-left: 2px solid #000;
-}
-
-.hud-frame::after {
-  bottom: -1px;
-  right: -1px;
-  border-bottom: 2px solid #000;
-  border-right: 2px solid #000;
-}
-
-/* Ruler tick marks along top edge (applied via extra elements in components) */
-/* For CSS-only ticks, use the .hud-ticks variant on a container */
-
-/* Terminal label - standardized monospace micro-label */
-.terminal-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
-  color: rgba(0, 0, 0, 0.6);
-}
-
-.terminal-label-muted {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
-  color: rgba(0, 0, 0, 0.4);
-}
-
 /* Intelligence panel - full card treatment for dashboard sections */
 .intel-panel {
   position: relative;
