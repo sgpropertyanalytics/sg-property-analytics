@@ -35,29 +35,30 @@ def get_project_inventory(project_name):
         - estimated_unsold: total_units - cumulative_new_sales
     """
     start = time.perf_counter()
-    from models.transaction import Transaction
     from models.database import db
     from services.new_launch_units import get_units_for_project
-    from sqlalchemy import func
-    from db.sql import exclude_outliers
+    from sqlalchemy import text
+    from db.sql import OUTLIER_FILTER
 
     try:
         # Lookup total_units from CSV
         lookup = get_units_for_project(project_name)
         total_units = lookup.get("total_units")
 
-        # Count sales from transactions
-        new_sale_count = db.session.query(func.count(Transaction.id)).filter(
-            Transaction.project_name == project_name,
-            Transaction.sale_type == SALE_TYPE_NEW,
-            exclude_outliers(Transaction)
-        ).scalar() or 0
-
-        resale_count = db.session.query(func.count(Transaction.id)).filter(
-            Transaction.project_name == project_name,
-            Transaction.sale_type == SALE_TYPE_RESALE,
-            exclude_outliers(Transaction)
-        ).scalar() or 0
+        # Count sales from transactions_primary (de-duplicated view)
+        result = db.session.execute(
+            text(f"""
+                SELECT
+                    COUNT(CASE WHEN sale_type = :sale_type_new THEN 1 END) AS new_sale_count,
+                    COUNT(CASE WHEN sale_type = :sale_type_resale THEN 1 END) AS resale_count
+                FROM transactions_primary
+                WHERE project_name = :project_name
+                  AND {OUTLIER_FILTER}
+            """),
+            {"project_name": project_name, "sale_type_new": SALE_TYPE_NEW, "sale_type_resale": SALE_TYPE_RESALE}
+        ).fetchone()
+        new_sale_count = result[0] or 0
+        resale_count = result[1] or 0
 
         # Build response
         result = {

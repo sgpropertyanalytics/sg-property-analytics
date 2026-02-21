@@ -39,9 +39,9 @@ import { LeaderLine } from './DistrictLiquidityMap/components';
 const MAP_CONFIG = {
   center: { longitude: SINGAPORE_CENTER.lng, latitude: SINGAPORE_CENTER.lat },
   defaultZoom: 10.8,
-  maxBounds: [[103.55, 1.22], [104.15, 1.50]],  // Limit south to avoid showing too much sea
-  minZoom: 10,
-  maxZoom: 15,
+  maxBounds: [[103.60, 1.22], [104.05, 1.48]],  // Tight to Singapore land area
+  minZoom: 10.5,
+  maxZoom: 12.5,
 };
 
 // Light basemap (no labels - cleaner with only our district markers)

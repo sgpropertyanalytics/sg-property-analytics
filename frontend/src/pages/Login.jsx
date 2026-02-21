@@ -337,10 +337,10 @@ function Login() {
 
         {/* Tower Image - responsive, anchored to bottom */}
         <div
-          className="absolute inset-0 flex items-end justify-center"
+          className="absolute inset-0"
           style={{
-            maskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%), linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)',
-            WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%), linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)',
+            maskImage: 'linear-gradient(to bottom, transparent 0%, black 10%, black 100%), linear-gradient(to right, transparent 0%, black 5%, black 100%)',
+            WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 10%, black 100%), linear-gradient(to right, transparent 0%, black 5%, black 100%)',
             maskComposite: 'intersect',
             WebkitMaskComposite: 'source-in'
           }}
@@ -348,10 +348,11 @@ function Login() {
           <img
             src="/ZG.png"
             alt="Twin Towers"
-            className="w-auto max-w-full h-[85vh] object-contain object-bottom opacity-70"
+            className="w-full h-full object-cover opacity-70"
             style={{
               filter: 'contrast(0.8) brightness(1.15) grayscale(100%)',
-              mixBlendMode: 'multiply'
+              mixBlendMode: 'multiply',
+              objectPosition: 'center 15%'
             }}
           />
         </div>
