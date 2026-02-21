@@ -201,11 +201,11 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
           >
             <GlobalNavRail activePage={activePage} />
             {/* Close button overlay */}
-              <button
-                onClick={handleMobileNavClose}
-                className="absolute top-4 right-4 p-2 rounded-none bg-white border border-zinc-300 text-zinc-600 hover:bg-zinc-100 min-h-[44px] min-w-[44px] flex items-center justify-center shadow-sm"
-                aria-label="Close navigation"
-              >
+            <button
+              onClick={handleMobileNavClose}
+              className="absolute top-4 right-4 p-2 rounded-none bg-white border border-slate-300 text-slate-600 hover:bg-slate-100 min-h-[44px] min-w-[44px] flex items-center justify-center"
+              aria-label="Close navigation"
+            >
 
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -221,12 +221,12 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
         {/* Background - clean solid, no grid overlays */}
 
         {/* Mobile Header */}
-        <header className="lg:hidden sticky top-0 z-40 bg-white px-3 py-2 flex-shrink-0 border-b border-mono-muted">
+        <header className="lg:hidden sticky top-0 z-40 bg-white px-3 py-2 flex-shrink-0 border-b border-slate-200">
           <div className="flex items-center justify-between gap-2">
             {/* Hamburger Menu */}
             <button
               onClick={() => setMobileNavOpen(true)}
-              className="flex items-center justify-center p-2 rounded-none bg-white border border-zinc-300 text-zinc-600 min-h-[44px] min-w-[44px] hover:bg-zinc-100 transition-none shadow-sm"
+              className="flex items-center justify-center p-2 rounded-none bg-white border border-slate-300 text-slate-600 min-h-[44px] min-w-[44px] hover:bg-slate-100 transition-none"
               aria-label="Open navigation menu"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -244,9 +244,9 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
           </div>
 
           {/* Mobile Page Indicator */}
-            <div className="mt-2 flex justify-center">
-               <div className="inline-flex rounded-none bg-white border border-zinc-200 px-3 py-1.5 shadow-sm">
-                <span className="text-zinc-600 font-mono text-[10px] uppercase tracking-[0.18em]">
+          <div className="mt-2 flex justify-center">
+            <div className="inline-flex rounded-none bg-white border border-slate-200 px-3 py-1.5">
+              <span className="text-slate-600 font-mono text-[10px] uppercase tracking-[0.18em]">
                 {NAV_ITEMS.find(item => item.id === activePage)?.label || 'Market Core'}
               </span>
             </div>
@@ -262,7 +262,7 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
             {/* Console Header - Terminal Block (auto-applied to all pages) */}
             {/* Height: 48px (h-12), dense military precision */}
             {/* Border-bottom: Bronze accent line for visual anchoring ("the ledge") */}
-            <div className="flex items-center justify-between px-6 h-12 bg-[#0F172A] border-b-2 border-[#C4A484] shadow-lg rounded-t-sm border border-gray-200 border-b-0">
+            <div className="flex items-center justify-between px-6 h-12 bg-[#0F172A] border border-gray-200 border-b-2 border-b-[#C4A484]">
               {/* Left: Logo Box + Page Title - Industrial branding */}
               <div className="flex items-center gap-3">
                 <div className="bg-white text-black px-1.5 py-0.5 font-mono text-[10px] font-bold tracking-tighter">
