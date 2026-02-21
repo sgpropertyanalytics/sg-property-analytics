@@ -86,7 +86,7 @@ function Login() {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 min-h-screen relative">
+    <div className="grid grid-cols-1 lg:grid-cols-2 min-h-dvh relative">
 
       {/* ===== GLOBAL NOISE OVERLAY ===== */}
       <div
@@ -184,7 +184,7 @@ function Login() {
         {/* Back Button */}
         <button
           onClick={() => navigate('/')}
-          className="absolute top-6 left-6 flex items-center gap-2 text-black/50 hover:text-black transition-colors group z-20"
+          className="absolute top-6 left-6 flex items-center gap-2 min-h-[44px] min-w-[44px] text-black/50 hover:text-black active:text-black/70 transition-colors group z-20 touch-manipulation focus-visible:ring-2 focus-visible:ring-blue-600 outline-none"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
           <span className="font-mono text-xs uppercase tracking-widest">Back</span>
@@ -193,11 +193,14 @@ function Login() {
         {/* ===== TECHNICAL FRAME ===== */}
         <div className="relative w-full max-w-[480px] bg-white border-2 border-black p-8 md:p-10 lg:p-12 z-10 shadow-[8px_8px_0px_0px_#000000]">
 
+          {/* Bronze accent line - bridges to dashboard aesthetic */}
+          <div className="absolute -bottom-[2px] left-0 right-0 h-[3px] bg-[#C4A484] shadow-[8px_0px_0px_0px_#C4A484]" />
+
           {/* Corner Accents - Registration Marks */}
           <div className="absolute -top-[7px] -left-[7px] text-black/40 font-mono text-sm leading-none">+</div>
           <div className="absolute -top-[7px] -right-[7px] text-black/40 font-mono text-sm leading-none">+</div>
-          <div className="absolute -bottom-[7px] -left-[7px] text-black/40 font-mono text-sm leading-none">+</div>
-          <div className="absolute -bottom-[7px] -right-[7px] text-black/40 font-mono text-sm leading-none">+</div>
+          <div className="absolute -bottom-[7px] -left-[7px] text-[#C4A484] font-mono text-sm leading-none">+</div>
+          <div className="absolute -bottom-[7px] -right-[7px] text-[#C4A484] font-mono text-sm leading-none">+</div>
 
           {/* Top Border Label */}
           <div className="absolute -top-[10px] left-1/2 -translate-x-1/2 bg-white px-3">
@@ -241,14 +244,14 @@ function Login() {
                 <button
                   type="button"
                   onClick={() => navigate(from, { replace: true })}
-                  className="flex-1 h-10 bg-black text-white font-mono text-[10px] uppercase tracking-widest"
+                  className="flex-1 min-h-[44px] bg-black text-white font-mono text-[10px] uppercase tracking-widest active:bg-black/80 touch-manipulation focus-visible:ring-2 focus-visible:ring-blue-600 outline-none"
                 >
                   Continue
                 </button>
                 <button
                   type="button"
                   onClick={logout}
-                  className="flex-1 h-10 border border-black/30 text-black font-mono text-[10px] uppercase tracking-widest hover:bg-black/[0.04]"
+                  className="flex-1 min-h-[44px] border border-black/30 text-black font-mono text-[10px] uppercase tracking-widest hover:bg-black/[0.04] active:bg-black/[0.08] touch-manipulation focus-visible:ring-2 focus-visible:ring-blue-600 outline-none"
                 >
                   Sign Out
                 </button>
@@ -276,7 +279,7 @@ function Login() {
             <motion.button
               onClick={handleGoogleSignIn}
               disabled={isSigningIn}
-              className="group w-full h-12 bg-black text-white font-mono text-xs uppercase tracking-widest hover:bg-black/90 active:bg-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 relative overflow-hidden"
+              className="group w-full min-h-[48px] bg-black text-white font-mono text-xs uppercase tracking-widest hover:bg-black/90 active:bg-black/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 relative overflow-hidden touch-manipulation focus-visible:ring-2 focus-visible:ring-blue-600 outline-none"
               whileHover={{ scale: 1.005 }}
               whileTap={{ scale: 0.995 }}
             >
@@ -312,6 +315,17 @@ function Login() {
             {' '}and{' '}
             <a href="#" className="text-black/50 hover:text-black underline">Privacy</a>
           </p>
+
+          {/* System readiness indicator */}
+          <div className="mt-6 pt-4 border-t border-black/5 flex items-center justify-center gap-2">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-70 motion-safe:animate-ping" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            </span>
+            <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-black/30">
+              SYSTEM READY // AWAITING AUTH
+            </span>
+          </div>
 
           {/* Connector Line - extends from card to divider (desktop) */}
           <div className="hidden lg:block absolute top-1/2 -right-[6px] w-[calc(50vw-240px-48px)] h-px bg-black/10" />

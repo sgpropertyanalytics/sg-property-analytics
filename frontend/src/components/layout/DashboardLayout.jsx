@@ -149,16 +149,8 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
   const handleMobileNavClose = () => setMobileNavOpen(false);
 
   return (
-    <div className="flex h-screen" style={{ backgroundColor: 'var(--color-bg)' }}>
-      {/* Industrial Grid Background - Technical layer behind everything */}
-      <div
-        className="fixed inset-0 pointer-events-none z-0"
-        style={{
-          backgroundImage: 'linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)',
-          backgroundSize: '20px 20px',
-          opacity: 0.03
-        }}
-      />
+    <div className="flex h-dvh" style={{ backgroundColor: 'var(--color-bg)' }}>
+      {/* Clean background - no overlapping grid patterns */}
 
       {/* ===== GLOBAL NAV RAIL (Primary Sidebar) ===== */}
       {/* Desktop: Collapsible mini-dock with mechanical 0.2s animation | Mobile: Hidden */}
@@ -175,7 +167,7 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
         {/* IDE-style Edge Toggle - Positioned on the vertical dividing line */}
         <button
           onClick={toggleNavCollapse}
-          className="absolute top-1/2 -right-3 transform -translate-y-1/2 z-50 w-6 h-12 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-r-md flex items-center justify-center text-slate-400 hover:text-white transition-colors duration-150"
+          className="absolute top-1/2 -right-3 transform -translate-y-1/2 z-50 w-6 h-12 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 border border-slate-600 rounded-r-md flex items-center justify-center text-slate-400 hover:text-white transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-blue-600 touch-manipulation"
           aria-label={isNavCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           <svg
@@ -197,23 +189,25 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
       {/* Mobile Nav Drawer Overlay */}
       {mobileNavOpen && (
         <div className="lg:hidden fixed inset-0 z-50">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/50"
+          {/* Backdrop — tabIndex -1 keeps it out of Tab order */}
+          <button
+            tabIndex={-1}
+            className="absolute inset-0 bg-black/50 cursor-default"
             onClick={handleMobileNavClose}
+            aria-label="Close navigation"
           />
           {/* Nav Drawer - Uses NAV_WIDTH_EXPANDED design token, capped at 85vw */}
           <div
-            className="absolute inset-y-0 left-0 max-w-[85vw] animate-slide-in-left"
+            className="absolute inset-y-0 left-0 max-w-[85vw] animate-slide-in-left overscroll-contain"
             style={{ width: NAV_WIDTH_EXPANDED }}
           >
             <GlobalNavRail activePage={activePage} />
             {/* Close button overlay */}
-              <button
-                onClick={handleMobileNavClose}
-                className="absolute top-4 right-4 p-2 rounded-none bg-white border border-zinc-300 text-zinc-600 hover:bg-zinc-100 min-h-[44px] min-w-[44px] flex items-center justify-center shadow-sm"
-                aria-label="Close navigation"
-              >
+            <button
+              onClick={handleMobileNavClose}
+              className="absolute top-4 right-4 p-2 rounded-none bg-white border border-slate-300 text-slate-600 hover:bg-slate-100 active:bg-slate-200 min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:ring-2 focus-visible:ring-blue-600 touch-manipulation"
+              aria-label="Close navigation"
+            >
 
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -226,25 +220,15 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
       {/* ===== MAIN CONTENT AREA ===== */}
       {/* min-w-0 prevents flex children from overflowing - critical for nested grids */}
       <div className="flex-1 min-w-0 flex flex-col relative">
-        {/* Background Grid Pattern */}
-        <div
-          className="absolute inset-0 pointer-events-none opacity-[0.4]"
-          style={{
-            backgroundImage: `
-              linear-gradient(to right, var(--color-border) 1px, transparent 1px),
-              linear-gradient(to bottom, var(--color-border) 1px, transparent 1px)
-            `,
-            backgroundSize: '24px 24px'
-          }}
-        />
+        {/* Background - clean solid, no grid overlays */}
 
         {/* Mobile Header */}
-        <header className="lg:hidden sticky top-0 z-40 bg-white px-3 py-2 flex-shrink-0 border-b border-mono-muted">
+        <header className="lg:hidden sticky top-0 z-40 bg-white px-3 py-2 flex-shrink-0 border-b border-slate-200" style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top))' }}>
           <div className="flex items-center justify-between gap-2">
             {/* Hamburger Menu */}
             <button
               onClick={() => setMobileNavOpen(true)}
-              className="flex items-center justify-center p-2 rounded-none bg-white border border-zinc-300 text-zinc-600 min-h-[44px] min-w-[44px] hover:bg-zinc-100 transition-none shadow-sm"
+              className="flex items-center justify-center p-2 rounded-none bg-white border border-slate-300 text-slate-600 min-h-[44px] min-w-[44px] hover:bg-slate-100 active:bg-slate-200 transition-none focus-visible:ring-2 focus-visible:ring-blue-600 touch-manipulation"
               aria-label="Open navigation menu"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -262,9 +246,9 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
           </div>
 
           {/* Mobile Page Indicator */}
-            <div className="mt-2 flex justify-center">
-               <div className="inline-flex rounded-none bg-white border border-zinc-200 px-3 py-1.5 shadow-sm">
-                <span className="text-zinc-600 font-mono text-[10px] uppercase tracking-[0.18em]">
+          <div className="mt-2 flex justify-center">
+            <div className="inline-flex rounded-none bg-white border border-slate-200 px-3 py-1.5">
+              <span className="text-slate-600 font-mono text-[10px] uppercase tracking-[0.18em]">
                 {NAV_ITEMS.find(item => item.id === activePage)?.label || 'Market Core'}
               </span>
             </div>
@@ -273,64 +257,58 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
 
         {/* Main Content - Wrapped with Suspense + ErrorBoundary */}
         {/* DASHBOARD LAYOUT - No top padding, sticky header covers full viewport */}
-        <main className="flex-1 min-w-0 overflow-y-auto flex flex-col pb-6 relative z-10">
+        <main className="flex-1 min-w-0 overflow-y-auto flex flex-col pb-6 relative z-10 bg-[var(--color-bg)]">
           {/* Frosted Bezel - Sticky at true top-0, covers all scrolling content */}
           {/* pt-6 creates the visual gap, backdrop-blur creates disintegration effect */}
           <div className="sticky top-0 z-50 w-full pt-6 pb-2 backdrop-blur-xl bg-[#F5F3EE]/90">
             {/* Console Header - Terminal Block (auto-applied to all pages) */}
             {/* Height: 48px (h-12), dense military precision */}
             {/* Border-bottom: Bronze accent line for visual anchoring ("the ledge") */}
-            <div className="flex items-center justify-between px-6 h-12 bg-[#0F172A] border-b-2 border-[#C4A484] shadow-lg rounded-t-sm border border-gray-200 border-b-0">
+            <div className="flex items-center justify-between px-3 md:px-6 h-12 bg-slate-900 border border-slate-200 border-b-2 border-b-[#C4A484]">
               {/* Left: Logo Box + Page Title - Industrial branding */}
-              <div className="flex items-center gap-3">
-                <div className="bg-white text-black px-1.5 py-0.5 font-mono text-[10px] font-bold tracking-tighter">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="bg-white text-black px-1.5 py-0.5 font-mono text-[10px] font-bold tracking-tighter flex-shrink-0">
                   SGP::ANA
                 </div>
-                <h1 className="text-sm font-medium text-white tracking-widest uppercase">
+                <h1 className="text-sm font-medium text-white tracking-widest uppercase truncate min-w-0">
                   {NAV_ITEMS.find(item => item.id === activePage)?.label?.replace(/ /g, '_') || 'Dashboard'} // V.2.0
                 </h1>
               </div>
 
-              {/* Right: Metadata - Monospace for raw system data look */}
-              <div className="flex items-center gap-3 text-xs text-slate-400 font-mono">
+              {/* Right: Metadata - Compact intelligence readout */}
+              <div className="hidden md:flex items-center gap-3 text-[10px] text-slate-400 font-mono uppercase tracking-wider">
                 {apiMetadata && (
                   <>
-                    <span>
-                      Last updated: {apiMetadata.last_updated
-                        ? new Date(apiMetadata.last_updated).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
-                        : 'N/A'}
-                    </span>
-                    {apiMetadata.total_records > 0 && (
-                      <span>
-                        | Total records: {apiMetadata.total_records.toLocaleString()}
-                        {apiMetadata.records_added_last_ingestion > 0 && (
-                          <> (+{apiMetadata.records_added_last_ingestion.toLocaleString()} new)</>
-                        )}
+                    {apiMetadata.last_updated && (
+                      <span className="text-slate-500">
+                        SYNC: {new Date(apiMetadata.last_updated).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                       </span>
                     )}
-                    {apiMetadata.outliers_excluded > 0 && (
-                      <span>| Statistical outliers removed: {apiMetadata.outliers_excluded.toLocaleString()}</span>
+                    {apiMetadata.total_records > 0 && (
+                      <span className="text-slate-500">
+                        TX: {apiMetadata.total_records.toLocaleString()}
+                      </span>
                     )}
                   </>
                 )}
+                {/* Vertical separator */}
+                <div className="w-px h-3 bg-slate-600" />
                 {/* Live Indicator - Enhanced pulse ring animation */}
-                <div className="flex items-center gap-1.5 ml-2">
+                <div className="flex items-center gap-1.5">
                   <span className="relative flex h-2 w-2">
-                    {/* Pulse ring effect - expanding concentric rings */}
                     <span className="pulse-ring pulse-ring-emerald absolute inline-flex h-full w-full rounded-full" />
-                    {/* Core LED - solid emerald dot */}
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
                   </span>
-                  <span className="text-emerald-400 text-[10px] font-mono uppercase tracking-wider">LIVE</span>
+                  <span className="text-emerald-400">LIVE</span>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Content Card - Technical dot grid background */}
-          <div className="flex-1 min-w-0 flex flex-col border border-gray-200 border-t-0 bg-white -mt-2">
+          <div className="flex-1 min-w-0 flex flex-col border border-slate-200 border-t-0 bg-white -mt-2">
             {/* Page Content */}
-            <div className="flex-1 min-w-0 technical-grid-bg px-6 pt-4 pb-6">
+            <div className="flex-1 min-w-0 technical-grid-bg px-3 md:px-6 pt-4 pb-6">
               <ErrorBoundary name="Page Content">
                 <Suspense fallback={<ContentLoadingFallback />}>
                   <div className="flex-1 min-w-0 text-ink">

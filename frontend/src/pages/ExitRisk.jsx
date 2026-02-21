@@ -344,7 +344,7 @@ export function ExitRiskContent() {
 
         {/* Project Selector + Downside Protection Input */}
         <div className="bg-card rounded-xl border border-slate-500/30 mb-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2">
+          <div className="grid grid-cols-1 md:grid-cols-2">
             {/* Left: Project Selector */}
             <div className="p-4 md:p-6">
               <label className="block text-sm font-medium text-slate-900 mb-2">
@@ -355,7 +355,7 @@ export function ExitRiskContent() {
                   type="button"
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   disabled={projectOptionsLoading}
-                  className="w-full px-3 py-2.5 text-sm border border-slate-500/50 rounded-lg text-left bg-slate-200/20 focus:outline-none focus:ring-2 focus:ring-slate-700 focus:border-transparent flex items-center justify-between min-w-0"
+                  className="w-full min-h-[44px] px-3 py-2.5 text-sm border border-slate-500/50 rounded-lg text-left bg-slate-200/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-700 focus-visible:border-transparent flex items-center justify-between min-w-0 touch-manipulation"
                 >
                   <span className={selectedProject ? 'text-slate-900 truncate font-medium min-w-0' : 'text-slate-500 min-w-0'}>
                     {selectedProject
@@ -369,7 +369,8 @@ export function ExitRiskContent() {
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); handleClearSelection(); }}
-                        className="p-1 hover:bg-slate-500/30 rounded"
+                        className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-slate-500/30 rounded touch-manipulation active:bg-slate-500/40"
+                        aria-label="Clear selection"
                       >
                         <svg className="w-4 h-4 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -406,7 +407,7 @@ export function ExitRiskContent() {
                             key={p.name}
                             type="button"
                             onClick={() => handleProjectSelect(p)}
-                            className={`w-full px-3 py-2 text-left text-sm hover:bg-slate-200/50 flex justify-between items-center min-w-0 ${
+                            className={`w-full min-h-[44px] px-3 py-2 text-left text-sm hover:bg-slate-200/50 active:bg-slate-200/70 flex justify-between items-center min-w-0 touch-manipulation ${
                               selectedProject?.name === p.name ? 'bg-slate-200/30 text-slate-900 font-medium' : 'text-slate-700'
                             }`}
                           >
@@ -433,7 +434,7 @@ export function ExitRiskContent() {
             </div>
 
             {/* Right: Downside Protection Input */}
-            <div className="lg:border-l lg:border-slate-500/30 bg-slate-700/[0.03] p-4 md:p-6">
+            <div className="md:border-l md:border-slate-500/30 bg-slate-700/[0.03] p-4 md:p-6">
               <div className="mb-3">
                 <h2 className="text-sm font-semibold text-slate-900 mb-1">
                   Downside Protection Analysis
@@ -487,20 +488,20 @@ export function ExitRiskContent() {
 
         {/* Loading State */}
         {loading && (
-          <div className="space-y-4 lg:space-y-6 animate-fade-in">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+          <div className="space-y-4 md:space-y-6 animate-fade-in">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               <ProjectFundamentalsPanel loading={true} compact />
               <ResaleMetricsCards loading={true} compact />
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               <div className="bg-card rounded-xl border border-brand-sky/30 overflow-hidden">
-                <FrostOverlay height={350} showSpinner showProgress />
+                <FrostOverlay height={400} showSpinner showProgress />
               </div>
               <div className="bg-card rounded-xl border border-brand-sky/30 overflow-hidden">
                 <FrostOverlay height={400} showSpinner showProgress />
               </div>
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               <div className="bg-card rounded-xl border border-brand-sky/30 overflow-hidden">
                 <FrostOverlay height={400} showSpinner showProgress />
               </div>
@@ -522,9 +523,9 @@ export function ExitRiskContent() {
             )}
 
             {/* Charts Grid */}
-            <div className="space-y-4 lg:space-y-6">
+            <div className="space-y-4 md:space-y-6">
               {/* Row 1: KPI Cards */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 <ProjectFundamentalsPanel
                   totalUnits={normalizedExitQueue.fundamentals?.totalUnits}
                   topYear={normalizedExitQueue.fundamentals?.topYear}
@@ -557,7 +558,7 @@ export function ExitRiskContent() {
               </div>
 
               {/* Row 2: Price Growth + Floor Liquidity */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 lg:items-stretch">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 md:items-stretch">
                 <ErrorBoundary name="Price Growth Chart" compact>
                   <Suspense fallback={<ChartSkeleton type="line" height={400} />}>
                     <PriceGrowthChart
@@ -583,7 +584,7 @@ export function ExitRiskContent() {
               </div>
 
               {/* Row 3: Price Band + Exit Risk */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 items-stretch">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 items-stretch">
                 <ErrorBoundary name="Price Band Chart" compact>
                   <Suspense fallback={<ChartSkeleton type="line" height={400} />}>
                     <PriceBandChart

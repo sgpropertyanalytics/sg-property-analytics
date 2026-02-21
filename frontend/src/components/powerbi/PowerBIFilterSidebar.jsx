@@ -125,13 +125,13 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
   // Single row layout: Property filters | Time Duration | Granularity | Reset
   if (layout === 'horizontal') {
     return (
-      <div className="py-3 overflow-visible">
+      <div className="py-3">
         {/* Frame - full width, frosted glass */}
-        <div className="w-full bg-white/70 border border-slate-200/80 py-3 shadow-sm overflow-visible">
-          {/* Centered content container */}
-          <div className="mx-auto max-w-[1400px] px-6 overflow-visible">
-            {/* One row, no scroll, always fit */}
-            <div className="flex items-center justify-center flex-nowrap gap-3 whitespace-nowrap overflow-visible">
+        <div className="w-full bg-white/70 border border-slate-200/80 py-3 shadow-sm">
+          {/* Centered content - px-4 tight padding, overflow-x-auto safety net */}
+          <div className="mx-auto max-w-[1400px] px-4 overflow-x-auto scrollbar-hide">
+            {/* Horizontal filter row - gap-2 keeps buttons within frame */}
+            <div className="flex items-center justify-center flex-nowrap gap-2 whitespace-nowrap">
 
               {/* Region Segmented Control */}
               <div className="segmented-control shrink-0">
@@ -156,7 +156,7 @@ export function PowerBIFilterSidebar({ collapsed = false, onToggle: _onToggle, l
               </div>
 
               {/* District Dropdown */}
-              <div className="shrink-0 w-[140px] overflow-visible">
+              <div className="shrink-0 w-[130px]">
                 <MultiSelectDropdown
                   options={(filterOptions.districtsRaw || []).map(d => {
                     const areaName = DISTRICT_NAMES[d];

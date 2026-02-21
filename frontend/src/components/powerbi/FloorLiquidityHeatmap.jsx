@@ -33,9 +33,10 @@ import {
  *  segment?: string,
  *  district?: string,
  *  highlightProject?: string,
+ *  height?: number,
  * }} props
  */
-export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightProject: _highlightProject }) {
+export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightProject: _highlightProject, height = 400 }) {
   // Local state for window toggle
   const [windowMonths, setWindowMonths] = useState(12);
 
@@ -202,10 +203,10 @@ export function FloorLiquidityHeatmap({ bedroom, segment, district, highlightPro
       onRetry={refetch}
       empty={data.projects.length === 0}
       skeleton="grid"
-      height={400}
+      height={height}
     >
-    {/* Card owns its height explicitly - 400px fixed */}
-    <div className="weapon-card hud-corner weapon-shadow overflow-hidden flex flex-col" style={{ height: 400 }}>
+    {/* Card owns its height explicitly */}
+    <div className="weapon-card hud-corner weapon-shadow overflow-hidden flex flex-col" style={{ height }}>
       {/* Header */}
       <div className="px-6 py-4 border-b border-mono-muted">
         <div className="flex items-center justify-between flex-wrap gap-4">

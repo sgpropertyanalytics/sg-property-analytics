@@ -131,7 +131,7 @@ export function ProjectDeepDiveContent() {
           {/* Input Panel */}
           <div className="bg-card rounded-lg border border-brand-sky/50 overflow-hidden">
             <form onSubmit={handleSearch}>
-              <div className="grid grid-cols-1 lg:grid-cols-2">
+              <div className="grid grid-cols-1 md:grid-cols-2">
                 {/* LEFT: Budget Slider + Search */}
                 <div className="min-w-0 px-4 md:px-5 py-4 md:py-5 lg:pr-6">
                   <p className="text-sm text-brand-blue mb-4">Target price (S$) - Show transactions within +/- $100K of this amount</p>
@@ -195,7 +195,7 @@ export function ProjectDeepDiveContent() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full px-4 py-2.5 bg-brand-navy text-white text-sm font-medium rounded-md hover:bg-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150"
+                    className="w-full min-h-[44px] px-4 py-2.5 bg-brand-navy text-white text-sm font-medium rounded-md hover:bg-brand-blue focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors active:bg-brand-blue/80 touch-manipulation"
                   >
                     {loading ? (
                       <span className="flex items-center justify-center gap-2">
@@ -216,12 +216,12 @@ export function ProjectDeepDiveContent() {
                 </div>
 
                 {/* RIGHT: Optional Filters */}
-                <div className="min-w-0 mt-6 lg:mt-0 lg:border-l lg:border-brand-sky/30 bg-brand-blue/[0.03]">
+                <div className="min-w-0 mt-6 md:mt-0 md:border-l md:border-brand-sky/30 bg-brand-blue/[0.03]">
                   {/* Mobile: Collapsible toggle */}
                   <button
                     type="button"
                     onClick={() => setFiltersExpanded(!filtersExpanded)}
-                    className="lg:hidden w-full flex items-center justify-between min-h-[48px] px-4 py-3 active:bg-brand-sand/50"
+                    className="md:hidden w-full flex items-center justify-between min-h-[48px] px-4 py-3 active:bg-brand-sand/50 touch-manipulation"
                   >
                     <span className="flex items-center gap-2">
                       <svg className="w-4 h-4 text-brand-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -247,8 +247,8 @@ export function ProjectDeepDiveContent() {
                   </button>
 
                   {/* Desktop: Always visible / Mobile: Collapsible */}
-                  <div className={`${filtersExpanded ? 'block' : 'hidden'} lg:block px-4 md:px-5 py-4 md:py-5 w-full`}>
-                    <p className="hidden lg:block text-[10px] uppercase tracking-wide text-brand-blue/60 mb-3 font-medium">Optional filters</p>
+                  <div className={`${filtersExpanded ? 'block' : 'hidden'} md:block px-4 md:px-5 py-4 md:py-5 w-full`}>
+                    <p className="hidden md:block text-[10px] uppercase tracking-wide text-brand-blue/60 mb-3 font-medium">Optional filters</p>
                     <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
                       {/* Bedroom */}
                       <div>

@@ -95,7 +95,7 @@ export function DataCard({ children, variant = 'standalone', className = '' }: D
   // Embedded variant removes container chrome for "blueprint" integration
   // Chart axes align directly with parent section's grid
   const containerStyles = variant === 'embedded'
-    ? 'flex flex-col'
+    ? 'flex flex-col overflow-hidden'
     : 'bg-white border border-slate-300 rounded-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,0.05)] flex flex-col overflow-hidden';
 
   return (
@@ -410,7 +410,7 @@ export function ToolbarStat({
   return (
     <div
       className={`
-        flex flex-col justify-center px-4
+        flex flex-col justify-center px-4 min-w-0
         ${highlight ? 'bg-slate-100' : ''}
         ${className}
       `.trim()}
@@ -418,7 +418,7 @@ export function ToolbarStat({
       {/* Label row - pure metrics, no color dots */}
       <span
         className={`
-          font-sans text-[10px] uppercase font-semibold tracking-wide mb-1
+          font-sans text-[10px] uppercase font-semibold tracking-wide mb-1 truncate
           ${highlight ? 'text-slate-600' : 'text-slate-400'}
         `.trim()}
       >
@@ -427,7 +427,7 @@ export function ToolbarStat({
       {/* Mono for machine data */}
       <span
         className={`
-          font-mono font-semibold tabular-nums
+          font-mono font-semibold tabular-nums truncate
           ${highlight ? 'text-sm text-slate-900' : 'text-lg text-slate-800'}
         `.trim()}
       >
@@ -518,7 +518,7 @@ export function DataCardCanvas({
 
   return (
     <div
-      className={`flex-grow ${paddingClass} relative ${className}`}
+      className={`flex-grow overflow-hidden ${paddingClass} relative ${className}`}
       style={{ minHeight }}
     >
       {children}

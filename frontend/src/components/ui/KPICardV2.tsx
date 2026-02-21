@@ -109,7 +109,7 @@ export function KPIHeroContent({
     <>
       {/* Main value row with badge - Bold for visual hierarchy */}
       <div
-        className="text-[22px] sm:text-[28px] font-mono font-semibold text-slate-900 tracking-tight truncate"
+        className="text-lg sm:text-[22px] md:text-[28px] font-mono font-semibold text-slate-900 tracking-tight truncate"
         title={badge ? `${value} ${badge.text}` : String(value)}
       >
         {value}
@@ -330,7 +330,7 @@ export function KPIHudStrip({
   const gridCols = {
     2: 'grid-cols-1 sm:grid-cols-2',
     3: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
-    4: 'grid-cols-2 lg:grid-cols-4',
+    4: 'grid-cols-2 md:grid-cols-4',
   };
 
   // Convert children to array for mapping with dividers
