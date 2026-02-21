@@ -14,7 +14,6 @@ from services.ura_sync_config import (
     get_sync_mode,
     get_revision_window_months,
     get_cutoff_date,
-    get_revision_window_date,
     build_upsert_sql,
     validate_sync_config,
     SyncStats,
@@ -115,12 +114,6 @@ class TestRevisionWindow:
         """Invalid revision window defaults to 3."""
         monkeypatch.setenv('URA_REVISION_WINDOW_MONTHS', 'invalid')
         assert get_revision_window_months() == 3
-
-    def test_revision_window_date(self, monkeypatch):
-        """Revision window date is correct."""
-        monkeypatch.setenv('URA_REVISION_WINDOW_MONTHS', '3')
-        expected = date.today() - relativedelta(months=3)
-        assert get_revision_window_date() == expected
 
 
 # =============================================================================

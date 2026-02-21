@@ -134,20 +134,6 @@ def is_allowed_property_type(property_type: str) -> bool:
     return property_type.lower() in ALLOWED_PROPERTY_TYPES
 
 
-def get_revision_window_date() -> date:
-    """
-    Calculate the date from which to start the revision window.
-
-    Returns:
-        Date N months ago
-
-    Environment:
-        URA_REVISION_WINDOW_MONTHS: default 3
-    """
-    months = get_revision_window_months()
-    return date.today() - relativedelta(months=months)
-
-
 # =============================================================================
 # Upsert SQL Templates
 # =============================================================================
@@ -316,6 +302,6 @@ def log_sync_config():
     logger.info(f"  Enabled:          {is_sync_enabled()}")
     logger.info(f"  Mode:             {get_sync_mode()}")
     logger.info(f"  Revision window:  {get_revision_window_months()} months")
-    logger.info(f"  Revision start:   {get_revision_window_date()}")
+    logger.info(f"  Revision start:   {date.today() - relativedelta(months=get_revision_window_months())}")
     logger.info(f"  Cutoff date:      {get_cutoff_date()}")
     logger.info("=" * 60)
