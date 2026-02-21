@@ -87,6 +87,21 @@ venv.bak/
 .kiro/
 .kode/
 .mcpjam/
+.mux/
+.neovate/
+.openclaude/
+.opencode/
+.openhands/
+.pi/
+.pochi/
+.qoder/
+.qwen/
+.roo/
+.trae/
+.vibe/
+.windsurf/
+.zencoder/
+/skills/
 
 # IDEs
 .vscode/
