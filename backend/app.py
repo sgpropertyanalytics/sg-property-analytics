@@ -419,13 +419,12 @@ def create_app():
             print("   ⏭️  Startup checks disabled (set RUN_STARTUP_CHECKS=1 to enable)")
 
         # =======================================================================
-        # REMOVED FROM WEB BOOT (2024-01 optimization)
+        # REMOVED FROM SYNCHRONOUS BOOT (2024-01 optimization)
         # =======================================================================
         # 1. check_and_refresh_on_startup() — moved to cron job
-        # 2. warm_cache_for_common_queries() / warm_kpi_cache() — unnecessary.
-        #    Now on standard plan (always-on). Frontend uses persistQueryClient
-        #    (localStorage) so returning users see cached charts instantly while
-        #    stale-while-revalidate triggers background refetch.
+        # 2. warm_cache_for_common_queries() / warm_kpi_cache() — moved to
+        #    background thread (see bottom of create_app). Now on standard plan
+        #    (always-on), so warmed caches persist between requests.
         # 3. data_guard subprocess — moved to CI/CD pipeline
         # =======================================================================
 
@@ -538,6 +537,29 @@ def create_app():
                 "status": "error",
                 "error": str(e)
             })
+
+    # Background cache warming (non-blocking)
+    # Standard plan = always-on, so warmed caches persist between requests.
+    # Each gunicorn worker spawns its own thread, warming its own _dashboard_cache.
+    # Runs after all blueprints are registered so the app can serve /api/health
+    # immediately while warming proceeds in the background.
+    if os.getenv('FLASK_ENV') == 'production':
+        import threading
+
+        def _warm_caches():
+            with app.app_context():
+                try:
+                    from services.dashboard_service import (
+                        warm_cache_for_common_queries, warm_kpi_cache
+                    )
+                    print("[WARM] Starting background cache warming...")
+                    warm_cache_for_common_queries()
+                    warm_kpi_cache()
+                    print("[WARM] Background cache warming complete")
+                except Exception as e:
+                    print(f"[WARM] Cache warming failed (non-fatal): {e}")
+
+        threading.Thread(target=_warm_caches, daemon=True).start()
 
     return app
 
