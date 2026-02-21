@@ -73,15 +73,10 @@ class TestKillSwitch:
 class TestSyncMode:
     """Tests for URA_SYNC_MODE."""
 
-    def test_default_is_shadow(self, monkeypatch):
-        """Default mode should be shadow."""
+    def test_default_is_production(self, monkeypatch):
+        """Default mode should be production."""
         monkeypatch.delenv('URA_SYNC_MODE', raising=False)
-        assert get_sync_mode() == 'shadow'
-
-    def test_shadow_mode(self, monkeypatch):
-        """Shadow mode when set."""
-        monkeypatch.setenv('URA_SYNC_MODE', 'shadow')
-        assert get_sync_mode() == 'shadow'
+        assert get_sync_mode() == 'production'
 
     def test_production_mode(self, monkeypatch):
         """Production mode when set."""
@@ -93,10 +88,10 @@ class TestSyncMode:
         monkeypatch.setenv('URA_SYNC_MODE', 'dry_run')
         assert get_sync_mode() == 'dry_run'
 
-    def test_invalid_mode_defaults_to_shadow(self, monkeypatch):
-        """Invalid mode defaults to shadow."""
+    def test_invalid_mode_defaults_to_production(self, monkeypatch):
+        """Invalid mode defaults to production."""
         monkeypatch.setenv('URA_SYNC_MODE', 'invalid')
-        assert get_sync_mode() == 'shadow'
+        assert get_sync_mode() == 'production'
 
 
 # =============================================================================

@@ -344,33 +344,3 @@ def assert_hash_integrity(session, source: str) -> dict:
         )
 
     return stats
-
-
-def get_overlap_window(session) -> tuple:
-    """
-    Get the overlapping date window between CSV and API data.
-
-    Use this to scope validators - excludes pre-2021 CSV-only and
-    Jan-2026 API-only data from match rate calculations.
-
-    Args:
-        session: SQLAlchemy session
-
-    Returns:
-        Tuple of (start_date, end_date) for the overlap window
-    """
-    from sqlalchemy import text
-
-    result = session.execute(text("""
-        SELECT
-            GREATEST(
-                (SELECT MIN(transaction_month) FROM transactions WHERE source = 'csv' AND row_hash IS NOT NULL),
-                (SELECT MIN(transaction_month) FROM transactions WHERE source = 'ura_api' AND row_hash IS NOT NULL)
-            ) as overlap_start,
-            LEAST(
-                (SELECT MAX(transaction_month) FROM transactions WHERE source = 'csv' AND row_hash IS NOT NULL),
-                (SELECT MAX(transaction_month) FROM transactions WHERE source = 'ura_api' AND row_hash IS NOT NULL)
-            ) as overlap_end
-    """)).fetchone()
-
-    return (result[0], result[1])

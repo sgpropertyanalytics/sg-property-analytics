@@ -7,7 +7,6 @@ Each sync run has:
 - Configuration (revision_window, cutoff_date, mode)
 - Counters (skip reasons from mapper)
 - Totals (raw, mapped, inserted, updated)
-- Comparison results (vs baseline)
 """
 from models.database import db
 from datetime import datetime
@@ -30,7 +29,7 @@ class URASyncRun(db.Model):
     # Configuration
     revision_window_months = db.Column(db.Integer, nullable=False, default=3)
     cutoff_date = db.Column(db.Date)  # Only sync transactions >= this date
-    mode = db.Column(db.Text, nullable=False, default='shadow')  # shadow | production | dry_run
+    mode = db.Column(db.Text, nullable=False, default='production')  # production | dry_run
 
     # Token tracking
     token_refreshed = db.Column(db.Boolean, default=False)
@@ -52,10 +51,6 @@ class URASyncRun(db.Model):
     # API response metadata - JSONB
     api_response_times = db.Column(db.JSON)  # {"batch_1": 1.23, ...}
     api_retry_counts = db.Column(db.JSON)    # {"batch_1": 0, ...}
-
-    # Comparison results (populated after sync)
-    comparison_baseline_run_id = db.Column(db.String(36))
-    comparison_results = db.Column(db.JSON)
 
     # Versioning
     git_sha = db.Column(db.Text)
@@ -94,8 +89,6 @@ class URASyncRun(db.Model):
             'counters': self.counters,
             'totals': self.totals,
             'api_response_times': self.api_response_times,
-            'comparison_baseline_run_id': self.comparison_baseline_run_id,
-            'comparison_results': self.comparison_results,
             'git_sha': self.git_sha,
             'error_message': self.error_message,
             'error_stage': self.error_stage,
@@ -144,9 +137,3 @@ class URASyncRun(db.Model):
             cls.status == status
         ).order_by(cls.started_at.desc()).first()
 
-    @classmethod
-    def get_latest_csv_run(cls):
-        """Get the latest CSV-based run (for comparison baseline)."""
-        # CSV runs are tracked in etl_batches, not here
-        # This is a placeholder - comparator will handle differently
-        return None

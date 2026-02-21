@@ -5,9 +5,8 @@ Environment Variables:
     URA_SYNC_ENABLED: 'true' or 'false' (default: 'true')
         Kill switch to disable sync. Set to 'false' to exit early.
 
-    URA_SYNC_MODE: 'shadow' | 'production' | 'dry_run' (default: 'shadow')
-        - shadow: Write to transactions with source='ura_api', run comparison
-        - production: Full production write
+    URA_SYNC_MODE: 'production' | 'dry_run' (default: 'production')
+        - production: Full production write (URA API is primary source)
         - dry_run: Fetch and map, but don't write to DB
 
     URA_REVISION_WINDOW_MONTHS: int (default: 3)
@@ -52,15 +51,15 @@ def get_sync_mode() -> str:
     Get the current sync mode.
 
     Returns:
-        'shadow', 'production', or 'dry_run'
+        'production' or 'dry_run'
 
     Environment:
-        URA_SYNC_MODE: default 'shadow'
+        URA_SYNC_MODE: default 'production'
     """
-    mode = os.environ.get('URA_SYNC_MODE', 'shadow').lower()
-    if mode not in ('shadow', 'production', 'dry_run'):
-        logger.warning(f"Invalid URA_SYNC_MODE '{mode}', defaulting to 'shadow'")
-        mode = 'shadow'
+    mode = os.environ.get('URA_SYNC_MODE', 'production').lower()
+    if mode not in ('production', 'dry_run'):
+        logger.warning(f"Invalid URA_SYNC_MODE '{mode}', defaulting to 'production'")
+        mode = 'production'
     return mode
 
 
@@ -98,17 +97,6 @@ def get_cutoff_date() -> date:
     cutoff = date.today() - relativedelta(years=years)
     # Align to month start to avoid partial-month comparison gaps
     return cutoff.replace(day=1)
-
-
-def is_compare_strict() -> bool:
-    """
-    Check if comparison threshold breaches should fail the sync.
-
-    Environment:
-        URA_COMPARE_STRICT: 'true' (default) or 'false'
-    """
-    strict = os.environ.get('URA_COMPARE_STRICT', 'true').lower()
-    return strict not in ('false', '0', 'no', 'off', 'disabled')
 
 
 # =============================================================================

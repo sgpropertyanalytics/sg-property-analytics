@@ -8,13 +8,11 @@ Workflow:
 4. Fetch all batches (1-4)
 5. Map to canonical schema
 6. Upsert with ON CONFLICT DO UPDATE
-7. (shadow only) Run comparison vs CSV baseline
-8. Mark succeeded/failed
+7. Mark succeeded/failed
 
 Modes:
 - dry_run: Fetch and map, but no DB writes
-- shadow: Write with source='ura_api', run CSV comparison
-- production: Write to prod (URA API is primary, no CSV comparison)
+- production: Write to prod (URA API is primary source)
 
 Usage:
     # As module
@@ -46,7 +44,6 @@ from services.ura_sync_config import (
     get_cutoff_date,
     get_revision_window_months,
     get_revision_window_date,
-    is_compare_strict,
     validate_sync_config,
     log_sync_config,
     build_upsert_sql,
@@ -56,7 +53,6 @@ from services.ura_sync_config import (
     is_allowed_property_type,
     ALLOWED_PROPERTY_TYPES_DISPLAY,
 )
-from services.ura_shadow_comparator import URAShadowComparator, ComparisonReport
 from services.ai_snapshot_service import refresh_market_snapshot
 
 logger = logging.getLogger(__name__)
@@ -78,11 +74,10 @@ class SyncResult:
     """Result of a sync run."""
     success: bool
     run_id: Optional[str] = None
-    mode: str = 'shadow'
+    mode: str = 'production'
     error_message: Optional[str] = None
     error_stage: Optional[str] = None
     stats: Dict[str, Any] = field(default_factory=dict)
-    comparison: Optional[Dict[str, Any]] = None
     duration_seconds: float = 0.0
 
     def to_dict(self) -> Dict[str, Any]:
@@ -155,7 +150,7 @@ class URASyncEngine:
         Initialize sync engine.
 
         Args:
-            mode: Override sync mode (shadow/production/dry_run)
+            mode: Override sync mode (production/dry_run)
             triggered_by: Who triggered this run (cron/manual/backfill/test)
             notes: Optional notes for this run
         """
@@ -216,43 +211,10 @@ class URASyncEngine:
             try:
                 self._execute_sync()
 
-                # 5. Run comparison (shadow mode only)
-                # In production mode, URA API is the primary source — CSV
-                # comparison is not meaningful and must not gate success.
-                comparison_report = None
-                if self.mode == 'shadow':
-                    comparison_report = self._run_comparison()
+                # 5. Mark success
+                self._mark_succeeded()
 
-                    # 6. Check thresholds (optionally strict)
-                    if comparison_report and not comparison_report.is_acceptable:
-                        if is_compare_strict():
-                            self._mark_failed(
-                                error_message=f"Comparison thresholds exceeded: {comparison_report.issues}",
-                                error_stage='compare'
-                            )
-                            duration = (datetime.now(UTC) - start_time).total_seconds()
-                            return SyncResult(
-                                success=False,
-                                run_id=self.run_id,
-                                mode=self.mode,
-                                error_message=f"Thresholds exceeded: {comparison_report.issues}",
-                                error_stage='compare',
-                                stats=self.stats.to_dict(),
-                                comparison=comparison_report.to_dict() if comparison_report else None,
-                                duration_seconds=duration
-                            )
-                        else:
-                            logger.warning(
-                                "Comparison thresholds exceeded (non-strict mode): "
-                                f"{comparison_report.issues}"
-                            )
-                else:
-                    logger.info("Production mode: skipping CSV comparison (URA API is primary)")
-
-                # 7. Mark success
-                self._mark_succeeded(comparison_report)
-
-                # 8. Refresh AI market snapshot with new data
+                # 6. Refresh AI market snapshot with new data
                 refresh_market_snapshot(self.engine)
 
                 duration = (datetime.now(UTC) - start_time).total_seconds()
@@ -272,11 +234,6 @@ class URASyncEngine:
                 logger.info(f"    Updated:     {self.stats.updated_rows}")
                 logger.info(f"    Unchanged:   {self.stats.unchanged_rows}")
                 logger.info(f"    Failed:      {self.stats.failed_rows}")
-                if comparison_report:
-                    logger.info("  Comparison:")
-                    logger.info(f"    Acceptable:  {comparison_report.is_acceptable}")
-                    logger.info(f"    Count diff:  {comparison_report.row_count_diff_pct:.1f}%")
-                    logger.info(f"    Coverage:    {comparison_report.coverage_pct:.1f}%")
                 logger.info("=" * 70)
 
                 return SyncResult(
@@ -284,7 +241,6 @@ class URASyncEngine:
                     run_id=self.run_id,
                     mode=self.mode,
                     stats=self.stats.to_dict(),
-                    comparison=comparison_report.to_dict() if comparison_report else None,
                     duration_seconds=duration
                 )
 
@@ -532,163 +488,9 @@ class URASyncEngine:
         })
         self.session.commit()
 
-    def _check_baseline_available(self) -> Tuple[bool, int, str]:
-        """
-        Check if CSV baseline data exists for comparison.
-
-        Validates:
-        1. Minimum row count (1000+)
-        2. Freshness: CSV data includes transactions from last 6 months
-
-        Returns:
-            Tuple of (is_available, row_count, message)
-        """
-        cutoff_date = get_cutoff_date()
-
-        # Check count and freshness in one query
-        query = text("""
-            SELECT
-                COUNT(*) as cnt,
-                MAX(transaction_month) as latest_month
-            FROM transactions
-            WHERE source = 'csv'
-              AND COALESCE(is_outlier, false) = false
-              AND transaction_month >= :cutoff_date
-              AND property_type IN ('Condominium', 'Apartment')
-        """)
-
-        try:
-            result = self.session.execute(query, {'cutoff_date': cutoff_date})
-            row = result.fetchone()
-            count = row.cnt or 0
-            latest_month = row.latest_month
-
-            if count == 0:
-                return False, 0, f"No CSV baseline data found for transactions >= {cutoff_date}"
-
-            # Require minimum baseline (at least 1000 rows for meaningful comparison)
-            MIN_BASELINE_ROWS = 1000
-            if count < MIN_BASELINE_ROWS:
-                return False, count, (
-                    f"CSV baseline has only {count} rows (minimum {MIN_BASELINE_ROWS} required). "
-                    f"Comparison would not be meaningful."
-                )
-
-            # Check freshness: latest CSV transaction should be within 6 months
-            # This catches stale baselines from paused CSV ingestion
-            FRESHNESS_MONTHS = 6
-            freshness_threshold = date.today().replace(day=1) - timedelta(days=FRESHNESS_MONTHS * 30)
-            if latest_month and latest_month < freshness_threshold:
-                return False, count, (
-                    f"CSV baseline is stale: latest transaction is {latest_month}, "
-                    f"threshold is {freshness_threshold}. CSV ingestion may have paused."
-                )
-
-            return True, count, f"CSV baseline available: {count} rows, latest: {latest_month}"
-
-        except Exception as e:
-            return False, 0, f"Failed to check baseline: {e}"
-
-    def _run_comparison(self) -> Optional[ComparisonReport]:
-        """Run comparison against baseline."""
-
-        if self.mode == 'dry_run':
-            logger.info("DRY RUN: Skipping comparison")
-            return None
-
-        # Check baseline availability first
-        baseline_ok, baseline_count, baseline_msg = self._check_baseline_available()
-        if not baseline_ok:
-            logger.error(f"BASELINE CHECK FAILED: {baseline_msg}")
-            raise RuntimeError(f"Baseline unavailable: {baseline_msg}")
-
-        logger.info(f"Baseline check passed: {baseline_count} CSV rows available")
-        logger.info("Running comparison against CSV baseline")
-
-        try:
-            comparator = URAShadowComparator(self.engine)
-
-            # Use overlap window: only compare months where both CSV and API
-            # have data. This avoids false negatives from CSV-only early months
-            # or API-only recent months.
-            from services.etl.fingerprint import get_overlap_window
-            overlap_range = get_overlap_window(self.session)
-            logger.info(
-                f"Using overlap window for comparison: "
-                f"{overlap_range[0]} to {overlap_range[1]}"
-            )
-
-            # Compare this run against CSV data
-            # For shadow mode, compare only Condo/Apt to match CSV scope
-            report = comparator.compare_run_vs_csv(
-                run_id=self.run_id,
-                date_range=overlap_range,
-                property_types=['Condominium', 'Apartment']
-            )
-
-            logger.info(
-                f"Comparison result: acceptable={report.is_acceptable}, "
-                f"count_diff={report.row_count_diff_pct:.1f}%, "
-                f"coverage={report.coverage_pct:.1f}%"
-            )
-
-            if report.issues:
-                for issue in report.issues:
-                    logger.warning(f"Comparison issue: {issue}")
-
-            # Persist comparison results
-            self._persist_comparison(report)
-
-            return report
-
-        except Exception as e:
-            logger.exception(f"Comparison failed: {e}")
-            # Fail the sync - comparison is required to validate data quality
-            # Without comparison, we can't verify the sync didn't corrupt data
-            raise RuntimeError(f"Comparison failed: {e}") from e
-
-    def _persist_comparison(self, report: ComparisonReport):
-        """Persist comparison results to ura_sync_runs."""
-        stmt = text("""
-            UPDATE ura_sync_runs
-            SET comparison_results = :results,
-                comparison_baseline_run_id = NULL
-            WHERE id = :run_id
-        """).bindparams(
-            bindparam('results', type_=JSONB)
-        )
-        self.session.execute(stmt, {
-            'results': report.to_dict(),
-            'run_id': self.run_id
-        })
-        self.session.commit()
-
-    def _mark_succeeded(self, comparison_report: Optional[ComparisonReport] = None):
-        """Mark run as succeeded with comparison summary."""
+    def _mark_succeeded(self):
+        """Mark run as succeeded."""
         logger.info("Marking sync run as succeeded")
-
-        # Extract comparison summary for queryable columns
-        count_diff_pct = None
-        psf_median_diff_pct = None
-        coverage_pct = None
-        is_acceptable = None
-        baseline_row_count = None
-        current_row_count = None
-
-        if comparison_report:
-            count_diff_pct = comparison_report.row_count_diff_pct
-            coverage_pct = comparison_report.coverage_pct
-            is_acceptable = comparison_report.is_acceptable
-            baseline_row_count = comparison_report.baseline_row_count
-            current_row_count = comparison_report.current_row_count
-
-            # Find max PSF median diff across months
-            max_psf_diff = 0.0
-            for month_data in comparison_report.psf_median_by_month.values():
-                diff_pct = month_data.get('diff_pct')
-                if diff_pct is not None and abs(diff_pct) > abs(max_psf_diff):
-                    max_psf_diff = diff_pct
-            psf_median_diff_pct = max_psf_diff if max_psf_diff != 0.0 else None
 
         stmt = text("""
             UPDATE ura_sync_runs
@@ -697,13 +499,7 @@ class URASyncEngine:
                 counters = :counters,
                 totals = :totals,
                 api_response_times = :api_times,
-                api_retry_counts = :api_retries,
-                count_diff_pct = :count_diff_pct,
-                psf_median_diff_pct = :psf_median_diff_pct,
-                coverage_pct = :coverage_pct,
-                is_acceptable = :is_acceptable,
-                baseline_row_count = :baseline_row_count,
-                current_row_count = :current_row_count
+                api_retry_counts = :api_retries
             WHERE id = :run_id
         """).bindparams(
             bindparam('counters', type_=JSONB),
@@ -717,12 +513,6 @@ class URASyncEngine:
             'totals': self.stats.to_dict(),
             'api_times': self.api_response_times or None,
             'api_retries': self.api_retry_counts or None,
-            'count_diff_pct': count_diff_pct,
-            'psf_median_diff_pct': psf_median_diff_pct,
-            'coverage_pct': coverage_pct,
-            'is_acceptable': is_acceptable,
-            'baseline_row_count': baseline_row_count,
-            'current_row_count': current_row_count,
             'run_id': self.run_id
         })
         self.session.commit()
@@ -782,7 +572,7 @@ def run_sync(
     Run a sync with the specified options.
 
     Args:
-        mode: Override sync mode (shadow/production/dry_run)
+        mode: Override sync mode (production/dry_run)
         triggered_by: Who triggered this run
         notes: Optional notes
 
@@ -803,7 +593,7 @@ def main():
 
     Exit codes:
         0: Success
-        1: Failure (thresholds exceeded or error)
+        1: Failure
         2: Disabled via kill switch
     """
     # Configure logging
@@ -832,7 +622,7 @@ def main():
     parser = argparse.ArgumentParser(description='URA Sync Engine')
     parser.add_argument(
         '--mode',
-        choices=['shadow', 'production', 'dry_run'],
+        choices=['production', 'dry_run'],
         help='Override sync mode'
     )
     parser.add_argument(
@@ -870,16 +660,6 @@ def main():
         print(f"    Mapped rows:       {result.stats.get('mapped_rows', 0)}")
         print(f"    Inserted:          {result.stats.get('inserted_rows', 0)}")
         print(f"    Updated:           {result.stats.get('updated_rows', 0)}")
-
-    if result.comparison:
-        print(f"\n  Comparison:")
-        print(f"    Acceptable:        {result.comparison.get('is_acceptable', False)}")
-        print(f"    Row count diff:    {result.comparison.get('row_count_diff_pct', 0):.1f}%")
-        print(f"    Coverage:          {result.comparison.get('coverage_pct', 0):.1f}%")
-        if result.comparison.get('issues'):
-            print(f"    Issues:")
-            for issue in result.comparison['issues']:
-                print(f"      - {issue}")
 
     if result.error_message:
         print(f"\n  Error: {result.error_message}")

@@ -9,7 +9,7 @@ Usage:
 Environment:
     URA_ACCESS_KEY: Required - URA API access key
     URA_SYNC_ENABLED: Optional - 'true' (default) or 'false' to disable
-    URA_SYNC_MODE: Optional - 'shadow' (default), 'production', or 'dry_run'
+    URA_SYNC_MODE: Optional - 'production' (default) or 'dry_run'
     DATABASE_URL: Required - PostgreSQL connection string
 
 Exit Codes:
