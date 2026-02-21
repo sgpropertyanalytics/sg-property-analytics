@@ -1,5 +1,3 @@
-from datetime import datetime, timedelta
-
 from models.user import User
 
 
@@ -14,21 +12,15 @@ def test_authenticated_user_has_access_by_default():
     assert access['access_expires_at'] is None
 
 
-def test_admin_override_sets_admin_source_and_expiry():
-    now = datetime.utcnow()
-    future = now + timedelta(days=3)
-    user = User(
-        email='test@example.com',
-        access_override_enabled=True,
-        access_override_until=future,
-        access_source='admin_override',
-    )
+def test_access_info_always_returns_full_access():
+    """All authenticated users have full access — no tiers, no overrides."""
+    user = User(email='test@example.com')
 
-    access = user.access_info(now=now)
+    access = user.access_info()
 
     assert access['has_access'] is True
-    assert access['access_source'] == 'admin_override'
-    assert access['access_expires_at'] == future
+    assert access['access_source'] == 'authenticated_user'
+    assert access['access_expires_at'] is None
 
 
 def test_to_dict_uses_neutral_access_fields_only():

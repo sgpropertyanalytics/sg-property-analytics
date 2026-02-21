@@ -68,7 +68,6 @@ def get_user_from_firebase_token():
                 display_name=display_name,
                 avatar_url=avatar_url,
             )
-            user.access_level = 'authenticated'
             db.session.add(user)
             db.session.commit()
         else:
