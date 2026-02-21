@@ -812,6 +812,15 @@
       },
       "response_schema": {
         "data_fields": {
+          "access": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "access",
+            "nullable": true,
+            "required": true,
+            "type": "dict"
+          },
           "message": {
             "allowed_values": null,
             "default": null,
@@ -820,15 +829,6 @@
             "nullable": true,
             "required": true,
             "type": "str"
-          },
-          "subscription": {
-            "allowed_values": null,
-            "default": null,
-            "description": "",
-            "name": "subscription",
-            "nullable": true,
-            "required": true,
-            "type": "dict"
           },
           "user": {
             "allowed_values": null,
@@ -1235,6 +1235,24 @@
       },
       "response_schema": {
         "data_fields": {
+          "accessLevel": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "accessLevel",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
+          "accessSource": {
+            "allowed_values": null,
+            "default": null,
+            "description": "",
+            "name": "accessSource",
+            "nullable": true,
+            "required": true,
+            "type": "str"
+          },
           "access_expires_at": {
             "allowed_values": null,
             "default": null,
@@ -1249,15 +1267,6 @@
             "default": null,
             "description": "",
             "name": "ends_at",
-            "nullable": true,
-            "required": false,
-            "type": "str"
-          },
-          "accessSource": {
-            "allowed_values": null,
-            "default": null,
-            "description": "",
-            "name": "accessSource",
             "nullable": true,
             "required": false,
             "type": "str"
@@ -1279,15 +1288,6 @@
             "nullable": true,
             "required": true,
             "type": "bool"
-          },
-          "accessLevel": {
-            "allowed_values": null,
-            "default": null,
-            "description": "",
-            "name": "accessLevel",
-            "nullable": true,
-            "required": true,
-            "type": "str"
           }
         },
         "data_is_list": false,
