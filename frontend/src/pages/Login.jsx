@@ -193,11 +193,14 @@ function Login() {
         {/* ===== TECHNICAL FRAME ===== */}
         <div className="relative w-full max-w-[480px] bg-white border-2 border-black p-8 md:p-10 lg:p-12 z-10 shadow-[8px_8px_0px_0px_#000000]">
 
+          {/* Bronze accent line - bridges to dashboard aesthetic */}
+          <div className="absolute -bottom-[2px] left-0 right-0 h-[3px] bg-[#C4A484] shadow-[8px_0px_0px_0px_#C4A484]" />
+
           {/* Corner Accents - Registration Marks */}
           <div className="absolute -top-[7px] -left-[7px] text-black/40 font-mono text-sm leading-none">+</div>
           <div className="absolute -top-[7px] -right-[7px] text-black/40 font-mono text-sm leading-none">+</div>
-          <div className="absolute -bottom-[7px] -left-[7px] text-black/40 font-mono text-sm leading-none">+</div>
-          <div className="absolute -bottom-[7px] -right-[7px] text-black/40 font-mono text-sm leading-none">+</div>
+          <div className="absolute -bottom-[7px] -left-[7px] text-[#C4A484] font-mono text-sm leading-none">+</div>
+          <div className="absolute -bottom-[7px] -right-[7px] text-[#C4A484] font-mono text-sm leading-none">+</div>
 
           {/* Top Border Label */}
           <div className="absolute -top-[10px] left-1/2 -translate-x-1/2 bg-white px-3">
@@ -312,6 +315,17 @@ function Login() {
             {' '}and{' '}
             <a href="#" className="text-black/50 hover:text-black underline">Privacy</a>
           </p>
+
+          {/* System readiness indicator */}
+          <div className="mt-6 pt-4 border-t border-black/5 flex items-center justify-center gap-2">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-70 animate-ping" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            </span>
+            <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-black/30">
+              SYSTEM READY // AWAITING AUTH
+            </span>
+          </div>
 
           {/* Connector Line - extends from card to divider (desktop) */}
           <div className="hidden lg:block absolute top-1/2 -right-[6px] w-[calc(50vw-240px-48px)] h-px bg-black/10" />

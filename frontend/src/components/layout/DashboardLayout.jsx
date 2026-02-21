@@ -273,37 +273,31 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
                 </h1>
               </div>
 
-              {/* Right: Metadata - Monospace for raw system data look */}
-              <div className="flex items-center gap-3 text-xs text-slate-400 font-mono">
+              {/* Right: Metadata - Compact intelligence readout */}
+              <div className="hidden md:flex items-center gap-3 text-[10px] text-slate-400 font-mono uppercase tracking-wider">
                 {apiMetadata && (
                   <>
-                    <span>
-                      Last updated: {apiMetadata.last_updated
-                        ? new Date(apiMetadata.last_updated).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
-                        : 'N/A'}
-                    </span>
-                    {apiMetadata.total_records > 0 && (
-                      <span>
-                        | Total records: {apiMetadata.total_records.toLocaleString()}
-                        {apiMetadata.records_added_last_ingestion > 0 && (
-                          <> (+{apiMetadata.records_added_last_ingestion.toLocaleString()} new)</>
-                        )}
+                    {apiMetadata.last_updated && (
+                      <span className="text-slate-500">
+                        SYNC: {new Date(apiMetadata.last_updated).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                       </span>
                     )}
-                    {apiMetadata.outliers_excluded > 0 && (
-                      <span>| Statistical outliers removed: {apiMetadata.outliers_excluded.toLocaleString()}</span>
+                    {apiMetadata.total_records > 0 && (
+                      <span className="text-slate-500">
+                        TX: {apiMetadata.total_records.toLocaleString()}
+                      </span>
                     )}
                   </>
                 )}
+                {/* Vertical separator */}
+                <div className="w-px h-3 bg-slate-600" />
                 {/* Live Indicator - Enhanced pulse ring animation */}
-                <div className="flex items-center gap-1.5 ml-2">
+                <div className="flex items-center gap-1.5">
                   <span className="relative flex h-2 w-2">
-                    {/* Pulse ring effect - expanding concentric rings */}
                     <span className="pulse-ring pulse-ring-emerald absolute inline-flex h-full w-full rounded-full" />
-                    {/* Core LED - solid emerald dot */}
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
                   </span>
-                  <span className="text-emerald-400 text-[10px] font-mono uppercase tracking-wider">LIVE</span>
+                  <span className="text-emerald-400">LIVE</span>
                 </div>
               </div>
             </div>

@@ -93,6 +93,23 @@ function MonoPill({ children, leftDot = null }) {
   );
 }
 
+/**
+ * HudCorners - Reusable HUD corner brackets + ruler tick marks.
+ * Extracts the repeated pattern used on every card in the landing page.
+ * Must be placed inside a positioned (relative) parent.
+ */
+function HudCorners() {
+  return (
+    <>
+      <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
+      <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
+      <div className="absolute top-0 left-1/4 w-px h-1 bg-black/20" />
+      <div className="absolute top-0 left-1/2 w-px h-1.5 bg-black/30" />
+      <div className="absolute top-0 left-3/4 w-px h-1 bg-black/20" />
+    </>
+  );
+}
+
 function SectionDivider() {
   return (
     <div className="w-full max-w-7xl mx-auto border-t border-black/10 flex justify-between items-center px-6 py-2 bg-[#fafafa]">
@@ -818,11 +835,7 @@ function DotMatrixMap() {
       className="relative border border-black/10 bg-white/90 backdrop-blur-sm"
       style={{ boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)' }}
     >
-      <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
-      <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
-      <div className="absolute top-0 left-1/4 w-px h-1 bg-black/20" />
-      <div className="absolute top-0 left-1/2 w-px h-1.5 bg-black/30" />
-      <div className="absolute top-0 left-3/4 w-px h-1 bg-black/20" />
+      <HudCorners />
       <div className="px-3 py-2 border-b border-black/05 flex items-center justify-between">
         <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">MAP</div>
         <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">SINGAPORE FOCUS</div>
@@ -864,13 +877,7 @@ function CapabilityCard({ icon: Icon, title, desc, code }) {
       className="group relative border border-black/10 bg-white/90 backdrop-blur-sm p-4 hover:border-black/20 transition-all hover:shadow-sm scan-line-hover"
       style={{ boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)' }}
     >
-      {/* HUD corner ticks */}
-      <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
-      <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
-      {/* Ruler tick marks */}
-      <div className="absolute top-0 left-1/4 w-px h-1 bg-black/20" />
-      <div className="absolute top-0 left-1/2 w-px h-1.5 bg-black/30" />
-      <div className="absolute top-0 left-3/4 w-px h-1 bg-black/20" />
+      <HudCorners />
       <div className="flex items-start justify-between gap-4">
         <div>
           <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">{code}</div>
@@ -917,13 +924,7 @@ function TerminalChartWrapper({ title, subtitle, children, showLive = false, loc
       className="relative border border-black/10 bg-white/90 backdrop-blur-sm scan-line-hover"
       style={{ boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)' }}
     >
-      {/* HUD corners */}
-      <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
-      <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
-      {/* Ruler ticks */}
-      <div className="absolute top-0 left-1/4 w-px h-1 bg-black/20" />
-      <div className="absolute top-0 left-1/2 w-px h-1.5 bg-black/30" />
-      <div className="absolute top-0 left-3/4 w-px h-1 bg-black/20" />
+      <HudCorners />
       {/* Header */}
       <div className="px-4 py-3 border-b border-black/05 flex items-center justify-between">
         <div>
@@ -1327,13 +1328,7 @@ function GhostMap({ highlightedDistrict, activePulses, onPulseFade }) {
       onMouseMove={handleMouseMove}
       onMouseLeave={() => setHoveredDistrict(null)}
     >
-      {/* HUD corners */}
-      <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
-      <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
-      {/* Ruler ticks */}
-      <div className="absolute top-0 left-1/4 w-px h-1 bg-black/20" />
-      <div className="absolute top-0 left-1/2 w-px h-1.5 bg-black/30" />
-      <div className="absolute top-0 left-3/4 w-px h-1 bg-black/20" />
+      <HudCorners />
 
       {/* Intel Tag - Fighter Jet HUD follower tooltip */}
       <AnimatePresence>
@@ -1716,9 +1711,11 @@ export default function LandingV3() {
               <button
                 type="button"
                 onClick={onAnyCTA}
-                className="px-4 py-2 border border-black bg-transparent text-black font-mono text-[10px] uppercase tracking-[0.15em] hover:bg-black hover:text-white focus:outline-none transition-colors duration-0"
+                className="group relative px-5 py-2 border-2 border-black bg-transparent text-black font-mono text-[10px] uppercase tracking-[0.15em] hover:bg-[#0F172A] hover:text-white hover:border-[#0F172A] focus:outline-none transition-all duration-150"
               >
-                // LOGIN
+                <span className="relative z-10">// LOGIN</span>
+                {/* Bronze accent line - bridges to dashboard aesthetic */}
+                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#C4A484] opacity-0 group-hover:opacity-100 transition-opacity duration-150" />
               </button>
             </div>
           </div>
@@ -1765,10 +1762,13 @@ export default function LandingV3() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.6, delay: 0.1 }}
-                    className="mt-2 font-display text-3xl sm:text-4xl md:text-5xl xl:text-6xl font-normal uppercase tracking-[-0.04em] leading-[0.95]"
+                    className="mt-3 font-display text-4xl sm:text-5xl md:text-6xl xl:text-7xl font-normal uppercase tracking-[-0.04em] leading-[0.9]"
                   >
-                    <span className="block text-black">SG_PROPERTY_ANALYTICS</span>
-                    <span className="block text-black/60 text-sm sm:text-base md:text-lg mt-3 font-mono uppercase tracking-[0.15em]">Market Intelligence Dashboard</span>
+                    <span className="block text-black">SG_PROPERTY</span>
+                    <span className="block text-black/40">ANALYTICS</span>
+                    <span className="block text-black/60 text-xs sm:text-sm md:text-base mt-4 font-mono uppercase tracking-[0.2em]">
+                      Market Intelligence Terminal
+                    </span>
                   </motion.h1>
 
                   <motion.div
@@ -1842,12 +1842,7 @@ export default function LandingV3() {
                 style={{ boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)', transform: 'rotate(-0.5deg)' }}
               >
                 {/* HUD corner ticks */}
-                <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
-                <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
-                {/* Ruler tick marks along top edge */}
-                <div className="absolute top-0 left-1/4 w-px h-1 bg-black/20" />
-                <div className="absolute top-0 left-1/2 w-px h-1.5 bg-black/30" />
-                <div className="absolute top-0 left-3/4 w-px h-1 bg-black/20" />
+                <HudCorners />
                 <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">TX_COUNT</div>
                 <div className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-black tabular-nums font-data">
                   <AnimatedNumber
@@ -1862,11 +1857,7 @@ export default function LandingV3() {
                 className="relative h-full border border-black/10 bg-white/90 backdrop-blur-sm p-4 hover:border-black/20 transition-all hover:shadow-sm"
                 style={{ boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)', transform: 'rotate(0.5deg)' }}
               >
-                <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
-                <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
-                <div className="absolute top-0 left-1/4 w-px h-1 bg-black/20" />
-                <div className="absolute top-0 left-1/2 w-px h-1.5 bg-black/30" />
-                <div className="absolute top-0 left-3/4 w-px h-1 bg-black/20" />
+                <HudCorners />
                 <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">INTEGRITY</div>
                 <div className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-black tabular-nums font-data">
                   <AnimatedNumber value={99.2} format={(n) => `${n.toFixed(1)}%`} />
@@ -1878,11 +1869,7 @@ export default function LandingV3() {
                 className="relative h-full border border-black/10 bg-white/90 backdrop-blur-sm p-4 hover:border-black/20 transition-all hover:shadow-sm"
                 style={{ boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)', transform: 'rotate(-0.5deg)' }}
               >
-                <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
-                <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
-                <div className="absolute top-0 left-1/4 w-px h-1 bg-black/20" />
-                <div className="absolute top-0 left-1/2 w-px h-1.5 bg-black/30" />
-                <div className="absolute top-0 left-3/4 w-px h-1 bg-black/20" />
+                <HudCorners />
                 <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">DISTRICTS</div>
                 <div className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-black tabular-nums font-data">
                   <AnimatedNumber value={28} format={(n) => String(Math.round(n))} />
@@ -1894,11 +1881,7 @@ export default function LandingV3() {
                 className="relative h-full border border-black/10 bg-white/90 backdrop-blur-sm p-4 hover:border-black/20 transition-all hover:shadow-sm"
                 style={{ boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.03)', transform: 'rotate(0.5deg)' }}
               >
-                <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
-                <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
-                <div className="absolute top-0 left-1/4 w-px h-1 bg-black/20" />
-                <div className="absolute top-0 left-1/2 w-px h-1.5 bg-black/30" />
-                <div className="absolute top-0 left-3/4 w-px h-1 bg-black/20" />
+                <HudCorners />
                 <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">HISTORY</div>
                 <div className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-black tabular-nums font-data">
                   <AnimatedNumber value={5} format={(n) => `${Math.round(n)}Y`} />
@@ -1970,11 +1953,7 @@ export default function LandingV3() {
 
             <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-4">
               <div className="lg:col-span-7 relative border border-black/10 bg-[#fafafa]">
-                <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
-                <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
-                <div className="absolute top-0 left-1/4 w-px h-1 bg-black/20" />
-                <div className="absolute top-0 left-1/2 w-px h-1.5 bg-black/30" />
-                <div className="absolute top-0 left-3/4 w-px h-1 bg-black/20" />
+                <HudCorners />
                 <div className="px-4 py-3 border-b border-black/05 flex items-center justify-between">
                   <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">Metrics</div>
                   <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">
@@ -2025,11 +2004,7 @@ export default function LandingV3() {
               <div className="lg:col-span-5 grid grid-cols-1 gap-4">
                 <DotMatrixMap />
                 <div className="relative border border-black/10 bg-[#fafafa] p-4">
-                  <div className="absolute -top-px -left-px w-2 h-2 border-t-2 border-l-2 border-black" />
-                  <div className="absolute -bottom-px -right-px w-2 h-2 border-b-2 border-r-2 border-black" />
-                  <div className="absolute top-0 left-1/4 w-px h-1 bg-black/20" />
-                  <div className="absolute top-0 left-1/2 w-px h-1.5 bg-black/30" />
-                  <div className="absolute top-0 left-3/4 w-px h-1 bg-black/20" />
+                  <HudCorners />
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">ACCESS</div>
@@ -2060,16 +2035,22 @@ export default function LandingV3() {
         </section>
 
         {/* CTA */}
-        <section className="py-16 md:py-24 bg-black text-[#fafafa]">
-          <div className="max-w-7xl mx-auto px-4 md:px-6">
+        <section className="py-16 md:py-24 bg-[#0F172A] text-[#fafafa] relative overflow-hidden">
+          {/* Subtle grid overlay on dark section */}
+          <div className="absolute inset-0 pointer-events-none opacity-[0.04]" style={{
+            backgroundImage: 'linear-gradient(to right, rgba(196,164,132,0.5) 1px, transparent 1px), linear-gradient(to bottom, rgba(196,164,132,0.5) 1px, transparent 1px)',
+            backgroundSize: '60px 60px'
+          }} />
+          <div className="max-w-7xl mx-auto px-4 md:px-6 relative">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
               <div className="lg:col-span-8">
-                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#fafafa]/60">
-                  Clearance
+                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#C4A484]">
+                  Clearance Required
                 </div>
-                <div className="mt-3 font-display text-4xl md:text-5xl font-bold tracking-tighter">
-                  Request terminal clearance
+                <div className="mt-3 font-display text-4xl md:text-5xl xl:text-6xl font-bold tracking-tighter leading-[0.95]">
+                  Request terminal<br/>clearance
                 </div>
+                <div className="mt-1 w-16 h-[2px] bg-[#C4A484]" />
                 <div className="mt-4 text-base md:text-lg leading-relaxed text-[#fafafa]/70 max-w-2xl">
                   Authenticate to access the full PropAnalytics intelligence surface. Export, drilldown, and data
                   validation are locked behind login.
@@ -2152,23 +2133,26 @@ export default function LandingV3() {
 
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pt-6">
               <div>
-                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/60">Build</div>
-                <div className="mt-1 text-sm text-black/60">LandingV3 · monochrome + emerald signals</div>
+                <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-black/40">Build</div>
+                <div className="mt-1 font-mono text-[10px] text-black/50 tracking-wide">
+                  SG_PROPERTY_ANALYTICS // V.2.0 // INSTITUTIONAL_GRADE
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={onAnyCTA}
-                  className="px-4 py-2 border border-black/10 text-black font-medium hover:border-black/20 hover:bg-black/[0.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 btn-scan-sweep"
+                  className="px-4 py-2 border border-black/10 text-black font-mono text-[10px] uppercase tracking-[0.15em] hover:border-black/20 hover:bg-black/[0.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 btn-scan-sweep"
                 >
                   Login
                 </button>
                 <button
                   type="button"
                   onClick={onAnyCTA}
-                  className="px-4 py-2 bg-black text-[#fafafa] font-medium hover:bg-black/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 btn-scan-sweep"
+                  className="group relative px-5 py-2 bg-[#0F172A] text-[#fafafa] font-mono text-[10px] uppercase tracking-[0.15em] hover:bg-[#0F172A]/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 btn-scan-sweep border-2 border-[#0F172A]"
                 >
-                  Enter
+                  <span className="relative z-10">Enter Terminal</span>
+                  <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#C4A484]" />
                 </button>
               </div>
             </div>

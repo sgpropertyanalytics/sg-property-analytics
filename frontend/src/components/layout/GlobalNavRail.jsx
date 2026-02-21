@@ -263,6 +263,28 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
 
       {/* THE SEAMLESS FOOTER - matches NavItem padding exactly */}
       <div className="w-full border-t border-slate-800/60 pt-4 pb-4">
+        {/* System Status - command center indicator */}
+        {!collapsed && (
+          <div className="mb-3 mx-6 px-3 py-2 border border-slate-700/50 bg-slate-800/30">
+            <div className="flex items-center justify-between">
+              <span className="text-[9px] font-mono uppercase tracking-[0.15em] text-slate-500">
+                System
+              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-70 animate-ping" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                </span>
+                <span className="text-[9px] font-mono uppercase tracking-wider text-emerald-400">
+                  LIVE
+                </span>
+              </div>
+            </div>
+            <div className="mt-1.5 text-[9px] font-mono text-slate-500 tracking-wide">
+              V.2.0 // URA_PIPELINE
+            </div>
+          </div>
+        )}
         {/* Methodology - uses same pl-6 pr-4 gap-3 as NavItem */}
         <button
           onClick={() => startTransition(() => navigate('/methodology'))}
