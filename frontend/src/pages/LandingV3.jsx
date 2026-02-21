@@ -3,11 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion, useInView } from 'framer-motion';
 import {
   ArrowRight,
-  ChevronDown,
   ChevronRight,
-  Command,
   Database,
-  Globe,
   Lock,
   Radar,
   ShieldCheck,
@@ -898,6 +895,7 @@ function CapabilityCard({ icon: Icon, title, desc, code }) {
 
 function InsightRow({ label, value, delta }) {
   const isNegative = delta?.startsWith('-');
+  const isPositive = delta?.startsWith('+');
   return (
     <div className="flex items-center justify-between gap-6 border-t border-black/05 py-3 first:border-t-0">
       <div className="min-w-0">
@@ -906,8 +904,9 @@ function InsightRow({ label, value, delta }) {
       <div className="flex items-center gap-4">
         <div className="font-mono text-xs text-black/60 tabular-nums">{value}</div>
         <div
-          className="font-mono text-[10px] uppercase tracking-[0.18em] tabular-nums"
-          style={{ color: isNegative ? '#FF5500' : 'rgba(0,0,0,0.3)' }}
+          className={`font-mono text-[10px] uppercase tracking-[0.18em] tabular-nums ${
+            isNegative ? 'text-red-600' : isPositive ? 'text-emerald-600' : 'text-black/30'
+          }`}
         >
           {delta}
         </div>
@@ -1940,6 +1939,35 @@ export default function LandingV3() {
                 title="Query Engine"
                 desc="Command-first UX for power users: run queries without leaving the keyboard."
               />
+            </div>
+          </div>
+        </section>
+
+        <SectionDivider />
+
+        {/* DATA PREVIEWS - Showcase chart capabilities */}
+        <section className="py-16 md:py-24" onMouseEnter={onSectionEnter} onMouseLeave={onSectionLeave}>
+          <div className="max-w-7xl mx-auto px-4 md:px-6">
+            <SectionTitle
+              eyebrow="INTELLIGENCE"
+              title="DATA_SURFACE"
+              muted="preview"
+              rightSlot={<MonoPill leftDot={<Lock className="h-2 w-2 text-black/40" />}>PARTIAL_ACCESS</MonoPill>}
+            />
+
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <TerminalChartWrapper title="REGIONAL_PRICING" subtitle="MEDIAN_PSF_BY_REGION" showLive>
+                <RegionalPricingPreview />
+              </TerminalChartWrapper>
+              <TerminalChartWrapper title="TX_VOLUME" subtitle="QUARTERLY_TREND">
+                <VolumeTrendPreview />
+              </TerminalChartWrapper>
+              <TerminalChartWrapper title="DISTRICT_GROWTH" subtitle="5Y_PSF_DELTA">
+                <DistrictGrowthPreview />
+              </TerminalChartWrapper>
+              <TerminalChartWrapper title="MOMENTUM_GRID" subtitle="28_DISTRICTS" locked>
+                <MomentumGridPreview />
+              </TerminalChartWrapper>
             </div>
           </div>
         </section>
