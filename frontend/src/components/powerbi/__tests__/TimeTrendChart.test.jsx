@@ -129,6 +129,15 @@ vi.mock('../../common/ChartFrame', () => ({
 // Mock UI components
 vi.mock('../../ui', () => ({
   ChartSlot: ({ children }) => <div>{children}</div>,
+  DataCard: ({ children }) => <div>{children}</div>,
+  DataCardHeader: ({ children }) => <div>{children}</div>,
+  DataCardToolbar: ({ children }) => <div>{children}</div>,
+  ToolbarStat: () => <span />,
+  DataCardCanvas: ({ children }) => <div>{children}</div>,
+  StatusDeck: ({ children }) => <div>{children}</div>,
+  StatusPeriod: () => <span />,
+  StatusCount: () => <span />,
+  LegendLine: () => <span />,
 }));
 
 // Controllable appReady state for boot gating tests

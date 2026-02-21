@@ -402,6 +402,8 @@ def aggregate():
     if isinstance(metrics, str):
         metrics = [m.strip() for m in metrics.split(",") if m.strip()]
 
+    group_by_param = ",".join(group_by)
+
     # Build reusable filter conditions
     try:
         aggregate_filters = build_aggregate_sqlalchemy_filters(
