@@ -9,7 +9,6 @@ import { Bar } from 'react-chartjs-2';
 import { useZustandFilters } from '../../stores';
 import { getDashboard } from '../../api/client';
 import {
-  PreviewChartOverlay,
   DataCard,
   DataCardHeader,
   DataCardToolbar,
@@ -321,9 +320,7 @@ Mode — The most common price range.`}
 
         {/* Canvas: flex-grow */}
         <DataCardCanvas minHeight={height} cinema={cinema}>
-          <PreviewChartOverlay chartRef={chartRef}>
             <Bar ref={chartRef} data={chartData} options={options} />
-          </PreviewChartOverlay>
         </DataCardCanvas>
 
         {/* Status Deck: h-10 fixed - no legend for histogram, just context */}

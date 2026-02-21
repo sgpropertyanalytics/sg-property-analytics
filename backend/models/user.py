@@ -1,9 +1,8 @@
 """
-User model with neutral access terminology.
+User model.
 
-Column mappings use legacy DB names (stripe_customer_id, access_override, etc.)
-that exist before AND after migration 024. Migration 024's sync trigger keeps
-neutral columns in parity. This avoids crashes if migration 025 hasn't run yet.
+All authenticated users have full access. DB columns retain legacy names
+for migration compatibility (migration 024 sync triggers reference them).
 """
 from datetime import datetime
 
@@ -19,7 +18,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     firebase_uid = db.Column(db.String(128), unique=True, nullable=True, index=True)
 
-    # Neutral DB column names for access state.
+    # Legacy DB columns kept for migration compatibility.
     access_level_storage = db.Column('access_tier', db.String(20), default='authenticated')
     billing_customer_ref_storage = db.Column('stripe_customer_id', db.String(255))
     access_status_storage = db.Column('access_status', db.String(50), default=None)
@@ -42,88 +41,22 @@ class User(db.Model):
     def access_level(self):
         return 'authenticated'
 
-    @access_level.setter
-    def access_level(self, _value):
-        # Persist a stable value in legacy column during transition.
-        self.access_level_storage = 'authenticated'
-
-    @property
-    def access_status(self):
-        return self.access_status_storage
-
-    @access_status.setter
-    def access_status(self, value):
-        self.access_status_storage = value
-
-    @property
-    def access_expires_at(self):
-        return self.access_expires_at_storage
-
-    @access_expires_at.setter
-    def access_expires_at(self, value):
-        self.access_expires_at_storage = value
-
-    @property
-    def billing_customer_ref(self):
-        return self.billing_customer_ref_storage
-
-    @billing_customer_ref.setter
-    def billing_customer_ref(self, value):
-        self.billing_customer_ref_storage = value
-
-    @property
-    def access_override_enabled(self):
-        return self.access_override_enabled_storage
-
-    @access_override_enabled.setter
-    def access_override_enabled(self, value):
-        self.access_override_enabled_storage = value
-
-    @property
-    def access_override_until(self):
-        return self.access_override_until_storage
-
-    @access_override_until.setter
-    def access_override_until(self, value):
-        self.access_override_until_storage = value
-
-    @property
-    def access_source(self):
-        return self.access_source_storage
-
-    @access_source.setter
-    def access_source(self, value):
-        self.access_source_storage = value
-
-    def access_info(self, now=None):
-        now = now or datetime.utcnow()
-
-        source = self.access_source or 'authenticated_user'
-        expires_at = None
-
-        if self.access_override_enabled:
-            source = self.access_source or 'admin_override'
-            if self.access_override_until is None or now < self.access_override_until:
-                expires_at = self.access_override_until
-
+    def access_info(self):
         return {
             'has_access': True,
-            'access_source': source,
-            'access_expires_at': expires_at,
+            'access_source': 'authenticated_user',
+            'access_expires_at': None,
         }
 
     def to_dict(self):
-        access = self.access_info()
         return {
             'id': self.id,
             'email': self.email,
             'display_name': self.display_name,
             'avatar_url': self.avatar_url,
             'accessLevel': self.access_level,
-            'has_access': access.get('has_access', True),
-            'accessSource': access.get('access_source'),
-            'access_expires_at': access.get('access_expires_at').isoformat()
-            if access.get('access_expires_at')
-            else None,
+            'has_access': True,
+            'accessSource': 'authenticated_user',
+            'access_expires_at': None,
             'created_at': self.created_at.isoformat() if self.created_at else None,
         }

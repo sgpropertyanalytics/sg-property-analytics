@@ -3,7 +3,6 @@ import { useAppQuery } from '../../hooks';
 import { ChartFrame } from '../common/ChartFrame';
 import { Chart } from 'react-chartjs-2';
 import {
-  PreviewChartOverlay,
   DataCard,
   DataCardHeader,
   DataCardToolbar,
@@ -341,9 +340,7 @@ Source: data.gov.sg HDB Resale Flat Prices (Jan 2017–present).`}
 
         {/* Layer 3: Canvas */}
         <DataCardCanvas minHeight={height} cinema={cinema}>
-          <PreviewChartOverlay chartRef={chartRef}>
             <Chart ref={chartRef} type="bar" data={chartData} options={options} />
-          </PreviewChartOverlay>
         </DataCardCanvas>
 
         {/* Layer 4: Status footer */}

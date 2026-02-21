@@ -14,7 +14,6 @@ import { useZustandFilters } from '../../stores/filterStore';
 import { TIME_GROUP_BY } from '../../context/PowerBIFilter';
 import { getRegionForDistrict } from '../../constants';
 import {
-  PreviewChartOverlay,
   DataCard,
   DataCardHeader,
   DataCardToolbar,
@@ -88,8 +87,6 @@ function AbsolutePsfChartBase({ height = 380, saleType = null, sharedData = null
     });
     return regions;
   }, [filters.districts]);
-  const canAccessAuthenticated = true;
-  const isAccessRestricted = false;
   const chartRef = useRef(null);
   const [isAgentOpen, setIsAgentOpen] = useState(false);
 
@@ -176,8 +173,8 @@ function AbsolutePsfChartBase({ height = 380, saleType = null, sharedData = null
     const newIsOpen = !isAgentOpen;
     setIsAgentOpen(newIsOpen);
 
-    // Trigger AI interpretation when opening (only if authenticated and has data)
-    if (newIsOpen && canAccessAuthenticated && data.length > 0) {
+    // Trigger AI interpretation when opening (only if has data)
+    if (newIsOpen && data.length > 0) {
       interpret({
         chartType: 'absolute_psf',
         chartTitle: 'Absolute PSF by Region',
@@ -205,7 +202,7 @@ function AbsolutePsfChartBase({ height = 380, saleType = null, sharedData = null
       // Reset AI state when closing
       resetAi();
     }
-  }, [isAgentOpen, canAccessAuthenticated, data, latestData, prevData, timeframe, debouncedBedroom, timeGrouping, saleType, ccrChange, rcrChange, ocrChange, interpret, resetAi]);
+  }, [isAgentOpen, data, latestData, prevData, timeframe, debouncedBedroom, timeGrouping, saleType, ccrChange, rcrChange, ocrChange, interpret, resetAi]);
 
   // Chart data with region highlighting (uses alpha from colors.js - Rule 4: Reuse-First)
   const chartData = useMemo(() => {
@@ -352,7 +349,7 @@ OCR = Outside Central (suburban).`}
         />
 
         {/* KPI Strip: h-20 fixed - Pure metrics only */}
-        <DataCardToolbar columns={3} blur={isAccessRestricted}>
+        <DataCardToolbar columns={3}>
           <ToolbarStat
             label="CCR"
             value={latestData.ccr != null ? `$${Math.round(latestData.ccr).toLocaleString()}` : '—'}
@@ -375,9 +372,7 @@ OCR = Outside Central (suburban).`}
 
         {/* Canvas: flex-grow */}
         <DataCardCanvas minHeight={height} cinema={cinema}>
-          <PreviewChartOverlay chartRef={chartRef}>
             <Line ref={chartRef} data={chartData} options={chartOptions} />
-          </PreviewChartOverlay>
         </DataCardCanvas>
 
         {/* Status Deck: h-10 fixed - Left: periods | Center: legend | Right: txns */}
@@ -402,17 +397,7 @@ OCR = Outside Central (suburban).`}
           versions={versions}
           isCached={isCached}
         >
-          {/* Show AI response if available, otherwise show static fallback */}
-          {aiResponse || (canAccessAuthenticated ? null : (
-            // Static fallback for non-authenticated users or when AI is not available
-            ccrChange > 0 && rcrChange > 0 && ocrChange > 0
-              ? 'All regions showing positive momentum. Market-wide appreciation detected.'
-              : ccrChange > rcrChange && rcrChange > ocrChange
-              ? 'Premium outperformance pattern. CCR leading gains suggests flight-to-quality.'
-              : ocrChange > rcrChange && rcrChange > ccrChange
-              ? 'Suburban catch-up detected. OCR outpacing core regions - compression signal.'
-              : 'Mixed signals across regions. Monitor for trend confirmation.'
-          ))}
+          {aiResponse}
         </AgentFooter>
       </DataCard>
     </ChartFrame>

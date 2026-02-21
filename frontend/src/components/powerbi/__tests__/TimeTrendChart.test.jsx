@@ -128,8 +128,16 @@ vi.mock('../../common/ChartFrame', () => ({
 
 // Mock UI components
 vi.mock('../../ui', () => ({
-  PreviewChartOverlay: ({ children }) => <div>{children}</div>,
   ChartSlot: ({ children }) => <div>{children}</div>,
+  DataCard: ({ children }) => <div>{children}</div>,
+  DataCardHeader: ({ children }) => <div>{children}</div>,
+  DataCardToolbar: ({ children }) => <div>{children}</div>,
+  ToolbarStat: () => <span />,
+  DataCardCanvas: ({ children }) => <div>{children}</div>,
+  StatusDeck: ({ children }) => <div>{children}</div>,
+  StatusPeriod: () => <span />,
+  StatusCount: () => <span />,
+  LegendLine: () => <span />,
 }));
 
 // Controllable appReady state for boot gating tests
@@ -139,7 +147,6 @@ vi.mock('../../../context/AppReadyContext', () => ({
   useAppReadyOptional: () => ({
     publicReady: mockAppReady,
     authenticatedReady: mockAppReady,
-    proReady: mockAppReady,
     bootStatus: mockAppReady ? 'ready' : 'booting',
     banners: {},
   }),

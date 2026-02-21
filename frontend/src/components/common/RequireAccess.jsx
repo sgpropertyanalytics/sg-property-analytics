@@ -16,9 +16,9 @@ import { AlertCircle, RefreshCw } from 'lucide-react';
  */
 export function RequireAccess({ children, fallback }) {
   const navigate = useNavigate();
-  const { authenticatedReady, proReady } = useAppReady();
+  const { authenticatedReady } = useAppReady();
   const { isAuthenticated } = useAuth();
-  const ready = authenticatedReady ?? proReady ?? true;
+  const ready = authenticatedReady ?? true;
   const status = ready ? 'ready' : 'pending';
 
   if (status === 'pending') {
@@ -79,6 +79,4 @@ function AuthRequiredState({ onRetry }) {
   );
 }
 
-// Compatibility alias for existing imports.
-export const RequirePro = RequireAccess;
 export default RequireAccess;

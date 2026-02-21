@@ -77,7 +77,6 @@ function BeadsChartBase({
   // Extract filter values directly (simple, explicit)
   const timeframe = filters.timeFilter?.type === 'preset' ? filters.timeFilter.value : 'Y1';
   // bedroom/district excluded - this chart shows ALL bedroom types as separate bubbles
-  const isAccessRestricted = false;
 
   const chartRef = useRef(null);
   const { wrapApiCall, DebugOverlay, debugInfo } = useDebugOverlay('BeadsChart');
@@ -337,7 +336,7 @@ String Line — Price range for that region.`}
         />
 
         {/* KPI Strip: h-20 fixed */}
-        <DataCardToolbar columns={3} blur={isAccessRestricted}>
+        <DataCardToolbar columns={3}>
           <ToolbarStat
             label="Transactions"
             value={(stats?.totalTransactions || 0).toLocaleString()}

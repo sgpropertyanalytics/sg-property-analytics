@@ -32,7 +32,6 @@ export function useAppReadyOptional() {
   return context ?? {
     publicReady: true,
     authenticatedReady: true,
-    proReady: true,
     bootStatus: 'ready',
     banners: {},
   };
@@ -138,7 +137,6 @@ export function AppReadyProvider({ children }) {
   const value = useMemo(() => ({
     publicReady: appReady,
     authenticatedReady: appReady,
-    proReady: appReady,
     bootStatus: bootPhase,
     banners: {},
     debug: import.meta.env.DEV ? {

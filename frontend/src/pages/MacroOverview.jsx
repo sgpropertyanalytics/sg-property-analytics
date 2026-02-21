@@ -15,7 +15,7 @@ import { getKpiSummaryV2, getAggregate, getDashboard } from '../api/client';
 // apiMetadata now displayed in DashboardLayout console header (useData removed)
 import { transformCompressionSeries } from '../adapters';
 // Standardized responsive UI components (layout wrappers only)
-import { ErrorBoundary, ChartPanel, ChartWatermark, DataSection, KPICardV2, KPIHudStrip, KPIHeroContent } from '../components/ui';
+import { ErrorBoundary, ChartPanel, DataSection, KPICardV2, KPIHudStrip, KPIHeroContent } from '../components/ui';
 import { FilterBar } from '../components/patterns';
 // Containment primitives (L0 → L1 → L2 layer system for visual hierarchy)
 import { PageCanvas, ControlRibbon } from '../components/layout';
@@ -323,7 +323,6 @@ export function MacroOverviewContent() {
                 {/* Absolute PSF by Region - Full width below Time Trend */}
                 <ChartPanel ref={compressionRef} className="lg:col-span-2">
                   <ErrorBoundary name="Absolute PSF" compact>
-                    <ChartWatermark>
                       <Suspense fallback={<ChartLoadingFallback height={chartHeight} />}>
                         <AbsolutePsfChart
                           height={chartHeight}
@@ -334,7 +333,6 @@ export function MacroOverviewContent() {
                           variant="dashboard"
                         />
                       </Suspense>
-                    </ChartWatermark>
                   </ErrorBoundary>
                 </ChartPanel>
 
@@ -344,7 +342,6 @@ export function MacroOverviewContent() {
                 {/* Market Compression Analysis - Full width */}
                 <ChartPanel className="lg:col-span-2">
                   <ErrorBoundary name="Price Compression" compact>
-                    <ChartWatermark>
                       <Suspense fallback={<ChartLoadingFallback height={chartHeight} />}>
                         <PriceCompressionChart
                           height={chartHeight}
@@ -355,14 +352,12 @@ export function MacroOverviewContent() {
                           variant="dashboard"
                         />
                       </Suspense>
-                    </ChartWatermark>
                   </ErrorBoundary>
                 </ChartPanel>
 
                 {/* Market Value Oscillator - Full width */}
                 <ChartPanel className="lg:col-span-2">
                   <ErrorBoundary name="Market Value Oscillator" compact>
-                    <ChartWatermark>
                       <Suspense fallback={<ChartLoadingFallback height={chartHeight} />}>
                         <MarketValueOscillator
                           height={chartHeight}
@@ -373,7 +368,6 @@ export function MacroOverviewContent() {
                           variant="dashboard"
                         />
                       </Suspense>
-                    </ChartWatermark>
                   </ErrorBoundary>
                 </ChartPanel>
 
@@ -383,7 +377,6 @@ export function MacroOverviewContent() {
                 {/* Price Distribution - Full width */}
                 <ChartPanel ref={panelsRef} className="lg:col-span-2">
                   <ErrorBoundary name="Price Distribution" compact>
-                    <ChartWatermark>
                       <PriceDistributionChart
                         onDrillThrough={(value) => handleDrillThrough(`Transactions at ${value}`)}
                         height={chartHeight}
@@ -393,14 +386,12 @@ export function MacroOverviewContent() {
                         staggerIndex={4}
                         variant="dashboard"
                       />
-                    </ChartWatermark>
                   </ErrorBoundary>
                 </ChartPanel>
 
                 {/* Beads Chart - Full width */}
                 <ChartPanel className="lg:col-span-2">
                   <ErrorBoundary name="Price by Region & Bedroom" compact>
-                    <ChartWatermark>
                       {/* BeadsChart fetches its own data - ignores bedroom/region filters */}
                       <BeadsChart
                         height={chartHeight}
@@ -408,7 +399,6 @@ export function MacroOverviewContent() {
                         staggerIndex={5}
                         variant="dashboard"
                       />
-                    </ChartWatermark>
                   </ErrorBoundary>
                 </ChartPanel>
           </div>

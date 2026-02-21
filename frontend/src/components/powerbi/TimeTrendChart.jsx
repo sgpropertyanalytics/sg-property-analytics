@@ -8,7 +8,6 @@ import { Chart } from 'react-chartjs-2';
 import { useZustandFilters } from '../../stores';
 import { getAggregate } from '../../api/client';
 import {
-  PreviewChartOverlay,
   DataCard,
   DataCardHeader,
   DataCardToolbar,
@@ -299,9 +298,7 @@ Grouped by ${TIME_LABELS[timeGrouping]}.`}
 
         {/* Layer 3: Canvas - flex-grow */}
         <DataCardCanvas minHeight={height} cinema={cinema}>
-          <PreviewChartOverlay chartRef={chartRef}>
             <Chart ref={chartRef} type="bar" data={chartData} options={options} />
-          </PreviewChartOverlay>
         </DataCardCanvas>
 
         {/* Layer 3: StatusDeck - h-10 fixed footer with legend */}

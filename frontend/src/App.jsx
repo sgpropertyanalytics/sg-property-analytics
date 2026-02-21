@@ -143,7 +143,7 @@ function App() {
           <DebugProvider>
           <ChartTimingProvider>
           <BrowserRouter>
-            {/* AppReadyProvider gates data fetching until boot is complete (auth + subscription + filters) */}
+            {/* AppReadyProvider gates data fetching until boot is complete (auth + filters) */}
             <AppReadyProvider>
             {/* BootStuckBanner - Recovery UI when boot is stuck >10s */}
             <BootStuckBanner />

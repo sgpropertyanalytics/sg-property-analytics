@@ -21,7 +21,7 @@ from utils.normalize import (
     ValidationError as NormalizeValidationError, validation_error_response
 )
 from api.contracts import api_contract
-from utils.subscription import require_authenticated_access
+from utils.auth import require_authenticated_access
 
 logger = route_logger("dashboard")
 
@@ -101,17 +101,6 @@ def dashboard():
             options=options if options else None,
             skip_cache=skip_cache
         )
-
-        # SECURITY: Mask project names in volume_by_location for anonymous users
-        # when location_grain=project (apply before serialization)
-        from utils.subscription import has_authenticated_access
-        if not has_authenticated_access() and options.get('location_grain') == 'project':
-            if 'volume_by_location' in result.get('data', {}):
-                # Mask project names to generic format: "Project #1", "Project #2", etc.
-                for i, item in enumerate(result['data']['volume_by_location'], 1):
-                    item['location'] = f"Project #{i}"
-                # Add flag so frontend knows data is masked
-                result['meta']['data_masked'] = True
 
         # Serialize to v2 schema
         serialized = serialize_dashboard_response(

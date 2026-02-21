@@ -18,7 +18,7 @@ import { useAppQuery } from '../useAppQuery';
 vi.mock('../../context/AppReadyContext', () => ({
   useAppReadyOptional: () => ({
     publicReady: true,
-    proReady: true,
+    authenticatedReady: true,
     bootStatus: 'ready',
     banners: {},
   }),

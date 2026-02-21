@@ -2,7 +2,7 @@
 Authentication Routes - Firebase-only authentication
 
 Provides account deletion and auth health diagnostics.
-Firebase token verification happens in utils/subscription.py.
+Firebase token verification happens in utils/auth.py.
 """
 from flask import Blueprint, jsonify, current_app
 import time
@@ -113,7 +113,7 @@ def delete_account():
     Delete user account and all associated data.
     """
     try:
-        from utils.subscription import get_user_from_request
+        from utils.auth import get_user_from_request
         user = get_user_from_request()
         if not user:
             return jsonify({"error": "Authorization required"}), 401

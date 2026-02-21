@@ -1,5 +1,4 @@
 import { useState, lazy, Suspense } from 'react';
-import { ChartWatermark } from '../components/ui';
 import { MarketMomentumGrid, GrowthDumbbellChart } from '../components/powerbi';
 // Phase 3.4: Unified filter bar (same as Market Overview)
 import { FilterBar } from '../components/patterns';
@@ -46,8 +45,7 @@ export function DistrictDeepDiveContent() {
       {/* Main Content */}
       <div className="space-y-6 animate-fade-in">
           {/* Map - render active mode only to avoid background data fetches */}
-          <ChartWatermark>
-            <Suspense fallback={<ChartSkeleton type="map" height={600} />}>
+          <Suspense fallback={<ChartSkeleton type="map" height={600} />}>
               {mapMode === 'volume' ? (
                 <DistrictLiquidityMap
                   saleType={SaleType.RESALE}
@@ -64,23 +62,18 @@ export function DistrictDeepDiveContent() {
                 />
               )}
             </Suspense>
-          </ChartWatermark>
 
           {/* Price mode: Show Market Momentum Grid and Growth Dumbbell Chart */}
           {mapMode === 'price' && (
             <>
-              <ChartWatermark>
-                <MarketMomentumGrid
-                  saleType={SaleType.RESALE}
-                />
-              </ChartWatermark>
+              <MarketMomentumGrid
+                saleType={SaleType.RESALE}
+              />
 
-              <ChartWatermark>
-                <GrowthDumbbellChart
-                  saleType={SaleType.RESALE}
-                  enabled={mapMode === 'price'}
-                />
-              </ChartWatermark>
+              <GrowthDumbbellChart
+                saleType={SaleType.RESALE}
+                enabled={mapMode === 'price'}
+              />
             </>
           )}
         </div>

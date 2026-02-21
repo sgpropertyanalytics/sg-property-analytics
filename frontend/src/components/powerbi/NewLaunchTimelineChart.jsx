@@ -20,7 +20,7 @@ import { ChartFrame } from '../common/ChartFrame';
 import { useZustandFilters } from '../../stores';
 import { TIME_GROUP_BY } from '../../context/PowerBIFilter';
 import { getNewLaunchTimeline, getNewLaunchAbsorption } from '../../api/client';
-import { PreviewChartOverlay, ChartSlot, KeyInsightBox } from '../ui';
+import { ChartSlot, KeyInsightBox } from '../ui';
 import { baseChartJsOptions, CHART_AXIS_DEFAULTS } from '../../constants/chartOptions';
 import { transformNewLaunchTimeline, transformNewLaunchAbsorption, is2020Period, assertKnownVersion, logFetchDebug } from '../../adapters';
 import { CHART_COLORS } from '../../constants/colors';
@@ -410,9 +410,7 @@ function NewLaunchTimelineChartBase({ height = 300 }) {
           {/* Chart slot */}
           <ChartSlot>
             {hasData ? (
-              <PreviewChartOverlay chartRef={chartRef}>
                 <Chart ref={chartRef} type="bar" data={chartData} options={options} />
-              </PreviewChartOverlay>
             ) : (
               <div className="flex items-center justify-center h-full text-brand-blue">
                 <div className="text-center">

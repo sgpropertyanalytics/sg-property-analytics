@@ -68,7 +68,6 @@ def get_user_from_firebase_token():
                 display_name=display_name,
                 avatar_url=avatar_url,
             )
-            user.access_level = 'authenticated'
             db.session.add(user)
             db.session.commit()
         else:
@@ -123,36 +122,6 @@ def get_access_level():
         return 'anonymous'
 
     return 'authenticated'
-
-
-def check_granularity_allowed(group_by, has_authenticated_access_override=None):
-    """
-    Check if requested grouping granularity is allowed.
-
-    Args:
-        group_by: Comma-separated grouping fields (e.g., 'district,quarter')
-        has_authenticated_access_override: Override access check
-
-    Returns:
-        tuple: (allowed: bool, error_message: str or None)
-    """
-    if has_authenticated_access_override is None:
-        has_authenticated_access_override = has_authenticated_access()
-
-    # Authenticated users can use any granularity.
-    if has_authenticated_access_override:
-        return (True, None)
-
-    # Anonymous access: check for project-level grouping.
-    BLOCKED_FIELDS = ['project', 'project_name', 'address', 'unit', 'floor']
-
-    if group_by:
-        fields = [f.strip().lower() for f in group_by.split(',')]
-        for field in fields:
-            if any(blocked in field for blocked in BLOCKED_FIELDS):
-                return (False, "Project-level data requires authenticated access.")
-
-    return (True, None)
 
 
 def require_authenticated_access(f):
@@ -466,34 +435,3 @@ def suppress_if_needed(row: dict, count: int, level: str = "project") -> dict:
     return build_suppressed_row(level, count, identifiers)
 
 
-def enforce_filter_granularity(filters, has_authenticated_access_override=None):
-    """
-    Limit filter granularity for anonymous access to prevent re-identification.
-
-    Args:
-        filters: Dict of filter parameters
-        has_authenticated_access_override: Override access check
-
-    Returns:
-        tuple: (sanitized_filters: dict, warnings: list)
-    """
-    if has_authenticated_access_override is None:
-        has_authenticated_access_override = has_authenticated_access()
-
-    # Authenticated users: no restrictions.
-    if has_authenticated_access_override:
-        return (filters, [])
-
-    sanitized = dict(filters)
-    warnings = []
-
-    # Block exact project filter for anonymous users.
-    if 'project_exact' in sanitized:
-        del sanitized['project_exact']
-        warnings.append("Exact project search requires authenticated access")
-
-    if 'project' in sanitized:
-        del sanitized['project']
-        warnings.append("Project search requires authenticated access")
-
-    return (sanitized, warnings)

@@ -70,7 +70,7 @@ LANDMINES = [
      "warning"),
 
     # Subscription Caching Incident (Dec 30, 2025)
-    ("frontend/src/context/SubscriptionContext.jsx", "Dec 30, 2025",
+    ("frontend/src/context/AccessContext.jsx", "Dec 30, 2025",
      "Access Caching Incident: On API failure, keep existing cached access state. "
      "Never downgrade authenticated cache state on transient errors.",
      "critical"),

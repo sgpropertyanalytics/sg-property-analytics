@@ -10,7 +10,6 @@ import { getAggregate } from '../../api/client';
 import { useZustandFilters } from '../../stores';
 import { TIME_GROUP_BY } from '../../context/PowerBIFilter';
 import {
-  PreviewChartOverlay,
   DataCard,
   DataCardHeader,
   DataCardToolbar,
@@ -72,8 +71,6 @@ function MarketValueOscillatorBase({ height = 380, saleType = null, sharedRawDat
   // Extract filter values directly (simple, explicit)
   const timeframe = filters.timeFilter?.type === 'preset' ? filters.timeFilter.value : 'Y1';
   const bedroom = filters.bedroomTypes?.join(',') || '';
-  const isAccessRestricted = false;
-
   const chartRef = useRef(null);
 
   // Visibility-based fetch deferral (CLAUDE.md Rule 5: Library-First)
@@ -373,7 +370,7 @@ Based on resale transactions only, with outliers excluded.
           />
 
           {/* KPI Row - using standard DataCardToolbar */}
-          <DataCardToolbar columns={3} blur={isAccessRestricted}>
+          <DataCardToolbar columns={3}>
             <ToolbarStat
               label="CCR-RCR Signal"
               value={
@@ -408,9 +405,7 @@ Based on resale transactions only, with outliers excluded.
 
           {/* Canvas: flex-grow */}
           <DataCardCanvas minHeight={height} cinema={cinema}>
-            <PreviewChartOverlay chartRef={chartRef}>
               <Line ref={chartRef} data={chartData} options={chartOptions} />
-            </PreviewChartOverlay>
           </DataCardCanvas>
 
           {/* StatusDeck: h-10 fixed - legend + periods */}

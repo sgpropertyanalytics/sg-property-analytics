@@ -434,7 +434,7 @@ def get_hot_projects():
             })
 
         # SECURITY: Mask sensitive data for anonymous users
-        from utils.subscription import has_authenticated_access
+        from utils.auth import has_authenticated_access
         if not has_authenticated_access():
             for i, proj in enumerate(projects, 1):
                 # Mask project name and developer

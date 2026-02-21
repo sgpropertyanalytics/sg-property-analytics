@@ -300,7 +300,7 @@ def get_multi_scope_comparison():
         JSON with scopes data, map_data, and project info
     """
     # SECURITY: require authenticated access
-    from utils.subscription import has_authenticated_access
+    from utils.auth import has_authenticated_access
     if not has_authenticated_access():
         return jsonify({
             "error": "Authentication required",
