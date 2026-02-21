@@ -355,7 +355,7 @@ export function ExitRiskContent() {
                   type="button"
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   disabled={projectOptionsLoading}
-                  className="w-full min-h-[44px] px-3 py-2.5 text-sm border border-slate-500/50 rounded-lg text-left bg-slate-200/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-700 focus-visible:border-transparent flex items-center justify-between min-w-0 touch-action-manipulation"
+                  className="w-full min-h-[44px] px-3 py-2.5 text-sm border border-slate-500/50 rounded-lg text-left bg-slate-200/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-700 focus-visible:border-transparent flex items-center justify-between min-w-0 touch-manipulation"
                 >
                   <span className={selectedProject ? 'text-slate-900 truncate font-medium min-w-0' : 'text-slate-500 min-w-0'}>
                     {selectedProject
@@ -369,7 +369,7 @@ export function ExitRiskContent() {
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); handleClearSelection(); }}
-                        className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-slate-500/30 rounded touch-action-manipulation active:bg-slate-500/40"
+                        className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-slate-500/30 rounded touch-manipulation active:bg-slate-500/40"
                         aria-label="Clear selection"
                       >
                         <svg className="w-4 h-4 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -407,7 +407,7 @@ export function ExitRiskContent() {
                             key={p.name}
                             type="button"
                             onClick={() => handleProjectSelect(p)}
-                            className={`w-full min-h-[44px] px-3 py-2 text-left text-sm hover:bg-slate-200/50 active:bg-slate-200/70 flex justify-between items-center min-w-0 touch-action-manipulation ${
+                            className={`w-full min-h-[44px] px-3 py-2 text-left text-sm hover:bg-slate-200/50 active:bg-slate-200/70 flex justify-between items-center min-w-0 touch-manipulation ${
                               selectedProject?.name === p.name ? 'bg-slate-200/30 text-slate-900 font-medium' : 'text-slate-700'
                             }`}
                           >

@@ -167,7 +167,7 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
         {/* IDE-style Edge Toggle - Positioned on the vertical dividing line */}
         <button
           onClick={toggleNavCollapse}
-          className="absolute top-1/2 -right-3 transform -translate-y-1/2 z-50 w-6 h-12 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 border border-slate-600 rounded-r-md flex items-center justify-center text-slate-400 hover:text-white transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-blue-600 touch-action-manipulation"
+          className="absolute top-1/2 -right-3 transform -translate-y-1/2 z-50 w-6 h-12 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 border border-slate-600 rounded-r-md flex items-center justify-center text-slate-400 hover:text-white transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-blue-600 touch-manipulation"
           aria-label={isNavCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           <svg
@@ -204,7 +204,7 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
             {/* Close button overlay */}
             <button
               onClick={handleMobileNavClose}
-              className="absolute top-4 right-4 p-2 rounded-none bg-white border border-slate-300 text-slate-600 hover:bg-slate-100 active:bg-slate-200 min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:ring-2 focus-visible:ring-blue-600 touch-action-manipulation"
+              className="absolute top-4 right-4 p-2 rounded-none bg-white border border-slate-300 text-slate-600 hover:bg-slate-100 active:bg-slate-200 min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:ring-2 focus-visible:ring-blue-600 touch-manipulation"
               aria-label="Close navigation"
             >
 
@@ -227,7 +227,7 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
             {/* Hamburger Menu */}
             <button
               onClick={() => setMobileNavOpen(true)}
-              className="flex items-center justify-center p-2 rounded-none bg-white border border-slate-300 text-slate-600 min-h-[44px] min-w-[44px] hover:bg-slate-100 active:bg-slate-200 transition-none focus-visible:ring-2 focus-visible:ring-blue-600 touch-action-manipulation"
+              className="flex items-center justify-center p-2 rounded-none bg-white border border-slate-300 text-slate-600 min-h-[44px] min-w-[44px] hover:bg-slate-100 active:bg-slate-200 transition-none focus-visible:ring-2 focus-visible:ring-blue-600 touch-manipulation"
               aria-label="Open navigation menu"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -263,7 +263,7 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
             {/* Console Header - Terminal Block (auto-applied to all pages) */}
             {/* Height: 48px (h-12), dense military precision */}
             {/* Border-bottom: Bronze accent line for visual anchoring ("the ledge") */}
-            <div className="flex items-center justify-between px-3 md:px-6 h-12 bg-[#0F172A] border border-gray-200 border-b-2 border-b-[#C4A484]">
+            <div className="flex items-center justify-between px-3 md:px-6 h-12 bg-slate-900 border border-slate-200 border-b-2 border-b-[#C4A484]">
               {/* Left: Logo Box + Page Title - Industrial branding */}
               <div className="flex items-center gap-3 min-w-0 flex-1">
                 <div className="bg-white text-black px-1.5 py-0.5 font-mono text-[10px] font-bold tracking-tighter flex-shrink-0">
@@ -305,7 +305,7 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
           </div>
 
           {/* Content Card - Technical dot grid background */}
-          <div className="flex-1 min-w-0 flex flex-col border border-gray-200 border-t-0 bg-white -mt-2">
+          <div className="flex-1 min-w-0 flex flex-col border border-slate-200 border-t-0 bg-white -mt-2">
             {/* Page Content */}
             <div className="flex-1 min-w-0 technical-grid-bg px-3 md:px-6 pt-4 pb-6">
               <ErrorBoundary name="Page Content">

@@ -195,7 +195,7 @@ export function ProjectDeepDiveContent() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full min-h-[44px] px-4 py-2.5 bg-brand-navy text-white text-sm font-medium rounded-md hover:bg-brand-blue focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors active:bg-brand-blue/80 touch-action-manipulation"
+                    className="w-full min-h-[44px] px-4 py-2.5 bg-brand-navy text-white text-sm font-medium rounded-md hover:bg-brand-blue focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-blue focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors active:bg-brand-blue/80 touch-manipulation"
                   >
                     {loading ? (
                       <span className="flex items-center justify-center gap-2">
@@ -221,7 +221,7 @@ export function ProjectDeepDiveContent() {
                   <button
                     type="button"
                     onClick={() => setFiltersExpanded(!filtersExpanded)}
-                    className="md:hidden w-full flex items-center justify-between min-h-[48px] px-4 py-3 active:bg-brand-sand/50 touch-action-manipulation"
+                    className="md:hidden w-full flex items-center justify-between min-h-[48px] px-4 py-3 active:bg-brand-sand/50 touch-manipulation"
                   >
                     <span className="flex items-center gap-2">
                       <svg className="w-4 h-4 text-brand-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">

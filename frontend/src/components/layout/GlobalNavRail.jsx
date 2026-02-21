@@ -110,7 +110,7 @@ function NavItem({ item, isActive, onClick, collapsed = false }) {
         group relative min-h-[44px] py-3 mb-1 rounded-none
         flex items-center text-left
         transition-colors duration-150
-        outline-none select-none touch-action-manipulation
+        outline-none select-none touch-manipulation
         focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900
         ${collapsed
           ? 'min-w-[44px] min-h-[44px] justify-center mx-auto px-0 mb-0'
@@ -204,7 +204,7 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
       {/* Aligned with nav item icons on left edge */}
       <button
         onClick={() => startTransition(() => navigate('/market-overview'))}
-        className={`group flex items-center min-w-0 select-none touch-action-manipulation focus-visible:ring-2 focus-visible:ring-blue-600 outline-none active:opacity-80 ${collapsed ? 'justify-center' : 'gap-3 pl-6'}`}
+        className={`group flex items-center min-w-0 select-none touch-manipulation focus-visible:ring-2 focus-visible:ring-blue-600 outline-none active:opacity-80 ${collapsed ? 'justify-center' : 'gap-3 pl-6'}`}
         aria-label="Go to Dashboard"
       >
         {/* Icon aligned with nav item icons */}
@@ -293,7 +293,7 @@ export const GlobalNavRail = React.memo(function GlobalNavRail({ activePage, onP
             text-slate-500 hover:text-slate-300 hover:bg-white/5 active:bg-white/10
             transition-colors duration-150
             border-l-[3px] border-l-transparent
-            outline-none touch-action-manipulation
+            outline-none touch-manipulation
             focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900
             ${collapsed ? 'justify-center px-0' : 'pl-6 pr-4 gap-3'}
           `}
