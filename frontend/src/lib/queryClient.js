@@ -19,7 +19,7 @@ import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persist
  *
  * Configuration rationale:
  * - staleTime: 30s - Data is fresh for 30s, prevents rapid refetches on filter changes
- * - gcTime: 5min - Keep cached data for 5min (allows back-nav without refetch)
+ * - gcTime: 24h - Keep cached data for 24h (required for localStorage persistence)
  * - retry: 1 - One retry on failure (API client handles 401 retries separately)
  * - refetchOnWindowFocus: false - Don't refetch on tab focus (dashboard data changes slowly)
  * - refetchOnReconnect: true - Refetch when network reconnects (stale data likely)
