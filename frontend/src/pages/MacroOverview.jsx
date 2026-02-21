@@ -306,9 +306,9 @@ export function MacroOverviewContent() {
         <DataSection title="MARKET TRENDS">
           {/* Charts Grid - Responsive: 1 col mobile, 2 cols desktop */}
           {/* Each chart wrapped with ErrorBoundary to prevent cascade failures */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4 lg:gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 lg:gap-6">
                 {/* Time Trend Chart - Full width */}
-                <ChartPanel className="lg:col-span-2">
+                <ChartPanel className="md:col-span-2">
                   <ErrorBoundary name="Time Trend Chart" compact>
                     <TimeTrendChart
                       onDrillThrough={(value) => handleDrillThrough(`Transactions in ${value}`)}
@@ -321,7 +321,7 @@ export function MacroOverviewContent() {
                 </ChartPanel>
 
                 {/* Absolute PSF by Region - Full width below Time Trend */}
-                <ChartPanel ref={compressionRef} className="lg:col-span-2">
+                <ChartPanel ref={compressionRef} className="md:col-span-2">
                   <ErrorBoundary name="Absolute PSF" compact>
                       <Suspense fallback={<ChartLoadingFallback height={chartHeight} />}>
                         <AbsolutePsfChart
@@ -337,10 +337,10 @@ export function MacroOverviewContent() {
                 </ChartPanel>
 
                 {/* HORIZON LINE - Technical divider */}
-                <div className="lg:col-span-2 border-t border-dashed border-slate-400 my-2" />
+                <div className="md:col-span-2 border-t border-dashed border-slate-400 my-2" />
 
                 {/* Market Compression Analysis - Full width */}
-                <ChartPanel className="lg:col-span-2">
+                <ChartPanel className="md:col-span-2">
                   <ErrorBoundary name="Price Compression" compact>
                       <Suspense fallback={<ChartLoadingFallback height={chartHeight} />}>
                         <PriceCompressionChart
@@ -356,7 +356,7 @@ export function MacroOverviewContent() {
                 </ChartPanel>
 
                 {/* Market Value Oscillator - Full width */}
-                <ChartPanel className="lg:col-span-2">
+                <ChartPanel className="md:col-span-2">
                   <ErrorBoundary name="Market Value Oscillator" compact>
                       <Suspense fallback={<ChartLoadingFallback height={chartHeight} />}>
                         <MarketValueOscillator
@@ -372,10 +372,10 @@ export function MacroOverviewContent() {
                 </ChartPanel>
 
                 {/* HORIZON LINE - Divider before bottom row */}
-                <div className="lg:col-span-2 border-t border-dashed border-slate-400 my-2" />
+                <div className="md:col-span-2 border-t border-dashed border-slate-400 my-2" />
 
                 {/* Price Distribution - Full width */}
-                <ChartPanel ref={panelsRef} className="lg:col-span-2">
+                <ChartPanel ref={panelsRef} className="md:col-span-2">
                   <ErrorBoundary name="Price Distribution" compact>
                       <PriceDistributionChart
                         onDrillThrough={(value) => handleDrillThrough(`Transactions at ${value}`)}
@@ -390,7 +390,7 @@ export function MacroOverviewContent() {
                 </ChartPanel>
 
                 {/* Beads Chart - Full width */}
-                <ChartPanel className="lg:col-span-2">
+                <ChartPanel className="md:col-span-2">
                   <ErrorBoundary name="Price by Region & Bedroom" compact>
                       {/* BeadsChart fetches its own data - ignores bedroom/region filters */}
                       <BeadsChart

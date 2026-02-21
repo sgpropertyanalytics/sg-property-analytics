@@ -130,10 +130,11 @@ function TurnoverBar({ label, value, maxValue = 30 }) {
 
 
 // Loading state with frost overlay
+// Height matches sibling FrostOverlay (400px) in ExitRisk loading grid
 function ExitRiskDashboardSkeleton() {
   return (
-    <div className="weapon-card overflow-hidden">
-      <FrostOverlay height={280} showSpinner showProgress />
+    <div className="weapon-card overflow-hidden h-full">
+      <FrostOverlay height={400} showSpinner showProgress />
     </div>
   );
 }
