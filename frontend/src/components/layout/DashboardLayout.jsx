@@ -150,15 +150,7 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
 
   return (
     <div className="flex h-screen" style={{ backgroundColor: 'var(--color-bg)' }}>
-      {/* Industrial Grid Background - Technical layer behind everything */}
-      <div
-        className="fixed inset-0 pointer-events-none z-0"
-        style={{
-          backgroundImage: 'linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)',
-          backgroundSize: '20px 20px',
-          opacity: 0.03
-        }}
-      />
+      {/* Clean background - no overlapping grid patterns */}
 
       {/* ===== GLOBAL NAV RAIL (Primary Sidebar) ===== */}
       {/* Desktop: Collapsible mini-dock with mechanical 0.2s animation | Mobile: Hidden */}
@@ -226,17 +218,7 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
       {/* ===== MAIN CONTENT AREA ===== */}
       {/* min-w-0 prevents flex children from overflowing - critical for nested grids */}
       <div className="flex-1 min-w-0 flex flex-col relative">
-        {/* Background Grid Pattern */}
-        <div
-          className="absolute inset-0 pointer-events-none opacity-[0.4]"
-          style={{
-            backgroundImage: `
-              linear-gradient(to right, var(--color-border) 1px, transparent 1px),
-              linear-gradient(to bottom, var(--color-border) 1px, transparent 1px)
-            `,
-            backgroundSize: '24px 24px'
-          }}
-        />
+        {/* Background - clean solid, no grid overlays */}
 
         {/* Mobile Header */}
         <header className="lg:hidden sticky top-0 z-40 bg-white px-3 py-2 flex-shrink-0 border-b border-mono-muted">
@@ -273,7 +255,7 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
 
         {/* Main Content - Wrapped with Suspense + ErrorBoundary */}
         {/* DASHBOARD LAYOUT - No top padding, sticky header covers full viewport */}
-        <main className="flex-1 min-w-0 overflow-y-auto flex flex-col pb-6 relative z-10">
+        <main className="flex-1 min-w-0 overflow-y-auto flex flex-col pb-6 relative z-10 bg-[var(--color-bg)]">
           {/* Frosted Bezel - Sticky at true top-0, covers all scrolling content */}
           {/* pt-6 creates the visual gap, backdrop-blur creates disintegration effect */}
           <div className="sticky top-0 z-50 w-full pt-6 pb-2 backdrop-blur-xl bg-[#F5F3EE]/90">
