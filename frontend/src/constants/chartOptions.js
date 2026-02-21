@@ -69,6 +69,9 @@ export const CHART_BORDER_RADIUS = {
 export const BASE_CHART_OPTIONS = {
   responsive: true,
   maintainAspectRatio: false,
+  // Disable animations — charts render instantly when data arrives.
+  // Default 400ms animation on 8+ charts creates perceived lag after loading.
+  animation: false,
   // Padding from single source of truth (chartLayout.js)
   layout: {
     padding: CHART_PADDING,

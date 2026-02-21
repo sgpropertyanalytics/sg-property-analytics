@@ -123,17 +123,16 @@ export function MacroOverviewContent() {
 
   // Visibility-based fetch deferral for below-the-fold charts
   // Uses react-intersection-observer library (CLAUDE.md Rule 5: Library-First)
-  // initialInView: true ensures queries start immediately (skeleton shown during boot)
+  // triggerOnce: true — once scrolled into view, stays enabled (no re-disable on scroll away)
+  // rootMargin: 200px — starts fetching 200px before visible for seamless experience
   const { ref: compressionRef, inView: compressionInView } = useInView({
-    triggerOnce: false,
-    rootMargin: '100px',
-    initialInView: true,
+    triggerOnce: true,
+    rootMargin: '200px',
   });
 
   const { ref: panelsRef, inView: panelsInView } = useInView({
-    triggerOnce: false,
-    rootMargin: '100px',
-    initialInView: true,
+    triggerOnce: true,
+    rootMargin: '200px',
   });
 
   // SHARED DATA FETCH: Compression/Absolute PSF/Oscillator charts use identical API call

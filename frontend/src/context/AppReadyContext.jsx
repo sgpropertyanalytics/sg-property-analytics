@@ -1,6 +1,6 @@
 import { createContext, useContext, useMemo, useEffect, useRef, useState, useCallback } from 'react';
 import { useAuth } from './AuthContext';
-import { useFilterStore } from '../stores';
+import { useFilterStoreSelector } from '../stores';
 import { logAuthEvent, AuthTimelineEvent } from '../utils/authTimelineLogger';
 
 // Boot stuck detection thresholds (milliseconds)
@@ -40,7 +40,11 @@ export function useAppReadyOptional() {
 
 export function AppReadyProvider({ children }) {
   const { initialized: authInitialized } = useAuth();
-  const { filtersReady, filtersDefaulted, forceDefaults } = useFilterStore();
+  // Granular selectors — only re-render when these specific values change,
+  // not on every filter update (useFilterStore() subscribes to ALL state)
+  const filtersReady = useFilterStoreSelector(s => s.filtersReady);
+  const filtersDefaulted = useFilterStoreSelector(s => s.filtersDefaulted);
+  const forceDefaults = useFilterStoreSelector(s => s.forceDefaults);
 
   const appReady = authInitialized && (filtersReady || filtersDefaulted);
 
