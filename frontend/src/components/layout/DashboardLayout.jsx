@@ -265,11 +265,11 @@ export const DashboardLayout = React.memo(function DashboardLayout({ children, a
             {/* Border-bottom: Bronze accent line for visual anchoring ("the ledge") */}
             <div className="flex items-center justify-between px-3 md:px-6 h-12 bg-[#0F172A] border border-gray-200 border-b-2 border-b-[#C4A484]">
               {/* Left: Logo Box + Page Title - Industrial branding */}
-              <div className="flex items-center gap-3">
-                <div className="bg-white text-black px-1.5 py-0.5 font-mono text-[10px] font-bold tracking-tighter">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="bg-white text-black px-1.5 py-0.5 font-mono text-[10px] font-bold tracking-tighter flex-shrink-0">
                   SGP::ANA
                 </div>
-                <h1 className="text-sm font-medium text-white tracking-widest uppercase">
+                <h1 className="text-sm font-medium text-white tracking-widest uppercase truncate min-w-0">
                   {NAV_ITEMS.find(item => item.id === activePage)?.label?.replace(/ /g, '_') || 'Dashboard'} // V.2.0
                 </h1>
               </div>

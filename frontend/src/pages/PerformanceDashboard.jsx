@@ -44,7 +44,7 @@ export function PerformanceDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100 p-6">
+    <div className="min-h-dvh bg-gray-900 text-gray-100 p-3 md:p-6">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-cyan-400">Performance Dashboard</h1>
@@ -54,7 +54,7 @@ export function PerformanceDashboard() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <MetricCard
           label="Total Charts"
           value={summary.chartCount}
