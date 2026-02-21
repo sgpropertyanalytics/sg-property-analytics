@@ -581,21 +581,22 @@ export function useFilterStoreSelector(selector) {
  */
 export function useZustandFilterState() {
   const store = useFilterStore();
+  const { pageId, filtersReady, filtersDefaulted, filters, factFilter, selectedProject, timeGrouping } = store;
 
   return useMemo(
     () => ({
-      pageId: store.pageId,
-      filtersReady: store.filtersReady,
-      filtersDefaulted: store.filtersDefaulted, // True if defaults were forced by timeout
-      filters: store.filters,
-      factFilter: store.factFilter,
-      selectedProject: store.selectedProject,
-      timeGrouping: store.timeGrouping,
-      // Derived state
-      activeFilters: store.getActiveFilters(),
-      activeFilterCount: store.getActiveFilterCount(),
+      pageId,
+      filtersReady,
+      filtersDefaulted,
+      filters,
+      factFilter,
+      selectedProject,
+      timeGrouping,
+      // Derived state (computed inside memo for stable deps)
+      activeFilters: deriveActiveFilters(filters),
+      activeFilterCount: countActiveFilters(filters),
     }),
-    [store]
+    [pageId, filtersReady, filtersDefaulted, filters, factFilter, selectedProject, timeGrouping]
   );
 }
 
@@ -679,36 +680,39 @@ export function useZustandFilters() {
 
   // Phase 3.4: Route reset - reset transient state when navigating to different page
   // This replaces the useRouteReset hook from PowerBIFilterProvider
+  const resetTransient = store.resetTransient;
   useEffect(() => {
     if (prevPathnameRef.current !== pathname) {
       prevPathnameRef.current = pathname;
       // Reset transient state (factFilter, selectedProject)
-      store.resetTransient();
+      resetTransient();
     }
-  }, [pathname, store]);
+  }, [pathname, resetTransient]);
 
-  // Compute derived state
-  const activeFilters = store.getActiveFilters();
-  const activeFilterCount = store.getActiveFilterCount();
+  // Extract specific state slices for stable memo deps.
+  // Previously [store] (entire state object) was a dep, which is a new ref on every
+  // Zustand write → memo NEVER memoized. Using specific fields means memo only
+  // recomputes when relevant state actually changes.
+  const { pageId, filtersReady, filtersDefaulted, filters, factFilter, selectedProject, timeGrouping } = store;
 
   // Return full interface
   return useMemo(
     () => ({
       // === State ===
-      pageId: store.pageId,
-      filtersReady: store.filtersReady,
-      filtersDefaulted: store.filtersDefaulted, // True if defaults were forced by timeout
-      filters: store.filters,
-      factFilter: store.factFilter,
-      selectedProject: store.selectedProject,
-      timeGrouping: store.timeGrouping,
+      pageId,
+      filtersReady,
+      filtersDefaulted,
+      filters,
+      factFilter,
+      selectedProject,
+      timeGrouping,
 
       // === Filter Options (from Context - API metadata) ===
       filterOptions,
 
-      // === Derived State ===
-      activeFilters,
-      activeFilterCount,
+      // === Derived State (computed inside memo to avoid unstable refs in deps) ===
+      activeFilters: deriveActiveFilters(filters),
+      activeFilterCount: countActiveFilters(filters),
 
       // === Actions (Time Filter) ===
       setTimeFilter: store.setTimeFilter,
@@ -744,11 +748,18 @@ export function useZustandFilters() {
       // === Actions (Lifecycle) ===
       resetFilters: store.resetFilters,
     }),
+    // Zustand actions (store.setX) are stable refs — created once in store factory.
+    // Only state slices need to be deps; actions never change and are safe to omit.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [
-      store,
+      pageId,
+      filtersReady,
+      filtersDefaulted,
+      filters,
+      factFilter,
+      selectedProject,
+      timeGrouping,
       filterOptions,
-      activeFilters,
-      activeFilterCount,
     ]
   );
 }

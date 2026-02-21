@@ -12,13 +12,14 @@
  */
 
 import { QueryClient } from '@tanstack/react-query';
+import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
 
 /**
  * Query Client instance with production-ready defaults.
  *
  * Configuration rationale:
  * - staleTime: 30s - Data is fresh for 30s, prevents rapid refetches on filter changes
- * - gcTime: 5min - Keep cached data for 5min (allows back-nav without refetch)
+ * - gcTime: 24h - Keep cached data for 24h (required for localStorage persistence)
  * - retry: 1 - One retry on failure (API client handles 401 retries separately)
  * - refetchOnWindowFocus: false - Don't refetch on tab focus (dashboard data changes slowly)
  * - refetchOnReconnect: true - Refetch when network reconnects (stale data likely)
@@ -32,9 +33,11 @@ export const queryClient = new QueryClient({
       // This acts as a "debounce" - rapid filter changes hit cache, not network
       staleTime: 30_000,
 
-      // Keep unused query data in cache for 5 minutes
-      // Allows instant back-navigation without refetch
-      gcTime: 5 * 60_000,
+      // Keep unused query data in cache for 24 hours.
+      // Required for localStorage persistence — gcTime must exceed persister maxAge
+      // so restored queries aren't garbage-collected before background refetch.
+      // Also enables instant back-navigation across all dashboard pages.
+      gcTime: 24 * 60 * 60_000,
 
       // === Retry ===
       // Single retry on failure (network glitches happen)
@@ -181,5 +184,21 @@ export function hasRealData(data) {
   }
   return true;
 }
+
+/**
+ * localStorage persister for TanStack Query cache.
+ *
+ * Persists all successful query results to localStorage so returning users
+ * see cached charts instantly (<100ms) while fresh data loads in background.
+ *
+ * maxAge: 24 hours — matches daily URA sync cadence. Stale data beyond 24h
+ * is discarded on restore. Within 24h, cached data is shown immediately
+ * and TanStack's staleTime (30s) triggers a background refetch.
+ */
+export const queryPersister = createSyncStoragePersister({
+  storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+});
+
+export const PERSIST_MAX_AGE = 24 * 60 * 60 * 1000; // 24 hours
 
 export default queryClient;
