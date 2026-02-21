@@ -1,9 +1,9 @@
 """
 Analysis Layer: Data Processor Module - SQL-Only Architecture
 
-Queries the transactions table (Single Source of Truth) via SQLAlchemy and performs
-statistical calculations. This module ONLY reads from the database - it never writes
-or modifies data.
+Queries the transactions_primary view (de-duplicated, Single Source of Truth) and
+performs statistical calculations. This module ONLY reads from the database - it
+never writes or modifies data.
 
 All analysis is performed using SQL aggregation for memory efficiency.
 Safe for resource-constrained hosting (Render 512MB).
@@ -29,7 +29,7 @@ from constants import SALE_TYPE_NEW, SALE_TYPE_RESALE, get_region_for_district
 from api.contracts.contract_schema import PropertyAgeBucket
 
 # Table name constant for reference
-MASTER_TABLE = "transactions"  # Use SQLAlchemy transactions table
+MASTER_TABLE = "transactions_primary"  # De-duplicated view
 
 
 def _add_lease_columns(df: pd.DataFrame) -> None:
@@ -138,16 +138,14 @@ def get_filtered_transactions(
     Returns:
         DataFrame with filtered transactions
     """
-    # SQLAlchemy database query (PostgreSQL only)
+    # Query transactions_primary view (de-duplicated) using raw SQL
     from models.database import db
-    from models.transaction import Transaction
-    from db.sql import exclude_outliers
+    from db.sql import OUTLIER_FILTER
+    from sqlalchemy import text
 
-    # Build query using SQLAlchemy
-    query = db.session.query(Transaction)
-
-    # ALWAYS exclude outliers from all analytics (null-safe)
-    query = query.filter(exclude_outliers(Transaction))
+    # Build WHERE conditions
+    conditions = [OUTLIER_FILTER]
+    params = {}
 
     # Normalize districts if provided
     if districts:
@@ -157,13 +155,17 @@ def get_filtered_transactions(
             if not d.startswith("D"):
                 d = f"D{d.zfill(2)}"
             normalized_districts.append(d)
-        query = query.filter(Transaction.district.in_(normalized_districts))
-    
+        placeholders = ", ".join([f":district_{i}" for i in range(len(normalized_districts))])
+        conditions.append(f"district IN ({placeholders})")
+        for i, d in enumerate(normalized_districts):
+            params[f"district_{i}"] = d
+
     # Apply date range filters in SQL (more efficient than pandas filtering)
     if start_date:
         start_filter = f"{start_date}-01" if len(start_date) == 7 else start_date
         start_dt = coerce_to_date(start_filter)
-        query = query.filter(Transaction.transaction_date >= start_dt)
+        conditions.append("transaction_date >= :start_date")
+        params["start_date"] = start_dt
 
     if end_date:
         # Get last day of month for end_date
@@ -172,15 +174,19 @@ def get_filtered_transactions(
         last_day = monthrange(parsed_date.year, parsed_date.month)[1]
         end_dt = date(parsed_date.year, parsed_date.month, last_day)
         # Use < next_day instead of <= end_dt to include all transactions on end_dt
-        query = query.filter(Transaction.transaction_date < end_dt + timedelta(days=1))
-    
+        conditions.append("transaction_date < :end_date")
+        params["end_date"] = end_dt + timedelta(days=1)
+
+    where_clause = " AND ".join(conditions)
+    sql = f"SELECT * FROM transactions_primary WHERE {where_clause}"
+
     # Apply limit at database level if specified
     if limit:
-        query = query.limit(limit)
-    
-    # Convert SQLAlchemy query to DataFrame
-    from sqlalchemy import text
-    df = pd.read_sql(query.statement, db.engine)
+        sql += " LIMIT :limit_val"
+        params["limit_val"] = limit
+
+    # Execute query and load into DataFrame
+    df = pd.read_sql(text(sql), db.engine, params=params)
     
     if df.empty:
         return df
@@ -371,10 +377,12 @@ def get_resale_stats(
 def get_available_districts() -> list:
     """Get list of all districts with transaction data using SQL query."""
     from models.database import db
-    from models.transaction import Transaction
+    from sqlalchemy import text
 
-    districts = db.session.query(Transaction.district).distinct().order_by(Transaction.district).all()
-    return [d[0] for d in districts]  # Extract district from tuple results
+    result = db.session.execute(
+        text("SELECT DISTINCT district FROM transactions_primary ORDER BY district")
+    ).fetchall()
+    return [d[0] for d in result]
 
 
 def get_sale_type_trends(districts: Optional[list] = None, segment: Optional[str] = None) -> Dict[str, Any]:
