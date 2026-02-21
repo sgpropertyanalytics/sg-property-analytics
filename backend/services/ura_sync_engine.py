@@ -8,14 +8,13 @@ Workflow:
 4. Fetch all batches (1-4)
 5. Map to canonical schema
 6. Upsert with ON CONFLICT DO UPDATE
-7. Run comparison vs baseline
-8. Persist comparison results
-9. Mark succeeded/failed based on thresholds
+7. (shadow only) Run comparison vs CSV baseline
+8. Mark succeeded/failed
 
 Modes:
 - dry_run: Fetch and map, but no DB writes
-- shadow: Write with source='ura_api', run comparison
-- production: Write to prod, still tag source/run_id
+- shadow: Write with source='ura_api', run CSV comparison
+- production: Write to prod (URA API is primary, no CSV comparison)
 
 Usage:
     # As module
@@ -217,32 +216,38 @@ class URASyncEngine:
             try:
                 self._execute_sync()
 
-                # 5. Run comparison
-                comparison_report = self._run_comparison()
+                # 5. Run comparison (shadow mode only)
+                # In production mode, URA API is the primary source — CSV
+                # comparison is not meaningful and must not gate success.
+                comparison_report = None
+                if self.mode == 'shadow':
+                    comparison_report = self._run_comparison()
 
-                # 6. Check thresholds (optionally strict)
-                if comparison_report and not comparison_report.is_acceptable:
-                    if is_compare_strict():
-                        self._mark_failed(
-                            error_message=f"Comparison thresholds exceeded: {comparison_report.issues}",
-                            error_stage='compare'
-                        )
-                        duration = (datetime.now(UTC) - start_time).total_seconds()
-                        return SyncResult(
-                            success=False,
-                            run_id=self.run_id,
-                            mode=self.mode,
-                            error_message=f"Thresholds exceeded: {comparison_report.issues}",
-                            error_stage='compare',
-                            stats=self.stats.to_dict(),
-                            comparison=comparison_report.to_dict() if comparison_report else None,
-                            duration_seconds=duration
-                        )
-                    else:
-                        logger.warning(
-                            "Comparison thresholds exceeded (non-strict mode): "
-                            f"{comparison_report.issues}"
-                        )
+                    # 6. Check thresholds (optionally strict)
+                    if comparison_report and not comparison_report.is_acceptable:
+                        if is_compare_strict():
+                            self._mark_failed(
+                                error_message=f"Comparison thresholds exceeded: {comparison_report.issues}",
+                                error_stage='compare'
+                            )
+                            duration = (datetime.now(UTC) - start_time).total_seconds()
+                            return SyncResult(
+                                success=False,
+                                run_id=self.run_id,
+                                mode=self.mode,
+                                error_message=f"Thresholds exceeded: {comparison_report.issues}",
+                                error_stage='compare',
+                                stats=self.stats.to_dict(),
+                                comparison=comparison_report.to_dict() if comparison_report else None,
+                                duration_seconds=duration
+                            )
+                        else:
+                            logger.warning(
+                                "Comparison thresholds exceeded (non-strict mode): "
+                                f"{comparison_report.issues}"
+                            )
+                else:
+                    logger.info("Production mode: skipping CSV comparison (URA API is primary)")
 
                 # 7. Mark success
                 self._mark_succeeded(comparison_report)
