@@ -8,6 +8,10 @@ import { toast } from 'sonner';
 /**
  * Login Page - Swiss International + Technical Brutalist
  *
+ * Layout:
+ * - Mobile/Tablet: Single column, tower image banner on top, form below
+ * - Desktop (lg+): Two-column grid, form left, tower image right
+ *
  * Auth flow:
  * 1. If already authenticated → redirect immediately
  * 2. signInWithPopup (immediate) with redirect fallback (mobile)
@@ -82,7 +86,7 @@ function Login() {
   };
 
   return (
-    <div className="min-h-screen relative flex items-center justify-center px-6 py-12 bg-[#f5f5f7]">
+    <div className="grid grid-cols-1 lg:grid-cols-2 min-h-screen relative">
 
       {/* ===== GLOBAL NOISE OVERLAY ===== */}
       <div
@@ -92,22 +96,110 @@ function Login() {
         }}
       />
 
-      <div className="relative w-full max-w-[560px]">
+      {/* ===== CENTER VERTICAL RULER (Desktop only) ===== */}
+      <div className="hidden lg:block fixed left-1/2 top-0 bottom-0 -translate-x-1/2 z-40 pointer-events-none">
+        <div
+          className="absolute left-1/2 top-0 bottom-0 w-px bg-black/10"
+          style={{
+            maskImage: 'linear-gradient(to bottom, transparent 0%, black 25%, black 75%, transparent 100%)',
+            WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 25%, black 75%, transparent 100%)'
+          }}
+        />
+        {[...Array(12)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute left-1/2 flex items-center"
+            style={{ top: `calc(15% + ${i * 60}px)` }}
+          >
+            <div className="w-2 h-px bg-black/30 -translate-x-1/2" />
+            <span className="font-mono text-[8px] text-black/30 ml-2">{String((i + 1) * 60).padStart(4, '0')}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* ===== MOBILE/TABLET: Image Panel (stacks above form) ===== */}
+      <div className="lg:hidden relative h-[40vw] min-h-[200px] max-h-[320px] overflow-hidden bg-[#F5F5F7] order-1">
+        <div
+          className="absolute inset-0"
+          style={{
+            maskImage: 'linear-gradient(to bottom, black 60%, transparent 100%)',
+            WebkitMaskImage: 'linear-gradient(to bottom, black 60%, transparent 100%)'
+          }}
+        >
+          <img
+            src="/ZG.png"
+            alt="Twin Towers"
+            className="w-full h-full object-cover object-top opacity-60"
+            style={{
+              filter: 'contrast(0.8) brightness(1.15) grayscale(100%)',
+              mixBlendMode: 'multiply'
+            }}
+          />
+        </div>
+        {/* Grid overlay */}
+        <div
+          className="absolute inset-0 pointer-events-none opacity-[0.06]"
+          style={{
+            backgroundImage: `
+              linear-gradient(to right, #000 1px, transparent 1px),
+              linear-gradient(to bottom, #000 1px, transparent 1px)
+            `,
+            backgroundSize: '40px 40px'
+          }}
+        />
+      </div>
+
+      {/* ===== LEFT COLUMN - Form/Content ===== */}
+      <div className="relative bg-[#fafafa] flex flex-col justify-center items-center px-6 md:px-12 py-12 overflow-hidden order-2 lg:order-1 lg:border-r border-neutral-200">
+
+        {/* Executive Pinstripe Background */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            backgroundColor: '#ffffff',
+            backgroundImage: `repeating-linear-gradient(
+              -45deg,
+              transparent,
+              transparent 4px,
+              #e5e5e5 4px,
+              #e5e5e5 5px
+            )`
+          }}
+        />
+
+        {/* Version + Memory - Bottom Left */}
+        <div className="absolute bottom-4 left-4 font-mono text-[9px] text-black/25 uppercase tracking-widest z-20 space-y-1">
+          <div>v.2.0.4 [STABLE]</div>
+          <div>:: MEMORY_USAGE : 14%</div>
+          <div>:: CACHE_HIT : 0.97</div>
+        </div>
+
+        {/* System Hash - Bottom Right (desktop only) */}
+        <div className="absolute bottom-4 right-4 font-mono text-[8px] text-black/20 z-20 text-right space-y-0.5 hidden lg:block">
+          <div>0x7F3A9B2E</div>
+          <div>0x4C8D1F6A</div>
+          <div>0xE2B5A0C3</div>
+        </div>
+
+        {/* Back Button */}
+        <button
+          onClick={() => navigate('/')}
+          className="absolute top-6 left-6 flex items-center gap-2 text-black/50 hover:text-black transition-colors group z-20"
+        >
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+          <span className="font-mono text-xs uppercase tracking-widest">Back</span>
+        </button>
+
         {/* ===== TECHNICAL FRAME ===== */}
-        <div className="relative bg-white border-2 border-black p-8 md:p-10 shadow-[8px_8px_0px_0px_#000000]">
+        <div className="relative w-full max-w-[480px] bg-white border-2 border-black p-8 md:p-10 lg:p-12 z-10 shadow-[8px_8px_0px_0px_#000000]">
 
           {/* Corner Accents - Registration Marks */}
-          {/* Top-Left */}
           <div className="absolute -top-[7px] -left-[7px] text-black/40 font-mono text-sm leading-none">+</div>
-          {/* Top-Right */}
           <div className="absolute -top-[7px] -right-[7px] text-black/40 font-mono text-sm leading-none">+</div>
-          {/* Bottom-Left */}
           <div className="absolute -bottom-[7px] -left-[7px] text-black/40 font-mono text-sm leading-none">+</div>
-          {/* Bottom-Right */}
           <div className="absolute -bottom-[7px] -right-[7px] text-black/40 font-mono text-sm leading-none">+</div>
 
-
-          {/* Top Border Label - breaks the border line */}
+          {/* Top Border Label */}
           <div className="absolute -top-[10px] left-1/2 -translate-x-1/2 bg-white px-3">
             <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-black/40">
               :: SYSTEM_ENTRY_POINT ::
@@ -188,7 +280,6 @@ function Login() {
               whileHover={{ scale: 1.005 }}
               whileTap={{ scale: 0.995 }}
             >
-              {/* Reveal arrow on hover */}
               <span className="absolute left-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-white/70">
                 {'>'}
               </span>
@@ -221,15 +312,68 @@ function Login() {
             {' '}and{' '}
             <a href="#" className="text-black/50 hover:text-black underline">Privacy</a>
           </p>
+
+          {/* Connector Line - extends from card to divider (desktop) */}
+          <div className="hidden lg:block absolute top-1/2 -right-[6px] w-[calc(50vw-240px-48px)] h-px bg-black/10" />
         </div>
-        {/* Back Button */}
-        <button
-          onClick={() => navigate('/')}
-          className="absolute -top-12 left-0 flex items-center gap-2 text-black/50 hover:text-black transition-colors group"
+      </div>
+
+      {/* ===== RIGHT COLUMN - Twin Towers (Desktop) ===== */}
+      <div className="hidden lg:block relative h-full overflow-hidden bg-[#F5F5F7] order-2">
+
+        {/* Tower Image - responsive, anchored to bottom */}
+        <div
+          className="absolute inset-0 flex items-end justify-center"
+          style={{
+            maskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%), linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)',
+            WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%), linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)',
+            maskComposite: 'intersect',
+            WebkitMaskComposite: 'source-in'
+          }}
         >
-          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-          <span className="font-mono text-xs uppercase tracking-widest">Back</span>
-        </button>
+          <img
+            src="/ZG.png"
+            alt="Twin Towers"
+            className="w-auto max-w-full h-[85vh] object-contain object-bottom opacity-70"
+            style={{
+              filter: 'contrast(0.8) brightness(1.15) grayscale(100%)',
+              mixBlendMode: 'multiply'
+            }}
+          />
+        </div>
+
+        {/* Grid overlay */}
+        <div
+          className="absolute inset-0 pointer-events-none opacity-[0.06] z-10"
+          style={{
+            backgroundImage: `
+              linear-gradient(to right, #000 1px, transparent 1px),
+              linear-gradient(to bottom, #000 1px, transparent 1px)
+            `,
+            backgroundSize: '60px 60px'
+          }}
+        />
+
+        {/* Perspective dot overlay */}
+        <div
+          className="absolute inset-0 pointer-events-none opacity-[0.03] z-10"
+          style={{
+            backgroundImage: `radial-gradient(circle at 1px 1px, #000 1px, transparent 0)`,
+            backgroundSize: '20px 20px'
+          }}
+        />
+
+        {/* Directive Text Block */}
+        <div className="absolute top-8 left-8 z-20 space-y-2">
+          <p className="font-mono text-sm leading-tight whitespace-nowrap tracking-wide">
+            <span className="font-normal text-black/50">{'>'} DIRECTIVE //</span>
+            <span className="font-semibold text-black"> INSTITUTIONAL-GRADE ANALYTICS</span>
+            <span className="font-normal text-black/50"> : SINGAPORE_PRIVATE_PROPERTY</span>
+          </p>
+          <p className="font-mono text-sm leading-tight whitespace-nowrap tracking-wide font-normal text-black/50">
+            {'>'} CCR [D09] // River Valley
+          </p>
+        </div>
       </div>
     </div>
   );

@@ -5,9 +5,8 @@ Environment Variables:
     URA_SYNC_ENABLED: 'true' or 'false' (default: 'true')
         Kill switch to disable sync. Set to 'false' to exit early.
 
-    URA_SYNC_MODE: 'shadow' | 'production' | 'dry_run' (default: 'shadow')
-        - shadow: Write to transactions with source='ura_api', run comparison
-        - production: Full production write
+    URA_SYNC_MODE: 'production' | 'dry_run' (default: 'production')
+        - production: Full production write (URA API is primary source)
         - dry_run: Fetch and map, but don't write to DB
 
     URA_REVISION_WINDOW_MONTHS: int (default: 3)
@@ -52,15 +51,15 @@ def get_sync_mode() -> str:
     Get the current sync mode.
 
     Returns:
-        'shadow', 'production', or 'dry_run'
+        'production' or 'dry_run'
 
     Environment:
-        URA_SYNC_MODE: default 'shadow'
+        URA_SYNC_MODE: default 'production'
     """
-    mode = os.environ.get('URA_SYNC_MODE', 'shadow').lower()
-    if mode not in ('shadow', 'production', 'dry_run'):
-        logger.warning(f"Invalid URA_SYNC_MODE '{mode}', defaulting to 'shadow'")
-        mode = 'shadow'
+    mode = os.environ.get('URA_SYNC_MODE', 'production').lower()
+    if mode not in ('production', 'dry_run'):
+        logger.warning(f"Invalid URA_SYNC_MODE '{mode}', defaulting to 'production'")
+        mode = 'production'
     return mode
 
 
@@ -100,17 +99,6 @@ def get_cutoff_date() -> date:
     return cutoff.replace(day=1)
 
 
-def is_compare_strict() -> bool:
-    """
-    Check if comparison threshold breaches should fail the sync.
-
-    Environment:
-        URA_COMPARE_STRICT: 'true' (default) or 'false'
-    """
-    strict = os.environ.get('URA_COMPARE_STRICT', 'true').lower()
-    return strict not in ('false', '0', 'no', 'off', 'disabled')
-
-
 # =============================================================================
 # Property Type Filter
 # =============================================================================
@@ -144,20 +132,6 @@ def is_allowed_property_type(property_type: str) -> bool:
     if not property_type:
         return False
     return property_type.lower() in ALLOWED_PROPERTY_TYPES
-
-
-def get_revision_window_date() -> date:
-    """
-    Calculate the date from which to start the revision window.
-
-    Returns:
-        Date N months ago
-
-    Environment:
-        URA_REVISION_WINDOW_MONTHS: default 3
-    """
-    months = get_revision_window_months()
-    return date.today() - relativedelta(months=months)
 
 
 # =============================================================================
@@ -328,6 +302,6 @@ def log_sync_config():
     logger.info(f"  Enabled:          {is_sync_enabled()}")
     logger.info(f"  Mode:             {get_sync_mode()}")
     logger.info(f"  Revision window:  {get_revision_window_months()} months")
-    logger.info(f"  Revision start:   {get_revision_window_date()}")
+    logger.info(f"  Revision start:   {date.today() - relativedelta(months=get_revision_window_months())}")
     logger.info(f"  Cutoff date:      {get_cutoff_date()}")
     logger.info("=" * 60)

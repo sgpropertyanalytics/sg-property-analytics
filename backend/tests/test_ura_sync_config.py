@@ -7,14 +7,11 @@ Tests kill switch, mode selection, and upsert SQL generation.
 import pytest
 from datetime import date
 from dateutil.relativedelta import relativedelta
-import os
-
 from services.ura_sync_config import (
     is_sync_enabled,
     get_sync_mode,
     get_revision_window_months,
     get_cutoff_date,
-    get_revision_window_date,
     build_upsert_sql,
     validate_sync_config,
     SyncStats,
@@ -73,15 +70,10 @@ class TestKillSwitch:
 class TestSyncMode:
     """Tests for URA_SYNC_MODE."""
 
-    def test_default_is_shadow(self, monkeypatch):
-        """Default mode should be shadow."""
+    def test_default_is_production(self, monkeypatch):
+        """Default mode should be production."""
         monkeypatch.delenv('URA_SYNC_MODE', raising=False)
-        assert get_sync_mode() == 'shadow'
-
-    def test_shadow_mode(self, monkeypatch):
-        """Shadow mode when set."""
-        monkeypatch.setenv('URA_SYNC_MODE', 'shadow')
-        assert get_sync_mode() == 'shadow'
+        assert get_sync_mode() == 'production'
 
     def test_production_mode(self, monkeypatch):
         """Production mode when set."""
@@ -93,10 +85,10 @@ class TestSyncMode:
         monkeypatch.setenv('URA_SYNC_MODE', 'dry_run')
         assert get_sync_mode() == 'dry_run'
 
-    def test_invalid_mode_defaults_to_shadow(self, monkeypatch):
-        """Invalid mode defaults to shadow."""
+    def test_invalid_mode_defaults_to_production(self, monkeypatch):
+        """Invalid mode defaults to production."""
         monkeypatch.setenv('URA_SYNC_MODE', 'invalid')
-        assert get_sync_mode() == 'shadow'
+        assert get_sync_mode() == 'production'
 
 
 # =============================================================================
@@ -121,12 +113,6 @@ class TestRevisionWindow:
         monkeypatch.setenv('URA_REVISION_WINDOW_MONTHS', 'invalid')
         assert get_revision_window_months() == 3
 
-    def test_revision_window_date(self, monkeypatch):
-        """Revision window date is correct."""
-        monkeypatch.setenv('URA_REVISION_WINDOW_MONTHS', '3')
-        expected = date.today() - relativedelta(months=3)
-        assert get_revision_window_date() == expected
-
 
 # =============================================================================
 # Cutoff Date Tests
@@ -136,15 +122,15 @@ class TestCutoffDate:
     """Tests for cutoff date configuration."""
 
     def test_default_cutoff_years(self, monkeypatch):
-        """Default cutoff is 5 years."""
+        """Default cutoff is 5 years, aligned to month start."""
         monkeypatch.delenv('URA_CUTOFF_YEARS', raising=False)
-        expected = date.today() - relativedelta(years=5)
+        expected = (date.today() - relativedelta(years=5)).replace(day=1)
         assert get_cutoff_date() == expected
 
     def test_custom_cutoff_years(self, monkeypatch):
-        """Custom cutoff years."""
+        """Custom cutoff years, aligned to month start."""
         monkeypatch.setenv('URA_CUTOFF_YEARS', '3')
-        expected = date.today() - relativedelta(years=3)
+        expected = (date.today() - relativedelta(years=3)).replace(day=1)
         assert get_cutoff_date() == expected
 
 
