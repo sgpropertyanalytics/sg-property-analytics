@@ -58,7 +58,7 @@ services:
       - key: URA_SYNC_ENABLED
         value: "true"
       - key: URA_SYNC_MODE
-        value: "production"  # Promoted from shadow after threshold fix (82094d1)
+        value: "production"
       - key: URA_REVISION_WINDOW_MONTHS
         value: "3"
       - key: URA_CUTOFF_YEARS

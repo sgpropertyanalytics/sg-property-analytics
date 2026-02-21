@@ -7,8 +7,6 @@ Tests kill switch, mode selection, and upsert SQL generation.
 import pytest
 from datetime import date
 from dateutil.relativedelta import relativedelta
-import os
-
 from services.ura_sync_config import (
     is_sync_enabled,
     get_sync_mode,
