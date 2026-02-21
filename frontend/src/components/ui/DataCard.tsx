@@ -410,7 +410,7 @@ export function ToolbarStat({
   return (
     <div
       className={`
-        flex flex-col justify-center px-4
+        flex flex-col justify-center px-4 min-w-0
         ${highlight ? 'bg-slate-100' : ''}
         ${className}
       `.trim()}
@@ -418,7 +418,7 @@ export function ToolbarStat({
       {/* Label row - pure metrics, no color dots */}
       <span
         className={`
-          font-sans text-[10px] uppercase font-semibold tracking-wide mb-1
+          font-sans text-[10px] uppercase font-semibold tracking-wide mb-1 truncate
           ${highlight ? 'text-slate-600' : 'text-slate-400'}
         `.trim()}
       >
@@ -427,7 +427,7 @@ export function ToolbarStat({
       {/* Mono for machine data */}
       <span
         className={`
-          font-mono font-semibold tabular-nums
+          font-mono font-semibold tabular-nums truncate
           ${highlight ? 'text-sm text-slate-900' : 'text-lg text-slate-800'}
         `.trim()}
       >

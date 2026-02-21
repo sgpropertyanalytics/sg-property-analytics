@@ -165,9 +165,9 @@ export default function ExitRiskDashboard({
   const riskBadge = getRiskBadgeStyles(overallRisk);
 
   return (
-    <div className="weapon-card p-6">
+    <div className="weapon-card p-6 flex flex-col h-full">
       {/* Header */}
-      <h3 className="text-sm font-semibold text-brand-navy uppercase tracking-wide mb-6">
+      <h3 className="text-sm font-semibold text-brand-navy uppercase tracking-wide mb-6 shrink-0">
         Liquidity Assessment
       </h3>
 

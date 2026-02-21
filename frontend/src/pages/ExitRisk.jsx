@@ -495,7 +495,7 @@ export function ExitRiskContent() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               <div className="bg-card rounded-xl border border-brand-sky/30 overflow-hidden">
-                <FrostOverlay height={350} showSpinner showProgress />
+                <FrostOverlay height={400} showSpinner showProgress />
               </div>
               <div className="bg-card rounded-xl border border-brand-sky/30 overflow-hidden">
                 <FrostOverlay height={400} showSpinner showProgress />
