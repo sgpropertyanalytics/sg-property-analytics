@@ -131,9 +131,6 @@ def fetch_batch_with_seek(
     if all_rows and force:
         # Re-hash ALL rows regardless of existing value
         where_clause = "source = :source"
-    elif all_rows:
-        # Re-hash all rows but skip those already having target value (idempotent)
-        where_clause = f"source = :source AND {target_col} IS NULL"
     else:
         # Only rows missing the target column value
         where_clause = f"source = :source AND {target_col} IS NULL"

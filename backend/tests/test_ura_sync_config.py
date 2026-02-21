@@ -131,15 +131,15 @@ class TestCutoffDate:
     """Tests for cutoff date configuration."""
 
     def test_default_cutoff_years(self, monkeypatch):
-        """Default cutoff is 5 years."""
+        """Default cutoff is 5 years, aligned to month start."""
         monkeypatch.delenv('URA_CUTOFF_YEARS', raising=False)
-        expected = date.today() - relativedelta(years=5)
+        expected = (date.today() - relativedelta(years=5)).replace(day=1)
         assert get_cutoff_date() == expected
 
     def test_custom_cutoff_years(self, monkeypatch):
-        """Custom cutoff years."""
+        """Custom cutoff years, aligned to month start."""
         monkeypatch.setenv('URA_CUTOFF_YEARS', '3')
-        expected = date.today() - relativedelta(years=3)
+        expected = (date.today() - relativedelta(years=3)).replace(day=1)
         assert get_cutoff_date() == expected
 
 

@@ -24,11 +24,10 @@ Usage:
     # Exit 0 on success, 1 on failure
 """
 
-import os
 import sys
 import logging
 import uuid
-from datetime import datetime, date, timedelta, UTC
+from datetime import datetime, UTC
 from typing import Optional, Dict, Any, List, Tuple
 from dataclasses import dataclass, field, asdict
 
@@ -36,20 +35,17 @@ from sqlalchemy import text, bindparam
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import sessionmaker
 
-from services.ura_api_client import URAAPIClient, URADataError
-from services.ura_canonical_mapper import URACanonicalMapper, NATURAL_KEY_FIELDS
+from services.ura_api_client import URAAPIClient
+from services.ura_canonical_mapper import URACanonicalMapper
 from services.ura_sync_config import (
     is_sync_enabled,
     get_sync_mode,
     get_cutoff_date,
     get_revision_window_months,
-    get_revision_window_date,
     validate_sync_config,
     log_sync_config,
     build_upsert_sql,
     SyncStats,
-    UPDATABLE_FIELDS,
-    INSERT_FIELDS,
     is_allowed_property_type,
     ALLOWED_PROPERTY_TYPES_DISPLAY,
 )

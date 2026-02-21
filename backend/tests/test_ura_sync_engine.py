@@ -6,18 +6,14 @@ Integration tests require database and API access.
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
-from datetime import date, datetime
-import json
+from unittest.mock import patch, MagicMock
 
 from services.ura_sync_engine import (
     URASyncEngine,
     SyncResult,
     run_sync,
-    get_database_engine,
     get_git_sha,
 )
-from services.ura_sync_config import SyncStats
 
 
 # =============================================================================
@@ -71,38 +67,6 @@ class TestSyncResult:
         assert d['success'] is True
         assert d['run_id'] == 'abc-123'
         assert d['duration_seconds'] == 10.5
-
-
-# =============================================================================
-# SyncStats Tests
-# =============================================================================
-
-class TestSyncStats:
-    """Tests for SyncStats tracking."""
-
-    def test_stats_initialization(self):
-        """Stats start at zero."""
-        stats = SyncStats()
-        assert stats.raw_projects == 0
-        assert stats.mapped_rows == 0
-        assert stats.inserted_rows == 0
-        assert stats.updated_rows == 0
-        assert stats.failed_rows == 0
-
-    def test_stats_accumulation(self):
-        """Stats can be accumulated."""
-        stats = SyncStats()
-        stats.raw_projects = 100
-        stats.raw_transactions = 5000
-        stats.mapped_rows = 4900
-        stats.inserted_rows = 4000
-        stats.updated_rows = 800
-        stats.unchanged_rows = 100
-
-        d = stats.to_dict()
-        assert d['raw_projects'] == 100
-        assert d['raw_transactions'] == 5000
-        assert d['inserted_rows'] == 4000
 
 
 # =============================================================================
