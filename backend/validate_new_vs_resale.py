@@ -20,7 +20,7 @@ def main():
         print('='*80)
         result = db.session.execute(text(f'''
             SELECT
-                COUNT(*) FILTER (WHERE COALESCE(is_outlier, false) = false) as non_outliers,
+                COUNT(*) FILTER (WHERE is_outlier = false) as non_outliers,
                 COUNT(*) FILTER (WHERE is_outlier = true) as outliers,
                 COUNT(*) as total
             FROM transactions

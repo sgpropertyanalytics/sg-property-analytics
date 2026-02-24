@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).parent.parent / '.env')
 
 
-def get_database_url():
+def get_database_url(context: str = 'web'):
     """
     Get and validate DATABASE_URL for PostgreSQL.
 
@@ -15,8 +15,18 @@ def get_database_url():
     SQLite is NOT supported due to schema drift and production-only bugs.
 
     For Render/cloud PostgreSQL, automatically adds sslmode=require if missing.
+
+    Args:
+        context: 'web' for web server, 'job' for cron/batch jobs.
+                 Job context checks DATABASE_URL_CRON first, and warns
+                 if using Supabase transaction pooler (port 6543) which
+                 is unreliable for long-running batch operations.
     """
-    database_url = os.getenv('DATABASE_URL')
+    # Job context: prefer DATABASE_URL_CRON (session pooler) over DATABASE_URL
+    if context == 'job':
+        database_url = os.getenv('DATABASE_URL_CRON') or os.getenv('DATABASE_URL')
+    else:
+        database_url = os.getenv('DATABASE_URL')
 
     if not database_url:
         print("\n" + "=" * 70, file=sys.stderr)
@@ -52,6 +62,18 @@ def get_database_url():
     # For cloud PostgreSQL (non-localhost), ensure SSL is enabled
     parsed = urlparse(database_url)
     is_localhost = parsed.hostname in ('localhost', '127.0.0.1', None)
+
+    # Warn if job context is using Supabase transaction pooler (port 6543)
+    # Transaction pooler is designed for short-lived web requests and often
+    # times out for long-running batch operations like URA sync.
+    # Session pooler (port 5432) is more reliable for cron jobs.
+    if context == 'job' and parsed.port == 6543 and 'supabase' in (parsed.hostname or ''):
+        print(
+            "WARNING: Cron job is using Supabase transaction pooler (port 6543). "
+            "This may cause connection timeouts. Set DATABASE_URL_CRON with port 5432 "
+            "(session pooler) for reliable batch operations.",
+            file=sys.stderr
+        )
 
     if not is_localhost:
         # Parse existing query params

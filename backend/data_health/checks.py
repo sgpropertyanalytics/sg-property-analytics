@@ -175,7 +175,7 @@ def check_completeness(db_session=None) -> CheckResult:
             COUNT(CASE WHEN sale_type = 'New Sale' THEN 1 END) as new_sale_count,
             COUNT(CASE WHEN sale_type = 'Resale' THEN 1 END) as resale_count
         FROM transactions
-        WHERE COALESCE(is_outlier, false) = false
+        WHERE is_outlier = false
           AND project_name IS NOT NULL
         GROUP BY UPPER(TRIM(project_name)), district
         ORDER BY COUNT(*) DESC
@@ -282,7 +282,7 @@ def check_plausibility(db_session=None) -> CheckResult:
             COUNT(*) as new_sale_count
         FROM transactions
         WHERE sale_type = 'New Sale'
-          AND COALESCE(is_outlier, false) = false
+          AND is_outlier = false
           AND project_name IS NOT NULL
         GROUP BY UPPER(TRIM(project_name)), district
         ORDER BY COUNT(*) DESC

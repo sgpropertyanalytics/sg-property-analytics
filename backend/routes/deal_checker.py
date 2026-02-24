@@ -5,7 +5,7 @@ Provides endpoints for the Deal Checker feature:
 - /api/deal-checker/multi-scope - Enhanced endpoint with same-project, 1km, and 2km scopes
 - /api/projects/names - Get project names for dropdown
 
-CRITICAL: All queries MUST include COALESCE(is_outlier, false) = false filter
+CRITICAL: All queries MUST include is_outlier = false filter
 """
 from flask import Blueprint, request, jsonify, g
 from models.project_location import ProjectLocation
@@ -386,7 +386,7 @@ def get_multi_scope_comparison():
                 FILTER (WHERE lease_start_year IS NOT NULL) as median_age,
             BOOL_AND(lease_start_year IS NULL) as is_freehold
         FROM transactions_primary
-        WHERE COALESCE(is_outlier, false) = false
+        WHERE is_outlier = false
           AND project_name = ANY(:project_names)
           AND (
               (bedroom_count >= 5 AND :bedroom_is_5plus = true)

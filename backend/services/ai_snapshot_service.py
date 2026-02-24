@@ -47,7 +47,7 @@ def _query_snapshot_data(engine: Engine) -> Dict[str, Any]:
                 COUNT(*) as txn_count
             FROM transactions_primary
             WHERE transaction_date >= (SELECT MAX(transaction_date) - INTERVAL '6 months' FROM transactions_primary)
-              AND COALESCE(is_outlier, false) = false
+              AND is_outlier = false
               AND market_segment IN ('CCR', 'RCR', 'OCR')
             GROUP BY market_segment
             ORDER BY median_psf DESC
@@ -83,7 +83,7 @@ def _query_snapshot_data(engine: Engine) -> Dict[str, Any]:
                 COUNT(*) as txn_count
             FROM transactions_primary
             WHERE transaction_date >= (SELECT MAX(transaction_date) - INTERVAL '6 months' FROM transactions_primary)
-              AND COALESCE(is_outlier, false) = false
+              AND is_outlier = false
             GROUP BY sale_type
             ORDER BY txn_count DESC
         """)
@@ -100,7 +100,7 @@ def _query_snapshot_data(engine: Engine) -> Dict[str, Any]:
                        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf) as median
                 FROM transactions_primary
                 WHERE transaction_date >= (SELECT MAX(transaction_date) - INTERVAL '6 months' FROM transactions_primary)
-                  AND COALESCE(is_outlier, false) = false
+                  AND is_outlier = false
             ),
             prior AS (
                 SELECT COUNT(*) as cnt,
@@ -108,7 +108,7 @@ def _query_snapshot_data(engine: Engine) -> Dict[str, Any]:
                 FROM transactions_primary
                 WHERE transaction_date >= (SELECT MAX(transaction_date) - INTERVAL '18 months' FROM transactions_primary)
                   AND transaction_date < (SELECT MAX(transaction_date) - INTERVAL '12 months' FROM transactions_primary)
-                  AND COALESCE(is_outlier, false) = false
+                  AND is_outlier = false
             )
             SELECT
                 recent.cnt as recent_txns,
@@ -141,7 +141,7 @@ def _query_snapshot_data(engine: Engine) -> Dict[str, Any]:
                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY psf) as median_psf
             FROM transactions_primary
             WHERE transaction_date >= (SELECT MAX(transaction_date) - INTERVAL '3 months' FROM transactions_primary)
-              AND COALESCE(is_outlier, false) = false
+              AND is_outlier = false
               AND market_segment IN ('CCR', 'RCR', 'OCR')
             GROUP BY project_name, market_segment, sale_type
             ORDER BY txn_count DESC
@@ -167,7 +167,7 @@ def _query_snapshot_data(engine: Engine) -> Dict[str, Any]:
                 COUNT(*) as txn_count
             FROM transactions_primary
             WHERE transaction_date >= (SELECT MAX(transaction_date) - INTERVAL '6 months' FROM transactions_primary)
-              AND COALESCE(is_outlier, false) = false
+              AND is_outlier = false
               AND bedroom_count IS NOT NULL
             GROUP BY bedroom_count
             ORDER BY bedroom_count

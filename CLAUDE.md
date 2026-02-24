@@ -113,7 +113,7 @@ Before writing ANY infrastructure code (not just >50 lines):
 
 ### 8. Outlier Exclusion
 ```sql
-WHERE COALESCE(is_outlier, false) = false  -- EVERY query
+WHERE is_outlier = false  -- EVERY query (NOT NULL column, no COALESCE needed)
 ```
 
 ### 9. SQL Rules

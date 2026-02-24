@@ -5,7 +5,7 @@ Best practices enforced:
 1. Use :name param style only (SQLAlchemy bind params)
 2. Pass Python date objects directly (no .isoformat() conversion)
 3. Never use percent-paren psycopg2-specific style
-4. COALESCE(is_outlier, false) = false for null safety
+4. is_outlier = false for outlier exclusion (NOT NULL column)
 
 Usage:
     from db.sql import run_sql, validate_sql_params
@@ -16,7 +16,7 @@ Usage:
         SELECT * FROM transactions
         WHERE project_name = :project_name
           AND transaction_date >= :date_from
-          AND COALESCE(is_outlier, false) = false
+          AND is_outlier = false
         ''',
         project_name='GRAND DUNMAN',
         date_from=date(2024, 1, 1)
@@ -122,7 +122,7 @@ def run_sql(
             FROM transactions
             WHERE district = :district
               AND transaction_date >= :date_from
-              AND COALESCE(is_outlier, false) = false
+              AND is_outlier = false
             GROUP BY project_name
             ''',
             district='D15',
@@ -190,19 +190,21 @@ def run_sql_one(
 # For SQLAlchemy:  Use exclude_outliers(Model) or exclude_outliers_clause(Model)
 #
 # NEVER use these patterns directly:
-#   - is_outlier = false                    (not null-safe)
-#   - is_outlier IS NULL OR is_outlier = false  (verbose, inconsistent)
-#   - Transaction.is_outlier == False       (not null-safe)
+#   - is_outlier IS NULL OR is_outlier = false  (verbose, unnecessary - column is NOT NULL)
+#   - COALESCE(is_outlier, false) = false       (unnecessary - column is NOT NULL)
+#   - Transaction.is_outlier == False without using exclude_outliers() helper
 #
 # =============================================================================
 
 # Raw SQL filter snippet
-OUTLIER_FILTER = "COALESCE(is_outlier, false) = false"
+# is_outlier is NOT NULL DEFAULT false, so COALESCE is no longer needed.
+# Kept as canonical constant so all queries use the same predicate.
+OUTLIER_FILTER = "is_outlier = false"
 
 
 def exclude_outliers(model_class):
     """
-    Return a SQLAlchemy filter clause that excludes outliers (null-safe).
+    Return a SQLAlchemy filter clause that excludes outliers.
 
     Usage with ORM queries:
         from db.sql import exclude_outliers
@@ -219,8 +221,8 @@ def exclude_outliers(model_class):
     Returns:
         SQLAlchemy BinaryExpression for filtering
     """
-    from sqlalchemy import func
-    return func.coalesce(model_class.is_outlier, False) == False
+    # is_outlier is NOT NULL DEFAULT false, so direct comparison is safe
+    return model_class.is_outlier == False
 
 
 def exclude_outliers_clause(model_class):
@@ -242,24 +244,18 @@ def get_outlier_filter_sql(table_alias: str = None) -> str:
                      None, empty string, or whitespace-only returns unaliased form.
 
     Returns:
-        SQL string like "COALESCE(t.is_outlier, false) = false"
+        SQL string like "t.is_outlier = false"
 
     Usage:
         # Without alias
         sql = f"WHERE {get_outlier_filter_sql()}"
-        # → "WHERE COALESCE(is_outlier, false) = false"
+        # → "WHERE is_outlier = false"
 
         # With alias
         sql = f"WHERE {get_outlier_filter_sql('t')}"
-        # → "WHERE COALESCE(t.is_outlier, false) = false"
-
-    Note on performance:
-        PostgreSQL can use partial indexes with WHERE clauses that match
-        this COALESCE pattern. The query planner recognizes the equivalence
-        between COALESCE(is_outlier, false) = false and
-        (is_outlier = false OR is_outlier IS NULL).
+        # → "WHERE t.is_outlier = false"
     """
     # Handle None, empty string, or whitespace-only alias
     if table_alias and table_alias.strip():
-        return f"COALESCE({table_alias.strip()}.is_outlier, false) = false"
+        return f"{table_alias.strip()}.is_outlier = false"
     return OUTLIER_FILTER
