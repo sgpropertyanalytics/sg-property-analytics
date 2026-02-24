@@ -272,7 +272,7 @@ class TestOutlierFilter:
 
     def test_outlier_filter_exact_format(self):
         """Ensure outlier filter matches exact expected format."""
-        expected = "COALESCE(is_outlier, false) = false"
+        expected = "is_outlier = false"
         assert OUTLIER_FILTER == expected
 
 
@@ -282,39 +282,39 @@ class TestGetOutlierFilterSql:
     def test_no_alias(self):
         """No alias returns base filter."""
         result = get_outlier_filter_sql()
-        assert result == "COALESCE(is_outlier, false) = false"
+        assert result == "is_outlier = false"
 
     def test_none_alias(self):
         """None alias returns base filter."""
         result = get_outlier_filter_sql(None)
-        assert result == "COALESCE(is_outlier, false) = false"
+        assert result == "is_outlier = false"
 
     def test_empty_string_alias(self):
         """Empty string alias returns base filter (no malformed SQL)."""
         result = get_outlier_filter_sql("")
-        assert result == "COALESCE(is_outlier, false) = false"
+        assert result == "is_outlier = false"
         assert ".is_outlier" not in result  # No leading dot
 
     def test_whitespace_only_alias(self):
         """Whitespace-only alias returns base filter (no malformed SQL)."""
         result = get_outlier_filter_sql("   ")
-        assert result == "COALESCE(is_outlier, false) = false"
+        assert result == "is_outlier = false"
         assert ".is_outlier" not in result  # No leading dot
 
     def test_valid_alias(self):
         """Valid alias is properly included."""
         result = get_outlier_filter_sql("t")
-        assert result == "COALESCE(t.is_outlier, false) = false"
+        assert result == "t.is_outlier = false"
 
     def test_alias_with_whitespace(self):
         """Alias with surrounding whitespace is trimmed."""
         result = get_outlier_filter_sql("  t  ")
-        assert result == "COALESCE(t.is_outlier, false) = false"
+        assert result == "t.is_outlier = false"
 
     def test_longer_alias(self):
         """Longer alias works correctly."""
         result = get_outlier_filter_sql("transactions")
-        assert result == "COALESCE(transactions.is_outlier, false) = false"
+        assert result == "transactions.is_outlier = false"
 
 
 class TestNoLegacyOutlierPatterns:

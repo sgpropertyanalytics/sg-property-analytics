@@ -430,7 +430,7 @@ def bulk_upsert_from_transactions(db_session, dry_run: bool = False) -> Dict[str
             project_name,
             district
         FROM transactions
-        WHERE COALESCE(is_outlier, false) = false
+        WHERE is_outlier = false
           AND project_name IS NOT NULL
         ORDER BY project_name
     """)

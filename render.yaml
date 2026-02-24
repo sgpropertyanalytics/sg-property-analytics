@@ -52,6 +52,8 @@ services:
         value: "3.11.7"
       - key: DATABASE_URL
         sync: false  # Set manually in Render dashboard (Supabase connection string)
+      - key: DATABASE_URL_CRON
+        sync: false  # Session pooler (port 5432) for reliable batch operations. Falls back to DATABASE_URL.
       - key: URA_ACCESS_KEY
         sync: false  # Set manually in Render dashboard
       # URA Sync Configuration

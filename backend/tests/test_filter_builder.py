@@ -13,7 +13,7 @@ def test_normalize_district_variants():
 def test_build_sql_where_districts_normalized():
     where_parts, params = build_sql_where({"districts": ["1", "D02"]})
 
-    assert "COALESCE(is_outlier, false) = false" in where_parts
+    assert "is_outlier = false" in where_parts
     assert any("district IN" in part for part in where_parts)
     assert params["district_0"] == "D01"
     assert params["district_1"] == "D02"

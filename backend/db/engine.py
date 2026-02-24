@@ -146,8 +146,9 @@ def get_engine(kind: str = "job") -> Engine:
         return _ENGINE_WEB
 
     # Get database URL from config (handles postgres:// fix, SSL, etc.)
+    # Pass context so job engines can use DATABASE_URL_CRON (session pooler)
     from config import get_database_url
-    database_url = get_database_url()
+    database_url = get_database_url(context=kind)
 
     # Get base options from Config.SQLALCHEMY_ENGINE_OPTIONS
     opts = _base_options()

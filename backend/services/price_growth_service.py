@@ -165,7 +165,7 @@ def get_transaction_price_growth(
                 ) as txn_sequence
 
             FROM transactions_primary
-            WHERE COALESCE(is_outlier, false) = false
+            WHERE is_outlier = false
               AND (:project_name IS NULL OR project_name ILIKE :project_name)
               AND (:bedroom_count IS NULL OR bedroom_count = :bedroom_count)
               AND (:floor_level IS NULL OR COALESCE(floor_level, 'Unknown') = :floor_level)
@@ -233,7 +233,7 @@ def get_transaction_price_growth(
     count_query = text("""
         SELECT COUNT(*)
         FROM transactions_primary
-        WHERE COALESCE(is_outlier, false) = false
+        WHERE is_outlier = false
           AND (:project_name IS NULL OR project_name ILIKE :project_name)
           AND (:bedroom_count IS NULL OR bedroom_count = :bedroom_count)
           AND (:floor_level IS NULL OR COALESCE(floor_level, 'Unknown') = :floor_level)
@@ -348,7 +348,7 @@ def get_segment_summary(
                 ) as txn_sequence
 
             FROM transactions_primary
-            WHERE COALESCE(is_outlier, false) = false
+            WHERE is_outlier = false
               AND (:project_name IS NULL OR project_name ILIKE :project_name)
               AND (:district IS NULL OR district = :district)
               AND (:sale_type IS NULL OR sale_type = :sale_type)

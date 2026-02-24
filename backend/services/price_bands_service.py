@@ -196,7 +196,7 @@ def _get_project_info(project_name: str) -> Optional[Dict[str, Any]]:
             SELECT district, tenure
             FROM transactions_primary
             WHERE project_name = :project_name
-              AND COALESCE(is_outlier, false) = false
+              AND is_outlier = false
             ORDER BY transaction_date DESC
             LIMIT 1
         """),
@@ -268,7 +268,7 @@ def _compute_monthly_percentiles(
 
     SQL Correctness:
     - Uses SaleType.API_TO_DB for sale_type normalization
-    - Uses COALESCE(is_outlier, false) = false for outlier exclusion
+    - Uses is_outlier = false for outlier exclusion
     - Uses parameterized queries for all dynamic values
     - Explicitly casts date comparisons
     """
@@ -282,7 +282,7 @@ def _compute_monthly_percentiles(
     params["sale_type"] = DB_SALE_TYPE_RESALE
 
     # Outlier exclusion: Use COALESCE for NULL handling
-    conditions.append("COALESCE(is_outlier, false) = false")
+    conditions.append("is_outlier = false")
 
     # PSF guardrails
     conditions.append("psf > :psf_min AND psf < :psf_max")

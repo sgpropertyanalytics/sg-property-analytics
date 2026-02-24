@@ -266,7 +266,7 @@ def build_filter_conditions(filters: Dict[str, Any]) -> List:
     Build SQLAlchemy filter conditions from filter dict.
 
     Returns list of conditions to be combined with and_().
-    Always excludes outliers using COALESCE(is_outlier, false) = false.
+    Always excludes outliers using is_outlier = false.
     """
     conditions = build_sqlalchemy_filters(
         filters,
@@ -1079,7 +1079,7 @@ def query_psf_by_price_band(
           ELSE bedroom_count
         END AS bedroom_group
       FROM transactions_primary
-      WHERE COALESCE(is_outlier, false) = false
+      WHERE is_outlier = false
         AND (:date_from IS NULL OR transaction_date >= :date_from)
         AND (:date_to_exclusive IS NULL OR transaction_date < :date_to_exclusive)
         AND (:sale_type IS NULL OR sale_type = :sale_type)

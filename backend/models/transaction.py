@@ -66,7 +66,7 @@ class Transaction(db.Model):
 
     # === Data Source Tracking (URA API integration) ===
     # source: identifies data origin ('csv' for legacy, 'ura_api' for API)
-    source = db.Column(db.Text, nullable=False, default='csv', index=True)
+    source = db.Column(db.Text, nullable=False, default='ura_api', index=True)
     # run_id: links to specific sync run (NULL for legacy CSV data)
     run_id = db.Column(db.String(36), db.ForeignKey('ura_sync_runs.id', ondelete='SET NULL'))
     # ingested_at: when this row was inserted/updated (different from created_at)

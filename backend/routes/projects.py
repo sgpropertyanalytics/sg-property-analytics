@@ -285,7 +285,7 @@ def get_hot_projects():
                     MIN(t.transaction_date) as first_new_sale,
                     MAX(t.transaction_date) as last_new_sale
                 FROM transactions_primary t
-                WHERE COALESCE(t.is_outlier, false) = false
+                WHERE t.is_outlier = false
                   AND t.sale_type = :sale_type_new
                 GROUP BY t.project_name, t.district
             ),
@@ -296,7 +296,7 @@ def get_hot_projects():
                     t.district,
                     COUNT(*) as resale_count
                 FROM transactions_primary t
-                WHERE COALESCE(t.is_outlier, false) = false
+                WHERE t.is_outlier = false
                   AND t.sale_type = :sale_type_resale
                 GROUP BY t.project_name, t.district
             ),
@@ -311,7 +311,7 @@ def get_hot_projects():
                     PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CASE WHEN t.sale_type = :sale_type_new THEN t.price END) as median_price,
                     PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CASE WHEN t.sale_type = :sale_type_new THEN t.psf END) as median_psf
                 FROM transactions_primary t
-                WHERE COALESCE(t.is_outlier, false) = false
+                WHERE t.is_outlier = false
                   AND (
                     (:bedroom_exact IS NULL AND :bedroom_min IS NULL)
                     OR (:bedroom_exact IS NOT NULL AND t.bedroom_count = :bedroom_exact)

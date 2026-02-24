@@ -134,7 +134,7 @@ def query_basic_stats(db, text, project_name: str, twelve_months_ago: date, sale
             PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY price / NULLIF(area_sqft, 0)) as median_psf
         FROM transactions_primary
         WHERE project_name = :project_name
-          AND COALESCE(is_outlier, false) = false
+          AND is_outlier = false
           AND sale_type = :sale_type_db
         GROUP BY district
     """), {
@@ -168,7 +168,7 @@ def query_bedroom_diversity(db, text, project_name: str, sale_type_db: str = Non
         SELECT COUNT(DISTINCT COALESCE(bedroom_count, 0)) as bedroom_types
         FROM transactions_primary
         WHERE project_name = :project_name
-          AND COALESCE(is_outlier, false) = false
+          AND is_outlier = false
           AND sale_type = :sale_type_db
     """), {"project_name": project_name, "sale_type_db": sale_type_db}).fetchone()
 
